@@ -1,9 +1,18 @@
 import React from "react";
-export default function Home() {
+import Banner from "../layouts/components/Banner/banner";
+import CourseLevel from "../layouts/components/CourseLevels/courselevels";
+
+const Home = () => {
   return (
-    <div>
-      <h1>Home Page</h1>
-      <p>Welcome to the home page!</p>
+    <div className="home-container">
+      <div>
+        <Banner />
+      </div>
+      <div>
+        <CourseLevel />
+      </div>
     </div>
   );
-}
+};
+
+export default Home;

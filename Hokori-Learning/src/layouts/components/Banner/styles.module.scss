@@ -1,0 +1,65 @@
+.bannerContainer {
+  width: 100%;
+
+  img {
+    width: 100%;
+    height: 550px;
+    object-fit: cover;
+    display: block;
+    object-position: center 30%;
+  }
+
+  .overlay {
+    width: 100%;
+    height: 550px;
+    background: rgba(0, 0, 0, 0.4); // lớp mờ (opacity)
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding-left: 80px; // chữ lệch trái một chút
+    z-index: 10;
+    top: 55px;
+    position: absolute;
+  }
+
+  .content {
+    max-width: 600px;
+    color: #fff;
+
+    h1 {
+      font-size: 48px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+
+    p {
+      font-size: 18px;
+      margin-bottom: 30px;
+      line-height: 1.6;
+    }
+  }
+
+  .buttons {
+    display: flex;
+    gap: 15px;
+
+    button {
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+    }
+
+    .startBtn {
+      background-color: #ff4d4f;
+      color: #fff;
+    }
+
+    .signUpBtn {
+      background-color: #fff;
+      color: #000;
+    }
+  }
+}
