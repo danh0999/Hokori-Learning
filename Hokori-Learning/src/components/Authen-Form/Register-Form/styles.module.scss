@@ -1,0 +1,43 @@
+.registerFormContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  max-width: 600px;
+  width: 100%;
+  padding: 2rem;
+  background: #fff;
+
+  h2 {
+    margin-bottom: 24px;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  :global {
+    .ant-form {
+      width: 100%;
+
+      .ant-form-item {
+        margin-bottom: 16px;
+      }
+
+      .ant-input,
+      .ant-input-password,
+      .ant-input-affix-wrapper {
+        border-radius: 8px;
+      }
+
+      .ant-select-selector {
+        border-radius: 8px;
+      }
+
+      .ant-btn {
+        border-radius: 8px;
+        height: 40px;
+        font-weight: 500;
+      }
+    }
+  }
+}

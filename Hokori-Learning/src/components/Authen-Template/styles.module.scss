@@ -1,0 +1,23 @@
+.authenTemplate {
+  width: 100%;
+  flex: 1;
+  display: flex;
+
+  &__form {
+    width: 30%;
+    height: 100%;
+    padding-top: 150px;
+    background-color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  &__image {
+    width: 70%;
+    height: 100%;
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center;
+  }
+}

@@ -1,0 +1,87 @@
+.courses {
+  text-align: center;
+  padding: 4rem 6rem;
+
+  .title {
+    font-size: 2rem;
+    font-weight: 600;
+  }
+
+  .subtitle {
+    margin-top: 0.5rem;
+    color: #555;
+  }
+
+  .grid {
+    display: flex;
+    flex-wrap: wrap; // cho card tự xuống hàng khi không đủ width
+    gap: 2rem;
+    margin-top: 2rem;
+    justify-content: center; // căn giữa các card
+  }
+
+  .card {
+    flex: 1 1 220px;
+    max-width: 300px;
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: left;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    &:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .level {
+      font-weight: bold;
+      background: #000;
+      color: #fff;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      display: inline-block;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .tag {
+      font-size: 0.8rem;
+      color: #999;
+      float: right;
+    }
+
+    .courseTitle {
+      margin: 0.5rem 0;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .desc {
+      font-size: 0.95rem;
+      color: #555;
+      margin-bottom: 1rem;
+    }
+
+    .price {
+      font-weight: bold;
+      margin-bottom: 1rem;
+    }
+
+    .registerBtn {
+      background: #111;
+      color: #fff;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .registerBtn:hover {
+      background: #333;
+    }
+  }
+}
