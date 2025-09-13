@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import styles from "./styles.module.scss";
 
 const {
@@ -20,7 +20,7 @@ const {
 
 export const Header = () => {
   const [open, setOpen] = useState(false);
-
+  const navigate = useNavigate();
   return (
     <header className={header}>
       <div className={container}>
@@ -67,8 +67,12 @@ export const Header = () => {
 
         {/* actions */}
         <div className={actions}>
-          <button className={loginBtn}>Đăng nhập</button>
-          <button className={registerBtn}>Đăng ký</button>
+          <button className={loginBtn} onClick={() => navigate("/login")}>
+            Đăng nhập
+          </button>
+          <button className={registerBtn} onClick={() => navigate("/register")}>
+            Đăng ký
+          </button>
         </div>
       </div>
     </header>

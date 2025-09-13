@@ -1,13 +1,13 @@
 import React from "react";
 import { Carousel } from "antd";
-import banner1 from "../../../assets/banner1.jpg";
-import banner2 from "../../../assets/banner2.jpg";
-import banner3 from "../../../assets/banner3.jpg";
+import banner1 from "../../assets/banner5.jpg";
+import banner2 from "../../assets/banner2.jpg";
+import banner3 from "../../assets/banner3.jpg";
 import styles from "./styles.module.scss"; // import SCSS module
 
 const Banner = () => (
   <div className={styles.bannerContainer}>
-    <Carousel autoplay autoplaySpeed={2000}>
+    <Carousel autoplay autoplaySpeed={4000}>
       <div>
         <img src={banner1} alt="Banner 1" />
       </div>
