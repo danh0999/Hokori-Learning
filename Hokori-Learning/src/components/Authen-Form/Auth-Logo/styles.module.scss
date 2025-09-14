@@ -1,0 +1,36 @@
+.logoWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  //   margin-bottom: 24px;
+  cursor: pointer;
+  user-select: none;
+
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+.logoBox {
+  width: 60px;
+  height: 60px;
+  background: #2d2f39; // màu tối hiện đại
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.logoText {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.tagline {
+  font-size: 14px;
+  color: #555;
+  margin: 4px 0 0;
+}

@@ -3,6 +3,8 @@ import Banner from "../components/Banner/banner";
 import CourseLevel from "../components/CourseLevels/courselevels";
 import Features from "../components/Features/features";
 import Courses from "../components/Courses/courses";
+// eslint-disable-next-line no-unused-vars
+import { motion, useAnimation } from "framer-motion";
 
 const Home = () => {
   return (
@@ -10,15 +12,53 @@ const Home = () => {
       <div>
         <Banner />
       </div>
-      <div>
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{
+          opacity: 1,
+          y: 0,
+          transition: {
+            type: "spring",
+            stiffness: 60,
+            damping: 20,
+          },
+        }}
+        viewport={{ once: false, amount: 0.4 }}
+      >
         <Features />
-      </div>
-      <div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{
+          opacity: 1,
+          y: 0,
+          transition: {
+            type: "spring",
+            stiffness: 60,
+            damping: 20,
+          },
+        }}
+        viewport={{ once: false, amount: 0.4 }}
+      >
         <CourseLevel />
-      </div>
-      <div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{
+          opacity: 1,
+          y: 0,
+          transition: {
+            type: "spring",
+            stiffness: 60,
+            damping: 20,
+          },
+        }}
+        viewport={{ once: false, amount: 0.4 }}
+      >
         <Courses />
-      </div>
+      </motion.div>
     </div>
   );
 };
