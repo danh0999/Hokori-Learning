@@ -5,6 +5,7 @@ import Features from "../components/Features/features";
 import Courses from "../components/Courses/courses";
 // eslint-disable-next-line no-unused-vars
 import { motion, useAnimation } from "framer-motion";
+import { Faqs } from "../components/Faqs/Faqs";
 
 const Home = () => {
   return (
@@ -58,7 +59,9 @@ const Home = () => {
         viewport={{ once: false, amount: 0.4 }}
       >
         <Courses />
+        <Faqs />
       </motion.div>
+
     </div>
   );
 };
