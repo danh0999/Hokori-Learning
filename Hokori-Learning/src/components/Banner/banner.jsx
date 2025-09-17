@@ -23,12 +23,12 @@ const Banner = () => (
         <div className={styles.content}>
           <h1>Learn Japanese Online</h1>
           <p>
-            Master Japanese with interactive lessons, native teacher support,
-            and cultural insights. From beginner to advanced JLPT levels.
+            Nắm vững tiếng Nhật với các bài học tương tác, sự hỗ trợ của giáo
+            viên bản ngữ và hiểu biết sâu sắc về văn hóa. Từ trình độ sơ cấp đến
+            nâng cao.
           </p>
           <div className={styles.buttons}>
-            <button className={styles.startBtn}>Start Learning</button>
-            <button className={styles.signUpBtn}>Sign Up Free</button>
+            <button className={styles.startBtn}>Bắt đầu học</button>
           </div>
         </div>
       </div>

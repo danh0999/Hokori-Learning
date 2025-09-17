@@ -1,29 +1,34 @@
 .header {
-  width: 100%; // 🔥 thêm cho full width
+  width: 100%;
   background: #fff;
   border-bottom: 1px solid #ccc;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
 .container {
-  max-width: 1200px; // content gọn
+  max-width: 1200px;
   width: 100%;
   margin: 0 auto;
-  padding: 12px 16px;
+  padding: 16px 20px; // tăng padding cho thoáng
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
+/* Logo */
 .logo {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  cursor: pointer;
 }
 
 .logoBox {
-  width: 32px;
-  height: 32px;
-  background: #444;
+  width: 36px;
+  height: 36px;
+  background: #111827;
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -32,32 +37,34 @@
 
 .logoText {
   color: #fff;
-  font-size: 14px;
+  font-size: 16px; // to hơn
   font-weight: bold;
 }
 
 .brand {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 22px; // to hơn
+  font-weight: 700;
   color: #111;
 }
 
+/* Nav */
 .menuToggle {
   display: none;
   border: none;
   background: none;
-  font-size: 22px;
+  font-size: 26px;
   cursor: pointer;
 }
 
 .nav {
   display: flex;
-  gap: 20px;
+  gap: 28px; // giãn cách rộng hơn
 
   a {
     text-decoration: none;
     color: #333;
-    font-size: 15px;
+    font-size: 18px; // chữ to hơn
+    font-weight: 500;
 
     &:hover {
       color: #000;
@@ -66,13 +73,16 @@
 }
 
 .active {
-  color: #0066cc;
-  font-weight: bold;
+  color: #e60012;
+  font-weight: 600;
+  border-bottom: 2px solid #e60012;
+  padding-bottom: 2px;
 }
 
+/* Actions */
 .actions {
   display: flex;
-  gap: 10px;
+  gap: 14px;
 }
 
 .loginBtn {
@@ -80,22 +90,30 @@
   background: none;
   cursor: pointer;
   color: #333;
+  font-size: 17px;
+  font-weight: 500;
+
+  &:hover {
+    color: #e60012;
+  }
 }
 
 .registerBtn {
   border: none;
-  background: #000;
+  background: #e60012;
   color: #fff;
-  padding: 6px 12px;
-  border-radius: 4px;
+  font-size: 17px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 6px;
   cursor: pointer;
 
   &:hover {
-    background: #333;
+    background: #c7000f;
   }
 }
 
-/* mobile */
+/* Mobile */
 @media (max-width: 768px) {
   .menuToggle {
     display: block;
@@ -106,21 +124,19 @@
     flex-direction: column;
     background: #fff;
     border-top: 1px solid #ccc;
-    padding: 12px;
+    padding: 16px;
     position: absolute;
-    top: 60px;
+    top: 70px;
     left: 0;
     right: 0;
+
+    a {
+      font-size: 18px;
+      padding: 10px 0;
+    }
   }
 
   .navShow {
     display: flex;
   }
-}
-
-/* fix ant design layout ảnh hưởng */
-:global(.ant-layout) {
-  padding: 0 !important;
-  margin: 0 !important;
-  background: transparent !important;
 }
