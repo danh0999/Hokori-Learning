@@ -46,7 +46,7 @@ export const Header = () => {
             Trang chủ
           </NavLink>
           <NavLink
-            to="/courses"
+            to="/course"
             className={({ isActive }) => (isActive ? active : "")}
           >
             Khóa học
