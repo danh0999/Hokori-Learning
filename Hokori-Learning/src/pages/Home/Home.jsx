@@ -1,11 +1,11 @@
 import React from "react";
-import Banner from "../components/Banner/banner";
-import CourseLevel from "../components/CourseLevels/courselevels";
-import Features from "../components/Features/features";
-import Courses from "../components/Courses/courses";
+import Banner from "../Home/components/Banner/banner";
+import CourseLevel from "../Home/components/CourseLevels/courselevels";
+import Features from "../Home/components/Features/features";
+import Courses from "../Home/components/Courses/courses";
 // eslint-disable-next-line no-unused-vars
 import { motion, useAnimation } from "framer-motion";
-import { Faqs } from "../components/Faqs/Faqs";
+import { Faqs } from "../Home/components/Faqs/Faqs";
 
 const Home = () => {
   return (
@@ -14,7 +14,7 @@ const Home = () => {
         <Banner />
       </div>
       <motion.div
-        initial={{ opacity: 0, y: 40 }}
+        initial={{ opacity: 0, y: 5 }}
         whileInView={{
           opacity: 1,
           y: 0,
@@ -30,7 +30,7 @@ const Home = () => {
       </motion.div>
 
       <motion.div
-        initial={{ opacity: 0, y: 40 }}
+        initial={{ opacity: 0, y: 5 }}
         whileInView={{
           opacity: 1,
           y: 0,
@@ -46,7 +46,7 @@ const Home = () => {
       </motion.div>
 
       <motion.div
-        initial={{ opacity: 0, y: 40 }}
+        initial={{ opacity: 0, y: 5 }}
         whileInView={{
           opacity: 1,
           y: 0,
@@ -59,9 +59,23 @@ const Home = () => {
         viewport={{ once: false, amount: 0.4 }}
       >
         <Courses />
-        <Faqs />
       </motion.div>
 
+      <motion.div
+        initial={{ opacity: 0, y: 5 }}
+        whileInView={{
+          opacity: 1,
+          y: 0,
+          transition: {
+            type: "spring",
+            stiffness: 60,
+            damping: 20,
+          },
+        }}
+        viewport={{ once: false, amount: 0.4 }}
+      >
+        <Faqs />
+      </motion.div>
     </div>
   );
 };

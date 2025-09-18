@@ -1,4 +1,4 @@
-import Home from "../pages/Home";
+import Home from "../pages/Home/Home.jsx";
 import About from "../pages/About";
 import ErrorPage from "../pages/ErrorPage.jsx";
 import MainLayout from "../layouts/Mainlayout.jsx";
@@ -15,9 +15,6 @@ const routes = [
       { path: "/", element: <Home /> },
       { path: "/about", element: <About /> },
       { path: "/course", element: <LessonsPage /> },
-
-      // { path: "/login", element: <Login /> },
-      // { path: "/register", element: <Register /> },
     ],
   },
   {

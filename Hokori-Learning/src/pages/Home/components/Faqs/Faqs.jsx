@@ -1,10 +1,10 @@
 import React from "react";
 import styles from "./styles.module.scss";
-import FaqItem from "./FaqsItem";
-import { Button } from "../Button/Button.jsx";
+import FaqItem from "./FaqsItem.jsx";
+import { Button } from "../../../../components/Button/Button.jsx";
 
 export const Faqs = () => {
-  const { faqsContainer, faqsTitle, faqItemContainer, div,p } = styles;
+  const { faqsContainer, faqsTitle, faqItemContainer, div, p } = styles;
 
   return (
     <div className={faqsContainer}>

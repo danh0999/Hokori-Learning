@@ -1,16 +1,16 @@
 import React from "react";
 import { Button, Carousel } from "antd";
 import { useNavigate } from "react-router-dom";
-import banner1 from "../../assets/banner5.jpg";
-import banner2 from "../../assets/banner2.jpg";
-import banner3 from "../../assets/banner3.jpg";
+import banner1 from "../../../../assets/banner5.jpg";
+import banner2 from "../../../../assets/banner2.jpg";
+import banner3 from "../../../../assets/banner3.jpg";
 import styles from "./styles.module.scss";
 
 const Banner = () => {
   const navigate = useNavigate();
 
   const handleClick = () => {
-    navigate("/course"); 
+    navigate("/course");
   };
 
   return (
