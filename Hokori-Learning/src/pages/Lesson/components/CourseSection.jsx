@@ -1,9 +1,9 @@
 import React from "react";
-import styles from "./lessonSection.module.scss";
-import { LessonCard } from "./LessonCard";
+import styles from "./courseSection.module.scss";
+import {CourseCard} from "./CourseCard";
 import { Badge } from "./Badge";
 
-export const LessonSection = ({ level, label }) => {
+export const CourseSection = ({ level, label }) => {
   const { section, header, sectionTitle, cards } = styles;
 
   // mock data
@@ -21,7 +21,7 @@ export const LessonSection = ({ level, label }) => {
       </div>
       <div className={cards}>
         {items.map((item, idx) => (
-          <LessonCard key={idx} {...item} />
+          <CourseCard key={idx} {...item} />
         ))}
       </div>
     </section>
