@@ -1,0 +1,345 @@
+/* ===== Tokens ===== */
+:root {
+  --navy: #1a2940;
+  --red: #e60012;
+  --text: #111827;
+  --muted: #6b7280;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+}
+
+/* ===== Utilities ===== */
+.container {
+  width: min(1120px, 100% - 48px);
+  margin-inline: auto;
+}
+
+.narrow {
+  width: min(820px, 100% - 48px);
+  margin-inline: auto;
+}
+
+.section {
+  padding: 48px 0; /* giảm bớt */
+}
+
+.title {
+  font-size: 28px;
+  line-height: 1.25;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+  margin: 0 0 16px;
+}
+
+.subtitle {
+  color: var(--muted);
+  text-align: center;
+  margin: 0 auto 24px;
+  max-width: 720px;
+}
+
+/* ===== Hero ===== */
+.heroBanner {
+  height: 500px;
+  background: var(--navy) url("/images/banner.jpg") center/cover no-repeat;
+  position: relative;
+  display: grid;
+  place-items: center;
+  color: #fff;
+}
+
+.heroBanner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.heroBanner .heroContent {
+  position: relative;
+  text-align: center;
+}
+
+.heroBanner .heroContent h1 {
+  font-size: 40px;
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+
+.heroBanner .heroContent p {
+  font-size: 16px;
+  color: #e5e7eb;
+  margin: 0;
+}
+
+/* ===== Introduction ===== */
+.introduction {
+  padding: 48px 0;
+  background: #fff;
+  text-align: center;
+}
+
+.introduction h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.introduction p {
+  color: #4b5563;
+  line-height: 1.7;
+  margin: 0 0 12px;
+}
+
+/* ===== Core Values ===== */
+.coreValues {
+  padding: 48px 0;
+  background: var(--gray-50);
+}
+
+.coreValues h2 {
+  font-size: 28px;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0 16px;
+}
+.coreValues .grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 2px;               /* giảm khoảng cách giữa card */
+  justify-content: center;
+  max-width: 880px;        /* khung hẹp lại chút nữa */
+  margin: 0 auto 32px;     /* cách dưới vừa phải */
+}
+
+.coreValues .card {
+  max-width: 280px;        /* nhỏ hơn để 3 thẻ sát hơn */
+  padding: 18px;
+}
+
+
+.coreValues .card .icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background: var(--navy);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  margin: 0 auto 12px;
+}
+
+.coreValues .card h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 6px;
+  color: var(--text);
+}
+
+.coreValues .card p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ===== Mission & Vision ===== */
+.missionVision {
+  padding: 48px 0;
+  background: #fff;
+}
+
+.missionVision .grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.missionVision .card {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 10px;
+  padding: 18px 20px;
+  max-width: 460px;
+  margin: 0 auto;
+}
+
+.missionVision .card .icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--navy);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  margin: 0 0 10px;
+}
+
+.missionVision .card h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 8px;
+}
+
+.missionVision .card p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ===== CTA ===== */
+.cta {
+  padding: 48px 0;
+  background: #fff;
+  text-align: center;
+}
+
+.cta h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.cta p {
+  font-size: 15px;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.cta .ctaButton {
+  background: var(--red);
+  color: #fff;
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.cta .ctaButton:hover {
+  background: #c3000f;
+}
+/* ===== Core Values ===== */
+.coreValues {
+  padding: 64px 0;
+  background: var(--gray-50);
+}
+
+.coreValues h2 {
+  font-size: 30px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 40px;
+  color: var(--text);
+}
+
+.coreValues .grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;                     /* tăng khoảng cách giữa card */
+  justify-content: center;
+  max-width: 960px;              /* rộng hơn, nhìn thoáng */
+  margin: 0 auto;
+}
+
+.coreValues .card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.coreValues .card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+.coreValues .card .icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--navy);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  margin: 0 auto 16px;
+}
+
+.coreValues .card h3 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.coreValues .card p {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ===== Mission & Vision ===== */
+.missionVision {
+  padding: 64px 0;
+  background: #fff;
+}
+
+.missionVision .grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.missionVision .card {
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  padding: 28px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.missionVision .card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+.missionVision .card .icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--navy);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  margin-bottom: 14px;
+}
+
+.missionVision .card h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: var(--text);
+}
+
+.missionVision .card p {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.7;
+  margin: 0;
+}

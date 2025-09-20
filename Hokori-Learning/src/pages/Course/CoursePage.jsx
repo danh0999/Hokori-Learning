@@ -9,7 +9,7 @@ export const CoursePage = () => {
   return (
     <main className={container}>
       <div className={header}>
-        <h1 className={title}>Bài học tiếng Nhật</h1>
+        <h1 className={title}>Tổng hợp trình độ tiếng Nhật</h1>
         <p className={subtitle}>
           Học tiếng Nhật từ cơ bản đến nâng cao với hệ thống bài học chất lượng
         </p>
