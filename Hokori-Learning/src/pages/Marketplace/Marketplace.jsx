@@ -3,7 +3,7 @@ import styles from "./marketplace.module.scss";
 import Filters from "./components/Filters/Filters";
 import CourseGrid from "./components/CourseGrid/CourseGrid";
 import Pagination from "./components/Pagination/Pagination";
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate, useSearchParams } from "react-router-dom";
 const MOCK = [
   {
     id: 1,
@@ -170,6 +170,17 @@ export default function Marketplace() {
   useEffect(() => {
     setPage(1);
   }, [filters, sort]);
+  const [searchParams] = useSearchParams();
+  const preselectedLevel = searchParams.get("level");
+
+  useEffect(() => {
+    if (preselectedLevel) {
+      setFilters((prev) => ({
+        ...prev,
+        levels: [preselectedLevel.toUpperCase()], // đảm bảo viết hoa cho khớp dữ liệu
+      }));
+    }
+  }, [preselectedLevel]);
 
   return (
     <div className={styles.marketplace}>
