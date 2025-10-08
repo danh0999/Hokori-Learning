@@ -1,0 +1,33 @@
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tab {
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #374151;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+
+  &:hover {
+    background-color: #f9fafb;
+    transform: translateY(-1px);
+  }
+}
+
+.active {
+  background-color: #0f172a;
+  border-color: #0f172a;
+  color: #ffffff;
+
+  &:hover {
+    transform: none;
+    background-color: #0f172a;
+  }
+}

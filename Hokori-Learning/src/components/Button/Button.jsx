@@ -1,21 +1,36 @@
-import React from "react";
+﻿import React from "react";
 import styles from "./styles.module.scss";
 import { useNavigate } from "react-router-dom";
 
-export const Button = ({ content = "Tìm kiếm", to, onClick }) => {
+const joinClassNames = (...classes) => classes.filter(Boolean).join(" ");
+
+export const Button = ({
+  content = "Tim kiem",
+  to,
+  onClick,
+  type = "button",
+  className = "",
+  containerClassName = ""
+}) => {
   const { buttonContainer, button } = styles;
   const navigate = useNavigate();
-  const handleClick = async () => {
+
+  const handleClick = async (event) => {
     if (onClick) {
-      await onClick(); //  gọi logic từ ngoài (validate, điều hướng)
-    } else if (to) {
-      navigate(to); // chỉ fallback khi không có onClick
+      await onClick(event);
+      return;
+    }
+    if (to) {
+      navigate(to);
     }
   };
 
+  const mergedContainerClass = joinClassNames(buttonContainer, containerClassName);
+  const mergedButtonClass = joinClassNames(button, className);
+
   return (
-    <div className={buttonContainer}>
-      <button className={button} onClick={handleClick}>
+    <div className={mergedContainerClass}>
+      <button className={mergedButtonClass} onClick={handleClick} type={type}>
         {content}
       </button>
     </div>

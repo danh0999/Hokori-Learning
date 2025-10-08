@@ -1,0 +1,165 @@
+﻿.filters {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.group {
+  margin-bottom: 12px;
+}
+
+h4 {
+  margin: 0 0 6px;
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+  font-size: 13px;
+  color: #374151;
+}
+
+.row input {
+  width: 16px;
+  height: 16px;
+}
+
+.range {
+  width: 100%;
+  height: 6px;
+  border-radius: 5px;
+  background: #e5e7eb;
+  outline: none;
+}
+
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #0f172a;
+  cursor: pointer;
+}
+
+.range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #0f172a;
+  cursor: pointer;
+}
+
+.rangeRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.input {
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.input::placeholder {
+  color: #9ca3af;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #0f172a;
+}
+
+.buttonRow {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.buttonRowItem {
+  flex: 1;
+  margin: 0 !important;
+}
+
+.buttonRowButton {
+  width: 100%;
+}
+
+.secondaryAction {
+  background-color: #ffffff;
+  color: #111827;
+  border: 1px solid #111827;
+}
+
+.secondaryAction:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.secondaryAction:active {
+  transform: none;
+}
+
+/* Bọc riêng ô search để ép full chiều rộng sidebar */
+.searchWrap {
+  width: 100%;
+  margin: 6px 0 0 0;         /* tránh thụt trái/phải */
+}
+
+/* Ghi đè các class của SearchBar (CSS module toàn cục) */
+.searchWrap :global(.container) {
+  width: 100%;
+  display: block;
+}
+
+.searchWrap :global(.input) {
+  width: 100%;
+  height: 38px;
+  margin: 0;                 /* loại bỏ margin mặc định */
+  padding: 0 40px 0 12px;    /* icon bên phải 40px */
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  box-sizing: border-box;     /* tránh tràn vì padding + border */
+}
+
+.searchWrap :global(.icon) {
+  right: 12px;               /* icon sát mép phải đều */
+}
+
+/* Phòng ngừa mọi element trong sidebar nở kích thước */
+.filters, .filters * {
+  box-sizing: border-box;
+}
+
+/* Bỏ margin mặc định của input/checkbox để các hàng thẳng */
+.group input[type="text"],
+.group input[type="checkbox"],
+.group input[type="radio"] {
+  margin: 0;
+}
