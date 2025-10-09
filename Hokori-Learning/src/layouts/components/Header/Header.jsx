@@ -66,11 +66,11 @@ export const Header = () => {
             </button>
             {openDropdown && (
               <div className={dropdownMenu}>
-                <NavLink to="/course" className={dropdownItem}>
-                  Khóa học chung
+                <NavLink to="/marketplace" className={dropdownItem}>
+                  Tất cả khóa học
                 </NavLink>
                 <NavLink to="/course-vip" className={dropdownItem}>
-                  Khóa học VIP
+                  Khóa học của bạn 
                 </NavLink>
               </div>
             )}

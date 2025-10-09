@@ -1,8 +1,9 @@
 ﻿import React from "react";
 import styles from "./CourseCard.module.scss";
 import { Button } from "../../../../components/Button/Button";
-
-const FALLBACK_IMAGE = "https://thumbs.dreamstime.com/b/teacher-icon-vector-male-person-profile-avatar-book-teaching-school-college-university-education-glyph-113755262.jpg";
+import { useNavigate } from "react-router-dom";
+const FALLBACK_IMAGE =
+  "https://thumbs.dreamstime.com/b/teacher-icon-vector-male-person-profile-avatar-book-teaching-school-college-university-education-glyph-113755262.jpg";
 
 export default function CourseCard({ course }) {
   const {
@@ -15,13 +16,13 @@ export default function CourseCard({ course }) {
     teacher,
     teacherName,
     teacherAvatar,
-    tags = []
+    tags = [],
   } = course;
 
   const displayTeacher = teacherName || teacher || "Dang cap nhat";
   const avatar = teacherAvatar || FALLBACK_IMAGE;
   const displayRatingCount = ratingCount ?? 0;
-
+  const navigate = useNavigate();
   return (
     <div className={styles.card}>
       <div className={styles.thumb}>
@@ -35,12 +36,16 @@ export default function CourseCard({ course }) {
         </div>
         <div className={styles.meta}>
           <span className={styles.badge}>{level}</span>
-          <span className={styles.price}>{price.toLocaleString("vi-VN")} d</span>
+          <span className={styles.price}>
+            {price.toLocaleString("vi-VN")} d
+          </span>
         </div>
         <div className={styles.stats}>
           <span>Tu {rating}</span>
           <span className={styles.muted}>({displayRatingCount})</span>
-          {students && <span className={styles.muted}>{students} hoc vien</span>}
+          {students && (
+            <span className={styles.muted}>{students} hoc vien</span>
+          )}
         </div>
         {tags.length > 0 && (
           <div className={styles.chips}>
@@ -52,12 +57,12 @@ export default function CourseCard({ course }) {
           </div>
         )}
         <div className={styles.actions}>
-          <Button
-            content="Xem chi tiết khóa học"
-            onClick={() => {}}
-            containerClassName={styles.actionItem}
-            className={styles.actionButton}
-          />
+            <Button
+              content="Xem chi tiết khóa học"
+              onClick={() => navigate(`/course/${course.id}`)} 
+              containerClassName={styles.actionItem}
+              className={styles.actionButton}
+            />
           <Button
             content="Đăng ký"
             onClick={() => {}}

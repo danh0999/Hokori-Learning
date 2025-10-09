@@ -1,14 +1,14 @@
-import Home from "../pages/Home/Home.jsx";
+import Home from "../pages/Home/Home";
 
-import ErrorPage from "../pages/ErrorPage.jsx";
-import MainLayout from "../layouts/Mainlayout.jsx";
+import ErrorPage from "../pages/ErrorPage";
+import MainLayout from "../layouts/Mainlayout";
+import CourseDetail from "../pages/CourseDetail/CourseDetail";
 import React from "react";
-import Login from "../pages/authen/login/login.jsx";
-import Register from "../pages/authen/register/register.jsx";
+import Login from "../pages/authen/login/login";
+import Register from "../pages/authen/register/register";
 
-import Marketplace from '../pages/Marketplace/Marketplace';
+import Marketplace from "../pages/Marketplace/Marketplace";
 import AboutPage from "../pages/About/AboutPage";
-
 
 const routes = [
   {
@@ -18,16 +18,14 @@ const routes = [
     children: [
       { path: "/", element: <Home /> },
 
-
-
       { path: "/marketplace", element: <Marketplace /> },
 
-
+      { path: "/course/:courseId", element: <CourseDetail /> },
       { path: "/about", element: <AboutPage /> },
     ],
   },
   {
-    path: "/login",
+    path: "/login", 
     element: <Login />,
   },
   {
