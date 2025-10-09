@@ -2,7 +2,7 @@
 import styles from "./CourseCard.module.scss";
 import { Button } from "../../../../components/Button/Button";
 
-const FALLBACK_IMAGE = "https://via.placeholder.com/48x48";
+const FALLBACK_IMAGE = "https://thumbs.dreamstime.com/b/teacher-icon-vector-male-person-profile-avatar-book-teaching-school-college-university-education-glyph-113755262.jpg";
 
 export default function CourseCard({ course }) {
   const {
@@ -53,13 +53,13 @@ export default function CourseCard({ course }) {
         )}
         <div className={styles.actions}>
           <Button
-            content="Xem chi tiet"
+            content="Xem chi tiết khóa học"
             onClick={() => {}}
             containerClassName={styles.actionItem}
             className={styles.actionButton}
           />
           <Button
-            content="Dang ky"
+            content="Đăng ký"
             onClick={() => {}}
             containerClassName={styles.actionItem}
             className={styles.actionButton}
