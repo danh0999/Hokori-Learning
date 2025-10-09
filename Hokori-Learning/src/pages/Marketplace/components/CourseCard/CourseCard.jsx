@@ -19,7 +19,7 @@ export default function CourseCard({ course }) {
     tags = [],
   } = course;
 
-  const displayTeacher = teacherName || teacher || "Dang cap nhat";
+  const displayTeacher = teacherName || teacher || "Đang cập nhật";
   const avatar = teacherAvatar || FALLBACK_IMAGE;
   const displayRatingCount = ratingCount ?? 0;
   const navigate = useNavigate();
