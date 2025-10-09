@@ -39,7 +39,7 @@ const Courses = () => {
   const navigate = useNavigate();
 
   const handleExplore = (level) => {
-    // ✅ chuyển đến trang marketplace có query lọc level tương ứng
+    
     navigate(`/marketplace?level=${level}`);
   };
 
