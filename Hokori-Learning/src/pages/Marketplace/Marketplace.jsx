@@ -135,8 +135,9 @@ export default function Marketplace() {
       items = items.filter((c) => c.rating >= min);
     }
 
-    // Giá
-    items = items.filter((c) => c.price <= filters.priceMax);
+    // Giá (lọc các khóa học có giá nhỏ hơn hoặc bằng giá đang chọn)
+    const max = Number(filters.priceMax) || 2000000;
+    items = items.filter((c) => c.price <= max);
 
     // Giáo viên
     if (filters.teacher.trim()) {
@@ -186,10 +187,10 @@ export default function Marketplace() {
     <div className={styles.marketplace}>
       {/* Breadcrumb */}
       <nav className={styles.breadcrumb}>
-        {/* ✅ Trang chủ click điều hướng */}
+        {/*  Trang chủ click điều hướng */}
         <span
           className={styles.link}
-          onClick={() => navigate("/")} // <-- đường dẫn Home
+          onClick={() => navigate("/")} // Điều hướng về trang chủ
         >
           Trang chủ
         </span>

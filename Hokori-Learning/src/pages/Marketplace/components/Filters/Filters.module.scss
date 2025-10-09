@@ -163,3 +163,78 @@ h4 {
 .group input[type="radio"] {
   margin: 0;
 }
+/* --- Thước đo giá tiền --- */
+.rangeContainer {
+  position: relative;
+  width: 100%;
+  padding-top: 20px;
+}
+
+.scaleMarks {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  margin-top: 6px;
+}
+
+.mark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.line {
+  width: 2px;
+  height: 8px;
+  background-color: #9ca3af;
+  margin-bottom: 4px;
+}
+
+.label {
+  font-size: 11px;
+  color: #6b7280;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  position: relative;
+  left: 50%;
+}
+
+.currentPrice {
+  text-align: right;
+  font-size: 13px;
+  color: #111827;
+  margin-top: 4px;
+}
+/* Nhóm filter (VD: Cấp độ JLPT, Giá, Đánh giá...) */
+.group {
+  margin-bottom: 16px;      
+  padding-bottom: 4px;       
+  border-bottom: 1px solid #f3f4f6; 
+}
+
+.group h4 {
+  margin-bottom: 10px;      
+}
+
+/* Mỗi dòng checkbox */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;       
+  font-size: 13px;
+  color: #374151;
+}
+
+.stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.ratingLabel {
+  margin-left: 4px;
+  font-size: 12px;
+  color: #6b7280;
+}
