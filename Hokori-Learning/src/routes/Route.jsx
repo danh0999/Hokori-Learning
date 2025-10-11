@@ -4,13 +4,24 @@ import ErrorPage from "../pages/ErrorPage";
 import MainLayout from "../layouts/Mainlayout";
 import CourseDetail from "../pages/CourseDetail/CourseDetail";
 import React from "react";
-import Login from "../pages/authen/login/login";
-import Register from "../pages/authen/register/register";
-
+import Login from "../pages/authen/login/login.jsx";
+import Register from "../pages/authen/register/register.jsx";
+import { CoursePage } from "../pages/Lesson/CoursePage.jsx";
+import TeacherDashboardLayout from "../pages/Teacher/TeacherDashboardLayout.jsx";
 import Marketplace from "../pages/Marketplace/Marketplace";
 import AboutPage from "../pages/About/AboutPage";
 
+
 const routes = [
+  {
+    path: "/login",
+    element: <Login />,
+  },
+  {
+    path: "/register",
+    element: <Register />,
+  },
+  //Guest,Learner
   {
     path: "/",
     element: <MainLayout />,
@@ -25,12 +36,10 @@ const routes = [
     ],
   },
   {
-    path: "/login", 
-    element: <Login />,
-  },
-  {
-    path: "/register",
-    element: <Register />,
+    path: "/teacher",
+    element: <TeacherDashboardLayout />,
+    errorElement: <ErrorPage />,
+
   },
 ];
 

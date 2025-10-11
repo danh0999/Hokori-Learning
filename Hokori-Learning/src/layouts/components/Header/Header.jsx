@@ -42,7 +42,7 @@ export const Header = () => {
     <header className={header}>
       <div className={container}>
         {/* logo */}
-        <div className={logo}>
+        <div className={logo} onClick={() => navigate("/")}>
           <div className={logoBox}>
             <span className={logoText}>H</span>
           </div>
