@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import styles from "./styles.module.scss";
 
@@ -9,18 +9,35 @@ const {
   logoBox,
   logoText,
   brand,
-  menuToggle,
   nav,
-  navShow,
   active,
   actions,
   loginBtn,
   registerBtn,
+  dropdown,
+  dropdownToggle,
+  dropdownMenu,
+  dropdownItem,
+  arrow,
+  rotate,
 } = styles;
 
 export const Header = () => {
-  const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const [openDropdown, setOpenDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Đóng dropdown khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpenDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
     <header className={header}>
       <div className={container}>
@@ -32,35 +49,37 @@ export const Header = () => {
           <span className={brand}>Hokori</span>
         </div>
 
-        {/* toggle mobile */}
-        <button className={menuToggle} onClick={() => setOpen(!open)}>
-          ☰
-        </button>
-
         {/* nav */}
-        <nav className={`${nav} ${open ? navShow : ""}`}>
-          <NavLink
-            to="/"
-            className={({ isActive }) => (isActive ? active : "")}
-          >
+        <nav className={nav}>
+          <NavLink to="/" className={({ isActive }) => (isActive ? active : "")}>
             Trang chủ
           </NavLink>
-          <NavLink
-            to="/course"
-            className={({ isActive }) => (isActive ? active : "")}
-          >
-            Khóa học
-          </NavLink>
-          <NavLink
-            to="/about"
-            className={({ isActive }) => (isActive ? active : "")}
-          >
+
+          {/* dropdown */}
+          <div className={dropdown} ref={dropdownRef}>
+            <button
+              className={dropdownToggle}
+              onClick={() => setOpenDropdown(!openDropdown)}
+            >
+              Khóa học{" "}
+              <span className={`${arrow} ${openDropdown ? rotate : ""}`}>▾</span>
+            </button>
+            {openDropdown && (
+              <div className={dropdownMenu}>
+                <NavLink to="/marketplace" className={dropdownItem}>
+                  Tất cả khóa học
+                </NavLink>
+                <NavLink to="/course-vip" className={dropdownItem}>
+                  Khóa học của bạn 
+                </NavLink>
+              </div>
+            )}
+          </div>
+
+          <NavLink to="/about" className={({ isActive }) => (isActive ? active : "")}>
             Về chúng tôi
           </NavLink>
-          <NavLink
-            to="/contact"
-            className={({ isActive }) => (isActive ? active : "")}
-          >
+          <NavLink to="/contact" className={({ isActive }) => (isActive ? active : "")}>
             Liên hệ
           </NavLink>
         </nav>

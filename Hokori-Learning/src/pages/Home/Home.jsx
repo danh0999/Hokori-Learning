@@ -6,7 +6,7 @@ import Courses from "../Home/components/Courses/courses";
 // eslint-disable-next-line no-unused-vars
 import { motion, useAnimation } from "framer-motion";
 import { Faqs } from "../Home/components/Faqs/Faqs";
-
+import ScrollToTopButton from "../../components/SrcollToTopButton/ScrollToTopButton";
 const Home = () => {
   return (
     <div className="home-container">
@@ -75,6 +75,7 @@ const Home = () => {
         viewport={{ once: false, amount: 0.4 }}
       >
         <Faqs />
+        <ScrollToTopButton />
       </motion.div>
     </div>
   );

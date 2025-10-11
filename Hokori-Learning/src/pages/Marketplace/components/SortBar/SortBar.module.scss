@@ -1,0 +1,31 @@
+﻿.sortBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.summary {
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.select {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  min-width: 160px;
+  outline: none;
+  transition: box-shadow 160ms ease, transform 120ms ease;
+}
+
+.select:focus {
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+}
+
+.select:hover {
+  transform: translateY(-1px);
+}
+
