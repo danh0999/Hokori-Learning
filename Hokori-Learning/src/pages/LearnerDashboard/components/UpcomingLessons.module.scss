@@ -1,0 +1,35 @@
+.title {
+  font-size: 1rem;
+  color: #0f172a;
+  margin-bottom: 0.75rem;
+}
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.item {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  transition: background 0.2s ease;
+}
+.item:hover {
+  background: #f9fafb;
+}
+.name {
+  color: #0f172a;
+  font-size: 0.95rem;
+}
+.date {
+  color: #6b7280;
+  font-size: 0.8rem;
+  margin-top: 2px;
+}
+.bar {
+  margin-top: 0.5rem;
+}
+.empty {
+  color: #6b7280;
+  font-style: italic;
+}

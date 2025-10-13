@@ -1,0 +1,41 @@
+.title {
+  font-size: 1.125rem;
+  color: #0f172a;
+  margin-bottom: 1rem;
+}
+.overall {
+  margin-bottom: 1rem;
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  color: #4b5563;
+}
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+.left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #111827;
+}
+.right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6b7280;
+  min-width: 120px;
+  justify-content: flex-end;
+}

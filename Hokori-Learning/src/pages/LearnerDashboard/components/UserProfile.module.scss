@@ -1,0 +1,60 @@
+.wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+h1 {
+  font-size: 1.5rem;
+  color: #111827;
+}
+
+p {
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.meta {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.tag {
+  background: #f3f4f6;
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+}
+
+.right {
+  text-align: right;
+}
+.days {
+  font-size: 1.75rem;
+  color: #111827;
+}
+.text {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+:global(.card.userProfileCard) {
+  margin-bottom: 30px;
+}

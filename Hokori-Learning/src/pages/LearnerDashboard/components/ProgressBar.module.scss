@@ -1,0 +1,13 @@
+.track {
+  width: 100%;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.bar {
+  height: 100%;
+  background: #111827; /* neutral-900 accent */
+  border-radius: 999px;
+  transition: width 300ms ease;
+}

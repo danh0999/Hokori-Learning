@@ -81,7 +81,9 @@ const CourseHero = ({ course }) => {
           </div>
 
           <div className="buttons">
-            <button className="btn-primary">Mua khóa học ngay</button>
+            <button className="btn-primary" onClick={handleBuyNow}>
+              Mua khóa học ngay
+            </button>
             <button className="btn-secondary">
               <i className="fa-solid fa-cart-shopping"></i> Thêm vào giỏ hàng
             </button>
