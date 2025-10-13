@@ -12,8 +12,8 @@ function Login() {
         return <Navigate to="/admin" replace />;
       case "LEARNER":
         return <Navigate to="/" replace />;
-      case "CONTRIBUTOR":
-        return <Navigate to="/member" replace />;
+      case "MODERATOR":
+        return <Navigate to="/moderator" replace />;
       case "TEACHER":
         return <Navigate to="/teacher" replace />;
       default:

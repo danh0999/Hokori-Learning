@@ -11,7 +11,6 @@ import TeacherDashboardLayout from "../pages/Teacher/TeacherDashboardLayout";
 import Marketplace from "../pages/Marketplace/Marketplace";
 import AboutPage from "../pages/About/AboutPage";
 
-
 const routes = [
   {
     path: "/login",
@@ -40,7 +39,6 @@ const routes = [
     path: "/teacher",
     element: <TeacherDashboardLayout />,
     errorElement: <ErrorPage />,
-
   },
 ];
 
