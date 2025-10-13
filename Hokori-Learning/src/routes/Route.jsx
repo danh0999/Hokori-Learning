@@ -6,11 +6,9 @@ import CourseDetail from "../pages/CourseDetail/CourseDetail";
 import React from "react";
 import Login from "../pages/authen/login/login.jsx";
 import Register from "../pages/authen/register/register.jsx";
-import { CoursePage } from "../pages/Lesson/CoursePage.jsx";
 import TeacherDashboardLayout from "../pages/Teacher/TeacherDashboardLayout.jsx";
 import Marketplace from "../pages/Marketplace/Marketplace";
 import AboutPage from "../pages/About/AboutPage";
-
 
 const routes = [
   {
@@ -39,7 +37,6 @@ const routes = [
     path: "/teacher",
     element: <TeacherDashboardLayout />,
     errorElement: <ErrorPage />,
-
   },
 ];
 
