@@ -1,6 +1,8 @@
 .dashboard {
-  background: #f5f6f7;
+  background: #f9fafb;
   min-height: 100vh;
+  font-family: "Inter", sans-serif;
+  color: #111827;
   transition: background 0.3s ease;
 }
 
@@ -14,7 +16,6 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 2rem;
-
   @media (min-width: 1024px) {
     grid-template-columns: 2fr 1fr;
   }
@@ -27,76 +28,94 @@
   gap: 1.5rem;
 }
 
-/* card base */
+/* Card base with animation */
 :global(section.card) {
   background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(16, 24, 40, 0.05);
+  border-radius: 14px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
   padding: 1.25rem;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-  
+  transition: all 0.25s ease;
+  cursor: default;
 }
 :global(section.card:hover) {
   transform: translateY(-3px);
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
 }
 
-/* modal overlay */
+/* Buttons — global hover + focus */
+button,
+:global(button),
+:global(.btn) {
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+button:hover,
+:global(button:hover),
+:global(.btn:hover) {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+button:active {
+  transform: scale(0.97);
+}
+
+/* Overlay modal smooth */
 .overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 50;
+  animation: fadeIn 0.25s ease forwards;
 }
-
 .modal {
   background: #fff;
-  padding: 1.5rem;
-  border-radius: 12px;
+  padding: 1.75rem;
+  border-radius: 14px;
   width: 90%;
-  max-width: 400px;
-  animation: fadeIn 0.25s ease;
+  max-width: 420px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.35s cubic-bezier(0.23, 1, 0.32, 1);
 }
-
 .modal h3 {
   margin-bottom: 0.5rem;
   color: #0f172a;
 }
-
 .modal p {
   color: #6b7280;
   font-size: 0.9rem;
   margin-bottom: 1rem;
 }
-
+.chatBox {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  resize: none;
+  margin-bottom: 1rem;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+.chatBox:focus {
+  outline: none;
+  border-color: #111827;
+  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.1);
+}
 .modalActions {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
 }
 
-.chatBox {
-  width: 100%;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 0.5rem;
-  font-family: inherit;
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
-  resize: none;
-}
-
+/* Smooth fade & slide animation */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }

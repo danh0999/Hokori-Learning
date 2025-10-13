@@ -16,3 +16,26 @@
   background: #111827; color: #fff; border: 0; border-radius: 8px; padding: 0.6rem 0.75rem; cursor: pointer;
 }
 .btn:hover { background: #0b1220; }
+
+.iconBtn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  transition: transform 0.25s ease, color 0.25s ease;
+}
+.iconBtn:hover {
+  color: #111827;
+  transform: rotate(90deg);
+}
+
+.item {
+  background: #f9fafb;
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  transition: all 0.3s ease;
+}
+.item:hover {
+  background: #eef2ff;
+  transform: translateY(-2px);
+}

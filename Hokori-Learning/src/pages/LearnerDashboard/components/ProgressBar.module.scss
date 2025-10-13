@@ -3,11 +3,53 @@
   background: #e5e7eb;
   border-radius: 999px;
   overflow: hidden;
+  height: 8px;
+  position: relative;
+  transition: background 0.3s ease;
+}
+.track:hover {
+  background: #d1d5db;
 }
 
+/* thanh chạy */
 .bar {
   height: 100%;
-  background: #111827; /* neutral-900 accent */
+  background: linear-gradient(90deg, #111827, #1f2937);
   border-radius: 999px;
-  transition: width 300ms ease;
+  transition: width 1s cubic-bezier(0.22, 1, 0.36, 1), background 0.3s ease;
+  position: relative;
+}
+
+/* hiệu ứng sáng bóng chạy qua */
+.bar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -40px;
+  width: 40px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: skewX(-20deg);
+  animation: shine 2.2s infinite linear;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+@keyframes shine {
+  0% { left: -40px; }
+  100% { left: 100%; }
+}
+
+/* tooltip hiển thị % khi hover */
+.track:hover::before {
+  content: attr(data-value) "%";
+  position: absolute;
+  top: -28px;
+  right: 0;
+  font-size: 0.75rem;
+  color: #111827;
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
