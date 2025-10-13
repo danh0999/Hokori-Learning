@@ -1,5 +1,5 @@
 import React from "react";
-
+import { useNavigate } from "react-router-dom";
 const CourseHero = ({ course }) => {
   const {
     title,
@@ -12,7 +12,10 @@ const CourseHero = ({ course }) => {
     oldPrice,
     discount,
   } = course;
-
+  const navigate = useNavigate();
+  const handleBuyNow = () => {
+    navigate("/payment");
+  };
   return (
     <section className="hero-section">
       <div className="container">
@@ -78,9 +81,9 @@ const CourseHero = ({ course }) => {
           </div>
 
           <div className="buttons">
-            <button className="btn-primary">Đăng ký ngay</button>
+            <button className="btn-primary">Mua khóa học ngay</button>
             <button className="btn-secondary">
-              <i className="fa-regular fa-heart"></i> Yêu thích
+              <i className="fa-solid fa-cart-shopping"></i> Thêm vào giỏ hàng
             </button>
           </div>
         </div>

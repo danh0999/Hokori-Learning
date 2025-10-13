@@ -4,6 +4,7 @@ import { Button } from "../../../../components/Button/Button";
 import { useNavigate } from "react-router-dom";
 const FALLBACK_IMAGE =
   "https://thumbs.dreamstime.com/b/teacher-icon-vector-male-person-profile-avatar-book-teaching-school-college-university-education-glyph-113755262.jpg";
+import { FaShoppingCart } from "react-icons/fa";
 
 export default function CourseCard({ course }) {
   const {
@@ -57,17 +58,25 @@ export default function CourseCard({ course }) {
           </div>
         )}
         <div className={styles.actions}>
-            <Button
-              content="Xem chi tiết khóa học"
-              onClick={() => navigate(`/course/${course.id}`)} 
-              containerClassName={styles.actionItem}
-              className={styles.actionButton}
-            />
           <Button
-            content="Đăng ký"
-            onClick={() => {}}
+            content="Xem chi tiết khóa học"
+            onClick={() => navigate(`/course/${course.id}`)}
             containerClassName={styles.actionItem}
             className={styles.actionButton}
+          />
+          <Button
+            content={
+              <>
+                <i
+                  className="fa-solid fa-cart-shopping"
+                  style={{ marginRight: "6px" }}
+                ></i>{" "}
+                Thêm vào giỏ hàng
+              </>
+            }
+            onClick={() => {}}
+            containerClassName={styles.actionItem}
+            className={`${styles.actionButton} ${styles.cartButton}`}
           />
         </div>
       </div>
