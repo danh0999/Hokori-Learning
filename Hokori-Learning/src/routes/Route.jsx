@@ -10,7 +10,9 @@ import PaymentPage from "../pages/Payment/PaymentPage";
 import TeacherDashboardLayout from "../pages/Teacher/TeacherDashboardLayout";
 import Marketplace from "../pages/Marketplace/Marketplace";
 import AboutPage from "../pages/About/AboutPage";
+
 import LearnerDashboard from "../pages/LearnerDashboard/LearnerDashboard";
+
 
 const routes = [
   {
@@ -41,7 +43,6 @@ const routes = [
     path: "/teacher",
     element: <TeacherDashboardLayout />,
     errorElement: <ErrorPage />,
-
   },
 ];
 

@@ -14,6 +14,9 @@ import styles from "./styles.module.scss";
 import Title from "antd/es/typography/Title";
 import { useNavigate } from "react-router-dom";
 import AuthLogo from "../Auth-Logo/AuthLogo";
+import api from "../../../configs/axios";
+import { toast } from "react-toastify";
+import { useState } from "react";
 const { Option } = Select;
 const formItemLayout = {
   labelCol: {
@@ -40,8 +43,19 @@ const tailFormItemLayout = {
 
 const RegisterForm = () => {
   const [form] = Form.useForm();
-  const onFinish = (values) => {
-    console.log("Received values of form: ", values);
+  const [loading, setLoading] = useState(false);
+  const onFinish = async (values) => {
+    setLoading(true);
+    try {
+      await api.post("auth/register", values);
+      toast.success("Đăng kí thành công!");
+      navigate("/login");
+    } catch (e) {
+      console.log("Lỗi đăng ký:", e);
+      toast.error(e.response.data.error || "Đăng ký thất bại!");
+    } finally {
+      setLoading(false);
+    }
   };
   const { loginBtn } = styles;
   const navigate = useNavigate();
@@ -69,6 +83,20 @@ const RegisterForm = () => {
         scrollToFirstError
       >
         <Form.Item
+          name="username"
+          label="Username"
+          tooltip="What do you want others to call you?"
+          rules={[
+            {
+              required: true,
+              message: "Please input your username!",
+              whitespace: true,
+            },
+          ]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item
           name="email"
           label="E-mail"
           rules={[
@@ -86,7 +114,7 @@ const RegisterForm = () => {
         </Form.Item>
 
         <Form.Item
-          name="nickname"
+          name="displayName"
           label="Nickname"
           tooltip="What do you want others to call you?"
           rules={[
@@ -100,15 +128,15 @@ const RegisterForm = () => {
           <Input />
         </Form.Item>
 
-        <Form.Item
-          name="phone"
-          label="Phone Number"
-          rules={[
-            { required: true, message: "Please input your phone number!" },
-          ]}
-        >
-          <Input addonBefore={prefixSelector} style={{ width: "100%" }} />
-        </Form.Item>
+        {/* <Form.Item
+            name="phone"
+            label="Phone Number"
+            rules={[
+              { required: true, message: "Please input your phone number!" },
+            ]}
+          >
+            <Input addonBefore={prefixSelector} style={{ width: "100%" }} />
+          </Form.Item> */}
 
         <Form.Item
           name="password"
@@ -124,7 +152,7 @@ const RegisterForm = () => {
           <Input.Password />
         </Form.Item>
 
-        <Form.Item
+        {/* <Form.Item
           name="confirm"
           label="Confirm Password"
           dependencies={["password"]}
@@ -147,7 +175,7 @@ const RegisterForm = () => {
           ]}
         >
           <Input.Password />
-        </Form.Item>
+        </Form.Item> */}
 
         <Form.Item {...tailFormItemLayout}>
           <Button type="primary" htmlType="submit">
@@ -158,9 +186,9 @@ const RegisterForm = () => {
             <a
               href="/login"
               className={loginBtn}
-              onClick={() => navigate("/register")}
+              onClick={() => navigate("/login")}
             >
-              Đăng ký ngay!
+              Đăng nhập ngay!
             </a>
           </div>
         </Form.Item>
