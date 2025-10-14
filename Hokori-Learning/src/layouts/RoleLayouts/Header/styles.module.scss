@@ -1,0 +1,117 @@
+/* Header tổng */
+.headerBar {
+  width: 100%;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 64px;
+}
+
+/* Logo */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.logoBox {
+  width: 36px;
+  height: 36px;
+  background: #111827;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logoText {
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1; /* giữ chữ H canh giữa */
+}
+
+.brand {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111;
+}
+
+/* Menu ngang */
+.headerMenu {
+  flex: 1;
+  margin-left: 24px;
+  border-bottom: none !important;
+  background: transparent !important;
+
+  :global(.ant-menu-item) {
+    font-size: 15px;
+    color: #333;
+    font-weight: 500;
+    padding: 0 14px !important;
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+
+  :global(.ant-menu-item:hover) {
+    color: #e60012 !important;
+  }
+
+  :global(.ant-menu-item-selected) {
+    color: #e60012 !important;
+    border-bottom: 2px solid #e60012 !important;
+    background: transparent !important;
+  }
+}
+
+/* Actions bên phải */
+.rightZone {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.bellIcon {
+  font-size: 18px;
+  color: #333;
+  cursor: pointer;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #e60012;
+  }
+}
+
+.avatarWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: #333;
+  font-size: 15px;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #e60012;
+  }
+}
+
+.displayName {
+  font-weight: 500;
+}
+
+/* Dropdown chỉnh thêm nếu cần */
+:global(.ant-dropdown-menu) {
+  border-radius: 8px;
+  padding: 6px 0;
+}
+:global(.ant-dropdown-menu-item:hover) {
+  color: #e60012 !important;
+  background: #f9fafb !important;
+}

@@ -59,14 +59,14 @@ const RegisterForm = () => {
   };
   const { loginBtn } = styles;
   const navigate = useNavigate();
-  const prefixSelector = (
-    <Form.Item name="prefix" noStyle>
-      <Select style={{ width: 70 }}>
-        <Option value="84">+84</Option>
-        <Option value="81">+81</Option>
-      </Select>
-    </Form.Item>
-  );
+  // const prefixSelector = (
+  //   <Form.Item name="prefix" noStyle>
+  //     <Select style={{ width: 70 }}>
+  //       <Option value="84">+84</Option>
+  //       <Option value="81">+81</Option>
+  //     </Select>
+  //   </Form.Item>
+  // );
   return (
     <div className={styles.registerFormContainer}>
       <AuthLogo />

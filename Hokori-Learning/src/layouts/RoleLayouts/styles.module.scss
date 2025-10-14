@@ -1,0 +1,21 @@
+/* Nền tổng thể */
+.shell {
+  min-height: 100vh;
+  background: #f6f7f9; /* xám nhạt */
+}
+
+/* Khu content bên phải sider */
+.contentWrap {
+  padding: 20px;
+}
+
+/* Thẻ content trắng, bo tròn */
+.contentCard {
+  min-height: calc(
+    100vh - 64px - 40px
+  ); /* full-height trừ header & padding ngoài */
+  background: #ffffff;
+  border: 1px solid #e9ebef;
+  border-radius: 12px;
+  padding: 16px;
+}
