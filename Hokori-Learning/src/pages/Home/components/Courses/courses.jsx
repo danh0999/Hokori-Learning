@@ -24,7 +24,7 @@
     {
       level: "N2",
       title: "Khóa học tiếng Nhật N2",
-      desc: "Đọc hiểu báo chí, chủ đề chuyên ngành và giao tiếp thành thạo.",
+      desc: "Đọc hiểu chủ đề chuyên ngành và giao tiếp thành thạo.",
       tag: "Trung cao",
     },
     {

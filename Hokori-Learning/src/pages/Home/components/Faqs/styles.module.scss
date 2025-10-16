@@ -1,167 +1,164 @@
-/* Responsive */
+/* =============== CONTAINER CHÍNH =============== */
 .faqsContainer {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0px 20px;
+  background-color: #f9fafb;
+  padding: 60px 20px;
+  gap: 24px;
 }
 
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.05);
-    opacity: 0.85;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.title {
-  font-size: 14px;
-  font-weight: bold;
+/* =============== PHẦN TIÊU ĐỀ =============== */
+.div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-}
-.faqItem {
-  margin-bottom: 20px;
+  gap: 12px;
+
+  .faqsTitle {
+    color: #1f2937;
+    font-family: "Inter", sans-serif;
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 40px;
+  }
+
+  .p {
+    color: #6b7280;
+    font-family: "Inter", sans-serif;
+    font-size: 16px;
+    line-height: 26px;
+    margin: 0;
+  }
 }
 
-.title {
-  font-size: 18px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: color 0.3s ease;
-}
-.title:hover {
-  color: #ff5555;
-}
-
-.content {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.4s ease, opacity 0.3s ease;
-  opacity: 0;
-}
-
-.open {
-  max-height: 500px;
-  opacity: 1;
-}
-
+/* =============== VÙNG ITEM CHÍNH =============== */
 .faqItemContainer {
   max-width: 800px;
   width: 100%;
-  margin: 5px auto; // căn giữa theo chiều ngang
-  padding: 20px;
-  border: 1px solid #ddd;
-  border-radius: 10px;
+  margin: 0 auto;
   background-color: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-.faqItem {
-  margin-bottom: 20px;
-  border: 1px solid #eee;
-  border-radius: 10px;
-  padding: 15px 20px;
-  background-color: #fefefe;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
   transition: all 0.3s ease;
+  overflow: hidden;
+
+  &:hover {
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.12);
+    transform: translateY(-3px);
+  }
 }
 
+/* =============== ITEM FAQ =============== */
+.faqItem {
+  border-bottom: 1px solid #f3f4f6;
+  padding: 18px 22px;
+  background-color: #ffffff;
+  transition: background-color 0.3s ease;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+/* =============== CÂU HỎI =============== */
 .title {
   font-size: 18px;
-  font-weight: bold;
-  cursor: pointer;
+  font-weight: 600;
+  color: #4d4f52;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  transition: color 0.3s ease;
+  cursor: pointer;
   user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
+  transition: color 0.3s ease;
 
-  /* 👇 Ngăn hiện dấu nháy khi double click */
-  outline: none;
+  &:hover {
+    color: #2563eb; /* xanh dương học tập */
+  }
 }
 
-.title:hover {
-  color: #eb2f77;
-}
-
+/* =============== ICON MŨI TÊN =============== */
 .arrowIcon {
-  transition: transform 0.3s ease;
+  stroke: #2563eb;
+  transition: transform 0.3s ease, stroke 0.3s ease;
 }
 
 .rotate {
   transform: rotate(180deg);
 }
 
+/* =============== NỘI DUNG MỞ RA =============== */
 .content {
   max-height: 0;
   overflow: hidden;
-  transition: max-height 0.5s ease, opacity 0.3s ease;
   opacity: 0;
   padding-left: 5px;
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-
-  /* 👇 Ngăn hiện dấu nháy khi double click */
-  outline: none;
+  transition: max-height 0.5s ease, opacity 0.4s ease;
 }
 
 .open {
-  max-height: 800px;
+  max-height: 600px;
   opacity: 1;
-  margin-top: 12px;
+  margin-top: 10px;
+  animation: fadeIn 0.4s ease;
 }
 
-/* Làm đẹp danh sách ul li */
+/* =============== DANH SÁCH TRONG NỘI DUNG =============== */
 .content ul {
   list-style-type: disc;
-  padding-left: 20px;
+  padding-left: 24px;
   margin: 10px 0;
 }
 
 .content li {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   line-height: 1.6;
-  font-size: 16px;
-  color: #222;
-  position: relative;
+  font-size: 15px;
+  color: #80a8e9;
 }
 
 .content li::marker {
-  color: #eb2f77; // #e60000;
+  color: #2563eb;
 }
 
-.div {
-  display: flex;
-  flex-direction: column;
-  align-items: center; // 👈 căn giữa thay vì flex-end
-  gap: 12px;
-  padding: 0 20px;
-  text-align: center;
+/* =============== HIỆU ỨNG MỞ MƯỢT =============== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
-  .faqsTitle {
-    color: #111827;
-    font-family: "Inter", sans-serif;
-    font-size: 32px;
-    font-weight: 600;
-    line-height: 40px;
+/* =============== RESPONSIVE =============== */
+@media (max-width: 768px) {
+  .faqItemContainer {
+    padding: 12px;
   }
 
-  .p {
-    color: #4b5563;
-    font-family: "Inter", sans-serif;
-    font-size: 18px;
-    line-height: 28px;
-    margin: 0;
+  .title {
+    font-size: 16px;
   }
+
+  .content li {
+    font-size: 14px;
+  }
+}
+.btn{
+  background-color: #417dff !important;
+  color: #fff;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%
 }

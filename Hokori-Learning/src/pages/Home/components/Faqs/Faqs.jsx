@@ -4,7 +4,7 @@ import FaqItem from "./FaqsItem.jsx";
 import { Button } from "../../../../components/Button/Button.jsx";
 
 export const Faqs = () => {
-  const { faqsContainer, faqsTitle, faqItemContainer, div, p } = styles;
+  const { faqsContainer, faqsTitle, faqItemContainer, div, p,btn } = styles;
 
   return (
     <div className={faqsContainer}>
@@ -52,7 +52,7 @@ export const Faqs = () => {
         </FaqItem>
       </div>
 
-      <Button content="Tìm hiểu thêm" to="/information" />
+      <Button className={btn} content="Tìm hiểu thêm" to="/information" />
     </div>
   );
 };
