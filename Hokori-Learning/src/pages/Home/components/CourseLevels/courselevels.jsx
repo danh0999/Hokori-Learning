@@ -48,7 +48,6 @@ export default function CourseLevel() {
             key={level.id}
             className={styles.card}
             style={{ backgroundColor: level.color }}
-            onClick={() => alert(`Chuyển đến khóa ${level.id}`)} // sau này thay bằng router link
           >
             <h3 className={styles.level}>{level.id}</h3>
             <h4 className={styles.title}>{level.title}</h4>
