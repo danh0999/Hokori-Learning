@@ -1,5 +1,6 @@
 .bannerContainer {
   width: 100%;
+  position: relative; // rất quan trọng để overlay và content định vị chính xác
 
   img {
     width: 100%;
@@ -10,26 +11,30 @@
   }
 
   .overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
-    height: 615px;
-    background: rgba(0, 0, 0, 0.4); // lớp mờ (opacity)
+    height: 600px;
+    background: rgba(0, 0, 0, 0.4);
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    padding-left: 80px; // chữ lệch trái một chút
-    z-index: 10;
-    top: 55px;
-    position: absolute;
+    padding-left: 80px;
+    z-index: 2; // overlay nằm trên ảnh
   }
 
   .content {
     max-width: 600px;
     color: #fff;
+    z-index: 3; // nội dung nằm trên lớp overlay
+    position: relative;
 
     h1 {
       font-size: 48px;
       font-weight: bold;
       margin-bottom: 20px;
+      color: #fff; // ép lại cho chắc chắn
     }
 
     p {
@@ -37,13 +42,11 @@
       font-size: 18px;
       margin-bottom: 30px;
       line-height: 1.6;
+      color: #fff; // ép lại để không bị AntD ghi đè
     }
   }
 
-  .buttons {
-    display: flex;
-    gap: 15px;
-
+  .buttonContainer {
     button {
       padding: 12px 24px;
       border-radius: 6px;
@@ -51,16 +54,8 @@
       font-weight: 500;
       cursor: pointer;
       border: none;
-    }
-
-    .startBtn {
       background-color: #ff4d4f;
       color: #fff;
-    }
-
-    .signUpBtn {
-      background-color: #fff;
-      color: #000;
     }
   }
 }

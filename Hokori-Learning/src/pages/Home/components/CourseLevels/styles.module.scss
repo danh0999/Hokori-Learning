@@ -1,6 +1,7 @@
 .container {
   text-align: center;
-  padding: 40px 20px;
+  padding: 60px 20px;
+  background: #fff;
 }
 
 .heading {
@@ -12,49 +13,127 @@
 .subHeading {
   font-size: 16px;
   color: #666;
-  margin-bottom: 32px;
+  margin-bottom: 50px;
 }
 
-.cardWrapper {
+.timeline {
   display: flex;
   justify-content: center;
+  align-items: flex-start;
   flex-wrap: wrap;
-  gap: 20px;
+  gap: 30px;
+  position: relative;
+  max-width: 1100px;
+  margin: 0 auto;
 }
 
-.card {
-  flex: 1 1 180px;
-  max-width: 200px;
-  color: white;
-  border-radius: 16px;
-  padding: 20px;
-  text-align: center;
-  cursor: pointer;
-  border: none;
-  transition: transform 0.3s ease, background-color 0.3s ease,
-    box-shadow 0.3s ease;
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1 1 150px;
+  min-width: 120px;
+}
 
-  &:hover {
-    transform: scale(1.1);
-    filter: brightness(1.15);
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+.circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 700;
+  font-size: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  animation: bounceIn 0.6s ease both;
+}
+
+.line {
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  width: 200px;
+  height: 4px;
+  background: #ddd;
+  z-index: 1;
+  overflow: hidden;
+
+  .progress {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(to right, #4ade80, #60a5fa, #a855f7);
+    animation: flow 2s ease-in-out forwards;
+    animation-delay: 0.4s;
   }
 }
 
-.level {
-  font-size: 32px;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-
 .title {
-  font-size: 18px;
+  margin-top: 20px;
+  font-size: 16px;
   font-weight: 600;
-  margin-bottom: 8px;
+  color: #333;
 }
 
-.desc {
-  color: #fff;
-  font-size: 14px;
-  line-height: 1.4;
+/* 🔥 Animation */
+@keyframes flow {
+  0% {
+    width: 0%;
+    opacity: 0;
+  }
+  100% {
+    width: 100%;
+    opacity: 1;
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Responsive (mobile chuyển dọc) */
+@media (max-width: 900px) {
+  .timeline {
+    flex-direction: column;
+    gap: 40px;
+  }
+
+  .line {
+    position: static;
+    width: 4px;
+    height: 60px;
+    background: #ddd;
+
+    .progress {
+      animation: flowVertical 2s ease-in-out forwards;
+      background: linear-gradient(to bottom, #4ade80, #60a5fa, #a855f7);
+    }
+  }
+
+  @keyframes flowVertical {
+    0% {
+      height: 0%;
+      opacity: 0;
+    }
+    100% {
+      height: 100%;
+      opacity: 1;
+    }
+  }
 }
