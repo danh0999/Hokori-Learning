@@ -61,7 +61,7 @@ export const Header = () => {
     {
       key: "profile",
       label: "Hồ sơ cá nhân",
-      onClick: () => navigate("/profile"),
+      onClick: () => navigate("/learner-dashboard"),
     },
     {
       type: "divider",
@@ -109,7 +109,7 @@ export const Header = () => {
                 <NavLink to="/marketplace" className={dropdownItem}>
                   Tất cả khóa học
                 </NavLink>
-                <NavLink to="/course-vip" className={dropdownItem}>
+                <NavLink to="/my-courses" className={dropdownItem}>
                   Khóa học của bạn
                 </NavLink>
               </div>
