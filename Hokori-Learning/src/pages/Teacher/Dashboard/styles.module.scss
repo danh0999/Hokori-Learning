@@ -1,0 +1,65 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.title {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+}
+.subtitle {
+  color: #6b7280;
+  margin-top: 4px;
+}
+.headerActions {
+  display: flex;
+  gap: 8px;
+}
+.kpiRow {
+  margin-top: 4px;
+}
+.kpiCard {
+  position: relative;
+  .ant-statistic-title {
+    color: #6b7280;
+  }
+}
+.kpiIcon {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #f3f4f6;
+  display: grid;
+  place-items: center;
+  color: #374151;
+}
+.kpiHint {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 6px;
+}
+.tableCard {
+  :global(.ant-card-head-title) {
+    font-weight: 600;
+  }
+}
+.courseCol {
+  display: flex;
+  flex-direction: column;
+}
+.courseTitle {
+  font-weight: 600;
+}
+.courseCode {
+  font-size: 12px;
+  color: #6b7280;
+}

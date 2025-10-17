@@ -13,6 +13,7 @@ import RoleLayout from "../layouts/RoleLayouts/RoleLayout";
 import LearnerDashboard from "../pages/LearnerDashboard/LearnerDashboard";
 import { Navigate } from "react-router-dom";
 import { Contact } from "../pages/Contact/Contact";
+import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
 const Stub = ({ title }) => <div style={{ padding: 12 }}>{title}</div>;
 const routes = [
   {
@@ -43,7 +44,7 @@ const routes = [
     element: <RoleLayout role="teacher" />,
     errorElement: <ErrorPage />,
     children: [
-      { index: true, element: <Stub title="Teacher Dashboard" /> },
+      { index: true, element: <TeacherDashboard /> },
       { path: "my-courses", element: <Stub title="My Courses" /> },
       { path: "create-course", element: <Stub title="Create Course" /> },
       { path: "students", element: <Stub title="Students" /> },
