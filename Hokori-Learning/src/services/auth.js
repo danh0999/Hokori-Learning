@@ -21,7 +21,7 @@ export async function loginWithGoogle() {
   };
 }
 
-export async function logout() {
+export async function logoutFirebase() {
   await signOut(auth);
 }
 /**
