@@ -1,0 +1,107 @@
+.card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: all 0.25s ease;
+  cursor: pointer;
+
+  &:hover {
+    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.08);
+    transform: translateY(-3px);
+  }
+
+  .cover {
+    height: 10rem;
+    background: #f1f5ff;
+    color: #2563eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 500;
+  }
+
+  .body {
+    padding: 1rem 1.25rem;
+
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .level {
+      background: #eff6ff;
+      color: #2563eb;
+      font-size: 0.75rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+    }
+
+    h3 {
+      color: #111827;
+      font-size: 1rem;
+      margin-bottom: 0.25rem;
+      font-weight: 600;
+    }
+
+    p {
+      color: #6b7280;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .progress {
+      margin-bottom: 0.75rem;
+
+      .info {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        color: #6b7280;
+        margin-bottom: 0.25rem;
+      }
+
+      .bar {
+        background: #e5e7eb;
+        height: 0.45rem;
+        border-radius: 0.25rem;
+        overflow: hidden;
+
+        .fill {
+          background: linear-gradient(90deg, #2563eb, #60a5fa);
+          height: 100%;
+          border-radius: 0.25rem;
+          transition: width 0.3s;
+        }
+      }
+    }
+
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-bottom: 1rem;
+    }
+
+    button {
+      width: 100%;
+      background: #2563eb;
+      color: white;
+      padding: 0.6rem 0;
+      border-radius: 0.5rem;
+      border: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+
+      &:hover {
+        background: #1d4ed8;
+      }
+    }
+  }
+}
