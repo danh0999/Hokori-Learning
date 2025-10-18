@@ -91,7 +91,7 @@ const statusTag = (s) => {
   return <Tag color={map[s] || "default"}>{s}</Tag>;
 };
 
-export default function Courses() {
+export default function ManageCourses() {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("All");
   const [openCreate, setOpenCreate] = useState(false);
@@ -169,7 +169,7 @@ export default function Courses() {
           {
             key: "manage",
             label: "Manage",
-            onClick: () => navigate(`/teacher/courses/${row.id}`),
+            onClick: () => navigate(`/teacher/Managecourses/${row.id}`),
           },
           ...(row.status === "Draft"
             ? [
@@ -209,7 +209,7 @@ export default function Courses() {
     <div className={styles.wrapper}>
       <div className={styles.header}>
         <div>
-          <h1 className={styles.title}>My Courses</h1>
+          <h1 className={styles.title}>Manage Courses</h1>
           <p className={styles.subtitle}>
             Create, update, and manage your courses
           </p>

@@ -60,10 +60,10 @@ export const sidebarMenusByRole = {
   teacher: [
     mk("dashboard", "Bảng điều khiển", <DashboardOutlined />, "/teacher"),
     mk(
-      "my-courses",
+      "manage-courses",
       "Quản lý khoá học",
       <BookOutlined />,
-      "/teacher/my-courses"
+      "/teacher/manage-courses"
     ),
     mk("lessons", "Bài học", <BookOutlined />, "/teacher/lessons"),
     mk("videos", "Video", <VideoCameraOutlined />, "/teacher/videos"),
