@@ -63,9 +63,6 @@ export default function RoleHeader({ role = "teacher", user }) {
         >
           <div className={styles.avatarWrap}>
             <Avatar shape="square" icon={<UserOutlined />} />
-            <span className={styles.displayName}>
-              {user?.username || "User"}
-            </span>
           </div>
         </Dropdown>
       </Space>
