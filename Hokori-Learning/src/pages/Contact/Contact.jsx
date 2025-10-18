@@ -19,8 +19,35 @@ export const Contact = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    setErrors({ ...errors, [name]: "" });
+    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    let msg = "";
+
+    // 🔹 Kiểm tra tên (chỉ chữ, có thể có dấu và khoảng trắng)
+    if (name === "name") {
+      const nameRegex = /^[\p{L}\s]+$/u; // hỗ trợ tiếng Việt
+      if (!value.trim()) msg = "Vui lòng nhập họ và tên";
+      else if (!nameRegex.test(value.trim()))
+        msg = "Họ và tên không hợp lệ (chỉ được chứa chữ cái)";
+      else if (value.trim().length < 2)
+        msg = "Họ và tên quá ngắn (tối thiểu 2 ký tự)";
+    }
+
+    // 🔹 Kiểm tra email
+    if (name === "email") {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!value.trim()) msg = "Vui lòng nhập email";
+      else if (!emailRegex.test(value)) msg = "Email không hợp lệ";
+    }
+
+    // 🔹 Kiểm tra message
+    if (name === "message") {
+      if (!value.trim()) msg = "Vui lòng nhập nội dung lời nhắn";
+      else if (value.trim().length < 10)
+        msg = "Nội dung lời nhắn quá ngắn (tối thiểu 10 ký tự)";
+    }
+
+    setErrors((prev) => ({ ...prev, [name]: msg }));
   };
 
   const validate = () => {
@@ -114,39 +141,53 @@ export const Contact = () => {
           </p>
 
           <form className={styles.form} onSubmit={handleSubmit}>
-            <input
-              type="text"
-              name="name"
-              placeholder="Họ và tên"
-              value={formData.name}
-              onChange={handleChange}
-              className={errors.name ? styles.inputError : ""}
-            />
-            {errors.name && <span className={styles.error}>{errors.name}</span>}
+            {/* NAME */}
+            <div className={styles.formGroup}>
+              <label>Họ và tên</label>
+              <input
+                type="text"
+                name="name"
+                placeholder="Nhập họ và tên của bạn"
+                value={formData.name}
+                onChange={handleChange}
+                className={`${errors.name ? styles.inputError : ""}`}
+              />
+              {errors.name && (
+                <span className={styles.errorMsg}>{errors.name}</span>
+              )}
+            </div>
 
-            <input
-              type="text"
-              name="email"
-              placeholder="Email của bạn"
-              value={formData.email}
-              onChange={handleChange}
-              className={errors.email ? styles.inputError : ""}
-            />
-            {errors.email && (
-              <span className={styles.error}>{errors.email}</span>
-            )}
+            {/* EMAIL */}
+            <div className={styles.formGroup}>
+              <label>Email</label>
+              <input
+                type="email"
+                name="email"
+                placeholder="Ví dụ: tenban@gmail.com"
+                value={formData.email}
+                onChange={handleChange}
+                className={`${errors.email ? styles.inputError : ""}`}
+              />
+              {errors.email && (
+                <span className={styles.errorMsg}>{errors.email}</span>
+              )}
+            </div>
 
-            <textarea
-              name="message"
-              placeholder="Nội dung lời nhắn (ví dụ: Vấn đề kỹ thuật, câu hỏi về khóa học, đề xuất tính năng...)"
-              rows="4"
-              value={formData.message}
-              onChange={handleChange}
-              className={errors.message ? styles.inputError : ""}
-            />
-            {errors.message && (
-              <span className={styles.error}>{errors.message}</span>
-            )}
+            {/* MESSAGE */}
+            <div className={styles.formGroup}>
+              <label>Lời nhắn</label>
+              <textarea
+                name="message"
+                placeholder="Nhập nội dung lời nhắn..."
+                rows="4"
+                value={formData.message}
+                onChange={handleChange}
+                className={`${errors.message ? styles.inputError : ""}`}
+              />
+              {errors.message && (
+                <span className={styles.errorMsg}>{errors.message}</span>
+              )}
+            </div>
 
             <Button
               content="Gửi lời nhắn"

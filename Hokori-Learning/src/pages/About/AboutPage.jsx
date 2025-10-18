@@ -9,7 +9,7 @@ import CTASection from "./components/CTASection";
 const AboutPage = () => {
   return (
     <>
-      <HeroBanner />
+      {/* <HeroBanner /> */}
       <Introduction />
       <CoreValues />
       <MissionVision />

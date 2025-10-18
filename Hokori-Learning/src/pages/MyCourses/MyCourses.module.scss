@@ -1,0 +1,51 @@
+.layout {
+  display: flex;
+  background: #f9fafb;
+  min-height: 100vh;
+}
+
+.main {
+  flex: 1;
+  padding: 2rem 3rem;
+}
+
+.header {
+  margin-bottom: 1.75rem;
+
+  h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #111827;
+  }
+
+  p {
+    color: #6b7280;
+    font-size: 0.95rem;
+  }
+}
+
+.grid,
+.skeletonGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.75rem;
+}
+
+.skeletonCard {
+  height: 280px;
+  border-radius: 1rem;
+  background: #e5e7eb;
+  animation: pulse 1.2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.emptyState {
+  text-align: center;
+  color: #6b7280;
+  padding: 4rem 0;
+  font-size: 0.95rem;
+}

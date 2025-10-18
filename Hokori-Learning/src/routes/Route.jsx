@@ -17,6 +17,7 @@ import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
 import Courses from "../pages/Teacher/Courses/Courses";
 import CourseInformation from "../pages/Teacher/Courses/CourseInformation/CourseInformation";
 const Stub = ({ title }) => <div style={{ padding: 12 }}>{title}</div>;
+
 const routes = [
   {
     path: "/login",
@@ -37,8 +38,9 @@ const routes = [
       { path: "/course/:courseId", element: <CourseDetail /> },
       { path: "/about", element: <AboutPage /> },
       { path: "/payment", element: <PaymentPage /> },
-      { path: "/learner", element: <LearnerDashboard /> },
+      { path: "/learner-dashboard", element: <LearnerDashboard /> },
       { path: "/contact", element: <Contact /> },
+      { path: "/my-courses", element:<MyCourses /> },
     ],
   },
   {
