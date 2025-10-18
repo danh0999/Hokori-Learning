@@ -119,3 +119,74 @@ button:active {
   from { transform: translateY(20px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+/* ===== 1) Title của Dashboard: cô lập khỏi About ===== */
+.dashboard h1,
+.dashboard .title,
+.dashboard .pageTitle {
+  font-size: 1.75rem;      /* vừa mắt, không to quá */
+  line-height: 1.2;
+  font-weight: 700;
+  color: #0f172a;          /* đậm vừa đủ, không xám quá */
+  margin: 0 0 16px 0;      /* tránh About override margin */
+  letter-spacing: -0.2px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Nếu các section dùng h2/h3 thì cũng chốt lại cho chắc */
+.dashboard h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 12px 0;
+}
+.dashboard h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 10px 0;
+}
+
+/* ===== 2) Button trong phạm vi Dashboard: tươi sáng, không ảnh hưởng trang khác ===== */
+/* XÓA (hoặc comment) các rule kiểu :global(button), :global(.btn) trước đó */
+.dashboard button {
+  background-color: #2563eb;;            /* xanh sáng, học tập */
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: 0.6rem 1.1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(59,130,246,.18);
+  transition: transform .2s ease, box-shadow .2s ease, background-color .2s ease;
+  cursor: pointer;
+}
+.dashboard button:hover {
+  background-color: #60a5fa;            /* sáng hơn khi hover */
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(59,130,246,.28);
+}
+.dashboard button:active {
+  transform: scale(.98);
+  box-shadow: none;
+}
+
+/* ===== 3) BỎ selector global gây rối layout (thay bằng local trong dashboard) ===== */
+/* Thay vì :global(section.card) -> chỉ áp trong Dashboard để không ảnh hưởng About */
+.dashboard section.card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 6px rgba(0,0,0,.04);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.dashboard section.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(0,0,0,.08);
+}
+
+/* Overlay & modal giữ nguyên cấu trúc – chỉ chắc ăn màu + spacing */
+.dashboard .overlay { backdrop-filter: blur(4px); }
+.dashboard .modal h3 { color: #0f172a; }
+.dashboard .modal p { color: #6b7280; }

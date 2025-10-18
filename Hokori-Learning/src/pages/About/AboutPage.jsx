@@ -13,7 +13,6 @@ const AboutPage = () => {
       <Introduction />
       <CoreValues />
       <MissionVision />
-    
       <CTASection />
     </>
   );

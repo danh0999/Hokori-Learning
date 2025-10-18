@@ -4,7 +4,7 @@ import styles from "../about.module.scss";
 const Introduction = () => (
   <section className={styles.introduction}>
     <div className={styles.container}>
-      <h2>Giới thiệu về Hokori</h2>
+      <h2>GIỚI THIỆU VỀ HOKORI</h2>
       <p>
         Hokori ra đời từ niềm đam mê sâu sắc với tiếng Nhật và mong muốn tạo ra
         một nền tảng học tập dễ dàng, hiệu quả cho người Việt Nam. Chúng tôi hiểu
