@@ -14,6 +14,8 @@ import LearnerDashboard from "../pages/LearnerDashboard/LearnerDashboard";
 import { Navigate } from "react-router-dom";
 import { Contact } from "../pages/Contact/Contact";
 import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
+import Courses from "../pages/Teacher/Courses/Courses";
+import CourseInformation from "../pages/Teacher/Courses/CourseInformation/CourseInformation";
 const Stub = ({ title }) => <div style={{ padding: 12 }}>{title}</div>;
 const routes = [
   {
@@ -45,7 +47,8 @@ const routes = [
     errorElement: <ErrorPage />,
     children: [
       { index: true, element: <TeacherDashboard /> },
-      { path: "my-courses", element: <Stub title="My Courses" /> },
+      { path: "my-courses", element: <Courses /> },
+      { path: "courses/:id", element: <CourseInformation /> },
       { path: "create-course", element: <Stub title="Create Course" /> },
       { path: "students", element: <Stub title="Students" /> },
       { path: "revenue", element: <Stub title="Revenue" /> },

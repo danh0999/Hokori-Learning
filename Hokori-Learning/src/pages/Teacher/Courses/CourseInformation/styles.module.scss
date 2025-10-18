@@ -1,0 +1,19 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.title {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+}
+.subtitle {
+  color: #6b7280;
+  margin-top: 4px;
+}

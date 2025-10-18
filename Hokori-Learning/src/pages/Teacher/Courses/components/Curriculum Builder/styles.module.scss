@@ -1,0 +1,30 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.header {
+  display: flex;
+  gap: 8px;
+}
+.input {
+  max-width: 420px;
+}
+.item {
+  padding: 8px 0;
+}
+.card {
+  border-radius: 12px;
+}
+.lessonTitle {
+  font-weight: 600;
+}
+.itemBar {
+  margin-bottom: 8px;
+}
+.empty {
+  color: #6b7280;
+}
+.subItem {
+  padding: 6px 0;
+}
