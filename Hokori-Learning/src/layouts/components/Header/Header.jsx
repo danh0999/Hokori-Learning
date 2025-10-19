@@ -3,8 +3,9 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { logout as logoutAction } from "../../../redux/features/userSlice";
 import { logoutFirebase } from "../../../services/auth";
-import { BellOutlined, UserOutlined } from "@ant-design/icons";
-import { Badge, Avatar, Dropdown, Space } from "antd";
+import { Avatar, Dropdown, Space } from "antd";
+import { UserOutlined } from "@ant-design/icons";
+import { FiShoppingCart, FiBell } from "react-icons/fi"; // ✅ React Icons
 import styles from "./styles.module.scss";
 
 const {
@@ -31,12 +32,15 @@ export const Header = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const user = useSelector((state) => state.user); // ✅ lấy user từ Redux
+  const user = useSelector((state) => state.user);
+  // Sau này có thể thêm cart Redux:
+  // const cart = useSelector((state) => state.cart);
+  const cartCount = 3; // ✅ tạm thời hardcode, sau gắn Redux
 
   const [openDropdown, setOpenDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Đóng dropdown khóa học khi click ra ngoài
+  // Đóng dropdown khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -76,7 +80,7 @@ export const Header = () => {
   return (
     <header className={header}>
       <div className={container}>
-        {/* logo */}
+        {/* Logo */}
         <div className={logo} onClick={() => navigate("/")}>
           <div className={logoBox}>
             <span className={logoText}>H</span>
@@ -84,25 +88,20 @@ export const Header = () => {
           <span className={brand}>Hokori</span>
         </div>
 
-        {/* nav */}
+        {/* Navigation */}
         <nav className={nav}>
-          <NavLink
-            to="/"
-            className={({ isActive }) => (isActive ? active : "")}
-          >
+          <NavLink to="/" className={({ isActive }) => (isActive ? active : "")}>
             Trang chủ
           </NavLink>
 
-          {/* dropdown */}
+          {/* Dropdown khóa học */}
           <div className={dropdown} ref={dropdownRef}>
             <button
               className={dropdownToggle}
               onClick={() => setOpenDropdown(!openDropdown)}
             >
               Khóa học{" "}
-              <span className={`${arrow} ${openDropdown ? rotate : ""}`}>
-                ▾
-              </span>
+              <span className={`${arrow} ${openDropdown ? rotate : ""}`}>▾</span>
             </button>
             {openDropdown && (
               <div className={dropdownMenu}>
@@ -130,7 +129,7 @@ export const Header = () => {
           </NavLink>
         </nav>
 
-        {/* actions */}
+        {/* Actions */}
         <div className={actions}>
           {!user ? (
             <>
@@ -146,16 +145,64 @@ export const Header = () => {
             </>
           ) : (
             <Space size={24} align="center">
-              {/* 🔔 Notification Bell */}
-              <Badge dot>
-                <BellOutlined
+              {/*  Giỏ hàng */}
+              <div
+                onClick={() => navigate("/cart")}
+                style={{
+                  position: "relative",
+                  cursor: "pointer",
+                  transition: "transform 0.2s ease",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1.0)")}
+              >
+                <FiShoppingCart size={21} color="#444" />
+                {cartCount > 0 && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: -4,
+                      right: -6,
+                      backgroundColor: "#1a2940",
+                      color: "#fff",
+                      borderRadius: "50%",
+                      fontSize: "10px",
+                      width: "16px",
+                      height: "16px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {cartCount}
+                  </span>
+                )}
+              </div>
+
+              {/* 🔔 Notification */}
+              <div
+                style={{
+                  position: "relative",
+                  cursor: "pointer",
+                  transition: "color 0.2s ease, transform 0.2s ease",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1.0)")}
+              >
+                <FiBell size={21} color="#444" />
+                <span
                   style={{
-                    fontSize: 20,
-                    cursor: "pointer",
-                    color: "#444",
+                    position: "absolute",
+                    top: -2,
+                    right: -2,
+                    width: "8px",
+                    height: "8px",
+                    backgroundColor: "#ef4444",
+                    borderRadius: "50%",
                   }}
                 />
-              </Badge>
+              </div>
 
               {/* 👤 User Avatar */}
               <Dropdown
@@ -165,11 +212,7 @@ export const Header = () => {
                 trigger={["click"]}
               >
                 <Space style={{ cursor: "pointer" }}>
-                  <Avatar
-                    size={36}
-                    src={user.photoURL}
-                    icon={<UserOutlined />}
-                  />
+                  <Avatar size={36} src={user.photoURL} icon={<UserOutlined />} />
                 </Space>
               </Dropdown>
             </Space>
