@@ -45,57 +45,58 @@ const routes = [
       { path: "/learner-dashboard", element: <LearnerDashboard /> },
       { path: "/contact", element: <Contact /> },
 
-      { path: "/my-courses", element:<MyCourses /> },
+      { path: "/my-courses", element: <MyCourses /> },
       { path: "/cart", element: <Cart /> },
-  {
-    path: "/teacher",
-    element: <RoleLayout role="teacher" />,
-    errorElement: <ErrorPage />,
-    children: [
-      { index: true, element: <TeacherDashboard /> },
-      { path: "manage-courses", element: <ManageCourses /> },
-      { path: "courses/:id", element: <CourseInformation /> },
-      { path: "create-course", element: <Stub title="Create Course" /> },
-      { path: "students", element: <Stub title="Students" /> },
-      { path: "revenue", element: <Stub title="Revenue" /> },
-      { path: "messages", element: <Stub title="Messages" /> },
-      { path: "profile", element: <Stub title="Profile" /> },
-      // { path: "*", element: <Navigate to="/teacher" replace /> }, // optional
+      {
+        path: "/teacher",
+        element: <RoleLayout role="teacher" />,
+        errorElement: <ErrorPage />,
+        children: [
+          { index: true, element: <TeacherDashboard /> },
+          { path: "manage-courses", element: <ManageCourses /> },
+          { path: "courses/:id", element: <CourseInformation /> },
+          { path: "create-course", element: <Stub title="Create Course" /> },
+          { path: "students", element: <Stub title="Students" /> },
+          { path: "revenue", element: <Stub title="Revenue" /> },
+          { path: "messages", element: <Stub title="Messages" /> },
+          { path: "profile", element: <Stub title="Profile" /> },
+          // { path: "*", element: <Navigate to="/teacher" replace /> }, // optional
+        ],
+      },
+
+      // Admin shell
+      {
+        path: "/admin",
+        element: <RoleLayout role="admin" />,
+        errorElement: <ErrorPage />,
+        children: [
+          { index: true, element: <Stub title="Admin Dashboard" /> },
+          { path: "users", element: <Stub title="Users" /> },
+          { path: "catalog", element: <Stub title="Catalog" /> },
+          { path: "moderation", element: <Stub title="Moderation" /> },
+          { path: "reports", element: <Stub title="Reports" /> },
+          { path: "settings", element: <Stub title="Settings" /> },
+        ],
+      },
+
+      // Moderator shell
+      {
+        path: "/moderator",
+        element: <RoleLayout role="moderator" />,
+        errorElement: <ErrorPage />,
+        children: [
+          { index: true, element: <Stub title="Moderator Dashboard" /> },
+          { path: "reviews", element: <Stub title="Reviews" /> },
+          { path: "queues", element: <Stub title="Queues" /> },
+          { path: "ai-check", element: <Stub title="AI Check" /> },
+          { path: "messages", element: <Stub title="Messages" /> },
+          { path: "settings", element: <Stub title="Settings" /> },
+        ],
+      },
+
+      // Fallback
+      { path: "*", element: <Navigate to="/" replace /> },
     ],
   },
-
-  // Admin shell
-  {
-    path: "/admin",
-    element: <RoleLayout role="admin" />,
-    errorElement: <ErrorPage />,
-    children: [
-      { index: true, element: <Stub title="Admin Dashboard" /> },
-      { path: "users", element: <Stub title="Users" /> },
-      { path: "catalog", element: <Stub title="Catalog" /> },
-      { path: "moderation", element: <Stub title="Moderation" /> },
-      { path: "reports", element: <Stub title="Reports" /> },
-      { path: "settings", element: <Stub title="Settings" /> },
-    ],
-  },
-
-  // Moderator shell
-  {
-    path: "/moderator",
-    element: <RoleLayout role="moderator" />,
-    errorElement: <ErrorPage />,
-    children: [
-      { index: true, element: <Stub title="Moderator Dashboard" /> },
-      { path: "reviews", element: <Stub title="Reviews" /> },
-      { path: "queues", element: <Stub title="Queues" /> },
-      { path: "ai-check", element: <Stub title="AI Check" /> },
-      { path: "messages", element: <Stub title="Messages" /> },
-      { path: "settings", element: <Stub title="Settings" /> },
-    ],
-  },
-
-  // Fallback
-  { path: "*", element: <Navigate to="/" replace /> },
 ];
-
 export default routes;
