@@ -17,6 +17,8 @@ import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
 import CourseInformation from "../pages/Teacher/Courses/CourseInformation/CourseInformation";
 import MyCourses from "../pages/MyCourses/MyCourses";
 import ManageCourses from "../pages/Teacher/Courses/ManageCourses";
+import Cart from "../pages/Cart/Cart";
+
 const Stub = ({ title }) => <div style={{ padding: 12 }}>{title}</div>;
 
 const routes = [
@@ -41,7 +43,9 @@ const routes = [
       { path: "/payment", element: <PaymentPage /> },
       { path: "/learner-dashboard", element: <LearnerDashboard /> },
       { path: "/contact", element: <Contact /> },
+
       { path: "/my-courses", element: <MyCourses /> },
+      { path: "/cart", element: <Cart /> },
     ],
   },
   {
