@@ -1,0 +1,26 @@
+.card {
+  border-radius: 12px;
+}
+.tabPane {
+  padding: 8px 0;
+}
+.manualForm {
+  width: 420px;
+  max-width: 100%;
+}
+.fcItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+}
+.term {
+  font-weight: 600;
+}
+.meaning {
+  color: #111827;
+}
+.example {
+  color: #6b7280;
+  font-style: italic;
+}
