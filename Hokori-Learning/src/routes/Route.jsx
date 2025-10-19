@@ -15,6 +15,7 @@ import { Navigate } from "react-router-dom";
 import { Contact } from "../pages/Contact/Contact";
 import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
 import MyCourses from "../pages/MyCourses/MyCourses";
+import Cart from "../pages/Cart/Cart";
 const Stub = ({ title }) => <div style={{ padding: 12 }}>{title}</div>;
 const routes = [
   {
@@ -39,6 +40,7 @@ const routes = [
       { path: "/learner-dashboard", element: <LearnerDashboard /> },
       { path: "/contact", element: <Contact /> },
       { path: "/my-courses", element:<MyCourses /> },
+      { path: "/cart", element:<Cart/>}
     ],
   },
   {
