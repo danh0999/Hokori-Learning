@@ -7,21 +7,43 @@ import { useNavigate } from "react-router-dom";
 import AuthLogo from "../Auth-Logo/AuthLogo";
 
 // 🔑 Service đăng nhập Google (xem phần ghi chú bên dưới)
-import { loginWithGoogle, mapFirebaseAuthError } from "../../../services/auth";
+import {
+  loginWithGoogle,
+  mapFirebaseAuthError,
+} from "../../../redux/features/auth";
 import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
 import { login } from "../../../redux/features/userSlice";
+import api from "../../../configs/axios";
 
 const LoginForm = () => {
   const [loadingGoogle, setLoadingGoogle] = useState(false);
-
-  const onFinish = (values) => {
-    // TODO: xử lý login tài khoản/mật khẩu nếu bạn có backend riêng
-    console.log("Received values of form: ", values);
-  };
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { registerBtn } = styles;
+
+  const onFinish = async (values) => {
+    try {
+      const res = await api.post("/auth/login", values);
+      const { user, roles, accessToken, refreshToken } = res.data.data;
+
+      const payload = {
+        ...user,
+        roles,
+        role: roles?.[0] || null,
+        accessToken,
+        refreshToken,
+      };
+
+      dispatch(login(payload));
+      localStorage.setItem("token", accessToken);
+      navigate("/");
+    } catch (err) {
+      console.error("Login error:", err);
+      console.error("Response data:", err?.response?.data);
+      toast.error(err.normalizedMessage || "Đăng nhập thất bại");
+    }
+  };
 
   const handleGoogleLogin = async () => {
     try {

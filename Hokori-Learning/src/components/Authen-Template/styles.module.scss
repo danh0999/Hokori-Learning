@@ -1,24 +1,42 @@
+/* src/pages/Authen-Template/styles.module.scss */
 .authenTemplate {
-  width: 100%;
-  height: 100vh; // luôn full màn hình
-  background-image: url("../../assets/authen-img.jpg");
-  background-size: cover; // scale đủ che hết
-  background-position: center; // canh giữa
-  background-repeat: no-repeat;
   position: relative;
+  min-height: 100dvh; /* dùng dynamic viewport => tránh bug 100vh trên trình duyệt mobile */
+  overflow-y: auto; /* >>> cho phép SCROLL khi form dài */
+  isolation: isolate; /* để lớp overlay không tràn ra ngoài */
+}
 
-  &__overlay {
-    position: absolute;
-    inset: 0; // thay cho top:0; left:0; right:0; bottom:0;
-    background: rgba(0, 0, 0, 0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1;
-  }
+/* nền ảnh */
+.bg {
+  position: fixed; /* cố định để tạo hiệu ứng parallax nhẹ */
+  inset: 0;
+  background-image: url("../../assets/authen-img.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: -2;
+}
 
-  &__form {
-    z-index: 2;
-    width: 400px; // tuỳ chỉnh form
-  }
+/* overlay đen mờ */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: -1;
+}
+
+/* vùng content có khoảng đệm dọc -> luôn scroll được */
+.content {
+  min-height: 100%;
+  padding-block: clamp(32px, 6vh, 72px);
+  padding-inline: 16px;
+  display: grid;
+  place-items: center;
+}
+
+/* bọc form để giữ căn giữa + max width logic nằm trong component con */
+.formWrap {
+  width: 100%;
+  display: grid;
+  place-items: center;
 }

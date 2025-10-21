@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { logout as logoutAction } from "../../../redux/features/userSlice";
-import { logoutFirebase } from "../../../services/auth";
+import { logout } from "../../../redux/features/userSlice";
+import { logoutFirebase } from "../../../redux/features/auth";
 import { BellOutlined, UserOutlined } from "@ant-design/icons";
 import { Badge, Avatar, Dropdown, Space } from "antd";
 import styles from "./styles.module.scss";
@@ -30,7 +30,6 @@ const {
 export const Header = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-
   const user = useSelector((state) => state.user); // ✅ lấy user từ Redux
 
   const [openDropdown, setOpenDropdown] = useState(false);
@@ -50,7 +49,7 @@ export const Header = () => {
   const handleLogout = async () => {
     try {
       await logoutFirebase();
-      dispatch(logoutAction());
+      dispatch(logout());
       navigate("/");
     } catch (err) {
       console.error("Logout failed:", err);
