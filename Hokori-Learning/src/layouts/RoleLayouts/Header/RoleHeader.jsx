@@ -1,29 +1,37 @@
-// src/layouts/roleheader.jsx
 import React from "react";
-import { Layout, Menu, Space, Badge, Dropdown, Avatar } from "antd";
+import { Layout, Space, Badge, Dropdown, Avatar } from "antd";
 import { BellOutlined, UserOutlined } from "@ant-design/icons";
-import { useLocation, useNavigate } from "react-router-dom";
-import { headerMenusByRole, userDropdownMenu } from "../menu.jsx";
+import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { logout } from "../../../redux/features/userSlice.js";
+import { logoutFirebase } from "../../../redux/features/auth.js"; // ✅ import hàm logout Firebase
+import { userDropdownMenu } from "../menu.jsx";
 import styles from "./styles.module.scss";
 
 const { Header } = Layout;
 
 export default function RoleHeader({ role = "teacher", user }) {
   const navigate = useNavigate();
-  const { pathname } = useLocation();
-  const items = headerMenusByRole[role] || [];
-  const selectedKey =
-    items.find((i) => pathname.startsWith(i.path))?.key || items[0]?.key;
+  const dispatch = useDispatch();
 
-  const onTopMenuClick = ({ key }) => {
-    const hit = items.find((i) => i.key === key);
-    if (hit?.path) navigate(hit.path);
-  };
+  const onUserMenuClick = async ({ key }) => {
+    if (key === "profile") {
+      navigate(`/${role}/profile`);
+    }
 
-  const onUserMenuClick = ({ key }) => {
-    if (key === "profile") navigate(`/${role}/profile`);
     if (key === "logout") {
-      // TODO: dispatch logout
+      try {
+        // ✅ Logout Firebase (nếu user đăng nhập bằng Google/Firebase)
+        await logoutFirebase();
+
+        // ✅ Xoá Redux + token
+        dispatch(logout());
+
+        // ✅ Chuyển hướng
+        navigate("/login", { replace: true });
+      } catch (err) {
+        console.error("Logout failed:", err);
+      }
     }
   };
 
@@ -39,16 +47,6 @@ export default function RoleHeader({ role = "teacher", user }) {
         </span>
       </div>
 
-      {/* Top nav */}
-      {/* <Menu
-        theme="white"
-        mode="horizontal"
-        selectedKeys={selectedKey ? [selectedKey] : []}
-        items={items.map(({ key, label, icon }) => ({ key, label, icon }))}
-        onClick={onTopMenuClick}
-        className={styles.headerMenu}
-      /> */}
-
       {/* Right zone */}
       <Space size={16} className={styles.rightZone}>
         <Badge dot>
@@ -57,12 +55,17 @@ export default function RoleHeader({ role = "teacher", user }) {
             onClick={() => navigate(`/${role}/notifications`)}
           />
         </Badge>
+
         <Dropdown
           menu={{ items: userDropdownMenu, onClick: onUserMenuClick }}
           trigger={["click"]}
         >
           <div className={styles.avatarWrap}>
-            <Avatar shape="square" icon={<UserOutlined />} />
+            <Avatar
+              shape="square"
+              src={user?.photoURL}
+              icon={<UserOutlined />}
+            />
           </div>
         </Dropdown>
       </Space>

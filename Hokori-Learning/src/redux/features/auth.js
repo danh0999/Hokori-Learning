@@ -6,7 +6,7 @@ import {
   browserLocalPersistence,
   onAuthStateChanged,
 } from "firebase/auth";
-import { auth, googleProvider } from "../firebase";
+import { auth, googleProvider } from "../../firebase";
 
 export async function loginWithGoogle() {
   await setPersistence(auth, browserLocalPersistence);

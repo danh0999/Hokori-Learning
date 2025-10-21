@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { logout as logoutAction } from "../../../redux/features/userSlice";
-import { logoutFirebase } from "../../../services/auth";
-import { Avatar, Dropdown, Space } from "antd";
-import { UserOutlined } from "@ant-design/icons";
+
+import { logout } from "../../../redux/features/userSlice";
+import { logoutFirebase } from "../../../redux/features/auth";
+import { BellOutlined, UserOutlined } from "@ant-design/icons";
+import { Badge, Avatar, Dropdown, Space } from "antd";
 import { FiShoppingCart, FiBell } from "react-icons/fi"; // ✅ React Icons
+
 import styles from "./styles.module.scss";
 
 const {
@@ -32,10 +34,12 @@ export const Header = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const user = useSelector((state) => state.user);
+  const user = useSelector((state) => state.user); // ✅ lấy user từ Redux
+
   // Sau này có thể thêm cart Redux:
   // const cart = useSelector((state) => state.cart);
   const cartCount = 3; // ✅ tạm thời hardcode, sau gắn Redux
+
 
   const [openDropdown, setOpenDropdown] = useState(false);
   const dropdownRef = useRef(null);
@@ -54,7 +58,7 @@ export const Header = () => {
   const handleLogout = async () => {
     try {
       await logoutFirebase();
-      dispatch(logoutAction());
+      dispatch(logout());
       navigate("/");
     } catch (err) {
       console.error("Logout failed:", err);

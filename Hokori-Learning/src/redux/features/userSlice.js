@@ -6,25 +6,25 @@ export const userSlice = createSlice({
   name: "user",
   initialState,
   reducers: {
-    login: (state, action) => {
-      return action.payload;
-    },
+    login: (state, action) => action.payload,
+
     logout: () => {
       localStorage.removeItem("token");
-      return initialState;
+      sessionStorage.removeItem("token"); // thêm cho chắc
+      return null; // trả về null rõ ràng
     },
-    // ✅ Thêm reducer này
+
     updateUser: (state, action) => {
+      // Tránh spread null
+      const currentState = state || {};
       return {
-        ...state,
+        ...currentState,
         ...action.payload,
-        token: state.token,
+        token: currentState.token, // giữ token cũ nếu có
       };
     },
   },
 });
 
-// ✅ Thêm export action mới
 export const { login, logout, updateUser } = userSlice.actions;
-
 export default userSlice.reducer;

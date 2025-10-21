@@ -18,6 +18,7 @@ import CourseInformation from "../pages/Teacher/Courses/CourseInformation/Course
 import MyCourses from "../pages/MyCourses/MyCourses";
 
 import ManageCourses from "../pages/Teacher/Courses/ManageCourses";
+import ProtectedRoute from "./ProtectedRoute";
 import Cart from "../pages/Cart/Cart";
 
 const Stub = ({ title }) => <div style={{ padding: 12 }}>{title}</div>;
@@ -31,7 +32,7 @@ const routes = [
     path: "/register",
     element: <Register />,
   },
-  //Guest,Learner
+  // Guest + Learner (chỉ cần đăng nhập cho những trang nhạy cảm)
   {
     path: "/",
     element: <MainLayout />,
@@ -41,15 +42,32 @@ const routes = [
       { path: "/marketplace", element: <Marketplace /> },
       { path: "/course/:courseId", element: <CourseDetail /> },
       { path: "/about", element: <AboutPage /> },
-      { path: "/payment", element: <PaymentPage /> },
-      { path: "/learner-dashboard", element: <LearnerDashboard /> },
       { path: "/contact", element: <Contact /> },
+      // Các trang cần đăng nhập (Learner)
+      {
+        element: (
+          <ProtectedRoute
+            allow={["LEARNER", "TEACHER", "ADMIN", "MODERATOR"]}
+          />
+        ),
+        children: [
+          { path: "/payment", element: <PaymentPage /> },
+          { path: "/learner-dashboard", element: <LearnerDashboard /> },
+          { path: "/my-courses", element: <MyCourses /> },
+          { path: "/cart", element: <Cart /> },
+        ],
+      },
+    ],
+  },
 
-      { path: "/my-courses", element: <MyCourses /> },
-      { path: "/cart", element: <Cart /> },
+  // TEACHER area
+  {
+    path: "/teacher",
+    element: <ProtectedRoute allow={["TEACHER"]} />, // guard trước
+    children: [
       {
         path: "/teacher",
-        element: <RoleLayout role="teacher" />,
+        element: <RoleLayout role="teacher" />, // layout hiện tại
         errorElement: <ErrorPage />,
         children: [
           { index: true, element: <TeacherDashboard /> },
@@ -60,11 +78,18 @@ const routes = [
           { path: "revenue", element: <Stub title="Revenue" /> },
           { path: "messages", element: <Stub title="Messages" /> },
           { path: "profile", element: <Stub title="Profile" /> },
-          // { path: "*", element: <Navigate to="/teacher" replace /> }, // optional
+
         ],
       },
+    ],
+  },
 
-      // Admin shell
+  // ADMIN area
+  {
+    path: "/admin",
+    element: <ProtectedRoute allow={["ADMIN"]} />,
+    children: [
+
       {
         path: "/admin",
         element: <RoleLayout role="admin" />,
@@ -79,7 +104,15 @@ const routes = [
         ],
       },
 
-      // Moderator shell
+    ],
+  },
+
+  // MODERATOR area
+  {
+    path: "/moderator",
+    element: <ProtectedRoute allow={["MODERATOR"]} />,
+    children: [
+
       {
         path: "/moderator",
         element: <RoleLayout role="moderator" />,
