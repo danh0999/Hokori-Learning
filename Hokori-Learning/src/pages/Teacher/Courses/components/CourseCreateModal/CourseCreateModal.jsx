@@ -90,7 +90,7 @@ export default function CourseCreateModal({ open, onClose, onCreated }) {
           )}
         </div>
       }
-      destroyOnClose
+      destroyOnHidden
       className={styles.modalRoot}
     >
       <Steps

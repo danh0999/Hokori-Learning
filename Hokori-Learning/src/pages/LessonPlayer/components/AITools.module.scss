@@ -1,0 +1,72 @@
+.ai {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: 0.25s ease;
+  backdrop-filter: blur(2px);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  h3 {
+    font-size: 17px;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 12px;
+  }
+
+  p {
+    font-size: 15px;
+    color: #475569;
+  }
+}
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+
+  .bot {
+    align-self: flex-start;
+    background: #f1f5f9;
+    border-radius: 12px;
+    padding: 10px 14px;
+    color: #111827;
+    max-width: 85%;
+  }
+
+  .user {
+    align-self: flex-end;
+    background: #2563eb;
+    color: #fff;
+    border-radius: 12px;
+    padding: 10px 14px;
+    max-width: 85%;
+  }
+}
+
+.secondary {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: 0.25s ease;
+
+  &:hover {
+    background: #1e40af;
+  }
+}

@@ -1,4 +1,5 @@
-import React from "react";  
+import React from "react";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "../MyCourses/components/Sidebar";
 import AISidebar from "../MyCourses/components/AISidebar";
 import Filters from "../MyCourses/components/Filters";
@@ -14,8 +15,6 @@ const courses = [
     progress: 65,
     lessons: "13/20",
     lastStudy: "2 ngày trước",
-    favorite: false,
-    completed: false,
   },
   {
     id: 2,
@@ -25,71 +24,46 @@ const courses = [
     progress: 100,
     lessons: "25/25",
     lastStudy: "1 tuần trước",
-    favorite: true,
-    completed: true,
-  },
-  {
-    id: 3,
-    level: "N5",
-    title: "Hiragana & Katakana Mastery",
-    teacher: "Sensei Sato",
-    progress: 30,
-    lessons: "6/20",
-    lastStudy: "5 ngày trước",
-    favorite: false,
-    completed: false,
-  },
-  {
-    id: 4,
-    level: "N2",
-    title: "Ngữ Pháp Nâng Cao N2",
-    teacher: "Sensei Watanabe",
-    progress: 85,
-    lessons: "17/20",
-    lastStudy: "1 ngày trước",
-    favorite: false,
-    completed: false,
-  },
-  {
-    id: 5,
-    level: "N4",
-    title: "Giao Tiếp Hàng Ngày",
-    teacher: "Sensei Nakamura",
-    progress: 45,
-    lessons: "9/20",
-    lastStudy: "3 ngày trước",
-    favorite: true,
-    completed: false,
-  },
-  {
-    id: 6,
-    level: "N1",
-    title: "Tiếng Nhật Thương Mại",
-    teacher: "Sensei Kimura",
-    progress: 15,
-    lessons: "3/20",
-    lastStudy: "1 tuần trước",
-    favorite: false,
-    completed: false,
   },
 ];
 
 const MyCourses = () => {
+  const navigate = useNavigate();
+
+  const handleContinue = (course) => {
+    navigate(`/lesson/${course.id}`);
+  };
+
   return (
     <div className={styles.layout}>
       <Sidebar />
 
       <main className={styles.main}>
-        <header className={styles.header}>
-          <h1>Khóa học của tôi</h1>
-          <p>Quản lý và theo dõi tiến độ học tập của bạn</p>
-        </header>
+        {/* Phần đầu trang (breadcrumb + heading + subheading) */}
+        <div className={styles.pageHeader}>
+          <nav className={styles.breadcrumb}>
+            <span className={styles.link} onClick={() => navigate("/")}>
+              Trang chủ
+            </span>
+            {" / "}
+            <span>Khóa học của tôi</span>
+          </nav>
 
+          <h1 className={styles.heading}>Khóa học của tôi</h1>
+          <p className={styles.subheading}>
+            Quản lý và theo dõi tiến độ học tập của bạn
+          </p>
+        </div>
+
+        {/* Bộ lọc + Grid */}
         <Filters />
-
         <div className={styles.grid}>
           {courses.map((c) => (
-            <CourseCard key={c.id} course={c} />
+            <CourseCard
+              key={c.id}
+              course={c}
+              onContinue={() => handleContinue(c)}
+            />
           ))}
         </div>
       </main>

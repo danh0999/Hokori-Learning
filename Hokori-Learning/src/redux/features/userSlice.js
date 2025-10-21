@@ -26,5 +26,8 @@ export const userSlice = createSlice({
   },
 });
 
+//  Export các action
 export const { login, logout, updateUser } = userSlice.actions;
+
+//  Export reducer mặc định
 export default userSlice.reducer;

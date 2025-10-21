@@ -2,7 +2,7 @@ import React from "react";
 import styles from "./CourseCard.module.scss";
 import { FaHeart, FaRegHeart } from "react-icons/fa6";
 
-const CourseCard = ({ course }) => {
+const CourseCard = ({ course, onContinue }) => {   // ✅ thêm onContinue
   return (
     <div className={styles.card}>
       <div className={styles.cover}>Course Cover Image</div>
@@ -35,10 +35,14 @@ const CourseCard = ({ course }) => {
 
         <div className={styles.meta}>
           <span>{course.lessons} bài học</span>
-          <span>{course.completed ? `Hoàn thành: ${course.lastStudy}` : `Học gần nhất: ${course.lastStudy}`}</span>
+          <span>
+            {course.completed
+              ? `Hoàn thành: ${course.lastStudy}`
+              : `Học gần nhất: ${course.lastStudy}`}
+          </span>
         </div>
 
-        <button>
+        <button onClick={() => onContinue(course)}>   {/* ✅ gọi hàm callback */}
           {course.completed ? "Xem chứng chỉ" : "Tiếp tục học"}
         </button>
       </div>

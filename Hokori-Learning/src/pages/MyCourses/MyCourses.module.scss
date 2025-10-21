@@ -1,36 +1,93 @@
+/* =============================
+   ⚙️ LAYOUT & SIDEBAR
+============================= */
 .layout {
   display: flex;
-  background: #f9fafb;
+  background-color: #f9fafb;
   min-height: 100vh;
+  align-items: flex-start;
 }
 
+/* Sidebar dịch xuống ngang header */
+.layout > :first-child {
+  margin-top: 180px !important;
+  position: sticky;
+  top: 260px;
+  align-self: flex-start;
+  border-right: 1px solid #e5e7eb;
+}
+
+/* Khu vực chính */
 .main {
   flex: 1;
-  padding: 2rem 3rem;
+  padding: 32px 64px 48px 64px;
 }
 
-.header {
-  margin-bottom: 1.75rem;
+/* =============================
+    PAGE HEADER (giống Marketplace)
+============================= */
+.pageHeader {
+  margin-bottom: 24px;
+  padding-left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: "Inter", sans-serif;
+  margin-left: -25%;
+}
 
-  h1 {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: #111827;
-  }
+/* Breadcrumb */
+.breadcrumb {
+  color: #6b7280;
+  font-size: 14px;
+  margin-bottom: 8px;
 
-  p {
+  /* “Trang chủ” – xám mặc định, xanh khi hover */
+  .link {
+    cursor: pointer;
     color: #6b7280;
-    font-size: 0.95rem;
+    text-decoration: none;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: #2563eb; /* xanh thương hiệu */
+      text-decoration: underline;
+    }
+  }
+
+  /* Phần hiện tại – đậm hơn */
+  span {
+    color: #111827;
+    font-weight: 500;
   }
 }
 
-.grid,
-.skeletonGrid {
+/* Heading */
+.heading {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+/* Subheading */
+.subheading {
+  font-size: 15px;
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+/* =============================
+   🎨 GRID & COURSE CARD
+============================= */
+.grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 1.75rem;
 }
 
+/* Skeleton */
+.skeletonGrid,
 .skeletonCard {
   height: 280px;
   border-radius: 1rem;
@@ -39,13 +96,138 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
+/* Empty state */
 .emptyState {
   text-align: center;
   color: #6b7280;
   padding: 4rem 0;
   font-size: 0.95rem;
+}
+
+/* =============================
+   🌈 TONE MÀU HỌC TẬP & AI
+============================= */
+:root {
+  --primary: #3b82f6;
+  --primary-gradient: linear-gradient(135deg, #60a5fa, #a78bfa);
+  --accent-ai: #8b5cf6;
+  --accent-learning: #22d3ee;
+  --bg-light: #f9fafb;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+}
+
+/* Course Card */
+.courseCard {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 3px 10px rgba(99, 102, 241, 0.06);
+  transition: all 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.12);
+  }
+
+  .header {
+    background: linear-gradient(135deg, #eef2ff, #f0f9ff);
+    color: var(--primary);
+    padding: 1rem;
+    text-align: center;
+    font-weight: 600;
+  }
+
+  .body {
+    flex: 1;
+    padding: 1rem;
+    color: var(--text-main);
+
+    p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+  }
+
+  .footer {
+    padding: 1rem;
+    text-align: center;
+
+    button {
+      background: var(--primary-gradient);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      font-weight: 600;
+      transition: all 0.25s ease;
+
+      &:hover {
+        background: linear-gradient(135deg, #7dd3fc, #818cf8);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(59, 130, 246, 0.25);
+      }
+
+      &:active {
+        transform: translateY(0);
+        box-shadow: 0 3px 8px rgba(59, 130, 246, 0.15);
+      }
+    }
+  }
+}
+
+/* Thanh tiến độ (progress bar) */
+.progressBar {
+  height: 6px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+  position: relative;
+
+  &::after {
+    content: "";
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, #60a5fa, #22d3ee);
+    transition: width 0.4s ease;
+    width: var(--progress, 0%);
+  }
+}
+
+/* Nút AI (AI tools button) */
+.aiButton {
+  width: 100%;
+  background: linear-gradient(135deg, #60a5fa, #a78bfa);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 10px rgba(99, 102, 241, 0.25);
+
+  &:hover {
+    background: linear-gradient(135deg, #7dd3fc, #a78bfa);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(99, 102, 241, 0.35);
+  }
+
+  &:active {
+    transform: scale(0.98);
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.25);
+  }
 }
