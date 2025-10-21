@@ -16,8 +16,11 @@ import { Contact } from "../pages/Contact/Contact";
 import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
 import CourseInformation from "../pages/Teacher/Courses/CourseInformation/CourseInformation";
 import MyCourses from "../pages/MyCourses/MyCourses";
+
 import ManageCourses from "../pages/Teacher/Courses/ManageCourses";
 import ProtectedRoute from "./ProtectedRoute";
+import Cart from "../pages/Cart/Cart";
+
 const Stub = ({ title }) => <div style={{ padding: 12 }}>{title}</div>;
 
 const routes = [
@@ -40,7 +43,6 @@ const routes = [
       { path: "/course/:courseId", element: <CourseDetail /> },
       { path: "/about", element: <AboutPage /> },
       { path: "/contact", element: <Contact /> },
-
       // Các trang cần đăng nhập (Learner)
       {
         element: (
@@ -52,6 +54,7 @@ const routes = [
           { path: "/payment", element: <PaymentPage /> },
           { path: "/learner-dashboard", element: <LearnerDashboard /> },
           { path: "/my-courses", element: <MyCourses /> },
+          { path: "/cart", element: <Cart /> },
         ],
       },
     ],
@@ -75,6 +78,7 @@ const routes = [
           { path: "revenue", element: <Stub title="Revenue" /> },
           { path: "messages", element: <Stub title="Messages" /> },
           { path: "profile", element: <Stub title="Profile" /> },
+
         ],
       },
     ],
@@ -85,6 +89,7 @@ const routes = [
     path: "/admin",
     element: <ProtectedRoute allow={["ADMIN"]} />,
     children: [
+
       {
         path: "/admin",
         element: <RoleLayout role="admin" />,
@@ -98,6 +103,7 @@ const routes = [
           { path: "settings", element: <Stub title="Settings" /> },
         ],
       },
+
     ],
   },
 
@@ -106,6 +112,7 @@ const routes = [
     path: "/moderator",
     element: <ProtectedRoute allow={["MODERATOR"]} />,
     children: [
+
       {
         path: "/moderator",
         element: <RoleLayout role="moderator" />,
@@ -119,11 +126,10 @@ const routes = [
           { path: "settings", element: <Stub title="Settings" /> },
         ],
       },
+
+      // Fallback
+      { path: "*", element: <Navigate to="/" replace /> },
     ],
   },
-
-  // Fallback
-  { path: "*", element: <Navigate to="/" replace /> },
 ];
-
 export default routes;

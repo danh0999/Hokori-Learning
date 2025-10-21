@@ -1,8 +1,10 @@
 import axios from "axios";
 
 const api = axios.create({
+
   baseURL: "https://celsa-plumbaginaceous-unabjectly.ngrok-free.dev/api/",
   // timeout: 15000, // (tuỳ) tránh treo request quá lâu
+
 });
 
 // === Request interceptor: gắn Bearer token (trừ login/register) ===
