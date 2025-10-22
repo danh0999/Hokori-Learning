@@ -1,0 +1,43 @@
+.sidebar {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px 18px;
+  font-family: inherit;
+}
+
+h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 12px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.navBtn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #f9fafb;
+  cursor: pointer;
+  color: #111827;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.navBtn:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.current {
+  background: #1f4ed8;
+  color: #ffffff;
+  border-color: #1f4ed8;
+}

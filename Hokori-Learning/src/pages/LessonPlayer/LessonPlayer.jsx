@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
-import AITools from "./components/AITools";
+
 import VideoPanel from "./components/VideoPanel";
 import LessonContent from "./components/LessonContent";
 import QuickActions from "./components/QuickActions";
@@ -14,37 +14,24 @@ const LessonPlayer = () => {
 
   useEffect(() => {
     // ⚙️ MOCK LESSON DATA – demo theo courseId
-    const mockLessons = {
-      1: {
-        title: "Ngữ pháp cơ bản – Thể ます",
-        description: "Bài học cơ bản về chia động từ sang thể ます trong tiếng Nhật.",
-        sections: [
-          {
-            title: "Cách chia thể ます",
-            examples: [
-              { jp: "食べます", vi: "Ăn" },
-              { jp: "飲みます", vi: "Uống" },
-            ],
-          },
-        ],
-      },
-      2: {
-        title: "Kanji Thực Hành N3 – Bài 5",
-        description: "Luyện đọc và viết các chữ Hán thường gặp trong JLPT N3.",
-        sections: [
-          {
-            title: "Kanji thường gặp",
-            examples: [
-              { jp: "勉強（べんきょう）", vi: "Học tập" },
-              { jp: "試験（しけん）", vi: "Kỳ thi" },
-            ],
-          },
-        ],
-      },
+    const mockData = {
+      title: "Ngữ pháp cơ bản – Thể ます",
+      description:
+        "Giới thiệu tổng quan về thể ます, cách chia động từ và ứng dụng trong giao tiếp tiếng Nhật.",
+      sections: [
+        {
+          title: "Tổng quan bài học",
+          content:
+            "Trong video, giảng viên hướng dẫn cách chia động từ sang thể ます và cách sử dụng trong các câu ví dụ thực tế.",
+        },
+        {
+          title: "Các điểm chính",
+          content:
+            "・Phân biệt nhóm động từ (I, II, III)\n・Mẫu khẳng định / phủ định / quá khứ\n・Lưu ý khi giao tiếp bằng thể ます",
+        },
+      ],
     };
-
-    // 📌 Khi có API: thay bằng fetch(`api/lessons/${id}`)
-    setLessonData(mockLessons[id]);
+    setLessonData(mockData);
   }, [id]);
 
   return (
@@ -60,16 +47,14 @@ const LessonPlayer = () => {
             <h1>{lessonData?.title || "Tiêu đề bài học"}</h1>
             <p className={styles.desc}>{lessonData?.description}</p>
           </div>
-
-          <ActionBar />
-          <LessonContent data={lessonData?.sections} />
           <QuickActions />
+
+          <LessonContent data={lessonData?.sections} />
+          <ActionBar />
         </div>
       </section>
 
-      <aside className={styles.ai}>
-        <AITools />
-      </aside>
+      <aside className={styles.ai}></aside>
     </main>
   );
 };

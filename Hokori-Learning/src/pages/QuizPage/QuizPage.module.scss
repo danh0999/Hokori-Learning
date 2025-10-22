@@ -1,0 +1,24 @@
+.page {
+  background: #f9fafb;
+  min-height: 100vh;
+}
+
+.main {
+  padding-top: 80px; /* để chừa chỗ header fixed */
+}
+
+.layout {
+  display: flex;
+  gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.quizArea {
+  flex: 1;
+}
+
+.sidebarArea {
+  width: 280px;
+}

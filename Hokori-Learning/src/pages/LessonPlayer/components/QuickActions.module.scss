@@ -1,26 +1,36 @@
 .quickGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-  margin-top: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+
 }
-
 .card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 14px 0;
-  text-align: center;
-  font-weight: 600;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 14px;
   color: #111827;
+  font-weight: 600;
+  text-align: center;
   cursor: pointer;
-  transition: 0.25s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-
-  &:hover {
-    background: #2563eb;
-    color: #ffffff;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.25);
+  transition: 0.15s;
+}
+.card:hover {
+  background: #f5f8ff;
+  border-color: #1f4ed8;
+  color: #1f4ed8;
+}
+.card:active {
+  transform: translateY(1px);
+}
+@media (max-width: 1024px) {
+  .quickGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .quickGrid {
+    grid-template-columns: 1fr;
   }
 }

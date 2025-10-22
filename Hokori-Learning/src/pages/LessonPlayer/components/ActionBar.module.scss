@@ -1,30 +1,43 @@
 .actions {
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 24px;
-}
+  justify-content: center;
+  gap: 12px;
+  margin: 28px 0 12px;
+  flex-wrap: wrap;
 
-.primary {
-  background: #2563eb;
-  color: #ffffff;
-  padding: 10px 18px;
-  border-radius: 8px;
-  font-weight: 600;
-  border: none;
-  transition: 0.2s ease;
-  &:hover {
-    background: #1e3a8a;
-  }
-}
+  /* === Button nội bộ ActionBar === */
+  button {
+    appearance: none;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    color: #111827;
+    background: #fff;
+    transition: 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 
-.secondary {
-  background: #f3f4f6;
-  color: #111827;
-  padding: 10px 16px;
-  border: none;
-  border-radius: 8px;
-  transition: 0.2s ease;
-  &:hover {
-    background: #e5e7eb;
+    &:active {
+      transform: translateY(1px);
+    }
+
+    &.primary {
+      background: #1f4ed8;
+      border-color: #1f4ed8;
+      color: #fff;
+
+      &:hover {
+        background: #163bb6;
+      }
+    }
+
+    &.secondary:hover {
+      border-color: #1f4ed8;
+      color: #1f4ed8;
+    }
   }
 }
