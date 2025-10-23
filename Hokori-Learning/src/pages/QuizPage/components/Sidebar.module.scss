@@ -36,8 +36,16 @@ h3 {
   color: #2563eb;
 }
 
+/* hiện đang chọn */
 .current {
   background: #1f4ed8;
   color: #ffffff;
   border-color: #1f4ed8;
+}
+
+/* câu đã trả lời */
+.answered {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
 }

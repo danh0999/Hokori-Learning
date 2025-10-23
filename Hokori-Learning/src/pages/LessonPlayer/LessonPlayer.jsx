@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Outlet } from "react-router-dom"; 
 import Sidebar from "./components/Sidebar";
-
 import VideoPanel from "./components/VideoPanel";
 import LessonContent from "./components/LessonContent";
 import QuickActions from "./components/QuickActions";
@@ -9,11 +8,12 @@ import ActionBar from "./components/ActionBar";
 import styles from "./LessonPlayer.module.scss";
 
 const LessonPlayer = () => {
-  const { id } = useParams();
+const { lessonId } = useParams();
+
   const [lessonData, setLessonData] = useState(null);
 
   useEffect(() => {
-    // ⚙️ MOCK LESSON DATA – demo theo courseId
+    // ⚙️ MOCK LESSON DATA – demo
     const mockData = {
       title: "Ngữ pháp cơ bản – Thể ます",
       description:
@@ -32,7 +32,7 @@ const LessonPlayer = () => {
       ],
     };
     setLessonData(mockData);
-  }, [id]);
+  }, [lessonId]);
 
   return (
     <main className={styles.main}>
@@ -42,15 +42,19 @@ const LessonPlayer = () => {
 
       <section className={styles.lesson}>
         <div className={styles.container}>
+          {/* === Nội dung bài học === */}
           <VideoPanel title={lessonData?.title} />
           <div className={styles.header}>
             <h1>{lessonData?.title || "Tiêu đề bài học"}</h1>
             <p className={styles.desc}>{lessonData?.description}</p>
           </div>
-          <QuickActions />
 
+          <QuickActions />
           <LessonContent data={lessonData?.sections} />
           <ActionBar />
+
+          {/* === Hiển thị Quiz khi URL là /lesson/:id/quiz/:quizId === */}
+          <Outlet />
         </div>
       </section>
 

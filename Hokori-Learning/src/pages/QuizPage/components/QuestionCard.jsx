@@ -1,9 +1,15 @@
-import React, { useState } from "react";
+import React from "react";
 import styles from "./QuestionCard.module.scss";
 
-const QuestionCard = ({ question, index, total, onNext, onPrev }) => {
-  const [selected, setSelected] = useState(null);
-
+const QuestionCard = ({
+  question,
+  index,
+  total,
+  onNext,
+  onPrev,
+  selectedAnswer,
+  onSelectAnswer,
+}) => {
   if (!question) return <p>Đang tải câu hỏi...</p>;
 
   return (
@@ -18,14 +24,15 @@ const QuestionCard = ({ question, index, total, onNext, onPrev }) => {
           <label
             key={i}
             className={`${styles.option} ${
-              selected === opt ? styles.selected : ""
+              selectedAnswer === opt ? styles.selected : ""
             }`}
           >
             <input
               type="radio"
               name={`q${question.id}`}
               value={opt}
-              onChange={() => setSelected(opt)}
+              checked={selectedAnswer === opt}
+              onChange={() => onSelectAnswer(question.id, opt)}
             />
             {opt}
           </label>

@@ -48,7 +48,7 @@ const routes = [
       { path: "course/:courseId", element: <CourseDetail /> },
       { path: "about", element: <AboutPage /> },
       { path: "contact", element: <Contact /> },
-      
+
       // ===== Learner Area (Yêu cầu đăng nhập) =====
       {
         // element: (
@@ -61,8 +61,14 @@ const routes = [
           { path: "learner-dashboard", element: <LearnerDashboard /> },
           { path: "my-courses", element: <MyCourses /> },
           { path: "cart", element: <Cart /> },
-          { path: "lesson/:id", element: <LessonPlayer /> },
-          { path: "quiz", element: <QuizPage /> },
+          {
+            path: "lesson/:lessonId",
+            element: <LessonPlayer />,
+          },
+          {
+            path: "lesson/:lessonId/quiz/:quizId", //  tách riêng ra ngoài
+            element: <QuizPage />,
+          },
         ],
       },
 
