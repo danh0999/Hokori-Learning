@@ -1,20 +1,16 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, } from "react";
+import { useNavigate } from "react-router-dom";
 import styles from "./LearnerDashboard.module.scss";
-import {Button} from "../../components/Button/Button";
 
+// === Components ===
 import UserProfile from "./components/UserProfile";
 import ProgressTracker from "./components/ProgressTracker";
 import CompletedLessons from "./components/CompletedLessons";
 import QuizResults from "./components/QuizResults";
-import SubscriptionPlan from "./components/SubscriptionPlan";
 import UpcomingLessons from "./components/UpcomingLessons";
-import Flashcards from "./components/Flashcards";
-import AIAssistant from "./components/AIAssistant";
 
 const LearnerDashboard = () => {
-  const [showRenew, setShowRenew] = useState(false);
-  const [showAIChat, setShowAIChat] = useState(false);
-
+  const navigate = useNavigate();
   const learner = useMemo(
     () => ({
       name: "Nguyễn Minh Anh",
@@ -39,15 +35,6 @@ const LearnerDashboard = () => {
     []
   );
 
-  const subscription = {
-    planName: "Premium",
-    features: ["Truy cập không giới hạn"],
-    renewAt: "20/04/2025",
-  };
-
-  const aiTip =
-    "Hôm nay bạn nên ôn tập từ vựng về gia đình và luyện tập Hiragana. Bạn đang tiến bộ rất tốt!";
-
   return (
     <main className={styles.dashboard}>
       <div className={styles.container}>
@@ -58,50 +45,23 @@ const LearnerDashboard = () => {
             <CompletedLessons onViewAll={() => alert("Xem tất cả bài học")} />
             <QuizResults />
           </div>
+
           <div className={styles.right}>
-            <SubscriptionPlan {...subscription} onRenew={() => setShowRenew(true)} />
             <UpcomingLessons />
-            <Flashcards onStartReview={() => alert("Ôn tập")} />
-            <AIAssistant message={aiTip} onChat={() => setShowAIChat(true)} />
+
+            {/*  Nút điều hướng tới trang Flashcard cá nhân */}
+            <div className={styles.flashcardBox}>
+              <h3>Flashcard của bạn</h3>
+              <p>Ôn lại từ vựng, kanji hoặc cụm từ đã lưu.</p>
+              <button
+                className={styles.flashcardBtn}
+                onClick={() => navigate("/my-flashcards")}
+              >
+                <i className="fa-solid fa-layer-group"></i> Bắt đầu ôn tập
+              </button>
+            </div>
           </div>
         </div>
-
-        {/* Modal Gia hạn */}
-        {showRenew && (
-          <div className={styles.overlay}>
-            <div className={styles.modal}>
-              <h3>Gia hạn gói Premium</h3>
-              <p>Tính năng demo — sau này gọi API thanh toán.</p>
-              <div className={styles.modalActions}>
-                <Button variant="primary" size="sm" onClick={() => setShowRenew(false)}>
-                  Đóng
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Modal Trợ lý AI */}
-        {showAIChat && (
-          <div className={styles.overlay}>
-            <div className={styles.modal}>
-              <h3>Trợ lý AI</h3>
-              <textarea
-                placeholder="Nhập câu hỏi của bạn..."
-                rows={3}
-                className={styles.chatBox}
-              />
-              <div className={styles.modalActions}>
-                <Button variant="secondary" size="sm" onClick={() => alert("Gửi demo")}>
-                  Gửi
-                </Button>
-                <Button variant="primary" size="sm" onClick={() => setShowAIChat(false)}>
-                  Đóng
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </main>
   );

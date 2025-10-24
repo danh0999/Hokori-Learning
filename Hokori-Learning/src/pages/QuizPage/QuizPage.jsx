@@ -9,79 +9,87 @@ const QuizPage = () => {
   const [quizData, setQuizData] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState({});
-  const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 phút (demo)
+  const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 phút demo
+  const [modalData, setModalData] = useState(null); // {type:'warn'|'result', score?}
 
-  // ⚙️ MOCK DATA — sẽ xoá khi call API thật
   useEffect(() => {
+    //  MOCK DATA — sẽ xoá khi call API thật
     const mockQuiz = {
       title: "JLPT N3 Mock Test – Grammar Section",
-      duration: 30 * 60, // giây
+      duration: 30 * 60,
       questions: [
-        {
-          id: 1,
-          question: "この文に合う助詞を選んでください：私は毎朝コーヒー___飲みます。",
-          options: ["が", "を", "に", "へ"],
-        },
-        {
-          id: 2,
-          question: "「行きます」の過去形はどれですか？",
-          options: ["行きました", "行った", "行って", "行かない"],
-        },
-        {
-          id: 3,
-          question: "この中で形容詞ではないのはどれですか？",
-          options: ["大きい", "静か", "高い", "明るい"],
-        },
-        {
-          id: 4,
-          question: "『勉強』の動詞形はどれですか？",
-          options: ["勉強します", "勉強が", "勉強を", "勉強に"],
-        },
-        {
-          id: 5,
-          question: "次の中で正しい助詞を選んでください：日本___住んでいます。",
-          options: ["に", "を", "で", "が"],
-        },
+        { id: 1, question: "私は毎朝コーヒー___飲みます。", options: ["が", "を", "に", "へ"], correct: "を" },
+        { id: 2, question: "「行きます」の過去形はどれですか？", options: ["行きました", "行った", "行って", "行かない"], correct: "行きました" },
+        { id: 3, question: "形容詞ではないのはどれ？", options: ["大きい", "静か", "高い", "明るい"], correct: "静か" },
+        { id: 4, question: "『勉強』の動詞形はどれ？", options: ["勉強します", "勉強が", "勉強を", "勉強に"], correct: "勉強します" },
+        { id: 5, question: "日本___住んでいます。", options: ["に", "を", "で", "が"], correct: "に" },
       ],
     };
     setQuizData(mockQuiz);
     setTimeLeft(mockQuiz.duration);
-    // ❌ END MOCK — sau này thay bằng API:
-    // fetch(`/api/quiz/${quizId}`).then(res => res.json()).then(data => {
-    //   setQuizData(data);
-    //   setTimeLeft(data.duration);
-    // });
+    //  END MOCK — khi có API:
+    // const res = await fetch(`/api/quiz/${quizId}`);
+    // const data = await res.json();
+    // setQuizData(data);
+    // setTimeLeft(data.duration);
   }, []);
 
-  // Bộ đếm thời gian
+  // ⏱ đếm ngược & auto nộp khi hết giờ
   useEffect(() => {
-    if (timeLeft <= 0) return;
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
+    if (timeLeft <= 0) { handleSubmit(true); return; }
+    const t = setInterval(() => setTimeLeft(v => (v > 0 ? v - 1 : 0)), 1000);
+    return () => clearInterval(t);
   }, [timeLeft]);
 
-  const formatTime = (seconds) => {
-    const m = Math.floor(seconds / 60).toString().padStart(2, "0");
-    const s = (seconds % 60).toString().padStart(2, "0");
-    return `${m}:${s}`;
-  };
+  const formatTime = (sec) =>
+    `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
 
-  const handleSelectAnswer = (questionId, answer) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: answer }));
-  };
+  const handleSelectAnswer = (id, ans) =>
+    setAnswers(prev => ({ ...prev, [id]: ans }));
 
-  const handleChangeQuestion = (index) => setCurrentIndex(index);
-  const handleNext = () =>
-    currentIndex < quizData.questions.length - 1 &&
-    setCurrentIndex((prev) => prev + 1);
-  const handlePrev = () => currentIndex > 0 && setCurrentIndex((prev) => prev - 1);
+  const handleChangeQuestion = (i) => setCurrentIndex(i);
+  const handleNext = () => quizData && currentIndex < quizData.questions.length - 1 && setCurrentIndex(i => i + 1);
+  const handlePrev = () => currentIndex > 0 && setCurrentIndex(i => i - 1);
+
+  //  xử lý nộp bài
+  const handleSubmit = (force = false) => {
+    if (!quizData) return;
+    const total = quizData.questions.length;
+    const done = Object.keys(answers).length;
+
+    // chưa làm hết & không phải auto (hết giờ) → cảnh báo
+    if (done < total && !force) {
+      setModalData({ type: "warn" });
+      return;
+    }
+
+    // tính điểm (mock)
+    let correct = 0;
+    quizData.questions.forEach(q => {
+      if (answers[q.id] === q.correct) correct++;
+    });
+
+    setModalData({
+      type: "result",
+      score: {
+        correct,
+        total,
+        percent: Math.round((correct / total) * 100),
+      },
+    });
+
+    //  Khi có API, thay bằng submit lên server:
+    // await fetch('/api/quiz/submit', {method:'POST', body: JSON.stringify({ answers })})
+    // → setModalData({ type:'result', score: serverScore })
+  };
 
   return (
     <div className={styles.page}>
-      {/* ✅ Header tách khỏi main, fixed theo viewport */}
-      <QuizHeader quiz={quizData} timeLeft={formatTime(timeLeft)} />
+      <QuizHeader
+        quiz={quizData}
+        timeLeft={formatTime(timeLeft)}
+        onSubmit={() => handleSubmit(false)}  // ⬅️ truyền hàm nộp xuống Header
+      />
 
       <main className={styles.main}>
         <div className={styles.layout}>
@@ -107,7 +115,12 @@ const QuizPage = () => {
         </div>
       </main>
 
-      <SubmitModal />
+      {/* modal có điều khiển từ QuizPage */}
+      <SubmitModal
+        data={modalData}
+        onClose={() => setModalData(null)}
+        onConfirm={() => { setModalData(null); handleSubmit(true); }}
+      />
     </div>
   );
 };

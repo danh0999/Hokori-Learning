@@ -1,0 +1,117 @@
+.card {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  border: 1px solid #e5e7eb;
+  transition: 0.3s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  h3 {
+    font-weight: 600;
+    color: #111827;
+  }
+
+  span {
+    font-size: 0.75rem;
+    background: #e0e7ff;
+    color: #3730a3;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-weight: 500;
+  }
+}
+
+.count {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.progress {
+  margin-top: 0.75rem;
+  .bar {
+    background: #e5e7eb;
+    height: 6px;
+    border-radius: 0.5rem;
+    margin-bottom: 0.25rem;
+
+    div {
+      background: #2563eb;
+      height: 6px;
+      border-radius: 0.5rem;
+      transition: width 0.3s ease;
+    }
+  }
+
+  small {
+    color: #6b7280;
+  }
+}
+
+.last {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  margin-top: 0.75rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+
+  button {
+    flex: 1;
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: 0.2s;
+    font-weight: 500;
+  }
+}
+
+.studyBtn {
+  background: #2563eb;
+  color: white;
+  &:hover {
+    background: #1e50c5;
+  }
+}
+
+.editBtn {
+  background: #f3f4f6;
+  color: #374151;
+  &:hover {
+    background: #e5e7eb;
+  }
+}
+
+.deleteBtn {
+  background: #fee2e2;
+  color: #dc2626;
+  &:hover {
+    background: #fecaca;
+  }
+}
+
+.xanh {
+  border-top: 4px solid #2563eb;
+}
+.xanhLa {
+  border-top: 4px solid #22c55e;
+}
+.tim {
+  border-top: 4px solid #9333ea;
+}

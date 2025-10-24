@@ -1,0 +1,131 @@
+/* src/pages/Flashcards/MyFlashcards.module.scss */
+
+.wrapper {
+  background: #f9fafb;
+  min-height: 100vh;
+  padding: 2rem 1.5rem;
+  font-family: "Inter", sans-serif;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+/* Header trên cùng */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+
+  h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #111827;
+  }
+
+  .sub {
+    color: #6b7280;
+    margin-top: 0.3rem;
+    font-size: 0.95rem;
+  }
+}
+
+/* Nút tạo bộ mới */
+.addBtn {
+  background-color: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: 0.2s;
+
+  &:hover {
+    background-color: #1e50c5;
+  }
+
+  i {
+    font-size: 0.9rem;
+  }
+}
+
+/* Thống kê trên cùng */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  text-align: center;
+  margin-bottom: 2rem;
+
+  div {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 1rem;
+
+    span {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    p {
+      color: #6b7280;
+      margin-top: 0.25rem;
+    }
+  }
+}
+
+/* Bộ lọc tìm kiếm */
+.filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+
+  input,
+  select {
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    flex: 1;
+    outline: none;
+    background: #fff;
+    transition: 0.2s;
+
+    &:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 2px #2563eb20;
+    }
+  }
+
+  select {
+    flex: 0.5;
+  }
+}
+
+/* Lưới các bộ thẻ */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .filters {
+    flex-direction: column;
+
+    input,
+    select {
+      width: 100%;
+    }
+  }
+}

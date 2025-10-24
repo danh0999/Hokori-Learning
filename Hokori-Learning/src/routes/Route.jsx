@@ -20,7 +20,7 @@ import Cart from "../pages/Cart/Cart";
 import LearnerDashboard from "../pages/LearnerDashboard/LearnerDashboard";
 import LessonPlayer from "../pages/LessonPlayer/LessonPlayer";
 import QuizPage from "../pages/QuizPage/QuizPage";
-
+import MyFlashcards from "../pages/Flashcards/MyFlashcards";
 // ===== Teacher/Admin/Moderator =====
 import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
 import ManageCourses from "../pages/Teacher/Courses/ManageCourses";
@@ -60,6 +60,7 @@ const routes = [
           { path: "payment", element: <PaymentPage /> },
           { path: "learner-dashboard", element: <LearnerDashboard /> },
           { path: "my-courses", element: <MyCourses /> },
+          { path: "my-flashcards", element: <MyFlashcards /> },
           { path: "cart", element: <Cart /> },
           {
             path: "lesson/:lessonId",

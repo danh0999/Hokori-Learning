@@ -1,40 +1,39 @@
-/* QuizHeader.module.scss */
 .header {
   margin-top: -59%;
   inset: 0 0 auto 0; /* top:0; left:0; right:0 */
   height: 64px;
-  width: 100%; /* ⬅️ KHÔNG dùng 100vw để khỏi tràn ngang */
-
+  width: 90%; /* ⬅️ KHÔNG dùng 100vw để khỏi tràn ngang */
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding: 0 28px;
   box-sizing: border-box;
-  border-radius: 10px;
-  /* ⬅ép đứng trên mọi layer/stacking context của app */
+  border-radius: 10px; /* ⬅ép đứng trên mọi layer/stacking context của app */
   z-index: 2147483647; /* max int */
   will-change: transform; /* giúp chrome tối ưu fixed */
   pointer-events: auto;
-
+  gap: 95px;
 }
 
 h1 {
-  margin: 0;
   font-size: 18px;
   font-weight: 700;
   color: #111827;
-  white-space: nowrap;
+  margin: 0;
 }
+
 .right {
   display: flex;
   align-items: center;
   gap: 10px;
 }
+
 .timer {
   color: #2563eb;
   font-weight: 600;
   font-size: 15px;
 }
+
 .submitBtn {
   border: 1px solid #e5e7eb;
   background: #fff;
@@ -42,7 +41,9 @@ h1 {
   padding: 6px 12px;
   font-weight: 600;
   cursor: pointer;
+  transition: background 0.2s ease;
 }
+
 .submitBtn:hover {
-  background: #f3f4f6;
+  background: #2563eb;
 }
