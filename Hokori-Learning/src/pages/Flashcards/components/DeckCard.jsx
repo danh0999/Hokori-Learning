@@ -1,7 +1,7 @@
 import React from "react";
 import styles from "./DeckCard.module.scss";
 
-const DeckCard = ({ deck, onStudy }) => {
+const DeckCard = ({ deck, onStudy, onEdit, onDelete }) => {
   return (
     <div className={`${styles.card} ${styles[deck.mau]}`}>
       <div className={styles.header}>
@@ -22,13 +22,18 @@ const DeckCard = ({ deck, onStudy }) => {
 
       <div className={styles.actions}>
         <button className={styles.studyBtn} onClick={onStudy}>
-          <i className="fa-solid fa-play"></i> Học ngay
+          <i className="fa-solid fa-play" />
+          <span>Học ngay</span>
         </button>
-        <button className={styles.editBtn}>
-          <i className="fa-solid fa-pen"></i>
+
+        <button className={styles.editBtn} onClick={() => onEdit(deck)}>
+          <i className="fa-solid fa-pen" />
+          <span>Chỉnh sửa</span>
         </button>
-        <button className={styles.deleteBtn}>
-          <i className="fa-solid fa-trash"></i>
+
+        <button className={styles.deleteBtn} onClick={() => onDelete(deck)}>
+          <i className="fa-solid fa-trash" />
+          <span>Xóa</span>
         </button>
       </div>
     </div>

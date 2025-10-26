@@ -19,7 +19,7 @@ const StudyModal = ({ deck, onClose }) => {
   const handleFlip = () => setIsFlipped((f) => !f);
 
   const handleResult = async (result) => {
-    // ✅ FE chỉ gửi event học — BE xử lý SRS & DB
+    //  FE chỉ gửi event học — BE xử lý SRS & DB
     try {
       await fetch(`/api/flashcards/${deck.id}/study`, {
         method: "POST",

@@ -67,18 +67,64 @@
 
 .actions {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
+  justify-content: space-between;
+  margin-top: 0.8rem;
+  gap: 8px;
 
   button {
     flex: 1;
-    border: none;
-    border-radius: 0.5rem;
-    padding: 0.6rem 0.75rem;
-    font-size: 0.85rem;
+    display: inline-flex; /* ✅ luôn cùng hàng */
+    align-items: center;
+    justify-content: center;
+    gap: 5px; /*  khoảng cách giữa icon và text */
+    white-space: nowrap; /* ✅ không xuống dòng */
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    line-height: 1; /* gọn hơn */
     cursor: pointer;
-    transition: 0.2s;
-    font-weight: 500;
+    border: none;
+    transition: all 0.2s ease;
+  }
+
+  i {
+    font-size: 0.9rem; /* icon nhỏ hơn 1 chút để cân */
+  }
+}
+
+.studyBtn {
+  background-color: #2563eb;
+  color: white;
+
+  &:hover {
+    filter: brightness(0.9);
+  }
+}
+
+.editBtn {
+  background-color: #f3f4f6;
+  color: #111827;
+
+  i {
+    color: #2563eb;
+  }
+
+  &:hover {
+    background-color: #e5e7eb;
+  }
+}
+
+.deleteBtn {
+  background-color: #fee2e2;
+  color: #dc2626;
+
+  i {
+    color: #dc2626;
+  }
+
+  &:hover {
+    background-color: #fecaca;
   }
 }
 
