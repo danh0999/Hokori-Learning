@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from "react";
 import styles from "./MyFlashcards.module.scss";
+import { toast } from "react-hot-toast";
+
 import DeckCard from "./components/DeckCard";
 import StudyModal from "./components/StudyModal";
 import CreateDeckModal from "./components/CreateDeckModal";
+import AddWordModal from "./components/AddWordModal";
 
 const MyFlashcards = () => {
+  //  Mock data (sẽ thay bằng API sau)
   const mockDecks = [
     {
       id: 1,
@@ -38,38 +42,75 @@ const MyFlashcards = () => {
     },
   ];
 
-  //  State
-  const [decks, _setDecks] = useState(mockDecks);
+  // State
+  const [decks, setDecks] = useState(mockDecks);
   const [filteredDecks, setFilteredDecks] = useState(mockDecks);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [levelFilter, setLevelFilter] = useState("Tất cả");
   const [typeFilter, setTypeFilter] = useState("Tất cả");
 
   const [selectedDeck, setSelectedDeck] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [showAddWord, setShowAddWord] = useState(false);
+  const [newDeck, setNewDeck] = useState(null);
 
-  //  Lọc dữ liệu theo 3 điều kiện
+  // 🔍 Lọc danh sách bộ thẻ theo 3 điều kiện
   useEffect(() => {
     const lowerSearch = searchTerm.toLowerCase();
+
     const result = decks.filter((deck) => {
       const matchSearch = deck.tenBo.toLowerCase().includes(lowerSearch);
-      const matchLevel =
-        levelFilter === "Tất cả" || deck.capDo === levelFilter;
+      const matchLevel = levelFilter === "Tất cả" || deck.capDo === levelFilter;
       const matchType = typeFilter === "Tất cả" || deck.loai === typeFilter;
-
       return matchSearch && matchLevel && matchType;
     });
+
     setFilteredDecks(result);
   }, [searchTerm, levelFilter, typeFilter, decks]);
 
+  // 🪄 Khi tạo bộ thẻ mới
   const handleCreateDeck = (formData) => {
-    console.log("Bộ thẻ mới được tạo:", formData);
+    const newDeckObj = {
+      id: Date.now(),
+      tenBo: formData.name,
+      capDo: formData.level,
+      loai: formData.type,
+      tongThe: 0,
+      tienDo: 0,
+      lanCuoi: "Chưa có",
+      mau: "xanh",
+    };
+
+    setDecks([...decks, newDeckObj]);
+    setNewDeck(newDeckObj);
+    toast.success("Tạo bộ thẻ thành công!");
+
     setShowCreate(false);
+    setShowAddWord(true); // Mở modal thêm từ ngay sau khi tạo
+  };
+
+  //  Khi lưu các thẻ trong AddWordModal
+  const handleSaveWords = (cards) => {
+    console.log("Các thẻ đã lưu:", cards);
+    // Sau này gọi API: POST /api/flashcards/cards
+    toast.success(`Đã lưu ${cards.length} thẻ vào bộ "${newDeck.tenBo}"!`);
+
+    // Cập nhật tổng số thẻ của deck đó
+    setDecks((prev) =>
+      prev.map((deck) =>
+        deck.id === newDeck.id
+          ? { ...deck, tongThe: cards.length, lanCuoi: "Vừa tạo" }
+          : deck
+      )
+    );
+
+    setShowAddWord(false);
   };
 
   return (
     <div className={styles.wrapper}>
-      {/* Header */}
+      {/* ================= Header ================= */}
       <div className={styles.header}>
         <div>
           <h1>Bộ thẻ ghi nhớ của tôi</h1>
@@ -82,14 +123,16 @@ const MyFlashcards = () => {
         </button>
       </div>
 
-      {/* Thống kê */}
+      {/* ================= Thống kê ================= */}
       <div className={styles.stats}>
         <div>
           <span>{filteredDecks.length}</span>
           <p>Bộ thẻ</p>
         </div>
         <div>
-          <span>155</span>
+          <span>
+            {filteredDecks.reduce((sum, d) => sum + (d.tongThe || 0), 0)}
+          </span>
           <p>Tổng số thẻ</p>
         </div>
         <div>
@@ -102,7 +145,7 @@ const MyFlashcards = () => {
         </div>
       </div>
 
-      {/* Bộ lọc */}
+      {/* ================= Bộ lọc ================= */}
       <div className={styles.filters}>
         <input
           placeholder="Tìm kiếm bộ thẻ..."
@@ -133,7 +176,7 @@ const MyFlashcards = () => {
         </select>
       </div>
 
-      {/* Danh sách bộ thẻ */}
+      {/* ================= Danh sách bộ thẻ ================= */}
       <div className={styles.grid}>
         {filteredDecks.length > 0 ? (
           filteredDecks.map((deck) => (
@@ -141,23 +184,41 @@ const MyFlashcards = () => {
               key={deck.id}
               deck={deck}
               onStudy={() => setSelectedDeck(deck)}
+              onEdit={(deck) => {
+                setNewDeck(deck);
+                setShowAddWord(true); // mở modal thêm/sửa từ vựng
+              }}
+              onDelete={(deck) => {
+                if (confirm(`Bạn có chắc muốn xóa bộ "${deck.tenBo}"?`)) {
+                  setDecks((prev) => prev.filter((d) => d.id !== deck.id));
+                }
+              }}
             />
           ))
         ) : (
-          <p>Không tìm thấy bộ thẻ nào</p>
+          <p>Không tìm thấy bộ thẻ nào.</p>
         )}
       </div>
 
-      {/* Modal học thẻ */}
+      {/* ================= Modal học thẻ ================= */}
       {selectedDeck && (
         <StudyModal deck={selectedDeck} onClose={() => setSelectedDeck(null)} />
       )}
 
-      {/* Modal tạo bộ thẻ mới */}
+      {/* ================= Modal tạo bộ thẻ mới ================= */}
       {showCreate && (
         <CreateDeckModal
           onClose={() => setShowCreate(false)}
           onCreate={handleCreateDeck}
+        />
+      )}
+
+      {/* ================= Modal thêm từ vựng ================= */}
+      {showAddWord && (
+        <AddWordModal
+          deck={newDeck}
+          onClose={() => setShowAddWord(false)}
+          onSave={handleSaveWords}
         />
       )}
     </div>
