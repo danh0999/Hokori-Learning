@@ -67,8 +67,13 @@ export const Header = () => {
 
   const userMenu = [
     {
-      key: "profile",
+      key: "dashboard",
       label: "Hồ sơ cá nhân",
+      onClick: () => navigate("/profile"),
+    },
+    {
+      key: "profile",
+      label: "Thống kê học tập",
       onClick: () => navigate("/learner-dashboard"),
     },
     {

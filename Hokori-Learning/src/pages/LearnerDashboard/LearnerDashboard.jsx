@@ -18,7 +18,7 @@ const LearnerDashboard = () => {
       goal: "JLPT N3",
       joinedAt: "Tháng 1, 2025",
       streakDays: 127,
-      avatar: "https://api.dicebear.com/7.x/notionists/svg?seed=456",
+      avatar: "https://avatardep.info/wp-content/uploads/2025/01/avt-mac-dinh-fb-moi.jpg",
     }),
     []
   );
