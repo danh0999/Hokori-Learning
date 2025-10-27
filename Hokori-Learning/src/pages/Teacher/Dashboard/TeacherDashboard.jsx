@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Card, Col, Row, Statistic, Tag, Table, Dropdown, Button } from "antd";
 import {
   BookOutlined,
@@ -8,8 +8,7 @@ import {
   MoreOutlined,
 } from "@ant-design/icons";
 import styles from "./styles.module.scss";
-import CourseCreateModal from "../Courses/components/CourseCreateModal/CourseCreateModal";
-import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 const recentCourses = [
   {
@@ -52,8 +51,7 @@ const statusTag = (s) => {
 };
 
 export default function TeacherDashboard() {
-  const [openCreate, setOpenCreate] = useState(false);
-  const [data, setData] = useState(recentCourses);
+  const navigate = useNavigate();
   const columns = [
     {
       title: "Course",
@@ -110,7 +108,7 @@ export default function TeacherDashboard() {
         <div
           className={styles.headerActions}
           type="primary"
-          onClick={() => setOpenCreate(true)}
+          onClick={() => navigate("/teacher/create-course")}
         >
           <Button type="primary">New Course</Button>
         </div>
@@ -164,16 +162,6 @@ export default function TeacherDashboard() {
           pagination={{ pageSize: 5 }}
         />
       </Card>
-
-      <CourseCreateModal
-        open={openCreate}
-        onClose={() => setOpenCreate(false)}
-        onCreated={(newCourse) => {
-          setData((prev) => [newCourse, ...prev]);
-          setOpenCreate(false);
-          toast.success("Course created (Draft)");
-        }}
-      />
     </div>
   );
 }

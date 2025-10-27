@@ -1,5 +1,5 @@
 // src/layouts/rolesidebar.jsx
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Layout, Menu } from "antd";
 import { useLocation, useNavigate } from "react-router-dom";
 import { sidebarMenusByRole } from "../menu.jsx";
@@ -7,6 +7,65 @@ import styles from "./styles.module.scss";
 
 const { Sider } = Layout;
 
+const norm = (p) =>
+  p && p.endsWith("/") && p !== "/" ? p.slice(0, -1) : p || "/";
+
+// ---- helpers ----
+function convertToAntdItems(nodes) {
+  return (
+    nodes?.map(({ key, label, icon, children }) => ({
+      key,
+      label,
+      icon,
+      children: children?.length ? convertToAntdItems(children) : undefined,
+    })) || []
+  );
+}
+
+function buildIndex(nodes) {
+  const keyToPath = new Map();
+  const keyToParent = new Map();
+  const flat = [];
+
+  const dfs = (arr, parent = null) => {
+    arr?.forEach((n) => {
+      if (n.path) keyToPath.set(n.key, n.path);
+      if (parent) keyToParent.set(n.key, parent);
+      flat.push(n);
+      if (n.children?.length) dfs(n.children, n.key);
+    });
+  };
+  dfs(nodes);
+  return { keyToPath, keyToParent, flat };
+}
+
+function bestMatchKeyByPath(nodes, pathname) {
+  const cur = norm(pathname);
+  let best = null;
+  const walk = (arr) => {
+    arr?.forEach((n) => {
+      if (n.path && cur.startsWith(norm(n.path))) {
+        if (!best || norm(n.path).length > norm(best.path).length) best = n;
+      }
+      if (n.children?.length) walk(n.children);
+    });
+  };
+  walk(nodes);
+  return best?.key || null;
+}
+
+function collectParents(key, keyToParent) {
+  const res = [];
+  let k = key;
+  while (keyToParent.has(k)) {
+    const p = keyToParent.get(k);
+    res.unshift(p);
+    k = p;
+  }
+  return res;
+}
+
+// ---- component ----
 export default function RoleSidebar({
   role = "teacher",
   collapsed,
@@ -15,27 +74,25 @@ export default function RoleSidebar({
 }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const items = sidebarMenusByRole[role] || [];
 
-  const selectedKeys = useMemo(() => {
-    // Chuẩn hóa path (bỏ slash cuối nếu có)
-    const norm = (p) => (p.endsWith("/") && p !== "/" ? p.slice(0, -1) : p);
-    const cur = norm(pathname);
+  const tree = sidebarMenusByRole[role] || [];
+  const antdItems = useMemo(() => convertToAntdItems(tree), [tree]);
+  const { keyToPath, keyToParent } = useMemo(() => buildIndex(tree), [tree]);
 
-    // 1) ưu tiên khớp tuyệt đối
-    let hit =
-      items.find((i) => norm(i.path) === cur) ||
-      // 2) nếu không có, lấy path khớp tiền tố nhưng DÀI NHẤT
-      items
-        .filter((i) => cur.startsWith(norm(i.path)))
-        .sort((a, b) => norm(b.path).length - norm(a.path).length)[0];
+  const selectedKey = useMemo(
+    () => bestMatchKeyByPath(tree, pathname),
+    [tree, pathname]
+  );
+  const [openKeys, setOpenKeys] = useState([]);
 
-    return hit?.key ? [hit.key] : [];
-  }, [pathname, items]);
+  useEffect(() => {
+    if (!selectedKey) return;
+    setOpenKeys(collectParents(selectedKey, keyToParent));
+  }, [selectedKey, keyToParent]);
 
   const onClick = ({ key }) => {
-    const hit = items.find((i) => i.key === key);
-    if (hit?.path) navigate(hit.path);
+    const path = keyToPath.get(key);
+    if (path) navigate(path);
   };
 
   return (
@@ -48,9 +105,11 @@ export default function RoleSidebar({
     >
       <Menu
         mode="inline"
-        selectedKeys={selectedKeys}
-        items={items.map(({ key, label, icon }) => ({ key, icon, label }))}
-        onClick={onClick}
+        items={antdItems} // ✅ giữ children
+        selectedKeys={selectedKey ? [selectedKey] : []}
+        openKeys={openKeys} // ✅ tự mở đúng parent
+        onOpenChange={setOpenKeys}
+        onClick={onClick} // ✅ điều hướng cả item con
       />
     </Sider>
   );

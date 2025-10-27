@@ -1,30 +1,142 @@
-.wrap {
+.cardBig {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+
+  .ant-card-head {
+    display: none;
+  }
+
+  .ant-card-body {
+    padding: 24px 24px 32px;
+  }
+}
+
+/* header cho step */
+.stepHeader {
+  margin-bottom: 24px;
+}
+
+.stepTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.stepDesc {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+/* curriculum layout */
+.curriculumWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.emptyBox {
+  background: #f9fafb;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #6b7280;
+  text-align: center;
+  padding: 24px 16px;
+}
+
+/* section block */
+.sectionBlock {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-.header {
+
+.sectionHeader {
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
 }
-.input {
-  max-width: 420px;
-}
-.item {
-  padding: 8px 0;
-}
-.card {
-  border-radius: 12px;
-}
-.lessonTitle {
+
+.sectionTitleInput {
   font-weight: 600;
+  font-size: 15px;
+  max-width: 480px;
 }
-.itemBar {
-  margin-bottom: 8px;
+
+/* lessons */
+.lessonList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
-.empty {
+
+.lessonEmpty {
+  font-size: 13px;
   color: #6b7280;
+  background: #f9fafb;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 12px 16px;
 }
-.subItem {
-  padding: 6px 0;
+
+.lessonItem {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px 16px;
+  background: #fafafa;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.lessonMain {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lessonTitleInput {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.lessonMeta {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.lessonActions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+  min-width: 120px;
+}
+
+.addLessonBtn {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.videoBox {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 12px;
 }

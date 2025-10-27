@@ -18,7 +18,13 @@ import {
 } from "@ant-design/icons";
 
 // helper tạo item AntD
-const mk = (key, label, icon, path) => ({ key, label, icon, path });
+const mk = (key, label, icon, path, children) => ({
+  key,
+  label,
+  icon,
+  path,
+  children,
+});
 
 export const headerMenusByRole = {
   teacher: [
@@ -65,10 +71,32 @@ export const sidebarMenusByRole = {
       <BookOutlined />,
       "/teacher/manage-courses"
     ),
-    mk("lessons", "Bài học", <BookOutlined />, "/teacher/lessons"),
-    mk("videos", "Video", <VideoCameraOutlined />, "/teacher/videos"),
-    mk("exercises", "Bài tập", <ReadOutlined />, "/teacher/exercises"),
-    mk("exams", "Kỳ thi", <ProfileOutlined />, "/teacher/exams"),
+    mk(
+      "manage-documents",
+      "Quản lý tài liệu",
+      <BookOutlined />,
+      "/teacher/manage-documents",
+      [
+        mk(
+          "videos",
+          "Video",
+          <VideoCameraOutlined />,
+          "/teacher/manage-documents/videos"
+        ),
+        mk(
+          "lessons",
+          "Bài học",
+          <ReadOutlined />,
+          "/teacher/manage-documents/lessons"
+        ),
+        mk(
+          "quiz",
+          "Bài kiểm tra",
+          <ProfileOutlined />,
+          "/teacher/manage-documents/quiz"
+        ),
+      ]
+    ),
     mk("manage", "Quản lý", <SettingOutlined />, "/teacher/manage"),
     mk("profile", "Hồ sơ cá nhân", <UserOutlined />, "/teacher/profile"),
   ],

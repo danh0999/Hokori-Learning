@@ -28,6 +28,9 @@ import CourseInformation from "../pages/Teacher/Courses/CourseInformation/Course
 
 // ===== Guards =====
 import ProtectedRoute from "./ProtectedRoute";
+import TeacherProfilePage from "../pages/Teacher/TeacherProfilePage/TeacherProfilePage";
+import CreateCoursePage from "../pages/Teacher/Courses/Create-Course/CreateCoursePage";
+// import CreateCoursePageUdemy from "../pages/Teacher/Courses/CreateCoursePageUdemy/CreateCoursePageUdemy";
 
 // ===== Stub (tạm cho trang chưa code) =====
 const Stub = ({ title }) => <div style={{ padding: 12 }}>{title}</div>;
@@ -90,12 +93,12 @@ const routes = [
         children: [
           { index: true, element: <TeacherDashboard /> },
           { path: "manage-courses", element: <ManageCourses /> },
-          { path: "courses/:id", element: <CourseInformation /> },
-          { path: "create-course", element: <Stub title="Create Course" /> },
+          { path: "courseinfo/:id", element: <CourseInformation /> },
+          { path: "create-course", element: <CreateCoursePage /> },
           { path: "students", element: <Stub title="Students" /> },
           { path: "revenue", element: <Stub title="Revenue" /> },
           { path: "messages", element: <Stub title="Messages" /> },
-          { path: "profile", element: <Stub title="Profile" /> },
+          { path: "profile", element: <TeacherProfilePage /> },
           { path: "*", element: <ErrorPage /> },
         ],
       },

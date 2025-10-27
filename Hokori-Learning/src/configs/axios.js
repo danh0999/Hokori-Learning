@@ -1,21 +1,22 @@
 import axios from "axios";
 
 const api = axios.create({
-
   baseURL: "https://celsa-plumbaginaceous-unabjectly.ngrok-free.dev/api/",
   // timeout: 15000, // (tuỳ) tránh treo request quá lâu
-
 });
 
 // === Request interceptor: gắn Bearer token (trừ login/register) ===
 api.interceptors.request.use(
   (config) => {
+    config.headers["ngrok-skip-browser-warning"] = "any";
+    config.headers["Accept"] = "application/json";
     const token =
       localStorage.getItem("token") || sessionStorage.getItem("token");
     if (
       token &&
       !config.url?.includes("login") &&
-      !config.url?.includes("register")
+      !config.url?.includes("register") &&
+      !config.url?.includes("firebase")
     ) {
       config.headers.Authorization = `Bearer ${token}`;
     }

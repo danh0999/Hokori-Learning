@@ -1,0 +1,46 @@
+.cardBig {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+
+  .ant-card-head {
+    display: none;
+  }
+
+  .ant-card-body {
+    padding: 24px 24px 32px;
+  }
+}
+
+/* header cho step */
+.stepHeader {
+  margin-bottom: 24px;
+}
+
+.stepTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.stepDesc {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+/* form layout */
+.formGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hintText {
+  font-size: 13px;
+  line-height: 1.4;
+  color: #6b7280;
+  margin-top: 4px;
+}
