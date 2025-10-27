@@ -1,0 +1,92 @@
+.cardBig {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+
+  .ant-card-head {
+    display: none;
+  }
+
+  .ant-card-body {
+    padding: 24px 24px 32px;
+  }
+}
+
+/* header cho step */
+.stepHeader {
+  margin-bottom: 24px;
+}
+
+.stepTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.stepDesc {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+/* review summary block */
+.reviewBlock {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 8px;
+  font-size: 14px;
+  line-height: 1.4;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.label {
+  color: #4b5563;
+  font-weight: 500;
+  margin-right: 16px;
+}
+
+.value {
+  color: #111827;
+  font-weight: 600;
+  max-width: 60%;
+  text-align: right;
+  word-break: break-word;
+}
+
+.thumbPreviewSmall {
+  width: 120px;
+  height: 68px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  object-fit: cover;
+  background: #000;
+}
+
+.warningBox {
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  color: #b91c1c;
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 12px 14px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}

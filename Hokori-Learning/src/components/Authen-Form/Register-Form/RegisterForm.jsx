@@ -10,10 +10,7 @@ import AuthLogo from "../Auth-Logo/AuthLogo";
 import styles from "./styles.module.scss";
 
 // 🔑 Firebase login helpers (đã dùng ở LoginForm)
-import {
-  loginWithGoogle,
-  mapFirebaseAuthError,
-} from "../../../redux/features/auth";
+import { loginWithGoogle } from "../../../redux/features/auth";
 import { useDispatch } from "react-redux";
 import { login as saveUser } from "../../../redux/features/userSlice";
 import { getAuth } from "firebase/auth";
@@ -40,53 +37,44 @@ const RegisterForm = () => {
     try {
       setLoadingGoogle(true);
 
-      // 1️⃣ Đăng nhập Google qua Firebase
-      const profile = await loginWithGoogle(); // hàm bạn có sẵn
-      const user = getAuth().currentUser;
-      if (!user)
-        throw new Error("Không lấy được thông tin người dùng từ Firebase.");
+      // 1) Đăng nhập Google qua Firebase (popup)
+      const profile = await loginWithGoogle(); // hàm của bạn
+      const fbUser = getAuth().currentUser;
+      if (!fbUser) throw new Error("Không lấy được người dùng Firebase");
 
-      // 2️⃣ Lấy Firebase ID token để gửi lên BE
-      const firebaseToken = await user.getIdToken();
+      // 2) Lấy Firebase ID token (ép refresh claim nếu cần)
+      const firebaseToken = await fbUser.getIdToken(true);
 
-      // 3️⃣ Gọi API /auth/firebase
+      // 3) Gọi BE: /auth/firebase  (KHÔNG kèm Bearer)
       const res = await api.post("/auth/firebase", { firebaseToken });
+      const { user, roles, accessToken, refreshToken } = res.data.data;
 
-      const {
-        user: backendUser,
-        roles,
-        accessToken,
-        refreshToken,
-      } = res.data.data;
-
-      // 4️⃣ Lưu vào Redux + localStorage
-      const payload = {
-        ...backendUser,
-        roles,
-        role: roles?.[0] || null,
-        accessToken,
-        refreshToken,
-      };
-      dispatch(saveUser(payload));
+      // 4) Lưu state + token theo roles từ BE
+      dispatch(
+        saveUser({
+          ...user,
+          roles,
+          role: roles?.[0] || null,
+          accessToken,
+          refreshToken,
+        })
+      );
       localStorage.setItem("token", accessToken);
 
-      toast.success(
-        `Xin chào, ${backendUser.displayName || backendUser.email}!`
-      );
+      toast.success(`Xin chào, ${user.displayName || user.email}!`);
       navigate("/");
-    } catch (e) {
-      console.error("Google register error:", e);
+    } catch (err) {
+      console.error("Google auth error:", err);
       toast.error(
-        e?.response?.data?.message ||
-          e?.response?.data?.error ||
-          e?.message ||
-          "Đăng ký bằng Google thất bại!"
+        err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          err?.message ||
+          "Đăng nhập/Đăng ký bằng Google thất bại!"
       );
     } finally {
       setLoadingGoogle(false);
     }
   };
-
   // --- Handle register via classic form ---
   const onFinish = async (values) => {
     setLoading(true);

@@ -1,0 +1,90 @@
+.cardBig {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+
+  .ant-card-head {
+    display: none;
+  }
+
+  .ant-card-body {
+    padding: 24px 24px 32px;
+  }
+}
+
+/* header cho step */
+.stepHeader {
+  margin-bottom: 24px;
+}
+
+.stepTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.stepDesc {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+/* form layout */
+.formGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* thumbnail area */
+.thumbRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.thumbPreview {
+  width: 160px;
+  height: 90px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  object-fit: cover;
+  background: #000;
+}
+
+.thumbPlaceholder {
+  width: 160px;
+  height: 90px;
+  border-radius: 8px;
+  border: 1px dashed #9ca3af;
+  background: #f9fafb;
+  color: #9ca3af;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hintText {
+  font-size: 13px;
+  line-height: 1.4;
+  color: #6b7280;
+  margin-top: 4px;
+}

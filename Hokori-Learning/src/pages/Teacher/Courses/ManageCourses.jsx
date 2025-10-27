@@ -20,7 +20,6 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import styles from "./styles.module.scss";
-import CourseCreateModal from "./components/CourseCreateModal/CourseCreateModal";
 
 const { confirm } = Modal;
 
@@ -94,7 +93,6 @@ const statusTag = (s) => {
 export default function ManageCourses() {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("All");
-  const [openCreate, setOpenCreate] = useState(false);
   const [data, setData] = useState(mock);
   const navigate = useNavigate();
 
@@ -169,7 +167,7 @@ export default function ManageCourses() {
           {
             key: "manage",
             label: "Manage",
-            onClick: () => navigate(`/teacher/Managecourses/${row.id}`),
+            onClick: () => navigate(`/teacher/courseinfo/${row.id}`),
           },
           ...(row.status === "Draft"
             ? [
@@ -214,10 +212,11 @@ export default function ManageCourses() {
             Create, update, and manage your courses
           </p>
         </div>
+
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => setOpenCreate(true)}
+          onClick={() => navigate("/teacher/create-course")}
         >
           New Course
         </Button>
@@ -254,16 +253,6 @@ export default function ManageCourses() {
           pagination={{ defaultPageSize: 8 }}
         />
       </Card>
-
-      <CourseCreateModal
-        open={openCreate}
-        onClose={() => setOpenCreate(false)}
-        onCreated={(newCourse) => {
-          setData((prev) => [newCourse, ...prev]);
-          setOpenCreate(false);
-          message.success("Course created (Draft)");
-        }}
-      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 /* src/pages/Authen-Form/Register-Form/styles.module.scss */
 .registerFormContainer {
-  width: min(92vw, 720px); /* cho phép "bự về chiều ngang" khi nội dung dài */
+  width: min(92vw, 500px); /* cho phép "bự về chiều ngang" khi nội dung dài */
   margin: 0 auto;
   padding: 28px 32px;
   background: rgba(255, 255, 255, 0.96);
