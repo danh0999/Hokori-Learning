@@ -1,20 +1,33 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "./PersonalInfoForm.module.scss";
 
-const PersonalInfoForm = ({ user, onSave }) => {
-  if (!user) return null; // tránh render khi chưa có user
-
+const PersonalInfoForm = ({ user, saving, onSave }) => {
+  // ✅ Hooks luôn được gọi ở đầu
   const [form, setForm] = useState({
-    displayName: user?.displayName || "",
-    country: user?.country || "",
-    nativeLanguage: user?.nativeLanguage || "",
-    currentJlptLevel: user?.currentJlptLevel || "",
+    displayName: "",
+    country: "",
+    nativeLanguage: "",
+    currentJlptLevel: "",
   });
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  useEffect(() => {
+    if (user) {
+      setForm({
+        displayName: user.displayName || "",
+        country: user.country || "",
+        nativeLanguage: user.nativeLanguage || "",
+        currentJlptLevel: user.currentJlptLevel || "",
+      });
+    }
+  }, [user]);
 
-  const handleSubmit = (e) => {
+  // Nếu chưa có user, render trống (sau khi gọi hook)
+  if (!user) return null;
+
+  const onChange = (e) =>
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+
+  const onSubmit = (e) => {
     e.preventDefault();
     onSave(form);
   };
@@ -22,21 +35,21 @@ const PersonalInfoForm = ({ user, onSave }) => {
   return (
     <section className={styles.formSection}>
       <h2>Thông tin cá nhân</h2>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={onSubmit}>
         <label>
           Tên hiển thị
           <input
             name="displayName"
             value={form.displayName}
-            onChange={handleChange}
-            placeholder="Tên hiển thị"
+            onChange={onChange}
+            placeholder="Nhập tên hiển thị"
           />
         </label>
 
         <label>
           Quốc gia
-          <select name="country" value={form.country} onChange={handleChange}>
-            <option value="">Chọn quốc gia</option>
+          <select name="country" value={form.country} onChange={onChange}>
+            <option value="">-- Chọn --</option>
             <option>Việt Nam</option>
             <option>Nhật Bản</option>
             <option>Mỹ</option>
@@ -49,12 +62,13 @@ const PersonalInfoForm = ({ user, onSave }) => {
           <select
             name="nativeLanguage"
             value={form.nativeLanguage}
-            onChange={handleChange}
+            onChange={onChange}
           >
-            <option value="">Chọn ngôn ngữ</option>
+            <option value="">-- Chọn --</option>
             <option>Tiếng Việt</option>
             <option>Tiếng Anh</option>
             <option>Tiếng Nhật</option>
+            <option>Tiếng Hàn</option>
             <option>Tiếng Trung</option>
           </select>
         </label>
@@ -64,9 +78,9 @@ const PersonalInfoForm = ({ user, onSave }) => {
           <select
             name="currentJlptLevel"
             value={form.currentJlptLevel}
-            onChange={handleChange}
+            onChange={onChange}
           >
-            <option value="">Chọn cấp độ</option>
+            <option value="">-- Chọn --</option>
             <option>N5</option>
             <option>N4</option>
             <option>N3</option>
@@ -75,8 +89,8 @@ const PersonalInfoForm = ({ user, onSave }) => {
           </select>
         </label>
 
-        <button type="submit" className={styles.saveBtn}>
-           Lưu thay đổi
+        <button type="submit" className={styles.saveBtn} disabled={saving}>
+          {saving ? "Đang lưu..." : "Lưu thay đổi"}
         </button>
       </form>
     </section>

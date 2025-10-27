@@ -1,55 +1,75 @@
 import React, { useEffect, useState } from "react";
 import styles from "./ProfilePage.module.scss";
+
+import { useDispatch, useSelector } from "react-redux";
+
+import {
+  fetchMe,
+  updateMe,
+  changePassword,
+  resetPwState,
+} from "../../redux/features/profileSlice";
+
 import ProfileHeader from "./components/ProfileHeader";
 import PersonalInfoForm from "./components/PersonalInfoForm";
 import ChangePasswordModal from "./components/ChangePasswordModal";
-import { getCurrentProfile, updateProfile, changePassword } from "../../redux/features/profileApi";
 
 const ProfilePage = () => {
-  const [user, setUser] = useState(null);
-  const [openModal, setOpenModal] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const {
+    data: user,
+    loading,
+    error,
+    saving,
+    changingPw,
+    pwError,
+    pwSuccess,
+  } = useSelector((s) => s.profile);
 
-  // Gọi API lấy thông tin hồ sơ
-  const fetchProfile = async () => {
-    try {
-      const res = await getCurrentProfile();
-      setUser(res);
-    } catch (err) {
-      console.error("❌ Lỗi khi tải hồ sơ:", err);
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [openModal, setOpenModal] = useState(false);
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
+    dispatch(fetchMe());
+  }, [dispatch]);
 
-  // Cập nhật hồ sơ
-  const handleSave = async (values) => {
-    try {
-      await updateProfile(values);
-      alert("✅ Cập nhật thành công!");
-      fetchProfile();
-    } catch (err) {
-      alert("❌ Lỗi khi cập nhật hồ sơ!");
-    }
-  };
-
-  // Đổi mật khẩu
-  const handleChangePassword = async (values) => {
-    try {
-      await changePassword(values);
+  useEffect(() => {
+    if (pwSuccess) {
       alert("🔒 Đổi mật khẩu thành công!");
       setOpenModal(false);
-    } catch {
-      alert("❌ Đổi mật khẩu thất bại!");
+      dispatch(resetPwState());
     }
+    if (pwError) {
+      alert(`❌ ${pwError}`);
+      dispatch(resetPwState());
+    }
+  }, [pwSuccess, pwError, dispatch]);
+
+  const handleSave = (values) => {
+    dispatch(updateMe(values))
+      .unwrap()
+      .then(() => alert("✅ Cập nhật thành công!"))
+      .catch((e) => alert(`❌ ${e}`));
   };
 
-  if (loading) return <p className={styles.loading}>Đang tải dữ liệu...</p>;
+  const handleChangePassword = (values) => {
+    dispatch(changePassword(values));
+  };
+
+  if (loading) {
+    return (
+      <main className={styles.main}>
+        <div className={styles.container}>Đang tải dữ liệu…</div>
+      </main>
+    );
+  }
+
+  if (error && !user) {
+    return (
+      <main className={styles.main}>
+        <div className={styles.container}>Lỗi: {error}</div>
+      </main>
+    );
+  }
 
   return (
     <main className={styles.main}>
@@ -57,17 +77,18 @@ const ProfilePage = () => {
         {user ? (
           <>
             <ProfileHeader user={user} onOpenModal={() => setOpenModal(true)} />
-            <PersonalInfoForm user={user} onSave={handleSave} />
+            <PersonalInfoForm user={user} saving={saving} onSave={handleSave} />
             <ChangePasswordModal
               open={openModal}
               onClose={() => setOpenModal(false)}
               onSubmit={handleChangePassword}
+              loading={changingPw}
             />
           </>
         ) : (
-          <p className={styles.empty}>
+          <div className={styles.empty}>
             Không tìm thấy hồ sơ hoặc bạn chưa đăng nhập.
-          </p>
+          </div>
         )}
       </div>
     </main>
