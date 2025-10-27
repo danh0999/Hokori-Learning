@@ -1,0 +1,101 @@
+.header {
+  background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%);
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.05);
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+.avatarWrap {
+  position: relative;
+
+  .avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 3px solid #e0e7ff;
+    box-shadow: 0 0 8px rgba(37, 99, 235, 0.15);
+    object-fit: cover;
+  }
+}
+
+.info {
+  flex: 1;
+  text-align: center;
+
+  @media (min-width: 768px) {
+    text-align: left;
+  }
+
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+
+  .role {
+    display: inline-block;
+    background: #e0f2fe;
+    color: #0369a1;
+    padding: 0.3rem 0.8rem;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    margin-top: 0.4rem;
+  }
+
+  p {
+    color: #475569;
+    margin-top: 0.3rem;
+    font-size: 0.95rem;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-top: 1rem;
+
+    @media (min-width: 768px) {
+      justify-content: flex-start;
+    }
+
+    .editBtn {
+      background-color: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 0.6rem 1.4rem;
+      border-radius: 0.6rem;
+      font-weight: 500;
+      transition: 0.2s;
+      cursor: pointer;
+
+      &:hover {
+        background-color: #1d4ed8;
+      }
+    }
+
+    .pwBtn {
+      border: 1px solid #cbd5e1;
+      background-color: white;
+      color: #334155;
+      padding: 0.6rem 1.4rem;
+      border-radius: 0.6rem;
+      font-weight: 500;
+      transition: 0.2s;
+
+      &:hover {
+        background-color: #f1f5f9;
+      }
+    }
+  }
+}

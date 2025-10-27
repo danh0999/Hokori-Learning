@@ -21,6 +21,7 @@ import LearnerDashboard from "../pages/LearnerDashboard/LearnerDashboard";
 import LessonPlayer from "../pages/LessonPlayer/LessonPlayer";
 import QuizPage from "../pages/QuizPage/QuizPage";
 import MyFlashcards from "../pages/Flashcards/MyFlashcards";
+import ProfilePage from "../pages/Profile/ProfilePage";
 // ===== Teacher/Admin/Moderator =====
 import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
 import ManageCourses from "../pages/Teacher/Courses/ManageCourses";
@@ -65,6 +66,8 @@ const routes = [
           { path: "my-courses", element: <MyCourses /> },
           { path: "my-flashcards", element: <MyFlashcards /> },
           { path: "cart", element: <Cart /> },
+          { path: "profile", element: <ProfilePage /> },
+
           {
             path: "lesson/:lessonId",
             element: <LessonPlayer />,
