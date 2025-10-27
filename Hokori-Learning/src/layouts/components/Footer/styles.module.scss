@@ -1,10 +1,10 @@
 /* ---- palette gần giống UX Pilot ---- */
-$bg: #0f0f10; // neutral-900
+$bg: #253349; // neutral-900
 $fg: #ffffff;
-$muted: #a9a9a9; // neutral-400
-$line: #2a2a2a; // neutral-800
+$muted: #ffffff; // neutral-400
+$line: #ffffff; // neutral-800
 $chip: #2e2e2e; // neutral-700
-$chip-hover: #3a3a3a;
+$chip-hover: #ffffff;
 
 .footer {
   width: 100%;
@@ -40,13 +40,13 @@ $chip-hover: #3a3a3a;
   width: 32px;
   height: 32px;
   border-radius: 6px;
-  background: #fff;
+  background: #2563eb;
   display: grid;
   place-items: center;
 }
 
 .badgeText {
-  color: #111;
+  color: #faf8f8;
   font-weight: 700;
 }
 
@@ -67,6 +67,7 @@ $chip-hover: #3a3a3a;
   font-size: 16px;
   font-weight: 600;
   margin: 0 0 12px;
+  color: #ffffff;
 }
 
 .list {
@@ -99,7 +100,7 @@ $chip-hover: #3a3a3a;
   border-radius: 6px;
   padding: 6px 10px;
   font-size: 12px;
-  color: #d3d3d3;
+  color: #ffffff;
   transition: background 0.15s;
 
   &:hover {
