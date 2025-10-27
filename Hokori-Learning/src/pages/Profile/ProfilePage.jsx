@@ -10,12 +10,14 @@ const ProfilePage = () => {
   const [openModal, setOpenModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Gọi API lấy thông tin hồ sơ
   const fetchProfile = async () => {
     try {
       const res = await getCurrentProfile();
       setUser(res);
     } catch (err) {
       console.error("❌ Lỗi khi tải hồ sơ:", err);
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -25,16 +27,18 @@ const ProfilePage = () => {
     fetchProfile();
   }, []);
 
+  // Cập nhật hồ sơ
   const handleSave = async (values) => {
     try {
       await updateProfile(values);
-      alert(" Cập nhật thành công!");
+      alert("✅ Cập nhật thành công!");
       fetchProfile();
     } catch (err) {
-      alert(" Lỗi khi cập nhật!");
+      alert("❌ Lỗi khi cập nhật hồ sơ!");
     }
   };
 
+  // Đổi mật khẩu
   const handleChangePassword = async (values) => {
     try {
       await changePassword(values);
@@ -45,18 +49,26 @@ const ProfilePage = () => {
     }
   };
 
-  if (loading) return <p>Đang tải dữ liệu...</p>;
+  if (loading) return <p className={styles.loading}>Đang tải dữ liệu...</p>;
 
   return (
     <main className={styles.main}>
       <div className={styles.container}>
-        <ProfileHeader user={user} onOpenModal={() => setOpenModal(true)} />
-        <PersonalInfoForm user={user} onSave={handleSave} />
-        <ChangePasswordModal
-          open={openModal}
-          onClose={() => setOpenModal(false)}
-          onSubmit={handleChangePassword}
-        />
+        {user ? (
+          <>
+            <ProfileHeader user={user} onOpenModal={() => setOpenModal(true)} />
+            <PersonalInfoForm user={user} onSave={handleSave} />
+            <ChangePasswordModal
+              open={openModal}
+              onClose={() => setOpenModal(false)}
+              onSubmit={handleChangePassword}
+            />
+          </>
+        ) : (
+          <p className={styles.empty}>
+            Không tìm thấy hồ sơ hoặc bạn chưa đăng nhập.
+          </p>
+        )}
       </div>
     </main>
   );
