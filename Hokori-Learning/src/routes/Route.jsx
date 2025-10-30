@@ -31,7 +31,11 @@ import CourseInformation from "../pages/Teacher/Courses/CourseInformation/Course
 import ProtectedRoute from "./ProtectedRoute";
 import TeacherProfilePage from "../pages/Teacher/TeacherProfilePage/TeacherProfilePage";
 import CreateCoursePage from "../pages/Teacher/Courses/Create-Course/CreateCoursePage";
+
 import JLPTList from "../pages/JLPT/JLPTList";
+
+import ManageQueues from "../pages/Moderator/Queues/ManageQueues";
+
 // import CreateCoursePageUdemy from "../pages/Teacher/Courses/CreateCoursePageUdemy/CreateCoursePageUdemy";
 
 // ===== Stub (tạm cho trang chưa code) =====
@@ -135,7 +139,7 @@ const routes = [
   // ===== MODERATOR AREA =====
   {
     path: "moderator",
-    element: <ProtectedRoute allow={["MODERATOR"]} />,
+    // element: <ProtectedRoute allow={["MODERATOR"]} />,
     children: [
       {
         path: "",
@@ -144,7 +148,7 @@ const routes = [
         children: [
           { index: true, element: <Stub title="Moderator Dashboard" /> },
           { path: "reviews", element: <Stub title="Reviews" /> },
-          { path: "queues", element: <Stub title="Queues" /> },
+          { path: "queues", element: <ManageQueues /> },
           { path: "ai-check", element: <Stub title="AI Check" /> },
           { path: "messages", element: <Stub title="Messages" /> },
           { path: "settings", element: <Stub title="Settings" /> },
