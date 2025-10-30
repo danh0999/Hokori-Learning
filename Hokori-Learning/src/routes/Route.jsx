@@ -31,7 +31,11 @@ import CourseInformation from "../pages/Teacher/Courses/CourseInformation/Course
 import ProtectedRoute from "./ProtectedRoute";
 import TeacherProfilePage from "../pages/Teacher/TeacherProfilePage/TeacherProfilePage";
 import CreateCoursePage from "../pages/Teacher/Courses/Create-Course/CreateCoursePage";
+
+import JLPTList from "../pages/JLPT/JLPTList";
+
 import ManageQueues from "../pages/Moderator/Queues/ManageQueues";
+
 // import CreateCoursePageUdemy from "../pages/Teacher/Courses/CreateCoursePageUdemy/CreateCoursePageUdemy";
 
 // ===== Stub (tạm cho trang chưa code) =====
@@ -68,6 +72,7 @@ const routes = [
           { path: "my-flashcards", element: <MyFlashcards /> },
           { path: "cart", element: <Cart /> },
           { path: "profile", element: <ProfilePage /> },
+          {path: "JLPT", element: <JLPTList/>},
 
           {
             path: "lesson/:lessonId",

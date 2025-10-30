@@ -1,0 +1,131 @@
+/* ===============================
+   JLPT LIST PAGE STYLES (FRAME 1)
+   =============================== */
+
+/* ===== Wrapper & Container ===== */
+.wrapper {
+  background: #f9fafb;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+
+  /* ✅ Quan trọng: xếp các section theo chiều dọc */
+  display: block; /* hoặc flex + flex-direction: column */
+}
+
+/* ===== Filter Section ===== */
+.filterSection {
+  margin-bottom: 2rem;
+}
+
+.filterBox {
+  background: #fff;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.levelFilter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  label {
+    font-size: 0.9rem;
+    color: #374151;
+  }
+
+  select {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.9rem;
+    background: #fff;
+    cursor: pointer;
+
+    &:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    }
+  }
+}
+
+.searchWrap {
+  position: relative;
+  flex: 1;
+  max-width: 380px;
+
+  i {
+    position: absolute;
+    top: 50%;
+    left: 10px;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    font-size: 0.9rem;
+  }
+
+  input {
+    width: 100%;
+    padding: 0.5rem 0.75rem 0.5rem 2rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: #fff;
+
+    &:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    }
+  }
+}
+
+/* ===== Grid Layout (CARD CONTAINER) ===== */
+.gridSection {
+  margin-bottom: 2rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  column-gap: 1.75rem; /* khoảng cách ngang */
+  row-gap: 2rem;       /* ✅ thêm khoảng cách dọc */
+  align-items: start;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+}
+
+.emptyState {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.95rem;
+  padding: 2rem 0;
+}
+
+/* ===== Pagination Section ===== */
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
