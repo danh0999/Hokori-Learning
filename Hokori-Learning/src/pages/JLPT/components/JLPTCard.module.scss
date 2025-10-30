@@ -1,0 +1,104 @@
+/* ===============================
+   JLPT CARD COMPONENT STYLES
+   =============================== */
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 85%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* ===== Header: Title + Level Tag ===== */
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #111827;
+    line-height: 1.4;
+    flex: 1;
+    margin-right: 0.75rem;
+  }
+}
+
+.levelTag {
+  background: #f3f4f6;
+  color: #111827;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* ===== Description ===== */
+.desc {
+  font-size: 0.88rem;
+  color: #4b5563;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+  min-height: 2.6rem; /* giữ chiều cao mô tả đều nhau */
+}
+
+/* ===== Info Section ===== */
+.infoGroup {
+  margin-bottom: 1.25rem;
+
+  .infoItem {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: #374151;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+
+    svg {
+      font-size: 1.1rem;
+      color: #2563eb;
+      flex-shrink: 0;
+    }
+
+    span {
+      line-height: 1.4;
+    }
+  }
+}
+
+/* ===== Button ===== */
+.actionBtn {
+  width: 100%;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.65rem 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: #1e40af;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}

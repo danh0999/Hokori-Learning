@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://celsa-plumbaginaceous-unabjectly.ngrok-free.dev/api/",
+  baseURL: "https://saner-eden-placably.ngrok-free.dev/",
   // timeout: 15000, // (tuỳ) tránh treo request quá lâu
 });
 

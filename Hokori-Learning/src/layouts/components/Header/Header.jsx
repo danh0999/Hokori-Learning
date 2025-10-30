@@ -40,7 +40,6 @@ export const Header = () => {
   // const cart = useSelector((state) => state.cart);
   const cartCount = 3; // ✅ tạm thời hardcode, sau gắn Redux
 
-
   const [openDropdown, setOpenDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -99,7 +98,10 @@ export const Header = () => {
 
         {/* Navigation */}
         <nav className={nav}>
-          <NavLink to="/" className={({ isActive }) => (isActive ? active : "")}>
+          <NavLink
+            to="/"
+            className={({ isActive }) => (isActive ? active : "")}
+          >
             Trang chủ
           </NavLink>
 
@@ -110,7 +112,9 @@ export const Header = () => {
               onClick={() => setOpenDropdown(!openDropdown)}
             >
               Khóa học{" "}
-              <span className={`${arrow} ${openDropdown ? rotate : ""}`}>▾</span>
+              <span className={`${arrow} ${openDropdown ? rotate : ""}`}>
+                ▾
+              </span>
             </button>
             {openDropdown && (
               <div className={dropdownMenu}>
@@ -123,6 +127,13 @@ export const Header = () => {
               </div>
             )}
           </div>
+
+          <NavLink
+            to="/JLPT"
+            className={({ isActive }) => (isActive ? active : "")}
+          >
+            Thi thử JLPT
+          </NavLink>
 
           <NavLink
             to="/about"
@@ -162,8 +173,12 @@ export const Header = () => {
                   cursor: "pointer",
                   transition: "transform 0.2s ease",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
-                onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1.0)")}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.transform = "scale(1.1)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.transform = "scale(1.0)")
+                }
               >
                 <FiShoppingCart size={21} color="#444" />
                 {cartCount > 0 && (
@@ -196,8 +211,12 @@ export const Header = () => {
                   cursor: "pointer",
                   transition: "color 0.2s ease, transform 0.2s ease",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
-                onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1.0)")}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.transform = "scale(1.1)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.transform = "scale(1.0)")
+                }
               >
                 <FiBell size={21} color="#444" />
                 <span
@@ -221,7 +240,11 @@ export const Header = () => {
                 trigger={["click"]}
               >
                 <Space style={{ cursor: "pointer" }}>
-                  <Avatar size={36} src={user.photoURL} icon={<UserOutlined />} />
+                  <Avatar
+                    size={36}
+                    src={user.photoURL}
+                    icon={<UserOutlined />}
+                  />
                 </Space>
               </Dropdown>
             </Space>
