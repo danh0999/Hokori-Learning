@@ -1,0 +1,169 @@
+/* PAGE WRAPPER */
+.page {
+  background: #f8fafc;
+  min-height: 100vh;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* HEADER */
+.headerBlock {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.headerText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  font-size: 22px;
+  line-height: 1.2;
+  font-weight: 600;
+  color: #111827;
+}
+
+.subtitle {
+  font-size: 14px;
+  line-height: 1.4;
+  color: #6b7280;
+}
+
+/* FILTER BAR */
+.filterRow {
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.searchInput {
+  min-width: 260px;
+  max-width: 320px;
+  border-radius: 8px;
+}
+
+.statusSelect {
+  min-width: 160px;
+  .ant-select-selector {
+    border-radius: 8px !important;
+  }
+}
+
+/* style popup của select cho nó bo mềm và đổ bóng đẹp */
+.selectPopup {
+  .ant-select-item {
+    font-size: 14px;
+  }
+  .ant-select-item-option-content {
+    font-weight: 500;
+  }
+  .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+    background-color: #eff6ff !important;
+    color: #1e40af !important;
+  }
+  .ant-select-dropdown {
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* TABLE CARD */
+.tableCard {
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+
+  /* override antd table look */
+  :global(.ant-table-wrapper) {
+    border-radius: 16px;
+  }
+
+  :global(.ant-table) {
+    border-radius: 16px;
+  }
+
+  :global(.ant-table-thead > tr > th) {
+    background: #f9fafb !important;
+    font-weight: 600;
+    color: #374151;
+    font-size: 14px;
+    border-bottom: 1px solid #e5e7eb !important;
+  }
+
+  :global(.ant-table-tbody > tr > td) {
+    font-size: 14px;
+    color: #111827;
+    vertical-align: top;
+    border-bottom: 1px solid #f1f5f9 !important;
+    padding: 14px 16px !important;
+  }
+
+  :global(.ant-table-tbody > tr:hover > td) {
+    background: #f9fafb !important;
+  }
+
+  :global(.ant-pagination) {
+    padding: 12px 16px;
+  }
+}
+
+/* COURSE TITLE CELL */
+.courseTitle {
+  font-weight: 600;
+  color: #111827;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.courseCode {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+/* STATUS TAG */
+.statusTag {
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  line-height: 1.4;
+  padding: 2px 8px !important;
+  font-weight: 500;
+}
+.unassigned {
+  font-size: 13px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.meAssignee {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2563eb; /* xanh dương: you */
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.otherAssignee {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
