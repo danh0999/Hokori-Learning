@@ -122,6 +122,7 @@ const RegisterForm = () => {
       toast.error(
         e?.response?.data?.error ||
           e?.response?.data?.message ||
+          e?.message ||
           "Đăng ký thất bại!"
       );
     } finally {
