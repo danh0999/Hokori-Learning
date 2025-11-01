@@ -1,0 +1,98 @@
+.card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.75rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25px;
+
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #111827;
+  }
+
+  span {
+    font-size: 0.9rem;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+.content {
+  margin-top: 0 !important; /*  loại bỏ khoảng trắng trên */
+  margin-bottom: 1rem; /* khoảng cách nhỏ phía dưới */
+  font-size: 1rem;
+  color: #111827;
+  line-height: 1.6;
+}
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.option {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s ease;
+
+  input {
+    accent-color: #2563eb;
+  }
+}
+
+.option:hover {
+  border-color: #2563eb;
+}
+
+.active {
+  background: #eef2ff;
+  border-color: #2563eb;
+}
+
+.label {
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1.5rem;
+
+  button {
+    border: none;
+    background: #2563eb;
+    color: #fff;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 0.6rem 1.25rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  button:hover {
+    background: #1d4ed8;
+  }
+}
+section h2 {
+  margin-bottom: 0.25rem !important;
+  text-align: left !important;
+  text-transform: none !important;
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}

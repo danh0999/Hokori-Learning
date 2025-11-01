@@ -22,6 +22,7 @@ import LessonPlayer from "../pages/LessonPlayer/LessonPlayer";
 import QuizPage from "../pages/QuizPage/QuizPage";
 import MyFlashcards from "../pages/Flashcards/MyFlashcards";
 import ProfilePage from "../pages/Profile/ProfilePage";
+import JLPTTestPage from "../pages/JLPTTest/JLPTTestPage";
 // ===== Teacher/Admin/Moderator =====
 import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
 import ManageCourses from "../pages/Teacher/Courses/ManageCourses";
@@ -72,7 +73,14 @@ const routes = [
           { path: "my-flashcards", element: <MyFlashcards /> },
           { path: "cart", element: <Cart /> },
           { path: "profile", element: <ProfilePage /> },
-          {path: "JLPT", element: <JLPTList/>},
+          {
+            path: "jlpt",
+            element: <JLPTList />,
+          },
+          {
+            path: "jlpt/test/:testId",
+            element: <JLPTTestPage />, // import ở trên
+          },
 
           {
             path: "lesson/:lessonId",

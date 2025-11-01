@@ -9,11 +9,10 @@ const QuizPage = () => {
   const [quizData, setQuizData] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState({});
-  const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 phút demo
-  const [modalData, setModalData] = useState(null); // {type:'warn'|'result', score?}
+  const [timeLeft, setTimeLeft] = useState(30 * 60);
+  const [modalData, setModalData] = useState(null);
 
   useEffect(() => {
-    //  MOCK DATA — sẽ xoá khi call API thật
     const mockQuiz = {
       title: "JLPT N3 Mock Test – Grammar Section",
       duration: 30 * 60,
@@ -27,14 +26,8 @@ const QuizPage = () => {
     };
     setQuizData(mockQuiz);
     setTimeLeft(mockQuiz.duration);
-    //  END MOCK — khi có API:
-    // const res = await fetch(`/api/quiz/${quizId}`);
-    // const data = await res.json();
-    // setQuizData(data);
-    // setTimeLeft(data.duration);
   }, []);
 
-  // ⏱ đếm ngược & auto nộp khi hết giờ
   useEffect(() => {
     if (timeLeft <= 0) { handleSubmit(true); return; }
     const t = setInterval(() => setTimeLeft(v => (v > 0 ? v - 1 : 0)), 1000);
@@ -51,19 +44,15 @@ const QuizPage = () => {
   const handleNext = () => quizData && currentIndex < quizData.questions.length - 1 && setCurrentIndex(i => i + 1);
   const handlePrev = () => currentIndex > 0 && setCurrentIndex(i => i - 1);
 
-  //  xử lý nộp bài
   const handleSubmit = (force = false) => {
     if (!quizData) return;
     const total = quizData.questions.length;
     const done = Object.keys(answers).length;
-
-    // chưa làm hết & không phải auto (hết giờ) → cảnh báo
     if (done < total && !force) {
       setModalData({ type: "warn" });
       return;
     }
 
-    // tính điểm (mock)
     let correct = 0;
     quizData.questions.forEach(q => {
       if (answers[q.id] === q.correct) correct++;
@@ -77,10 +66,6 @@ const QuizPage = () => {
         percent: Math.round((correct / total) * 100),
       },
     });
-
-    //  Khi có API, thay bằng submit lên server:
-    // await fetch('/api/quiz/submit', {method:'POST', body: JSON.stringify({ answers })})
-    // → setModalData({ type:'result', score: serverScore })
   };
 
   return (
@@ -88,9 +73,8 @@ const QuizPage = () => {
       <QuizHeader
         quiz={quizData}
         timeLeft={formatTime(timeLeft)}
-        onSubmit={() => handleSubmit(false)}  // ⬅️ truyền hàm nộp xuống Header
+        onSubmit={() => handleSubmit(false)}
       />
-
       <main className={styles.main}>
         <div className={styles.layout}>
           <section className={styles.quizArea}>
@@ -114,8 +98,6 @@ const QuizPage = () => {
           </aside>
         </div>
       </main>
-
-      {/* modal có điều khiển từ QuizPage */}
       <SubmitModal
         data={modalData}
         onClose={() => setModalData(null)}

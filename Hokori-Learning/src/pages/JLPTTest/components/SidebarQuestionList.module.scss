@@ -1,0 +1,76 @@
+.sidebar {
+  padding: 1.25rem;
+}
+
+.sidebar h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 1rem;
+}
+
+.grid {
+  display: grid;
+ grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.numBtn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #f9fafb;
+  cursor: pointer;
+  color: #111827;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.numBtn:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.current {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.answered {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
+}
+
+.status {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 1rem;
+  font-size: 0.9rem;
+  color: #374151;
+
+  div {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 0.4rem;
+  }
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.dotDoing {
+  background: #2563eb;
+}
+.dotAnswered {
+  background: #48f80394;
+}
+.dotNotYet {
+  background: #fc0e0e;
+}
