@@ -11,9 +11,10 @@ const QuestionCard = ({
 }) => (
   <div className={styles.card}>
     <div className={styles.header}>
-      <h2>Câu {question.order_index}</h2>
+      <h2 className={styles.title}>Câu {question.order_index}</h2>
+
       <span>
-        <i className="fa-regular fa-clock" />  {lastSavedAt}
+        <i className="fa-regular fa-clock" /> {lastSavedAt}
       </span>
     </div>
 
@@ -31,7 +32,9 @@ const QuestionCard = ({
               type="radio"
               name={`q-${question.question_id}`}
               checked={checked}
-              onChange={() => onSelectOption(question.question_id, opt.option_id)}
+              onChange={() =>
+                onSelectOption(question.question_id, opt.option_id)
+              }
             />
             <div>
               <span className={styles.label}>{opt.label}.</span>

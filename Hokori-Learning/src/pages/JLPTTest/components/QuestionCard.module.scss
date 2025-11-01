@@ -88,11 +88,19 @@
     background: #1d4ed8;
   }
 }
-section h2 {
-  margin-bottom: 0.25rem !important;
-  text-align: left !important;
-  text-transform: none !important;
-  animation: none !important;
-  opacity: 1 !important;
-  transform: none !important;
+// section h2 {
+//   margin-bottom: 0.25rem !important;
+//   text-align: left !important;
+//   text-transform: none !important;
+//   animation: none !important;
+//   opacity: 1 !important;
+//   transform: none !important;
+// }
+.title {
+  margin-bottom: 0.25rem;
+  text-align: left;
+  text-transform: none;
+  animation: none;
+  opacity: 1;
+  transform: none;
 }
