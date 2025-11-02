@@ -1,0 +1,342 @@
+/* ===== PAGE WRAPPER ===== */
+.wrapper {
+  background: #f9fafb;
+  min-height: 100vh;
+  font-family: "Inter", sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 0 3rem;
+  color: #111827;
+}
+
+/* ===== HEADER BAR (trong figma: hàng trắng full-width với viền xám nhạt) ===== */
+.headerBar {
+  max-width: 1280px;
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 1rem 1.25rem;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  column-gap: 1rem;
+}
+
+.testTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #111827;
+  margin: 0;
+}
+
+.headerRight {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.timerBox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  background: #f9fafb;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.timerText {
+  font-variant-numeric: tabular-nums;
+}
+
+.submitBtn {
+  background: #2563eb;
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  line-height: 1.2;
+  transition: background 0.15s ease;
+}
+
+.submitBtn:hover {
+  background: #1d4ed8;
+}
+
+/* ===== MAIN GRID (2 CỘT: sidebar | câu hỏi & progress) ===== */
+.main {
+  max-width: 1280px;
+  width: 100%;
+  margin-top: 1.5rem;
+
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  column-gap: 1.5rem;
+  align-items: start;
+}
+
+/* ===== SIDEBAR CARD ===== */
+.sidebarCard {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+
+  padding: 1rem 1rem 1.25rem;
+}
+
+/* Lưu ý: SidebarQuestionList.jsx tự có nội dung, 
+   KHÔNG cần thêm border inside nữa. */
+
+/* ===== CỘT PHẢI (CÂU HỎI + TIẾP TỤC + TIẾN ĐỘ) ===== */
+.questionArea {
+  display: flex;
+  flex-direction: column;
+  row-gap: 1rem;
+}
+
+/* Card câu hỏi chính */
+.questionCardWrap {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+
+  padding: 1.25rem 1.25rem 1rem;
+}
+
+/* Nút "Tiếp tục phần Đọc hiểu" nằm 1 dòng riêng dưới card */
+.nextSection {
+  display: flex;
+  justify-content: center;
+}
+
+.nextSectionBtn {
+  background: #2563eb;
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  padding: 0.7rem 1.25rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1.2;
+  transition: background 0.15s ease;
+}
+
+.nextSectionBtn:hover {
+  background: #1d4ed8;
+}
+
+/* ===== TIẾN ĐỘ HOÀN THÀNH (thay cho cột thứ 3 cũ) ===== */
+.progressCard {
+  padding: 1rem 1.25rem;
+}
+
+.progressTopRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.progressLabel {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.progressPct {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #2563eb;
+  font-variant-numeric: tabular-nums;
+}
+
+.progressTrack {
+  width: 100%;
+  height: 8px;
+  background: #eef2ff;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  background: #2563eb;
+  transition: width 0.25s ease;
+}
+
+/* ===== AUDIO PLAYER (LISTENING) ===== */
+.audioBlock {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.audioBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.audioBtn:hover {
+  background: #1e4ed8;
+}
+
+.audioBtn i {
+  font-size: 1rem;
+}
+/* ===== AUDIO PLAYER – ENHANCED VISUAL ===== */
+.audioBlock {
+
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.75rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+}
+
+.audioControls {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.audioBtn {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+}
+
+.audioBtn:hover {
+  transform: scale(1.08);
+}
+
+.progressContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.progressBar {
+  width: 100%;
+  height: 8px; /* dài và dày hơn */
+  border-radius: 5px;
+  appearance: none;
+  background: linear-gradient(90deg, #93c5fd, #2563eb);
+  cursor: pointer;
+  outline: none;
+}
+
+.progressBar::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #2563eb;
+  transition: all 0.2s ease;
+}
+
+.progressBar::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+  background: #1e40af;
+}
+
+.timeBox {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+/* ===== WAVING EFFECT – MINI FAKE WAVEFORM ===== */
+.waveWrapper {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 22px;
+}
+
+.waveBar {
+  width: 3px;
+  height: 6px;
+  border-radius: 2px;
+  background: #2563eb;
+  opacity: 0.4;
+  animation: waveIdle 1s infinite ease-in-out;
+}
+
+.waveBar.playing {
+  animation: wavePlay 0.6s infinite ease-in-out;
+}
+
+@keyframes waveIdle {
+  0%,
+  100% {
+    height: 6px;
+    opacity: 0.4;
+  }
+  50% {
+    height: 10px;
+    opacity: 0.6;
+  }
+}
+
+@keyframes wavePlay {
+  0%,
+  100% {
+    height: 6px;
+    opacity: 0.4;
+  }
+  25% {
+    height: 16px;
+    opacity: 0.9;
+  }
+  50% {
+    height: 10px;
+    opacity: 0.7;
+  }
+  75% {
+    height: 18px;
+    opacity: 1;
+  }
+}
