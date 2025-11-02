@@ -15,7 +15,7 @@ const SidebarQuestionList = ({
     <aside className={styles.sidebar}>
       <h3>Danh sách câu hỏi</h3>
 
-      {/* ✅ Vùng chứa có scroll */}
+      {/*  Vùng chứa có scroll */}
       <div className={styles.scrollContainer}>
         <div className={styles.grid}>
           {questions.map((q, idx) => {
