@@ -13,7 +13,7 @@ const Listening = ({ onNextSection }) => {
     total_questions: 3,
   };
 
-  // 🎧 Bảng jlpt_listening_question (theo DB Diagram)
+  //  Bảng jlpt_listening_question (theo DB Diagram)
   const jlpt_listening_questions = [
     {
       id: 1,
@@ -201,7 +201,7 @@ const Listening = ({ onNextSection }) => {
 
         {/* QUESTION AREA */}
         <section className={styles.questionArea}>
-          {/* 🎧 Audio player */}
+          {/*  Audio player */}
           <div className={styles.audioBlock}>
   <audio
     ref={audioRef}

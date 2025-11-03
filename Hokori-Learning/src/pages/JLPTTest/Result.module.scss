@@ -1,0 +1,146 @@
+.resultWrapper {
+  min-height: 100vh;
+  background: #f9fafb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  font-family: "Inter", sans-serif;
+  color: #111827;
+}
+
+.resultCard {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
+  padding: 3rem 4rem;
+  max-width: 780px;
+  width: 100%;
+  text-align: center;
+}
+
+.title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #2563eb;
+  margin-bottom: 0.25rem;
+}
+
+.subtitle {
+  color: #6b7280;
+  margin-bottom: 2.5rem;
+}
+
+.overallBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.chart {
+  width: 140px;
+  height: 140px;
+}
+
+.overallInfo {
+  text-align: left;
+}
+
+.overallInfo h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.overallInfo p {
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.sectionList {
+  margin-bottom: 3rem;
+  text-align: left;
+}
+
+.sectionItem {
+  margin-bottom: 1.5rem;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.sectionHeader h3 {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #111827;
+}
+
+.score {
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.progressBar {
+  width: 100%;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #93c5fd, #2563eb);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.retryBtn,
+.backBtn {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.95rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.retryBtn {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+}
+
+.retryBtn:hover {
+  background: #1e4ed8;
+  transform: translateY(-1px);
+}
+
+.backBtn {
+  background: #f3f4f6;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+}
+
+.backBtn:hover {
+  background: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+.backBtn:active {
+  transform: scale(0.98);
+}
