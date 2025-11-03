@@ -2,48 +2,54 @@ import React, { useState } from "react";
 import MultipleChoice from "./MultipleChoice";
 import Reading from "./Reading";
 import Listening from "./Listening";
+import Result from "./Result"; // sửa lại import chuẩn
 import styles from "./JLPTTestPage.module.scss";
 
 const JLPTTestPage = () => {
-  // currentSection: xác định phần hiện tại (multiple / reading / listening / result)
   const [currentSection, setCurrentSection] = useState("multiple");
 
-  // hàm dùng chung để chuyển tiếp sang phần sau
-  const handleNextSection = () => {
-    if (currentSection === "multiple") setCurrentSection("reading");
-    else if (currentSection === "reading") setCurrentSection("listening");
-    else if (currentSection === "listening") setCurrentSection("result");
+  // lưu điểm từng phần
+  const [sectionScores, setSectionScores] = useState({
+    multiple: null,
+    reading: null,
+    listening: null,
+  });
+
+  // hàm nhận điểm từ mỗi phần thi và chuyển sang phần kế tiếp
+  const handleNextSection = (sectionName, scorePercent) => {
+    setSectionScores((prev) => ({ ...prev, [sectionName]: scorePercent }));
+
+    if (sectionName === "multiple") setCurrentSection("reading");
+    else if (sectionName === "reading") setCurrentSection("listening");
+    else if (sectionName === "listening") setCurrentSection("result");
   };
 
   return (
     <div className={styles.wrapper}>
-      {/*  Phần trắc nghiệm (Từ vựng & Ngữ pháp) */}
+      {/* Phần trắc nghiệm */}
       {currentSection === "multiple" && (
-        <MultipleChoice onNextSection={handleNextSection} />
+        <MultipleChoice
+          onNextSection={(score) => handleNextSection("multiple", score)}
+        />
       )}
 
-      {/*  Phần đọc hiểu */}
+      {/* Phần đọc hiểu */}
       {currentSection === "reading" && (
-        <Reading onNextSection={handleNextSection} />
+        <Reading
+          onNextSection={(score) => handleNextSection("reading", score)}
+        />
       )}
 
-      {/*  Phần nghe hiểu */}
+      {/* Phần nghe hiểu */}
       {currentSection === "listening" && (
-        <Listening onNextSection={handleNextSection} />
+        <Listening
+          onNextSection={(score) => handleNextSection("listening", score)}
+        />
       )}
 
-      {/*  (Tùy chọn) Màn kết quả cuối cùng */}
+      {/* Kết quả tổng */}
       {currentSection === "result" && (
-        <div className={styles.resultBox}>
-          <h2> Bạn đã hoàn thành toàn bộ bài thi JLPT N3!</h2>
-          <p>Chúc mừng bạn! Hệ thống sẽ lưu kết quả vào hồ sơ học tập.</p>
-          <button
-            className={styles.retryBtn}
-            onClick={() => setCurrentSection("multiple")}
-          >
-            Làm lại
-          </button>
-        </div>
+        <Result sectionScores={sectionScores} />
       )}
     </div>
   );

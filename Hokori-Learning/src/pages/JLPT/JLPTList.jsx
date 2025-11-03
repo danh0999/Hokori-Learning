@@ -38,7 +38,7 @@ const JLPTList = () => {
     },
     {
       event_id: 103,
-      title: "JLPT N3 Grammar & Vocabulary Focus",
+      title: "JLPT N3 Grammar",
       level: "N3",
       status: "ACTIVE",
       description: "Bài luyện chuyên sâu ngữ pháp và từ vựng N3.",
