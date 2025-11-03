@@ -90,6 +90,7 @@ const routes = [
     path: "teacher",
     // element: <ProtectedRoute allow={["TEACHER"]} />,
     children: [
+      // ✅ Các trang có layout chung
       {
         path: "",
         element: <RoleLayout role="teacher" />,
@@ -98,13 +99,18 @@ const routes = [
           { index: true, element: <TeacherDashboard /> },
           { path: "manage-courses", element: <ManageCourses /> },
           { path: "courseinfo/:id", element: <CourseInformation /> },
-          { path: "create-course", element: <CreateCoursePage /> },
           { path: "students", element: <Stub title="Students" /> },
           { path: "revenue", element: <Stub title="Revenue" /> },
           { path: "messages", element: <Stub title="Messages" /> },
           { path: "profile", element: <TeacherProfilePage /> },
           { path: "*", element: <ErrorPage /> },
         ],
+      },
+
+      // ✅ Trang tách riêng, không dùng RoleLayout
+      {
+        path: "create-course",
+        element: <CreateCoursePage />,
       },
     ],
   },

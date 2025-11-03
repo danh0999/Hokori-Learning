@@ -2,11 +2,11 @@ import React, { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { Card, Tabs, Button, Tag, Space, message } from "antd";
 
-import CourseOverview from "../components/CourseOverview/CourseOverview.jsx";
-import CurriculumBuilder from "../components/Curriculum Builder/CurriculumBuilder.jsx";
-import PricingStep from "../components/PricingStep/PricingStep.jsx";
-import QuizList from "../components/Quiz/QuizList.jsx"; // bạn đã có QuizList
-import FlashcardPanel from "../components/Flashcard/FlashcardPanel.jsx"; // bạn đã có FlashcardPanel
+import CourseOverview from "../Create-Course/components/CourseOverview/CourseOverview.jsx";
+import CurriculumBuilder from "../Create-Course/components/Curriculum Builder/CurriculumBuilder.jsx";
+import PricingStep from "../Create-Course/components/PricingStep/PricingStep.jsx";
+import QuizList from "../../ManageDocument/Quiz/QuizList.jsx"; // bạn đã có QuizList
+import FlashcardPanel from "../../ManageDocument/Flashcard/FlashcardPanel.jsx"; // bạn đã có FlashcardPanel
 import UploadMedia from "../components/Upload Media/UploadMedia.jsx"; // quản lý thư viện media của course
 
 import styles from "./styles.module.scss";
