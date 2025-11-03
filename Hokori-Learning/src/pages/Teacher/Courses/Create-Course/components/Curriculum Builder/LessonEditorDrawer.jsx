@@ -12,10 +12,13 @@ import {
   Typography,
 } from "antd";
 import { InboxOutlined } from "@ant-design/icons";
-import LessonMediaPicker from "../../components/LessonMediaPicker/LessonMediaPicker.jsx";
-import QuizList from "../../components/Quiz/QuizList.jsx";
-import FlashcardPanel from "../../components/Flashcard/FlashcardPanel.jsx";
+import LessonMediaPicker from "../../../components/LessonMediaPicker/LessonMediaPicker.jsx";
+import QuizList from "../../../../ManageDocument/Quiz/QuizList.jsx";
+import QuizBuilderModal from "../../../../ManageDocument/Quiz/QuizBuilderModal/QuizBuilderModal.jsx";
+import ImportQuizModal from "../../../../ManageDocument/Quiz/QuizBuilderModal/ImportQuizModal.jsx";
+import FlashcardPanel from "../../../../ManageDocument/Flashcard/FlashcardPanel.jsx";
 import styles from "./styles.module.scss";
+import BulkImportModal from "../../../../ManageDocument/Quiz/BulkImportModal/BulkImportModal.jsx";
 
 const { TextArea } = Input;
 const { Dragger } = Upload;
@@ -24,7 +27,22 @@ const { Text } = Typography;
 export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
   const [local, setLocal] = useState(lesson || {});
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
+  // Quản lý quiz
+  const [openCreateQuiz, setOpenCreateQuiz] = useState(false);
+  const [openImportQuiz, setOpenImportQuiz] = useState(false);
+  const [quizLibrary, setQuizLibrary] = useState([]); // thư viện quiz tạm trong quá trình tạo course
+  const [editingQuiz, setEditingQuiz] = useState(null);
+  const [openBulk, setOpenBulk] = useState(false);
 
+  // Helper immutable update theo id
+  const upsertById = (arr, item) => {
+    const i = arr.findIndex((x) => x.id === item.id);
+    if (i === -1) return [item, ...arr];
+    const clone = [...arr];
+    clone[i] = item;
+    return clone;
+  };
+  const removeById = (arr, id) => arr.filter((x) => x.id !== id);
   const handleChange = (field, value) => {
     setLocal({ ...local, [field]: value });
   };
@@ -52,7 +70,7 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
       open={open}
       onClose={onClose}
       width={720}
-      title={`Edit: ${local.title || "Lesson"}`}
+      title={` ${local.title || "Lesson"}`}
       extra={
         <Button type="primary" onClick={handleSave}>
           Save changes
@@ -167,10 +185,109 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
             key: "3",
             label: "Quick Quiz",
             children: (
-              <QuizList
-                value={local.quizQuick || []}
-                onChange={(v) => handleChange("quizQuick", v)}
-              />
+              <>
+                <Space style={{ marginBottom: 12 }}>
+                  <Button onClick={() => setOpenBulk(true)}>Bulk import</Button>
+                  <Button
+                    type="dashed"
+                    onClick={() => {
+                      setEditingQuiz(null);
+                      setOpenCreateQuiz(true);
+                    }}
+                  >
+                    New quiz
+                  </Button>
+                  <Button onClick={() => setOpenImportQuiz(true)}>
+                    Import
+                  </Button>
+                </Space>
+
+                <QuizList
+                  value={local.quizQuick || []}
+                  onChange={(v) => handleChange("quizQuick", v)}
+                  onCreateNew={() => {
+                    setEditingQuiz(null);
+                    setOpenCreateQuiz(true);
+                  }}
+                  onImport={() => setOpenImportQuiz(true)}
+                  onEdit={(q) => {
+                    setEditingQuiz(q);
+                    setOpenCreateQuiz(true);
+                  }}
+                  onRemove={(id) => {
+                    handleChange(
+                      "quizQuick",
+                      removeById(local.quizQuick || [], id)
+                    );
+                    message.success("Removed quiz from lesson");
+                  }}
+                />
+
+                <BulkImportModal
+                  open={openBulk}
+                  onCancel={() => setOpenBulk(false)}
+                  onDone={(questions) => {
+                    const newQuiz = {
+                      id: crypto.randomUUID(),
+                      title: `Imported Quiz ${new Date().toLocaleString()}`,
+                      description: "Imported from text/image",
+                      timeLimit: 30,
+                      passingScore: 60,
+                      shuffleOptions: true,
+                      shuffleQuestions: false,
+                      questions,
+                      points: questions.reduce(
+                        (s, q) => s + (q.points || 1),
+                        0
+                      ),
+                    };
+                    setQuizLibrary((lib) => [newQuiz, ...lib]);
+                    handleChange("quizQuick", [
+                      ...(local.quizQuick || []),
+                      newQuiz,
+                    ]);
+                    setOpenBulk(false);
+                    message.success(`Đã import ${questions.length} câu hỏi`);
+                  }}
+                />
+
+                {/* Create / Edit modal */}
+                <QuizBuilderModal
+                  open={openCreateQuiz}
+                  initial={editingQuiz} // <-- Pass vào để Edit
+                  onCancel={() => {
+                    setOpenCreateQuiz(false);
+                    setEditingQuiz(null);
+                  }}
+                  onSave={(saved) => {
+                    // 1) cập nhật lesson quizzes
+                    const nextLesson = upsertById(local.quizQuick || [], saved);
+                    handleChange("quizQuick", nextLesson);
+                    // 2) cập nhật library tạm
+                    setQuizLibrary((lib) => upsertById(lib, saved));
+                    setOpenCreateQuiz(false);
+                    setEditingQuiz(null);
+                    message.success(
+                      editingQuiz ? "Quiz updated" : "Quiz added"
+                    );
+                  }}
+                />
+
+                {/* Import modal */}
+                <ImportQuizModal
+                  open={openImportQuiz}
+                  onCancel={() => setOpenImportQuiz(false)}
+                  library={quizLibrary}
+                  onPick={(picked) => {
+                    handleChange(
+                      "quizQuick",
+                      upsertById(local.quizQuick || [], picked)
+                    );
+                    setOpenImportQuiz(false);
+                    message.success("Imported quiz into lesson");
+                  }}
+                />
+              </>
             ),
           },
           {

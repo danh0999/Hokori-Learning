@@ -144,7 +144,7 @@ export default function CurriculumBuilder({ sections = [], setSections }) {
                           setOpenLesson({ secId: sec.id, lesId: les.id })
                         }
                       >
-                        Edit lesson
+                        Add Content
                       </Button>
                       <Button
                         icon={<DeleteOutlined />}

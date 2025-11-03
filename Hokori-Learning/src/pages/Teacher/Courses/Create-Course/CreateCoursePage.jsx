@@ -4,20 +4,20 @@ import { Button, Steps, message } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 
-import CourseOverview from "../components/CourseOverview/CourseOverview.jsx";
-import CurriculumBuilder from "../components/Curriculum Builder/CurriculumBuilder.jsx";
-import PricingStep from "../components/PricingStep/PricingStep.jsx";
-import PublishStep from "../components/PublishStep/PublishStep.jsx";
+import CourseOverview from "./components/CourseOverview/CourseOverview.jsx";
+import CurriculumBuilder from "./components/Curriculum Builder/CurriculumBuilder.jsx";
+import PricingStep from "./components/PricingStep/PricingStep.jsx";
+import PublishStep from "./components/PublishStep/PublishStep.jsx";
+import SidebarWizardNav from "./components/SideWizardNav/SidebarWizardNav.jsx";
 
 import styles from "./styles.module.scss";
+import ScrollToTopButton from "../../../../components/SrcollToTopButton/ScrollToTopButton.jsx";
 
 export default function CreateCoursePage() {
   const navigate = useNavigate();
-
-  // ----- wizard step -----
   const [step, setStep] = useState(0);
 
-  // ----- MAIN STATES (shared across steps) -----
+  // 1️⃣ State chính luôn phải khai báo trước
   const [courseBasics, setCourseBasics] = useState({
     title: "",
     subtitle: "",
@@ -28,16 +28,10 @@ export default function CreateCoursePage() {
     thumbnailUrl: "",
   });
 
-  // sections = [{ id, title, lessons:[ { id, title, contentSummary, ... } ] }]
   const [sections, setSections] = useState([]);
-
   const [price, setPrice] = useState(199000);
 
-  // You can also hold quizPool, flashcards, etc., here later if you want
-  // const [quizPool, setQuizPool] = useState([]);
-  // const [flashcards, setFlashcards] = useState([]);
-
-  // check if ready to publish
+  // 2️⃣ Sau đó mới đến useMemo
   const canPublish = useMemo(() => {
     const hasTitle = courseBasics.title.trim().length > 0;
     const hasDesc = courseBasics.description.trim().length > 0;
@@ -45,6 +39,26 @@ export default function CreateCoursePage() {
     const hasAnyLesson = sections.some((s) => s.lessons.length > 0);
     return hasTitle && hasDesc && hasThumb && hasAnyLesson;
   }, [courseBasics, sections]);
+
+  const basicsDone = useMemo(() => {
+    const hasTitle = courseBasics.title.trim().length > 0;
+    const hasDesc = courseBasics.description.trim().length > 0;
+    const hasThumb = !!courseBasics.thumbnailUrl;
+    return hasTitle && hasDesc && hasThumb;
+  }, [courseBasics]);
+
+  const curriculumDone = useMemo(() => {
+    return sections.some((s) => s.lessons && s.lessons.length > 0);
+  }, [sections]);
+
+  const pricingDone = useMemo(() => Number(price) > 0, [price]);
+
+  const status = {
+    basicsDone,
+    curriculumDone,
+    pricingDone,
+    readyToPublish: canPublish,
+  };
 
   const handleSubmitForReview = () => {
     if (!canPublish) {
@@ -127,35 +141,17 @@ export default function CreateCoursePage() {
       <div className={styles.contentRow}>
         {/* Sidebar steps / wizard nav */}
         <aside className={styles.sidebar}>
-          <Steps
-            direction="vertical"
-            size="small"
-            current={step}
-            onChange={setStep}
-            items={[
-              {
-                title: "Course Info",
-                description: "Title, description, thumbnail",
-              },
-              {
-                title: "Curriculum",
-                description: "Sections & lessons",
-              },
-              {
-                title: "Pricing",
-                description: "Set your price",
-              },
-              {
-                title: "Publish",
-                description: "Review & submit",
-              },
-            ]}
+          <SidebarWizardNav
+            step={step}
+            onChangeStep={setStep}
+            status={status}
           />
         </aside>
 
         {/* Main panel */}
         <main className={styles.mainPanel}>{renderStep()}</main>
       </div>
+      <ScrollToTopButton />
     </div>
   );
 }
