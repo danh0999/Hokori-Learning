@@ -23,6 +23,7 @@ import QuizPage from "../pages/QuizPage/QuizPage";
 import MyFlashcards from "../pages/Flashcards/MyFlashcards";
 import ProfilePage from "../pages/Profile/ProfilePage";
 import JLPTTestPage from "../pages/JLPTTest/JLPTTestPage";
+import Information from "../pages/Information/Information";
 // ===== Teacher/Admin/Moderator =====
 import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
 import ManageCourses from "../pages/Teacher/Courses/ManageCourses";
@@ -58,6 +59,7 @@ const routes = [
       { path: "course/:courseId", element: <CourseDetail /> },
       { path: "about", element: <AboutPage /> },
       { path: "contact", element: <Contact /> },
+      { path: "information", element: <Information /> },
 
       // ===== Learner Area (Yêu cầu đăng nhập) =====
       {

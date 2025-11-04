@@ -75,6 +75,7 @@ const Home = () => {
         viewport={{ once: false, amount: 0.4 }}
       >
         <Faqs />
+
         <ScrollToTopButton />
       </motion.div>
     </div>

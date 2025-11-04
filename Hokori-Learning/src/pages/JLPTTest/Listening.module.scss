@@ -213,96 +213,101 @@
 .audioBtn i {
   font-size: 1rem;
 }
-/* ===== AUDIO PLAYER – ENHANCED VISUAL ===== */
+/* ===== AUDIO PLAYER (LISTENING) ===== */
 .audioBlock {
-
+  background: #f9fafb;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   padding: 1rem 1.5rem;
   margin-bottom: 1.75rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
 }
 
-.audioControls {
-  display: flex;
-  align-items: center;
-  gap: 1.2rem;
-}
-
+/* Nút play/pause */
 .audioBtn {
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
   color: #fff;
   border: none;
   border-radius: 50%;
-  width: 50px;
-  height: 50px;
+  width: 54px;
+  height: 54px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
 }
 
 .audioBtn:hover {
   transform: scale(1.08);
+  background: linear-gradient(135deg, #1e40af, #2563eb);
 }
 
+/* ===== TRACKBAR ===== */
 .progressContainer {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  gap: 0.25rem;
 }
 
 .progressBar {
+  position: relative;
   width: 100%;
-  height: 8px; /* dài và dày hơn */
-  border-radius: 5px;
-  appearance: none;
-  background: linear-gradient(90deg, #93c5fd, #2563eb);
-  cursor: pointer;
-  outline: none;
-}
-
-.progressBar::-webkit-slider-thumb {
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
+  height: 8px;
   background: #2563eb;
-  transition: all 0.2s ease;
+  border-radius: 9999px;
+  overflow: hidden;
 }
 
-.progressBar::-webkit-slider-thumb:hover {
-  transform: scale(1.25);
-  background: #1e40af;
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #93c5fd, #2563eb);
+  transition: width 0.2s linear;
+  border-radius: 9999px;
 }
 
+/* Thời gian bên dưới thanh */
 .timeBox {
   display: flex;
   justify-content: space-between;
-  margin-top: 0.25rem;
   font-size: 0.8rem;
   color: #6b7280;
+  font-variant-numeric: tabular-nums;
 }
 
-/* ===== WAVING EFFECT – MINI FAKE WAVEFORM ===== */
+/* ===== WAVEFORM ANIMATION ===== */
 .waveWrapper {
   display: flex;
   align-items: flex-end;
-  gap: 3px;
+  justify-content: flex-start;
   height: 22px;
+  gap: 3px;
+  margin-left: 4px;
 }
 
 .waveBar {
   width: 3px;
   height: 6px;
-  border-radius: 2px;
   background: #2563eb;
-  opacity: 0.4;
+  border-radius: 2px;
+  opacity: 0.5;
   animation: waveIdle 1s infinite ease-in-out;
+}
+
+.waveBar:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.waveBar:nth-child(3) {
+  animation-delay: 0.4s;
+}
+.waveBar:nth-child(4) {
+  animation-delay: 0.6s;
 }
 
 .waveBar.playing {
@@ -317,7 +322,7 @@
   }
   50% {
     height: 10px;
-    opacity: 0.6;
+    opacity: 0.7;
   }
 }
 
@@ -325,15 +330,15 @@
   0%,
   100% {
     height: 6px;
-    opacity: 0.4;
+    opacity: 0.5;
   }
   25% {
     height: 16px;
-    opacity: 0.9;
+    opacity: 1;
   }
   50% {
     height: 10px;
-    opacity: 0.7;
+    opacity: 0.8;
   }
   75% {
     height: 18px;
