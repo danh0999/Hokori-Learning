@@ -1,263 +1,203 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import styles from "./Listening.module.scss";
 import SidebarQuestionList from "./components/SidebarQuestionList";
 import QuestionCard from "./components/QuestionCard";
-import SubmitModal from "../QuizPage/components/SubmitModal";
+import JLPTModal from "./components/JLPTModal";
 
-const Listening = ({ onNextSection }) => {
-  // ===== MOCK DATA =====
+const jlpt_listening_questions = [
+  {
+    id: 1,
+    audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+    content: "Nghe đoạn hội thoại và chọn đáp án đúng.",
+    options: [
+      "Người đàn ông muốn uống cà phê.",
+      "Người phụ nữ muốn đi mua sắm.",
+      "Họ đang nói về thời tiết.",
+      "Họ đang nói về công việc.",
+    ],
+    correct: "Người đàn ông muốn uống cà phê.",
+  },
+  {
+    id: 2,
+    audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+    content: "Nghe đoạn sau và chọn câu đúng nhất.",
+    options: [
+      "Cô ấy thích nấu ăn.",
+      "Cô ấy không thích nấu ăn.",
+      "Cô ấy đang học nấu ăn.",
+      "Cô ấy làm đầu bếp.",
+    ],
+    correct: "Cô ấy đang học nấu ăn.",
+  },
+];
+
+const Listening = ({ onFinishTest }) => {
   const jlpt_test = {
     test_id: 102,
     title: "JLPT N3 - Nghe hiểu",
-    time_limit_minutes: 30,
-    total_questions: 3,
   };
 
-  //  Bảng jlpt_listening_question (theo DB Diagram)
-  const jlpt_listening_questions = [
-    {
-      id: 1,
-      test_id: 102,
-      order_index: 1,
-      audio_url:
-        "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-      content: "Nghe đoạn hội thoại và chọn đáp án đúng.",
-      options: [
-        "Người đàn ông muốn uống cà phê.",
-        "Người phụ nữ muốn đi mua sắm.",
-        "Họ đang nói về thời tiết.",
-        "Họ đang nói về công việc.",
-      ],
-      correct: "Người đàn ông muốn uống cà phê.",
-    },
-    {
-      id: 2,
-      test_id: 102,
-      order_index: 2,
-      audio_url:
-        "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-      content: "Nghe đoạn sau và chọn câu đúng nhất.",
-      options: [
-        "Cô ấy thích nấu ăn.",
-        "Cô ấy không thích nấu ăn.",
-        "Cô ấy đang học nấu ăn.",
-        "Cô ấy làm đầu bếp.",
-      ],
-      correct: "Cô ấy đang học nấu ăn.",
-    },
-    {
-      id: 3,
-      test_id: 102,
-      order_index: 3,
-      audio_url:
-        "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-      content: "Nghe đoạn hội thoại và chọn đáp án phù hợp.",
-      options: [
-        "Họ đang ở siêu thị.",
-        "Họ đang ở nhà hàng.",
-        "Họ đang ở trường học.",
-        "Họ đang ở bệnh viện.",
-      ],
-      correct: "Họ đang ở nhà hàng.",
-    },
-  ];
-
-  // ===== STATES =====
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState({});
-  const [timeLeft, setTimeLeft] = useState(jlpt_test.time_limit_minutes * 60);
-  const [modalData, setModalData] = useState(null);
- 
+  const [modalOpen, setModalOpen] = useState(false);
 
+  // ====== Audio logic ======
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
 
-  const formatAudioTime = (seconds) => {
-    const m = Math.floor(seconds / 60)
-      .toString()
-      .padStart(2, "0");
-    const s = Math.floor(seconds % 60)
-      .toString()
-      .padStart(2, "0");
-    return `${m}:${s}`;
+  // ====== Format Time ======
+  const formatTime = (sec = 0) => {
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
-  // ===== TIMER =====
+  // ====== Effect: Update progress ======
   useEffect(() => {
-    if (timeLeft <= 0) {
-      handleSubmit(true);
-      return;
-    }
-    const t = setInterval(() => setTimeLeft((v) => (v > 0 ? v - 1 : 0)), 1000);
-    return () => clearInterval(t);
-  }, [timeLeft]);
+    const audio = audioRef.current;
+    if (!audio) return;
 
-  const formatTime = (sec) =>
-    `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(
-      sec % 60
-    ).padStart(2, "0")}`;
+    const updateProgress = () => setAudioProgress(audio.currentTime);
+    const setDuration = () => setAudioDuration(audio.duration || 0);
 
-  // ===== AUDIO =====
-  const handlePlayAudio = () => {
-    if (!audioRef.current) return;
-    if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      audioRef.current.play();
-      setIsPlaying(true);
+    audio.addEventListener("timeupdate", updateProgress);
+    audio.addEventListener("loadedmetadata", setDuration);
+
+    return () => {
+      audio.removeEventListener("timeupdate", updateProgress);
+      audio.removeEventListener("loadedmetadata", setDuration);
+    };
+  }, []);
+
+  // ====== Handle play/pause ======
+  const handlePlayPause = async () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    try {
+      if (isPlaying) {
+        await audio.pause();
+        setIsPlaying(false);
+      } else {
+        if (!audioDuration && audio.duration) setAudioDuration(audio.duration);
+        await audio.play();
+        setIsPlaying(true);
+      }
+    } catch (error) {
+      console.warn("Không thể phát audio:", error);
     }
   };
 
-  const handleAudioEnd = () => setIsPlaying(false);
-
-  // ===== LOGIC =====
+  // ====== Câu hỏi và điểm ======
   const handleSelectAnswer = (qid, opt) =>
     setAnswers((prev) => ({ ...prev, [qid]: opt }));
 
-  const handleChangeQuestion = (i) => {
-    setCurrentIndex(i);
-    if (audioRef.current) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    }
-  };
-
-  const handleNext = () => {
-    if (currentIndex < jlpt_listening_questions.length - 1)
-      setCurrentIndex((i) => i + 1);
-  };
-
-  const handlePrev = () => {
-    if (currentIndex > 0) setCurrentIndex((i) => i - 1);
-  };
-
-  const handleSubmit = (force = false) => {
-    const total = jlpt_listening_questions.length;
-    const done = Object.keys(answers).length;
-
-    if (done < total && !force) {
-      setModalData({ type: "warn" });
-      return;
-    }
-
+  const calcScorePercent = () => {
     let correct = 0;
     jlpt_listening_questions.forEach((q) => {
       if (answers[q.id] === q.correct) correct++;
     });
-
-    setModalData({
-      type: "result",
-      score: {
-        correct,
-        total,
-        percent: Math.round((correct / total) * 100),
-      },
-    });
+    return Math.round((correct / jlpt_listening_questions.length) * 100);
   };
 
+  const total = jlpt_listening_questions.length;
+  const answered = Object.keys(answers).length;
+  const hasUnanswered = answered < total;
+  const progress = Math.round((answered / total) * 100);
   const currentQ = jlpt_listening_questions[currentIndex];
-  const progress = Math.round(
-    (Object.keys(answers).length / jlpt_listening_questions.length) * 100
-  );
 
-  // ===== RENDER =====
+  // ====== Next/Prev ======
+  const handleNextQuestion = () => {
+    if (currentIndex < total - 1) setCurrentIndex((i) => i + 1);
+  };
+
+  const handlePrevQuestion = () => {
+    if (currentIndex > 0) setCurrentIndex((i) => i - 1);
+  };
+
+  // ====== Modal logic ======
+  const openSubmitModal = () => setModalOpen(true);
+  const handleModalCancel = () => setModalOpen(false);
+  const handleModalConfirm = () => {
+    const scorePercent = calcScorePercent();
+    onFinishTest && onFinishTest(scorePercent);
+    setModalOpen(false);
+  };
+
   return (
     <div className={styles.wrapper}>
-      {/* HEADER */}
+      {/* Header */}
       <header className={styles.headerBar}>
         <h1 className={styles.testTitle}>{jlpt_test.title}</h1>
         <div className={styles.headerRight}>
-          <div className={styles.timerBox}>
-            <i className="fa-regular fa-clock" />
-            <span>{formatTime(timeLeft)}</span>
-          </div>
-          <button
-            className={styles.submitBtn}
-            onClick={() => handleSubmit(false)}
-          >
+          <button className={styles.submitBtn} onClick={openSubmitModal}>
             Nộp bài
           </button>
         </div>
       </header>
 
-      {/* MAIN */}
+      {/* Main */}
       <main className={styles.main}>
-        {/* SIDEBAR */}
         <aside className={styles.sidebarCard}>
           <SidebarQuestionList
-            questions={jlpt_listening_questions.map((q) => ({
+            questions={jlpt_listening_questions.map((q, i) => ({
               question_id: q.id,
-              order_index: q.order_index,
+              order_index: i + 1,
             }))}
             currentIndex={currentIndex}
             answersByQuestion={answers}
-            totalQuestions={jlpt_listening_questions.length}
-            onJumpTo={handleChangeQuestion}
+            onJumpTo={setCurrentIndex}
           />
         </aside>
 
-        {/* QUESTION AREA */}
         <section className={styles.questionArea}>
-          {/*  Audio player */}
+          {/* AUDIO PLAYER */}
           <div className={styles.audioBlock}>
-  <audio
-    ref={audioRef}
-    src={currentQ.audio_url}
-    onEnded={handleAudioEnd}
-    onLoadedMetadata={() => setDuration(audioRef.current.duration)}
-    onTimeUpdate={() => setCurrentTime(audioRef.current.currentTime)}
-  />
+            <audio ref={audioRef} src={currentQ.audio_url} preload="metadata" />
+            <button className={styles.audioBtn} onClick={handlePlayPause}>
+              {isPlaying ? (
+                <i className="fa-solid fa-pause" />
+              ) : (
+                <i className="fa-solid fa-play" />
+              )}
+            </button>
 
-  <div className={styles.audioControls}>
-    <div className={styles.waveWrapper}>
-      <div className={`${styles.waveBar} ${isPlaying ? styles.playing : ""}`} />
-      <div className={`${styles.waveBar} ${isPlaying ? styles.playing : ""}`} />
-      <div className={`${styles.waveBar} ${isPlaying ? styles.playing : ""}`} />
-      <div className={`${styles.waveBar} ${isPlaying ? styles.playing : ""}`} />
-    </div>
+            <div className={styles.progressContainer}>
+              <div className={styles.progressBar}>
+                <div
+                  className={styles.progressFill}
+                  style={{
+                    width: `${audioDuration
+                      ? (audioProgress / audioDuration) * 100
+                      : 0}%`,
+                  }}
+                ></div>
+              </div>
+              <div className={styles.timeBox}>
+                <span>{formatTime(audioProgress)}</span>
+                <span>{formatTime(audioDuration)}</span>
+              </div>
+            </div>
 
-    <button
-      className={`${styles.audioBtn} ${isPlaying ? styles.playing : ""}`}
-      onClick={handlePlayAudio}
-    >
-      {isPlaying ? (
-        <i className="fa-solid fa-pause" />
-      ) : (
-        <i className="fa-solid fa-play" />
-      )}
-    </button>
+            <div className={styles.waveWrapper}>
+              {[...Array(4)].map((_, i) => (
+                <div
+                  key={i}
+                  className={`${styles.waveBar} ${
+                    isPlaying ? styles.playing : ""
+                  }`}
+                ></div>
+              ))}
+            </div>
+          </div>
 
-    <div className={styles.progressContainer}>
-      <input
-        type="range"
-        className={styles.progressBar}
-        min="0"
-        max={duration}
-        step="0.1"
-        value={currentTime}
-        onChange={(e) => {
-          const newTime = parseFloat(e.target.value);
-          audioRef.current.currentTime = newTime;
-          setCurrentTime(newTime);
-        }}
-      />
-      <div className={styles.timeBox}>
-        <span>{formatAudioTime(currentTime)}</span>
-        <span>{formatAudioTime(duration)}</span>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-          {/* Question block (giống hệt MultipleChoice) */}
+          {/* Câu hỏi */}
           <QuestionCard
             question={{
               question_id: currentQ.id,
-              order_index: currentQ.order_index,
+              order_index: currentIndex + 1,
               content: currentQ.content,
               options: currentQ.options.map((opt, i) => ({
                 option_id: i,
@@ -266,29 +206,27 @@ const Listening = ({ onNextSection }) => {
               })),
             }}
             selectedOptionId={answers[currentQ.id]}
-            onSelectOption={(qid, opt) => handleSelectAnswer(qid, opt)}
-            onPrev={handlePrev}
-            onNext={handleNext}
-            lastSavedAt={"Tự động lưu"}
+            onSelectOption={handleSelectAnswer}
+            onPrev={handlePrevQuestion}
+            onNext={handleNextQuestion}
+            lastSavedAt="Tự động lưu"
           />
 
+          {/* Nút hoàn thành */}
           <div className={styles.nextSection}>
             <button
               className={styles.nextSectionBtn}
-              onClick={() => {
-                handleSubmit(false);
-                if (onNextSection) onNextSection();
-              }}
+              onClick={openSubmitModal}
             >
-              Hoàn thành phần Nghe hiểu
+              Hoàn thành phần Nghe hiểu & Xem kết quả
             </button>
           </div>
 
-          {/* Progress Bar */}
+          {/* Tiến độ */}
           <div className={styles.progressCard}>
             <div className={styles.progressTopRow}>
-              <span>Tiến độ hoàn thành</span>
-              <span>{progress}%</span>
+              <span className={styles.progressLabel}>Tiến độ hoàn thành</span>
+              <span className={styles.progressPct}>{progress}%</span>
             </div>
             <div className={styles.progressTrack}>
               <div
@@ -300,14 +238,19 @@ const Listening = ({ onNextSection }) => {
         </section>
       </main>
 
-      {/* MODAL */}
-      <SubmitModal
-        data={modalData}
-        onClose={() => setModalData(null)}
-        onConfirm={() => {
-          setModalData(null);
-          handleSubmit(true);
-        }}
+      {/* Modal xác nhận nộp */}
+      <JLPTModal
+        open={modalOpen}
+        title="Nộp bài phần Nghe hiểu?"
+        message={
+          hasUnanswered
+            ? `Bạn mới trả lời ${answered}/${total} câu. Nếu nộp bây giờ, các câu chưa làm sẽ bị tính sai.`
+            : "Bạn đã hoàn thành toàn bộ phần Nghe hiểu. Nộp bài và xem kết quả tổng?"
+        }
+        confirmLabel="Nộp bài & Xem kết quả"
+        cancelLabel="Ở lại làm tiếp"
+        onConfirm={handleModalConfirm}
+        onCancel={handleModalCancel}
       />
     </div>
   );

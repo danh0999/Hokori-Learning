@@ -3,25 +3,33 @@ import styles from "./Result.module.scss";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 
-const Result = ({ sectionScores }) => {
-  const resultData = {
-    testTitle: "JLPT N3 - Kết quả thi",
-    sections: [
-      { name: "Từ vựng & Ngữ pháp", score: sectionScores.multiple ?? 0 },
-      { name: "Đọc hiểu", score: sectionScores.reading ?? 0 },
-      { name: "Nghe hiểu", score: sectionScores.listening ?? 0 },
-    ],
-  };
+export const Result = ({ sectionScores = {} }) => {
+  const sections = [
+    { key: "multiple", name: "Từ vựng & Ngữ pháp", score: sectionScores.multiple },
+    { key: "reading", name: "Đọc hiểu", score: sectionScores.reading },
+    { key: "listening", name: "Nghe hiểu", score: sectionScores.listening },
+  ];
+
+  const validScores = sections
+    .map((s) => s.score)
+    .filter((v) => Number.isFinite(v));
 
   const overall =
-    resultData.sections.reduce((acc, cur) => acc + cur.score, 0) /
-    resultData.sections.length;
+    validScores.length > 0
+      ? validScores.reduce((acc, cur) => acc + cur, 0) / validScores.length
+      : 0;
 
   return (
     <div className={styles.resultWrapper}>
       <div className={styles.resultCard}>
-        <h1 className={styles.title}>{resultData.testTitle}</h1>
-        <p className={styles.subtitle}>🎉 Bạn đã hoàn thành bài thi JLPT N3!</p>
+        <h1 className={styles.title}>JLPT N3 - Kết quả thi</h1>
+        <p className={styles.subtitle}>
+          {validScores.length === 3
+            ? "Chúc mừng bạn đã hoàn thành toàn bộ bài thi JLPT N3!"
+            : validScores.length > 0
+            ? "Bạn đã nộp bài thi, một số phần chưa hoàn thành."
+            : "Chưa hoàn thành phần nào."}
+        </p>
 
         <div className={styles.overallBox}>
           <div className={styles.chart}>
@@ -37,25 +45,39 @@ const Result = ({ sectionScores }) => {
           </div>
           <div className={styles.overallInfo}>
             <h2>Tổng điểm trung bình</h2>
-            <p>{overall.toFixed(0)} / 100 điểm trung bình từ 3 phần thi</p>
+            <p>
+              {validScores.length > 0
+                ? `${overall.toFixed(0)} / 100 điểm trung bình từ ${validScores.length} phần thi`
+                : "Chưa hoàn thành phần nào"}
+            </p>
           </div>
         </div>
 
         <div className={styles.sectionList}>
-          {resultData.sections.map((sec, i) => (
-            <div key={i} className={styles.sectionItem}>
-              <div className={styles.sectionHeader}>
-                <h3>{sec.name}</h3>
-                <span className={styles.score}>{sec.score}%</span>
+          {sections.map((sec) => {
+            const hasScore = Number.isFinite(sec.score);
+            const displayScore = hasScore ? sec.score : 0;
+            return (
+              <div key={sec.key} className={styles.sectionItem}>
+                <div className={styles.sectionHeader}>
+                  <h3>{sec.name}</h3>
+                  <span
+                    className={`${styles.score} ${
+                      hasScore ? "" : styles.incomplete
+                    }`}
+                  >
+                    {hasScore ? `${sec.score}%` : "Chưa làm"}
+                  </span>
+                </div>
+                <div className={styles.progressBar}>
+                  <div
+                    className={styles.progressFill}
+                    style={{ width: `${displayScore}%` }}
+                  />
+                </div>
               </div>
-              <div className={styles.progressBar}>
-                <div
-                  className={styles.progressFill}
-                  style={{ width: `${sec.score}%` }}
-                />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className={styles.actions}>
@@ -76,5 +98,3 @@ const Result = ({ sectionScores }) => {
     </div>
   );
 };
-
-export default Result;
