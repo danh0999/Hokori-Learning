@@ -1,69 +1,89 @@
+/* ===============================
+   JLPT MODAL (Scoped styles)
+   =============================== */
 .overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.45);
   display: flex;
-  justify-content: center;
   align-items: center;
-  z-index: 9999;
+  justify-content: center;
+  z-index: 2000;
 }
 
 .modal {
   background: #fff;
-  border-radius: 12px;
-  padding: 2rem;
-  width: 420px;
+  border-radius: 1rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  padding: 2rem 2.5rem;
+  max-width: 440px;
+  width: 90%;
   text-align: center;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-  animation: fadeIn 0.3s ease;
+  animation: fadeIn 0.25s ease-in-out;
+
+  .title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 0.75rem;
+  }
+
+  .message {
+    font-size: 1rem;
+    color: #4b5563;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+  }
+
+  .actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+
+    .cancelBtn {
+      background: #f3f4f6;
+      color: #374151;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      font-weight: 500;
+      padding: 0.75rem 1.5rem;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+
+      &:hover {
+        background: #e5e7eb;
+        color: #111827;
+      }
+
+      &:active {
+        transform: scale(0.98);
+      }
+    }
+
+    .confirmBtn {
+      background: #2563eb; /* Hokori blue */
+      color: #fff;
+      border: none;
+      border-radius: 0.5rem;
+      font-weight: 500;
+      padding: 0.75rem 1.5rem;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+      transition: all 0.2s ease-in-out;
+
+      &:hover {
+        background: #3b82f6; /* lighter blue hover */
+        box-shadow: 0 3px 10px rgba(37, 99, 235, 0.3);
+      }
+
+      &:active {
+        transform: scale(0.98);
+      }
+    }
+  }
 }
 
-.modal h3 {
-  font-size: 1.3rem;
-  color: #2563eb;
-  margin-bottom: 0.75rem;
-}
-
-.modal p {
-  color: #374151;
-  font-size: 0.95rem;
-  margin-bottom: 1.5rem;
-}
-
-.actions {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-}
-
-.confirm {
-  background: #2563eb;
-  color: #fff;
-  border: none;
-  padding: 0.6rem 1.4rem;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.confirm:hover {
-  background: #1e40af;
-}
-
-.cancel {
-  background: #f3f4f6;
-  color: #111827;
-  border: 1px solid #e5e7eb;
-  padding: 0.6rem 1.4rem;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.cancel:hover {
-  background: #e5e7eb;
-}
-
+/* Local-only animation */
 @keyframes fadeIn {
   from {
     opacity: 0;
