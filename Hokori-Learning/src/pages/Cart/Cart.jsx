@@ -3,59 +3,57 @@ import styles from "./CartPage.module.scss";
 import CartItem from "./components/CartItem";
 import OrderSummary from "./components/OrderSummary";
 import RecommendedCourses from "./components/RecommendedCourses";
+import { useCart } from "../../context/CartContext";
 
 const CartPage = () => {
-  const courses = [
-    {
-      id: 1,
-      title: "Tiếng Nhật Cơ Bản N5 - Từ Zero Đến Thành Thạo",
-      teacher: "Sensei Yamada",
-      level: "JLPT N5",
-      lessons: 42,
-      duration: "8.5 giờ",
-      price: 599000,
-      oldPrice: 899000,
-      discount: "-33%",
-    },
-    {
-      id: 2,
-      title: "Kanji Mastery N4 - Học Kanji Hiệu Quả",
-      teacher: "Sensei Tanaka",
-      level: "JLPT N4",
-      lessons: 35,
-      duration: "6.2 giờ",
-      price: 449000,
-      oldPrice: 699000,
-      discount: "-36%",
-    },
-    {
-      id: 3,
-      title: "Giao Tiếp Tiếng Nhật Thực Tế",
-      teacher: "Sensei Sato",
-      level: "N3-N2",
-      lessons: 28,
-      duration: "5.8 giờ",
-      price: 399000,
-    },
-  ];
+  const { cart, removeFromCart } = useCart(); // ✅ giỏ hàng global
+
+  // 💾 Lưu để sau (mock): remove khỏi cart + sau này call API
+  const handleSaveForLater = (id) => {
+    const saved = cart.find((c) => c.id === id);
+    if (saved) {
+      console.log("Đã lưu khóa học:", saved.title);
+      // 🔜 TODO: POST /api/cart/save-later
+      removeFromCart(id);
+    }
+  };
+
+  // Thêm vào yêu thích (mock)
+  const handleAddToFavorite = (id) => {
+    const fav = cart.find((c) => c.id === id);
+    if (fav) {
+      console.log("Đã thêm vào yêu thích:", fav.title);
+      // 🔜 TODO: POST /api/favorites
+    }
+  };
 
   return (
     <main className={styles.main}>
       <div className={styles.container}>
         <div className={styles.header}>
           <h1>Giỏ hàng của bạn</h1>
-          <p>{courses.length} khóa học trong giỏ hàng</p>
+          <p>{cart.length} khóa học trong giỏ hàng</p>
         </div>
 
-        <div className={styles.grid}>
-          <div className={styles.courseList}>
-            {courses.map((course) => (
-              <CartItem key={course.id} course={course} />
-            ))}
+        {cart.length === 0 ? (
+          <p className={styles.empty}>Giỏ hàng trống, hãy thêm khóa học!</p>
+        ) : (
+          <div className={styles.grid}>
+            <div className={styles.courseList}>
+              {cart.map((course) => (
+                <CartItem
+                  key={course.id}
+                  course={course}
+                  onRemove={removeFromCart}
+                  onSave={handleSaveForLater}
+                  onFavorite={handleAddToFavorite}
+                />
+              ))}
+            </div>
+
+            <OrderSummary courses={cart} />
           </div>
-
-          <OrderSummary courses={courses} />
-        </div>
+        )}
 
         <RecommendedCourses />
       </div>

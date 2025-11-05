@@ -41,31 +41,33 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.25);
     padding-bottom: 8px;
   }
+}
 
-  .infoList {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+/* ✅ Đưa infoList ra ngoài */
+.infoList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
 
-    li {
-      margin-bottom: 18px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  li {
+    display: block !important; /* ép xuống dòng */
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 
-      span {
-        font-weight: 600;
-        display: block;
-        margin-bottom: 4px;
-        color: #f1f5ff;
-        font-size: 15px;
-      }
+    span {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #ffffff;
+      font-size: 15px;
+    }
 
-      p {
-        margin: 0;
-        font-size: 14px;
-        color: #e0eaff;
-        line-height: 1.5;
-      }
+    p {
+      margin: 0;
+      font-size: 14px;
+      color: #ffffff;
+      line-height: 1.5;
     }
   }
 }
@@ -197,4 +199,7 @@
   .right {
     padding: 28px 20px;
   }
+}
+.infoList li span {
+  color: #f1f5ff !important; /* ép dùng màu của bạn */
 }
