@@ -1,0 +1,169 @@
+/* ===============================
+   AI SIDEBAR (for Learner Dashboard)
+   =============================== */
+
+.sidebar {
+  background: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  font-family: "Inter", sans-serif;
+  color: #111827;
+}
+
+/* ===== Section headings ===== */
+section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e3a8a;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+
+  svg {
+    color: #2563eb;
+    font-size: 1.05rem;
+  }
+}
+
+/* ===== AI Buttons ===== */
+.buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.aiButtonContainer {
+  width: 100%;
+}
+
+.aiButton {
+  width: 100%;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.65rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  background: linear-gradient(90deg, #6366f1 0%, #2563eb 100%);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.25s ease-in-out;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.15);
+
+  &:hover {
+    background: linear-gradient(90deg, #4f46e5 0%, #1d4ed8 100%);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+/* ===== Learning Statistics ===== */
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: #374151;
+    border-bottom: 1px dashed #e5e7eb;
+    padding-bottom: 0.25rem;
+
+    span:first-child {
+      color: #6b7280;
+    }
+
+    &:last-child {
+      border: none;
+    }
+  }
+}
+
+/* ===== Study Suggestions ===== */
+.hints {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+
+  div {
+    background: #f9fafb;
+    border-radius: 0.5rem;
+    padding: 0.6rem 0.8rem;
+    transition: all 0.25s ease-in-out;
+    border: 1px solid transparent;
+
+    &:hover {
+      background: #f0f7ff;
+      border-color: rgba(37, 99, 235, 0.15);
+    }
+
+    strong {
+      color: #1e40af;
+      font-size: 0.95rem;
+    }
+
+    p {
+      color: #6b7280;
+      font-size: 0.85rem;
+      margin-top: 0.2rem;
+    }
+  }
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1024px) {
+  .sidebar {
+    padding: 1rem;
+  }
+
+  section h3 {
+    font-size: 0.95rem;
+  }
+
+  .aiButton {
+    font-size: 0.9rem;
+  }
+}
+.sidebar {
+  background: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  font-family: "Inter", sans-serif;
+  color: #111827;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Hover bounce giống FlashcardBox */
+.sidebar:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.15);
+}
+
+/* Hiệu ứng màu tiêu đề */
+.sidebar:hover h3 {
+  color: #2563eb;
+  transition: color 0.25s ease;
+}
+
+/* Giữ nút bên trong vẫn hoạt động bình thường */
+.sidebar button,
+.sidebar .aiButton {
+  position: relative;
+  z-index: 1;
+}
