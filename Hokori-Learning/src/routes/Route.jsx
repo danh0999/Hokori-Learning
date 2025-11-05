@@ -133,7 +133,7 @@ const routes = [
   // ===== ADMIN AREA =====
   {
     path: "admin",
-    element: <ProtectedRoute allow={["ADMIN"]} />,
+    // element: <ProtectedRoute allow={["ADMIN"]} />,
     children: [
       {
         path: "",
