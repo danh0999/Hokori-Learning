@@ -1,0 +1,82 @@
+/* ===========================================
+   HOKORI POLICY PAGE – FINAL PREMIUM VERSION
+   =========================================== */
+
+.wrapper {
+  background: #f9fafb;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 5rem 1rem;
+  font-family: "Inter", sans-serif;
+  color: #1a1a1a;
+}
+
+.container {
+  width: 100%;
+  max-width: 780px;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 3.5rem 3rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+}
+
+/* ===== Header ===== */
+.title {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 600; /* giảm độ đậm */
+  color: #1e293b;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.4rem;
+}
+
+.title strong {
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.version {
+  text-align: center;
+  font-size: 0.92rem;
+  color: #6b7280;
+  margin-bottom: 3rem;
+}
+
+/* ===== Sections ===== */
+.section {
+  margin-bottom: 2.8rem;
+}
+
+.heading {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.4rem;
+}
+
+.body {
+  font-size: 1.03rem;
+  color: #4b5563;
+  line-height: 1.8;
+  white-space: pre-line;
+}
+
+/* ===== Footer ===== */
+.footer {
+  border-top: 1px solid #e5e7eb;
+  margin-top: 2.5rem;
+  padding-top: 1rem;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+/* ===== Loader ===== */
+.loader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
+}
