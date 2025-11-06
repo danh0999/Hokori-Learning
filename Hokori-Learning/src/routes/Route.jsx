@@ -23,6 +23,8 @@ import QuizPage from "../pages/QuizPage/QuizPage";
 import MyFlashcards from "../pages/Flashcards/MyFlashcards";
 import ProfilePage from "../pages/Profile/ProfilePage";
 import JLPTTestPage from "../pages/JLPTTest/JLPTTestPage";
+import Information from "../pages/Information/Information";
+import Policies from "../pages/Policies/Policies";
 // ===== Teacher/Admin/Moderator =====
 import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
 import ManageCourses from "../pages/Teacher/Courses/ManageCourses";
@@ -60,7 +62,8 @@ const routes = [
       { path: "course/:courseId", element: <CourseDetail /> },
       { path: "about", element: <AboutPage /> },
       { path: "contact", element: <Contact /> },
-
+      { path: "information", element: <Information /> },
+      { path: "policies", element: <Policies /> },
       // ===== Learner Area (Yêu cầu đăng nhập) =====
       {
         // element: (
@@ -138,7 +141,7 @@ const routes = [
   // ===== ADMIN AREA =====
   {
     path: "admin",
-    element: <ProtectedRoute allow={["ADMIN"]} />,
+    // element: <ProtectedRoute allow={["ADMIN"]} />,
     children: [
       {
         path: "",

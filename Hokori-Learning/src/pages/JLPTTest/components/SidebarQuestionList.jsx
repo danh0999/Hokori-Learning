@@ -2,25 +2,28 @@ import React from "react";
 import styles from "./SidebarQuestionList.module.scss";
 
 const SidebarQuestionList = ({
-  questions,
-  currentIndex,
-  answersByQuestion,
+  questions = [],
+  currentIndex = 0,
+  answersByQuestion = {},
   totalQuestions,
   onJumpTo,
 }) => {
-  const answered = Object.keys(answersByQuestion).length;
-  const notYet = totalQuestions - answered;
+  const total = totalQuestions || questions.length || 0;
+  const answeredIds = Object.keys(answersByQuestion).map(String); // ép string hết
+  const answered = answeredIds.length;
+  const notYet = Math.max(total - answered, 0); // tránh NaN
 
   return (
     <aside className={styles.sidebar}>
       <h3>Danh sách câu hỏi</h3>
 
-      {/*  Vùng chứa có scroll */}
+      {/* Vùng chứa có scroll */}
       <div className={styles.scrollContainer}>
         <div className={styles.grid}>
           {questions.map((q, idx) => {
+            const qid = String(q.question_id); // convert luôn để đồng bộ
             const isCurrent = idx === currentIndex;
-            const hasAnswer = !!answersByQuestion[q.question_id];
+            const hasAnswer = answeredIds.includes(qid); // check chuẩn bất kể kiểu dữ liệu
 
             let stateClass = "";
             if (isCurrent) stateClass = styles.current;
@@ -28,9 +31,9 @@ const SidebarQuestionList = ({
 
             return (
               <button
-                key={q.question_id}
+                key={qid}
                 className={`${styles.numBtn} ${stateClass}`}
-                onClick={() => onJumpTo(idx)}
+                onClick={() => onJumpTo && onJumpTo(idx)}
               >
                 {q.order_index}
               </button>
@@ -43,7 +46,7 @@ const SidebarQuestionList = ({
       <div className={styles.status}>
         <div>
           <span className={`${styles.dot} ${styles.dotDoing}`}></span>
-          <span>Đang làm ({questions[currentIndex]?.order_index})</span>
+          <span>Đang làm ({questions[currentIndex]?.order_index || 0})</span>
         </div>
         <div>
           <span className={`${styles.dot} ${styles.dotAnswered}`}></span>
@@ -59,3 +62,4 @@ const SidebarQuestionList = ({
 };
 
 export default SidebarQuestionList;
+ 

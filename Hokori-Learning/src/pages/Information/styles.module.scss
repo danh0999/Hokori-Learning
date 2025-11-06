@@ -1,0 +1,94 @@
+/* ===============================
+   INFORMATION PAGE – FAQ SECTION
+   (Match Home Faqs style)
+   =============================== */
+
+.faqsContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 20px;
+  background-color: #f9fafb;
+  font-family: "Inter", sans-serif;
+}
+
+/* Title block */
+.div {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.faqsTitle {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+  user-select: none;
+
+  &::after {
+    content: "";
+    display: block;
+    width: 60px;
+    height: 3px;
+    background: #2563eb;
+    border-radius: 2px;
+    margin: 0.75rem auto 0;
+  }
+}
+
+.p {
+  color: #6b7280;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* === CARD WRAPPER AROUND FaqItem === */
+.faqItemContainer {
+  max-width: 780px;
+  width: 100%;
+  margin: 10px auto;
+  padding: 0; /* để card nhìn giống ảnh 1 – FaqItem chiếm full */
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+  transition: all 0.25s ease;
+}
+
+/* hiệu ứng “nảy lên” khi hover card */
+.faqItemContainer:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
+  border-color: #dbeafe;
+}
+
+/* nút CTA dưới cùng */
+.btn {
+  background: #2563eb;
+  color: #fff !important;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
+  border: none;
+  margin-top: 2rem;
+  transition: all 0.25s ease;
+
+  &:hover {
+    background: #1e4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.25);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .faqsTitle {
+    font-size: 1.6rem;
+  }
+
+  .faqItemContainer {
+    border-radius: 10px;
+  }
+}

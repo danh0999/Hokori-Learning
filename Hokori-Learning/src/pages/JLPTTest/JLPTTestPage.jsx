@@ -2,52 +2,63 @@ import React, { useState } from "react";
 import MultipleChoice from "./MultipleChoice";
 import Reading from "./Reading";
 import Listening from "./Listening";
-import Result from "./Result"; // sửa lại import chuẩn
+import { Result } from "./Result";
 import styles from "./JLPTTestPage.module.scss";
 
 const JLPTTestPage = () => {
+  // multiple | reading | listening | result
   const [currentSection, setCurrentSection] = useState("multiple");
 
-  // lưu điểm từng phần
+  // Lưu điểm từng phần (percent)
   const [sectionScores, setSectionScores] = useState({
     multiple: null,
     reading: null,
     listening: null,
   });
 
-  // hàm nhận điểm từ mỗi phần thi và chuyển sang phần kế tiếp
+  // Khi user CHUYỂN PHẦN (bấm "Tiếp tục phần ...")
   const handleNextSection = (sectionName, scorePercent) => {
-    setSectionScores((prev) => ({ ...prev, [sectionName]: scorePercent }));
+    setSectionScores((prev) => ({
+      ...prev,
+      [sectionName]: scorePercent,
+    }));
 
     if (sectionName === "multiple") setCurrentSection("reading");
     else if (sectionName === "reading") setCurrentSection("listening");
     else if (sectionName === "listening") setCurrentSection("result");
   };
 
+  // Khi user NỘP BÀI từ một phần bất kỳ
+  const handleFinishTest = (sectionName, scorePercent) => {
+    setSectionScores((prev) => ({
+      ...prev,
+      [sectionName]: scorePercent,
+    }));
+    setCurrentSection("result");
+  };
+
   return (
     <div className={styles.wrapper}>
-      {/* Phần trắc nghiệm */}
       {currentSection === "multiple" && (
         <MultipleChoice
           onNextSection={(score) => handleNextSection("multiple", score)}
+          onFinishTest={(score) => handleFinishTest("multiple", score)}
         />
       )}
 
-      {/* Phần đọc hiểu */}
       {currentSection === "reading" && (
         <Reading
           onNextSection={(score) => handleNextSection("reading", score)}
+          onFinishTest={(score) => handleFinishTest("reading", score)}
         />
       )}
 
-      {/* Phần nghe hiểu */}
       {currentSection === "listening" && (
         <Listening
-          onNextSection={(score) => handleNextSection("listening", score)}
+          onFinishTest={(score) => handleFinishTest("listening", score)}
         />
       )}
 
-      {/* Kết quả tổng */}
       {currentSection === "result" && (
         <Result sectionScores={sectionScores} />
       )}

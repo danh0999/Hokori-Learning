@@ -1,4 +1,4 @@
-import React, { useMemo, } from "react";
+import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./LearnerDashboard.module.scss";
 
@@ -8,6 +8,7 @@ import ProgressTracker from "./components/ProgressTracker";
 import CompletedLessons from "./components/CompletedLessons";
 import QuizResults from "./components/QuizResults";
 import UpcomingLessons from "./components/UpcomingLessons";
+import AISidebar from "./components/AISidebar";
 
 const LearnerDashboard = () => {
   const navigate = useNavigate();
@@ -18,7 +19,8 @@ const LearnerDashboard = () => {
       goal: "JLPT N3",
       joinedAt: "Tháng 1, 2025",
       streakDays: 127,
-      avatar: "https://avatardep.info/wp-content/uploads/2025/01/avt-mac-dinh-fb-moi.jpg",
+      avatar:
+        "https://avatardep.info/wp-content/uploads/2025/01/avt-mac-dinh-fb-moi.jpg",
     }),
     []
   );
@@ -47,7 +49,7 @@ const LearnerDashboard = () => {
           </div>
 
           <div className={styles.right}>
-            <UpcomingLessons />
+            {/* <UpcomingLessons /> */}
 
             {/*  Nút điều hướng tới trang Flashcard cá nhân */}
             <div className={styles.flashcardBox}>
@@ -60,6 +62,7 @@ const LearnerDashboard = () => {
                 <i className="fa-solid fa-layer-group"></i> Bắt đầu ôn tập
               </button>
             </div>
+            <AISidebar />
           </div>
         </div>
       </div>

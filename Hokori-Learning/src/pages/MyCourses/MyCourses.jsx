@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../MyCourses/components/Sidebar";
-import AISidebar from "../MyCourses/components/AISidebar";
+
 import Filters from "../MyCourses/components/Filters";
 import CourseCard from "../MyCourses/components/CourseCard";
 import styles from "./MyCourses.module.scss";
@@ -36,7 +36,7 @@ const MyCourses = () => {
 
   return (
     <div className={styles.layout}>
-      <Sidebar />
+      {/* <Sidebar /> */}
 
       <main className={styles.main}>
         {/* Phần đầu trang (breadcrumb + heading + subheading) */}
@@ -50,7 +50,7 @@ const MyCourses = () => {
           </nav>
 
           <h1 className={styles.heading}>Khóa học của tôi</h1>
-          <p className={styles.subheading}>
+          <p className={styles.subheading}> 
             Quản lý và theo dõi tiến độ học tập của bạn
           </p>
         </div>
@@ -68,7 +68,6 @@ const MyCourses = () => {
         </div>
       </main>
 
-      <AISidebar />
     </div>
   );
 };
