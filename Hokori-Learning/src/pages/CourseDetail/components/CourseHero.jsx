@@ -1,5 +1,9 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { addItem } from "../../../redux/features/cartSlice";
+import { message } from "antd"; 
+
 const CourseHero = ({ course }) => {
   const {
     title,
@@ -7,14 +11,24 @@ const CourseHero = ({ course }) => {
     rating,
     students,
     tags,
-    teacher,
+    // teacher,
     price,
     oldPrice,
     discount,
   } = course;
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  // const handleBuyNow = () => {
+  //   navigate("/payment");
+  // };
   const handleBuyNow = () => {
-    navigate("/payment");
+    dispatch(addItem(course));
+    navigate("/cart");
+  };
+  const handleAddToCart = () => {
+    dispatch(addItem(course));
+    message.success("Đã thêm khóa học vào giỏ hàng!");
   };
   return (
     <section className="hero-section">
@@ -63,10 +77,20 @@ const CourseHero = ({ course }) => {
           </div>
 
           <div className="teacher">
-            <img src={teacher.avatar} alt={teacher.name} />
+            <img
+              src={
+                course.teacherAvatar ||
+                "https://cdn-icons-png.flaticon.com/512/4140/4140048.png" // fallback nếu link lỗi
+              }
+              alt={course.teacher || "Giảng viên"}
+              onError={(e) => {
+                e.target.src =
+                  "https://cdn-icons-png.flaticon.com/512/4140/4140048.png"; // fallback khi 404
+              }}
+            />
             <div>
-              <p>{teacher.name}</p>
-              <span>{teacher.role}</span>
+              <p>{course.teacher}</p>
+              <span>Giảng viên</span>
             </div>
           </div>
 
@@ -84,7 +108,7 @@ const CourseHero = ({ course }) => {
             <button className="btn-primary" onClick={handleBuyNow}>
               Mua khóa học ngay
             </button>
-            <button className="btn-secondary">
+            <button className="btn-secondary" onClick={handleAddToCart}>
               <i className="fa-solid fa-cart-shopping"></i> Thêm vào giỏ hàng
             </button>
           </div>

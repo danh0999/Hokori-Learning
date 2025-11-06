@@ -4,110 +4,16 @@ import Filters from "./components/Filters/Filters";
 import CourseGrid from "./components/CourseGrid/CourseGrid";
 import Pagination from "./components/Pagination/Pagination";
 import { useNavigate, useSearchParams } from "react-router-dom";
-const MOCK = [
-  {
-    id: 1,
-    title: "JLPT N5 – Nền tảng",
-    teacher: "Sensei Tanaka",
-    level: "N5",
-    rating: 4.8,
-    students: 1200,
-    price: 499000,
-    tags: ["Kèm AI", "Bán chạy"],
-  },
-  {
-    id: 2,
-    title: "JLPT N4 – Trung cấp",
-    teacher: "Sensei Yamada",
-    level: "N4",
-    rating: 4.7,
-    students: 890,
-    price: 699000,
-    tags: ["Mới"],
-  },
-  {
-    id: 3,
-    title: "JLPT N3 – Cao cấp",
-    teacher: "Sensei Sato",
-    level: "N3",
-    rating: 4.9,
-    students: 650,
-    price: 899000,
-    tags: ["Kèm AI"],
-  },
-  {
-    id: 4,
-    title: "JLPT N2 – Chuyên sâu",
-    teacher: "Sensei Suzuki",
-    level: "N2",
-    rating: 4.6,
-    students: 540,
-    price: 999000,
-    tags: ["Hot"],
-  },
-  {
-    id: 5,
-    title: "JLPT N1 – Luyện thi",
-    teacher: "Sensei Ito",
-    level: "N1",
-    rating: 4.5,
-    students: 410,
-    price: 1199000,
-    tags: ["Mới"],
-  },
-  {
-    id: 6,
-    title: "Từ vựng N5 mở rộng",
-    teacher: "Sensei Arai",
-    level: "N5",
-    rating: 4.3,
-    students: 380,
-    price: 299000,
-    tags: [],
-  },
-  {
-    id: 7,
-    title: "Ngữ pháp N4 chuyên sâu",
-    teacher: "Sensei Kato",
-    level: "N4",
-    rating: 4.2,
-    students: 290,
-    price: 399000,
-    tags: [],
-  },
-  {
-    id: 8,
-    title: "Đọc hiểu N3 nâng cao",
-    teacher: "Sensei Mori",
-    level: "N3",
-    rating: 4.4,
-    students: 230,
-    price: 459000,
-    tags: [],
-  },
-  {
-    id: 9,
-    title: "Nghe hiểu N2",
-    teacher: "Sensei Ogawa",
-    level: "N2",
-    rating: 4.1,
-    students: 210,
-    price: 499000,
-    tags: [],
-  },
-  {
-    id: 10,
-    title: "Tổng hợp N1",
-    teacher: "Sensei Aki",
-    level: "N1",
-    rating: 4.0,
-    students: 180,
-    price: 699000,
-    tags: [],
-  },
-];
+import { useDispatch, useSelector } from "react-redux";
+import { fetchCourses } from "../../redux/features/courseSlice"; // ✅ lấy mock từ slice
 
 export default function Marketplace() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  // ✅ Lấy dữ liệu từ Redux Store
+  const { list: courses, loading } = useSelector((state) => state.courses);
+
   const [filters, setFilters] = useState({
     levels: [],
     priceMax: 2000000,
@@ -118,12 +24,17 @@ export default function Marketplace() {
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 9;
 
+  // ✅ Gọi load dữ liệu mock từ Redux (sau này thay API)
+  useEffect(() => {
+    dispatch(fetchCourses());
+  }, [dispatch]);
+
   const clearAll = () =>
     setFilters({ levels: [], priceMax: 2000000, ratings: [], teacher: "" });
 
-  // FILTER + SORT
+  // ===== FILTER + SORT =====
   const filtered = useMemo(() => {
-    let items = [...MOCK];
+    let items = [...courses]; // ✅ Lấy từ Redux
 
     // JLPT levels
     if (filters.levels.length)
@@ -135,7 +46,7 @@ export default function Marketplace() {
       items = items.filter((c) => c.rating >= min);
     }
 
-    // Giá (lọc các khóa học có giá nhỏ hơn hoặc bằng giá đang chọn)
+    // Giá
     const max = Number(filters.priceMax) || 2000000;
     items = items.filter((c) => c.price <= max);
 
@@ -161,16 +72,17 @@ export default function Marketplace() {
     }
 
     return items;
-  }, [filters, sort]);
+  }, [courses, filters, sort]);
 
-  // Pagination logic
+  // ===== Pagination =====
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const start = (page - 1) * PAGE_SIZE;
   const pagedCourses = filtered.slice(start, start + PAGE_SIZE);
-  const navigate = useNavigate();
+
   useEffect(() => {
     setPage(1);
   }, [filters, sort]);
+
   const [searchParams] = useSearchParams();
   const preselectedLevel = searchParams.get("level");
 
@@ -178,7 +90,7 @@ export default function Marketplace() {
     if (preselectedLevel) {
       setFilters((prev) => ({
         ...prev,
-        levels: [preselectedLevel.toUpperCase()], // đảm bảo viết hoa cho khớp dữ liệu
+        levels: [preselectedLevel.toUpperCase()],
       }));
     }
   }, [preselectedLevel]);
@@ -187,11 +99,7 @@ export default function Marketplace() {
     <div className={styles.marketplace}>
       {/* Breadcrumb */}
       <nav className={styles.breadcrumb}>
-        {/*  Trang chủ click điều hướng */}
-        <span
-          className={styles.link}
-          onClick={() => navigate("/")} // Điều hướng về trang chủ
-        >
+        <span className={styles.link} onClick={() => navigate("/")}>
           Trang chủ
         </span>
         {" / "}
@@ -203,7 +111,6 @@ export default function Marketplace() {
         Khám phá các khóa học JLPT và luyện thi tiếng Nhật hiệu quả
       </p>
 
-      {/* Layout chính */}
       <div className={styles.container}>
         <aside className={styles.sidebar}>
           <Filters
@@ -234,9 +141,11 @@ export default function Marketplace() {
             </select>
           </div>
 
-          {/* Courses hoặc empty */}
+          {/* Courses hoặc Empty */}
           <div className={styles.resultsArea}>
-            {pagedCourses.length ? (
+            {loading ? (
+              <div className={styles.loading}>Đang tải...</div>
+            ) : pagedCourses.length ? (
               <CourseGrid courses={pagedCourses} />
             ) : (
               <div className={styles.empty}>Không có khóa học nào phù hợp</div>
@@ -245,7 +154,6 @@ export default function Marketplace() {
         </section>
       </div>
 
-      {/* Pagination tách riêng, cố định gần footer */}
       <div className={styles.paginationContainer}>
         <Pagination
           page={page}

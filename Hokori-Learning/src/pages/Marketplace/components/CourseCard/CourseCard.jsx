@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { FaShoppingCart } from "react-icons/fa";
 import { useDispatch } from "react-redux";
 import { addItem } from "../../../../redux/features/cartSlice";
-
+import { setCurrentCourse } from "../../../../redux/features/courseSlice";
 const FALLBACK_IMAGE =
   "https://thumbs.dreamstime.com/b/teacher-icon-vector-male-person-profile-avatar-book-teaching-school-college-university-education-glyph-113755262.jpg";
 
@@ -73,7 +73,11 @@ export default function CourseCard({ course }) {
         <div className={styles.actions}>
           <Button
             content="Xem chi tiết khóa học"
-            onClick={() => navigate(`/course/${id}`)}
+            onClick={() => {
+              //  mapping dữ liệu sang Redux để CourseDetail hiển thị ngay
+              dispatch(setCurrentCourse(course)); //  xóa khi có API thật
+              navigate(`/course/${id}`);
+            }}
             containerClassName={styles.actionItem}
             className={styles.actionButton}
           />
