@@ -8,41 +8,43 @@ import { useParams } from "react-router-dom";
 import {
   fetchCourseById,
   setCurrentCourse,
-} from "../../redux/features/courseSlice"; //  mock Redux slice (sau này sẽ gọi API thật)
+} from "../../redux/features/courseSlice";
 
 /**
  * Trang chi tiết khóa học (Course Detail)
- * Hiện tại đang chạy DEMO bằng MOCK DATA từ Redux
- * 🔜 Sau này khi backend sẵn sàng, chỉ cần bật các dòng được note là "API MODE"
+ * ✅ Đã hỗ trợ gọi API backend /courses/:id
+ * 🔄 Tự fallback sang mock data nếu backend chưa phản hồi
  */
 
 const CourseDetail = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
 
-  // Lấy dữ liệu khóa học từ Redux store
-  const { current, list } = useSelector((state) => state.courses);
+  // Redux state
+  const { current, list, loading } = useSelector((state) => state.courses);
 
   useEffect(() => {
-    // ================================================
-    // 🔹 DEMO MODE — đọc từ MOCK_COURSES trong Redux
-    // ================================================
-    if (list?.length > 0) {
-      const found = list.find((c) => c.id === Number(id));
-      if (found) {
-        dispatch(setCurrentCourse(found)); //  mapping sang Redux để render demo
-        return;
-      }
-    }
+    /**
+     * ================================================
+     * 🔹 API MODE — Gọi dữ liệu khóa học thật từ backend
+     * ================================================
+     */
+    dispatch(fetchCourseById(id))
+      .unwrap()
+      .catch(() => {
+        console.warn("⚠️ API /courses/:id thất bại, fallback sang mock data");
+        // fallback demo nếu API lỗi
+        if (list?.length > 0) {
+          const found = list.find((c) => c.id === Number(id));
+          if (found) dispatch(setCurrentCourse(found));
+        }
+      });
+  }, [id, dispatch, list]);
 
-    // ==========================================================
-    // 🔜 API MODE — bật đoạn dưới khi backend có endpoint thật
-    // ==========================================================
-    // dispatch(fetchCourseById(id)); // <-- gọi API /courses/:id
-  }, [id, list, dispatch]);
-
-  // Nếu chưa có dữ liệu → hiển thị loading
-  if (!current) return <div className="loading">Đang tải...</div>;
+  // Nếu đang loading hoặc chưa có dữ liệu
+  if (loading || !current) {
+    return <div className="loading">Đang tải khóa học...</div>;
+  }
 
   const course = current;
 

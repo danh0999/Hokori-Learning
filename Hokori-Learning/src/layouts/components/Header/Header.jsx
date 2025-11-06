@@ -8,7 +8,7 @@ import { logoutFirebase } from "../../../redux/features/auth";
 import { UserOutlined } from "@ant-design/icons";
 import { Avatar, Dropdown, Space } from "antd";
 import { FiShoppingCart, FiBell } from "react-icons/fi";
-
+import { fetchCart } from "../../../redux/features/cartSlice";
 import styles from "./styles.module.scss";
 
 const {
@@ -42,6 +42,11 @@ export const Header = () => {
   const [openDropdown, setOpenDropdown] = useState(null);
   const courseDropdownRef = useRef(null);
   const aboutDropdownRef = useRef(null);
+
+
+  useEffect(() => {
+    if (user?.accessToken) dispatch(fetchCart());
+  }, [user, dispatch]);
 
   // Đóng dropdown khi click ra ngoài
   useEffect(() => {

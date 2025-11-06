@@ -1,39 +1,34 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { addItem } from "../../../redux/features/cartSlice";
-import { message } from "antd"; 
+import { addToCart } from "../../../redux/features/cartSlice";
+import { message } from "antd";
 
 const CourseHero = ({ course }) => {
-  const {
-    title,
-    shortDesc,
-    rating,
-    students,
-    tags,
-    // teacher,
-    price,
-    oldPrice,
-    discount,
-  } = course;
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  // const handleBuyNow = () => {
-  //   navigate("/payment");
-  // };
-  const handleBuyNow = () => {
-    dispatch(addItem(course));
-    navigate("/cart");
+  const handleAddToCart = async () => {
+    try {
+      await dispatch(addToCart(course.id)).unwrap();
+      message.success(" Đã thêm khóa học vào giỏ hàng!");
+    } catch (err) {
+      message.error("Không thể thêm vào giỏ hàng!");
+    }
   };
-  const handleAddToCart = () => {
-    dispatch(addItem(course));
-    message.success("Đã thêm khóa học vào giỏ hàng!");
+
+  const handleBuyNow = async () => {
+    try {
+      await dispatch(addToCart(course.id)).unwrap();
+      navigate("/cart");
+    } catch (err) {
+      message.error("Không thể mua khóa học!");
+    }
   };
+
   return (
     <section className="hero-section">
       <div className="container">
-        {/* Video preview placeholder */}
         <div className="video-preview">
           {course.videoUrl ? (
             <iframe
@@ -52,41 +47,17 @@ const CourseHero = ({ course }) => {
           )}
         </div>
 
-        {/* Course info */}
         <div className="info">
-          <div className="tags">
-            {tags?.map((tag, idx) => (
-              <span key={idx}>{tag}</span>
-            ))}
-          </div>
-
-          <h1>{title}</h1>
-          <p className="desc">{shortDesc}</p>
-
-          <div className="rating">
-            <div className="stars">
-              {Array(5)
-                .fill(0)
-                .map((_, i) => (
-                  <i key={i} className="fa-solid fa-star"></i>
-                ))}
-            </div>
-            <span>
-              {rating} ({students} học viên)
-            </span>
-          </div>
+          <h1>{course.title}</h1>
+          <p className="desc">{course.shortDesc}</p>
 
           <div className="teacher">
             <img
               src={
                 course.teacherAvatar ||
-                "https://cdn-icons-png.flaticon.com/512/4140/4140048.png" // fallback nếu link lỗi
+                "https://cdn-icons-png.flaticon.com/512/4140/4140048.png"
               }
-              alt={course.teacher || "Giảng viên"}
-              onError={(e) => {
-                e.target.src =
-                  "https://cdn-icons-png.flaticon.com/512/4140/4140048.png"; // fallback khi 404
-              }}
+              alt={course.teacher}
             />
             <div>
               <p>{course.teacher}</p>
@@ -95,18 +66,12 @@ const CourseHero = ({ course }) => {
           </div>
 
           <div className="price">
-            <span className="current">{price.toLocaleString()} VNĐ</span>
-            {oldPrice && (
-              <>
-                <span className="old">{oldPrice.toLocaleString()} VNĐ</span>
-                <span className="discount">-{discount}%</span>
-              </>
-            )}
+            <span className="current">{course.price.toLocaleString()} VNĐ</span>
           </div>
 
           <div className="buttons">
             <button className="btn-primary" onClick={handleBuyNow}>
-              Mua khóa học ngay
+              Mua ngay
             </button>
             <button className="btn-secondary" onClick={handleAddToCart}>
               <i className="fa-solid fa-cart-shopping"></i> Thêm vào giỏ hàng

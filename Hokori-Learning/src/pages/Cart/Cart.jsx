@@ -1,68 +1,96 @@
-import React from "react";
+import React, { useEffect } from "react";
 import styles from "./CartPage.module.scss";
 import CartItem from "./components/CartItem";
 import OrderSummary from "./components/OrderSummary";
 import RecommendedCourses from "./components/RecommendedCourses";
 import { useSelector, useDispatch } from "react-redux";
-import { removeItem, clearCart /* , fetchCart */ } from "../../redux/features/cartSlice";
-//           ↑↑↑ fetchCart để dành cho API thật, hiện tại tạm comment lại
+import {
+  fetchCart,
+  clearCart,
+  removeCartItem,
+} from "../../redux/features/cartSlice";
 
 const CartPage = () => {
   const dispatch = useDispatch();
 
-  //  DEMO: lấy giỏ hàng trực tiếp từ Redux (đã persist bằng redux-persist)
-  const items = useSelector((state) => state.cart.items);
+  // ✅ Lấy dữ liệu giỏ hàng từ Redux
+  const { items, loading, selectedSubtotal } = useSelector(
+    (state) => state.cart
+  );
 
-  //  SAU NÀY KHI CÓ API GIỎ HÀNG (backend) THÌ DÙNG ĐOẠN NÀY:
-  /*
-  const { items, status } = useSelector((state) => state.cart);
-
+  // ✅ Lấy giỏ hàng từ backend khi vào trang
   useEffect(() => {
-    if (status === "idle") {
-      dispatch(fetchCart()); // gọi API /api/cart để lấy giỏ hàng từ server
-    }
-  }, [status, dispatch]);
-  */
+    dispatch(fetchCart());
+  }, [dispatch]);
 
-  const handleRemove = (id) => {
-    dispatch(removeItem(id));
+  // ✅ Xóa 1 khóa học khỏi giỏ
+  const handleRemove = (itemId) => {
+    dispatch(removeCartItem(itemId));
   };
 
+  // ✅ Xóa toàn bộ giỏ
   const handleClearCart = () => {
-    dispatch(clearCart());
+    if (window.confirm("Bạn có chắc muốn xóa toàn bộ giỏ hàng?")) {
+      dispatch(clearCart());
+    }
   };
 
+  // ✅ Loading state
+  if (loading) {
+    return (
+      <main className={styles.main}>
+        <div className={styles.container}>
+          <p>Đang tải giỏ hàng...</p>
+        </div>
+      </main>
+    );
+  }
+
+  // ✅ Hiển thị khi giỏ trống
+  if (!items || items.length === 0) {
+    return (
+      <main className={styles.main}>
+        <div className={styles.container}>
+          <h1>Giỏ hàng của bạn</h1>
+          <p className={styles.empty}>Giỏ hàng trống, hãy thêm khóa học!</p>
+          <RecommendedCourses />
+        </div>
+      </main>
+    );
+  }
+
+  // ✅ Giao diện chính
   return (
     <main className={styles.main}>
       <div className={styles.container}>
+        {/* ===== Header ===== */}
         <div className={styles.header}>
           <h1>Giỏ hàng của bạn</h1>
           <p>{items.length} khóa học trong giỏ hàng</p>
         </div>
 
-        {items.length === 0 ? (
-          <p className={styles.empty}>Giỏ hàng trống, hãy thêm khóa học!</p>
-        ) : (
-          <div className={styles.grid}>
-            <div className={styles.courseList}>
-              {items.map((course) => (
-                <CartItem
-                  key={course.id}
-                  course={course}
-                  onRemove={handleRemove}
-                  // onSave / onFavorite nếu cần sau này
-                />
-              ))}
+        {/* ===== Content Grid ===== */}
+        <div className={styles.grid}>
+          {/* Danh sách khóa học */}
+          <div className={styles.courseList}>
+            {items.map((item) => (
+              <CartItem
+                key={item.itemId || item.courseId}
+                item={item}
+                onRemove={() => handleRemove(item.itemId)}
+              />
+            ))}
 
-              <button onClick={handleClearCart} className={styles.clearBtn}>
-                Xóa toàn bộ giỏ hàng
-              </button>
-            </div>
-
-            <OrderSummary courses={items} />
+            <button onClick={handleClearCart} className={styles.clearBtn}>
+              Xóa toàn bộ giỏ hàng
+            </button>
           </div>
-        )}
 
+          {/* Tóm tắt đơn hàng */}
+          <OrderSummary total={selectedSubtotal} />
+        </div>
+
+        {/* Gợi ý khóa học */}
         <RecommendedCourses />
       </div>
     </main>
