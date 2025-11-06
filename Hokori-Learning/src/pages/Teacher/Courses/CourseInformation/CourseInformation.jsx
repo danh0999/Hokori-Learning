@@ -5,7 +5,7 @@ import { Card, Tabs, Button, Tag, Space, message } from "antd";
 import CourseOverview from "../Create-Course/components/CourseOverview/CourseOverview.jsx";
 import CurriculumBuilder from "../Create-Course/components/Curriculum Builder/CurriculumBuilder.jsx";
 import PricingStep from "../Create-Course/components/PricingStep/PricingStep.jsx";
-import QuizList from "../../ManageDocument/Quiz/QuizList.jsx"; // bạn đã có QuizList
+import QuizList from "../../ManageDocument/Quiz/QuizList/QuizList.jsx"; // bạn đã có QuizList
 import FlashcardPanel from "../../ManageDocument/Flashcard/FlashcardPanel.jsx"; // bạn đã có FlashcardPanel
 import UploadMedia from "../components/Upload Media/UploadMedia.jsx"; // quản lý thư viện media của course
 

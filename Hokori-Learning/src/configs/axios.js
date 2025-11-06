@@ -1,8 +1,13 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://saner-eden-placably.ngrok-free.dev/",
+  //key ĐA
+  baseURL: "https://saner-eden-placably.ngrok-free.dev/api/",
   // timeout: 15000, // (tuỳ) tránh treo request quá lâu
+
+  //Key phú
+  // baseURL: "https://celsa-plumbaginaceous-unabjectly.ngrok-free.dev/api/",
+  //key Khoa
 });
 
 // === Request interceptor: gắn Bearer token (trừ login/register) ===
