@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { toast } from "react-toastify";
-// import api from "../services/axios"; // 🔜 Un-comment when backend API ready
+// import api from "../services/axios"; //  Un-comment when backend API ready
 
 const initialState = {
   items: [],

@@ -36,7 +36,8 @@ export const Header = () => {
   const dispatch = useDispatch();
 
   const user = useSelector((state) => state.user);
-  const cartCount = 3; // TODO: Replace with cart Redux later
+  const cartItems = useSelector((state) => state.cart.items);
+  const cartCount = cartItems?.length || 0;
 
   const [openDropdown, setOpenDropdown] = useState(null);
   const courseDropdownRef = useRef(null);
@@ -156,9 +157,7 @@ export const Header = () => {
             >
               Về Hokori{" "}
               <span
-                className={`${arrow} ${
-                  openDropdown === "about" ? rotate : ""
-                }`}
+                className={`${arrow} ${openDropdown === "about" ? rotate : ""}`}
               >
                 ▾
               </span>

@@ -42,7 +42,7 @@ const CourseCard = ({ course, onContinue }) => {   // ✅ thêm onContinue
           </span>
         </div>
 
-        <button onClick={() => onContinue(course)}>   {/* ✅ gọi hàm callback */}
+        <button onClick={() => onContinue(course)}>   {/* gọi hàm callback */}
           {course.completed ? "Xem chứng chỉ" : "Tiếp tục học"}
         </button>
       </div>
