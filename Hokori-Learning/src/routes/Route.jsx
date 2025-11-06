@@ -38,6 +38,8 @@ import CreateCoursePage from "../pages/Teacher/Courses/Create-Course/CreateCours
 import JLPTList from "../pages/JLPT/JLPTList";
 
 import ManageQueues from "../pages/Moderator/Queues/ManageQueues";
+import CreateQuizPage from "../pages/Teacher/ManageDocument/Quiz/CreateQuizPage/CreateQuizPage";
+import ManageDocumentPage from "../pages/Teacher/ManageDocument/ManageDocumentPage";
 
 // import CreateCoursePageUdemy from "../pages/Teacher/Courses/CreateCoursePageUdemy/CreateCoursePageUdemy";
 
@@ -115,9 +117,10 @@ const routes = [
           { index: true, element: <TeacherDashboard /> },
           { path: "manage-courses", element: <ManageCourses /> },
           { path: "courseinfo/:id", element: <CourseInformation /> },
-          { path: "students", element: <Stub title="Students" /> },
-          { path: "revenue", element: <Stub title="Revenue" /> },
-          { path: "messages", element: <Stub title="Messages" /> },
+          {
+            path: "manage-documents",
+            element: <ManageDocumentPage />,
+          },
           { path: "profile", element: <TeacherProfilePage /> },
           { path: "*", element: <ErrorPage /> },
         ],
@@ -127,6 +130,10 @@ const routes = [
       {
         path: "create-course",
         element: <CreateCoursePage />,
+      },
+      {
+        path: "create-quiz",
+        element: <CreateQuizPage />,
       },
     ],
   },

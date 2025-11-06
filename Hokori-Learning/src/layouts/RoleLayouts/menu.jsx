@@ -75,28 +75,29 @@ export const sidebarMenusByRole = {
       "manage-documents",
       "Quản lý tài liệu",
       <BookOutlined />,
-      "/teacher/manage-documents",
-      [
-        mk(
-          "videos",
-          "Video",
-          <VideoCameraOutlined />,
-          "/teacher/manage-documents/videos"
-        ),
-        mk(
-          "lessons",
-          "Bài học",
-          <ReadOutlined />,
-          "/teacher/manage-documents/lessons"
-        ),
-        mk(
-          "quiz",
-          "Bài kiểm tra",
-          <ProfileOutlined />,
-          "/teacher/manage-documents/quiz"
-        ),
-      ]
+      "/teacher/manage-documents"
+      // [
+      //   mk(
+      //     "videos",
+      //     "Video",
+      //     <VideoCameraOutlined />,
+      //     "/teacher/manage-documents/videos"
+      //   ),
+      //   mk(
+      //     "lessons",
+      //     "Bài học",
+      //     <ReadOutlined />,
+      //     "/teacher/manage-documents/lessons"
+      //   ),
+      //   mk(
+      //     "quiz",
+      //     "Bài kiểm tra",
+      //     <ProfileOutlined />,
+      //     "/teacher/manage-documents/quiz"
+      //   ),
+      // ]
     ),
+    mk("revenue", "Doanh thu", <DollarOutlined />, "/teacher/revenue"),
     mk("manage", "Quản lý", <SettingOutlined />, "/teacher/manage"),
     mk("profile", "Hồ sơ cá nhân", <UserOutlined />, "/teacher/profile"),
   ],

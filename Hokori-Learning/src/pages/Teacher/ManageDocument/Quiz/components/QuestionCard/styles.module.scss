@@ -1,0 +1,27 @@
+.qCollapse :global(.ant-collapse-content-box) {
+  /* Antd để overflow: hidden; nên sticky không hoạt động
+     mình mở ra để .sideCard dùng sticky được */
+  overflow: visible;
+}
+
+.sideCard {
+  position: sticky;
+  top: 12px;
+  align-self: flex-start; // cho chắc, không bị kéo full chiều cao
+}
+/* Giữ lại mấy class cũ của bạn, thêm mấy cái dưới */
+
+.qCollapse :global(.ant-collapse-content) {
+  /* AntD mặc định overflow: hidden; -> sticky không hoạt động */
+  overflow: visible !important;
+}
+
+.qCollapse :global(.ant-collapse-content-box) {
+  overflow: visible !important;
+}
+
+.sideCard {
+  position: static;
+  top: 12px;
+  align-self: flex-start;
+}

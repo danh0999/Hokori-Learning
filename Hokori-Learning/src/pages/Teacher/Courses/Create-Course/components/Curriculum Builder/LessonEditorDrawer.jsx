@@ -13,7 +13,7 @@ import {
 } from "antd";
 import { InboxOutlined } from "@ant-design/icons";
 import LessonMediaPicker from "../../../components/LessonMediaPicker/LessonMediaPicker.jsx";
-import QuizList from "../../../../ManageDocument/Quiz/QuizList.jsx";
+import QuizList from "../../../../ManageDocument/Quiz/QuizList/QuizList.jsx";
 import QuizBuilderModal from "../../../../ManageDocument/Quiz/QuizBuilderModal/QuizBuilderModal.jsx";
 import ImportQuizModal from "../../../../ManageDocument/Quiz/QuizBuilderModal/ImportQuizModal.jsx";
 import FlashcardPanel from "../../../../ManageDocument/Flashcard/FlashcardPanel.jsx";
@@ -191,12 +191,13 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
                   <Button
                     type="dashed"
                     onClick={() => {
-                      setEditingQuiz(null);
-                      setOpenCreateQuiz(true);
+                      setEditingQuiz(null); // tạo quiz mới
+                      setOpenCreateQuiz(true); // mở QuizBuilderModal
                     }}
                   >
                     New quiz
                   </Button>
+
                   <Button onClick={() => setOpenImportQuiz(true)}>
                     Import
                   </Button>

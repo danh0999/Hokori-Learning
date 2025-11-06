@@ -4,9 +4,7 @@ import {
   Card,
   Checkbox,
   Col,
-  Collapse,
   Divider,
-  Dropdown,
   Empty,
   Form,
   Input,
@@ -26,301 +24,21 @@ import {
 } from "antd";
 import {
   PlusOutlined,
-  MoreOutlined,
   ImportOutlined,
   SaveOutlined,
   SendOutlined,
-  CopyOutlined,
-  DeleteOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined,
   EyeOutlined,
   RollbackOutlined,
 } from "@ant-design/icons";
+import { useLocation, useNavigate } from "react-router-dom";
+
+// ❗ dùng shared QuestionCard + newQuestion
+import QuestionCard from "../components/QuestionCard/QuestionCard.jsx";
+import { newQuestion } from "../components/quizUtils/quizUtils.js";
+
 import styles from "./styles.module.scss";
 
 const { Text, Title } = Typography;
-
-/** ----- Helpers ----- */
-const newOption = () => ({ id: crypto.randomUUID(), text: "", correct: false });
-const newQuestion = (type = "single") => ({
-  id: crypto.randomUUID(),
-  type, // 'single' | 'multiple' | 'truefalse' | 'fill'
-  text: "",
-  points: 1,
-  options:
-    type === "truefalse"
-      ? [
-          { id: crypto.randomUUID(), text: "True", correct: true },
-          { id: crypto.randomUUID(), text: "False", correct: false },
-        ]
-      : type === "fill"
-      ? [] // fill: dùng đáp án mẫu
-      : [newOption(), newOption()],
-  answers: type === "fill" ? [""] : [],
-  explanation: "",
-});
-
-/** ----- Option Editor ----- */
-function OptionsEditor({ q, onChange }) {
-  if (q.type === "fill") {
-    return (
-      <Form.Item label="Đáp án mẫu (có thể nhiều đáp án)">
-        <Space direction="vertical" className={styles.block}>
-          {(q.answers || []).map((a, idx) => (
-            <Space key={idx} align="baseline" className={styles.fillRow}>
-              <Input
-                placeholder="Ví dụ: です / でした"
-                value={a}
-                onChange={(e) => {
-                  const clone = [...q.answers];
-                  clone[idx] = e.target.value;
-                  onChange({ ...q, answers: clone });
-                }}
-              />
-              <Button
-                danger
-                onClick={() => {
-                  const clone = [...q.answers];
-                  clone.splice(idx, 1);
-                  onChange({ ...q, answers: clone });
-                }}
-              >
-                Xoá
-              </Button>
-            </Space>
-          ))}
-          <Button
-            icon={<PlusOutlined />}
-            onClick={() =>
-              onChange({ ...q, answers: [...(q.answers || []), ""] })
-            }
-          >
-            Thêm đáp án mẫu
-          </Button>
-        </Space>
-      </Form.Item>
-    );
-  }
-
-  const isSingle = q.type === "single";
-  const correctIds = useMemo(
-    () => new Set(q.options.filter((o) => o.correct).map((o) => o.id)),
-    [q.options]
-  );
-
-  return (
-    <Form.Item label="Phương án">
-      <Space direction="vertical" className={styles.block}>
-        {q.options.map((opt, idx) => (
-          <Row key={opt.id} gutter={8} align="middle" className={styles.optRow}>
-            <Col flex="24px" style={{ textAlign: "center" }}>
-              {isSingle ? (
-                <Radio
-                  checked={correctIds.has(opt.id)}
-                  onChange={() =>
-                    onChange({
-                      ...q,
-                      options: q.options.map((o) => ({
-                        ...o,
-                        correct: o.id === opt.id,
-                      })),
-                    })
-                  }
-                />
-              ) : (
-                <Checkbox
-                  checked={!!opt.correct}
-                  onChange={(e) => {
-                    const next = [...q.options];
-                    next[idx] = { ...opt, correct: e.target.checked };
-                    onChange({ ...q, options: next });
-                  }}
-                />
-              )}
-            </Col>
-            <Col flex="auto">
-              <Input
-                placeholder={`Lựa chọn #${idx + 1}`}
-                value={opt.text}
-                onChange={(e) => {
-                  const next = [...q.options];
-                  next[idx] = { ...opt, text: e.target.value };
-                  onChange({ ...q, options: next });
-                }}
-              />
-            </Col>
-            <Col>
-              <Button
-                danger
-                onClick={() => {
-                  const next = q.options.filter((o) => o.id !== opt.id);
-                  onChange({ ...q, options: next });
-                }}
-              >
-                Xoá
-              </Button>
-            </Col>
-          </Row>
-        ))}
-
-        <div className={styles.optActions}>
-          <Button
-            icon={<PlusOutlined />}
-            onClick={() =>
-              onChange({ ...q, options: [...q.options, newOption()] })
-            }
-          >
-            Thêm lựa chọn
-          </Button>
-          <Text type="secondary">
-            Đánh dấu đáp án đúng bằng {isSingle ? "radio" : "checkbox"} bên
-            trái.
-          </Text>
-        </div>
-      </Space>
-    </Form.Item>
-  );
-}
-
-/** ----- Question Card (inside Collapse) ----- */
-function QuestionCard({
-  q,
-  idx,
-  total,
-  onChange,
-  onDuplicate,
-  onDelete,
-  onMove,
-}) {
-  const items = [
-    {
-      key: q.id,
-      label: (
-        <Space>
-          <Tag color="blue">Q{idx + 1}</Tag>
-          <Text strong className={styles.qTitlePreview}>
-            {q.text?.trim() || "Câu hỏi chưa có nội dung"}
-          </Text>
-          <Text type="secondary">· {q.points} pt</Text>
-          <Tag>{q.type}</Tag>
-        </Space>
-      ),
-      children: (
-        <div className={styles.qBody}>
-          <Row gutter={16}>
-            <Col span={16}>
-              <Form layout="vertical">
-                <Form.Item label="Nội dung câu hỏi">
-                  <Input.TextArea
-                    autoSize={{ minRows: 2, maxRows: 6 }}
-                    placeholder="Nhập nội dung câu hỏi…"
-                    value={q.text}
-                    onChange={(e) => onChange({ ...q, text: e.target.value })}
-                  />
-                </Form.Item>
-
-                <Row gutter={12}>
-                  <Col span={12}>
-                    <Form.Item label="Loại câu hỏi">
-                      <Select
-                        value={q.type}
-                        onChange={(type) => onChange(newQuestion(type))}
-                        options={[
-                          { value: "single", label: "Single choice" },
-                          { value: "multiple", label: "Multiple choice" },
-                          { value: "truefalse", label: "True / False" },
-                          { value: "fill", label: "Fill in the blank" },
-                        ]}
-                      />
-                    </Form.Item>
-                  </Col>
-                  <Col span={12}>
-                    <Form.Item label="Điểm">
-                      <InputNumber
-                        min={0}
-                        value={q.points}
-                        onChange={(v) => onChange({ ...q, points: v ?? 0 })}
-                      />
-                    </Form.Item>
-                  </Col>
-                </Row>
-
-                <OptionsEditor q={q} onChange={onChange} />
-
-                <Form.Item label="Giải thích (hiển thị sau khi nộp)">
-                  <Input.TextArea
-                    placeholder="Giải thích đáp án / mẹo ghi nhớ…"
-                    autoSize={{ minRows: 2, maxRows: 6 }}
-                    value={q.explanation}
-                    onChange={(e) =>
-                      onChange({ ...q, explanation: e.target.value })
-                    }
-                  />
-                </Form.Item>
-              </Form>
-            </Col>
-
-            <Col span={8}>
-              <Card size="small" className={styles.sideCard}>
-                <Space
-                  direction="vertical"
-                  className={styles.block}
-                  size="middle"
-                >
-                  <Text strong>Thao tác</Text>
-                  <Space wrap>
-                    <Button icon={<CopyOutlined />} onClick={onDuplicate}>
-                      Duplicate
-                    </Button>
-                    <Button
-                      icon={<ArrowUpOutlined />}
-                      disabled={idx === 0}
-                      onClick={() => onMove("up")}
-                    />
-                    <Button
-                      icon={<ArrowDownOutlined />}
-                      disabled={idx === total - 1}
-                      onClick={() => onMove("down")}
-                    />
-                    <Button danger icon={<DeleteOutlined />} onClick={onDelete}>
-                      Delete
-                    </Button>
-                  </Space>
-                </Space>
-              </Card>
-            </Col>
-          </Row>
-        </div>
-      ),
-      extra: (
-        <Dropdown
-          trigger={["click"]}
-          menu={{
-            items: [
-              {
-                key: "dup",
-                icon: <CopyOutlined />,
-                label: "Duplicate",
-                onClick: onDuplicate,
-              },
-              {
-                key: "del",
-                icon: <DeleteOutlined />,
-                label: "Delete",
-                onClick: onDelete,
-              },
-            ],
-          }}
-        >
-          <Button type="text" icon={<MoreOutlined />} />
-        </Dropdown>
-      ),
-    },
-  ];
-
-  return <Collapse items={items} defaultActiveKey={[q.id]} />;
-}
 
 /** ----- Import Modal (pick an existing quiz to import) ----- */
 function ImportModal({ open, onClose, library = [], onImport }) {
@@ -371,12 +89,16 @@ function ImportModal({ open, onClose, library = [], onImport }) {
 
 /** ----- Main Page ----- */
 export default function CreateQuizPage({
-  withinCourse = false, // hiển thị breadcrumb/nút back khi tạo trong course
+  withinCourse = false,
   initialQuiz,
-  libraryQuizzes = [], // danh sách quiz có sẵn để import
+  libraryQuizzes = [],
   onBack,
-  onSave, // (quiz, { publish: boolean }) => void|Promise
+  onSave, // (quiz, { publish }) => void|Promise
 }) {
+  const navigate = useNavigate();
+  const loc = useLocation();
+  const returnTo = loc.state?.returnTo;
+
   const [meta] = Form.useForm();
   const [settings] = Form.useForm();
 
@@ -387,7 +109,7 @@ export default function CreateQuizPage({
       description: "",
       tags: [],
       questions: [],
-      timeLimit: 30, // minutes
+      timeLimit: 30,
       shuffleQuestions: false,
       shuffleOptions: true,
       showExplanation: true,
@@ -398,7 +120,10 @@ export default function CreateQuizPage({
   );
 
   const [openImport, setOpenImport] = useState(false);
-  const totalPoints = quiz.questions.reduce((s, q) => s + (q.points || 0), 0);
+  const totalPoints = useMemo(
+    () => quiz.questions.reduce((s, q) => s + (q.points || 0), 0),
+    [quiz.questions]
+  );
 
   const addQuestion = (type = "single") =>
     setQuiz((q) => ({ ...q, questions: [...q.questions, newQuestion(type)] }));
@@ -438,7 +163,6 @@ export default function CreateQuizPage({
     });
 
   const importQuiz = (picked) => {
-    // merge meta + questions từ quiz thư viện
     setQuiz((q) => ({
       ...q,
       title: q.title || picked.title,
@@ -454,10 +178,15 @@ export default function CreateQuizPage({
       const m = await meta.validateFields();
       const s = await settings.validateFields();
       const payload = { ...quiz, ...m, ...s };
-      await onSave?.(payload, { publish });
+
+      // TODO: call API sau này
+
+      localStorage.setItem("hokori_new_quiz", JSON.stringify(payload));
       message.success(publish ? "Published!" : "Saved as draft");
+
+      if (returnTo) navigate(returnTo);
+      else navigate(-1);
     } catch (e) {
-      // AntD tự highlight field
       console.log(e);
     }
   };
