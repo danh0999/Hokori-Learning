@@ -40,6 +40,7 @@ import JLPTList from "../pages/JLPT/JLPTList";
 import ManageQueues from "../pages/Moderator/Queues/ManageQueues";
 import CreateQuizPage from "../pages/Teacher/ManageDocument/Quiz/CreateQuizPage/CreateQuizPage";
 import ManageDocumentPage from "../pages/Teacher/ManageDocument/ManageDocumentPage";
+import TeacherRevenue from "../pages/Teacher/Revenue/TeacherRevenue";
 
 // import CreateCoursePageUdemy from "../pages/Teacher/Courses/CreateCoursePageUdemy/CreateCoursePageUdemy";
 
@@ -121,6 +122,7 @@ const routes = [
             path: "manage-documents",
             element: <ManageDocumentPage />,
           },
+          { path: "revenue", element: <TeacherRevenue /> },
           { path: "profile", element: <TeacherProfilePage /> },
           { path: "*", element: <ErrorPage /> },
         ],
