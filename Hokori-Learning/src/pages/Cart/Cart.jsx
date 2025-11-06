@@ -8,7 +8,7 @@ import { useCart } from "../../context/CartContext";
 const CartPage = () => {
   const { cart, removeFromCart } = useCart(); // ✅ giỏ hàng global
 
-  // 💾 Lưu để sau (mock): remove khỏi cart + sau này call API
+  //  Lưu để sau (mock): remove khỏi cart + sau này call API
   const handleSaveForLater = (id) => {
     const saved = cart.find((c) => c.id === id);
     if (saved) {
@@ -23,7 +23,7 @@ const CartPage = () => {
     const fav = cart.find((c) => c.id === id);
     if (fav) {
       console.log("Đã thêm vào yêu thích:", fav.title);
-      // 🔜 TODO: POST /api/favorites
+      //  TODO: POST /api/favorites
     }
   };
 

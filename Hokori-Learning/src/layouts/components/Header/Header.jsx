@@ -4,9 +4,10 @@ import { useSelector, useDispatch } from "react-redux";
 
 import { logout } from "../../../redux/features/userSlice";
 import { logoutFirebase } from "../../../redux/features/auth";
-import { BellOutlined, UserOutlined } from "@ant-design/icons";
-import { Badge, Avatar, Dropdown, Space } from "antd";
-import { FiShoppingCart, FiBell } from "react-icons/fi"; // ✅ React Icons
+
+import { UserOutlined } from "@ant-design/icons";
+import { Avatar, Dropdown, Space } from "antd";
+import { FiShoppingCart, FiBell } from "react-icons/fi";
 
 import styles from "./styles.module.scss";
 
@@ -34,22 +35,26 @@ export const Header = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const user = useSelector((state) => state.user); // ✅ lấy user từ Redux
+  const user = useSelector((state) => state.user);
+  const cartCount = 3; // TODO: Replace with cart Redux later
 
-  // Sau này có thể thêm cart Redux:
-  // const cart = useSelector((state) => state.cart);
-  const cartCount = 3; // ✅ tạm thời hardcode, sau gắn Redux
-
-  const [openDropdown, setOpenDropdown] = useState(false);
-  const dropdownRef = useRef(null);
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const courseDropdownRef = useRef(null);
+  const aboutDropdownRef = useRef(null);
 
   // Đóng dropdown khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setOpenDropdown(false);
+      if (
+        courseDropdownRef.current &&
+        !courseDropdownRef.current.contains(e.target) &&
+        aboutDropdownRef.current &&
+        !aboutDropdownRef.current.contains(e.target)
+      ) {
+        setOpenDropdown(null);
       }
     };
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -66,12 +71,12 @@ export const Header = () => {
 
   const userMenu = [
     {
-      key: "dashboard",
+      key: "profile",
       label: "Hồ sơ cá nhân",
       onClick: () => navigate("/profile"),
     },
     {
-      key: "profile",
+      key: "learner-dashboard",
       label: "Thống kê học tập",
       onClick: () => navigate("/learner-dashboard"),
     },
@@ -88,7 +93,7 @@ export const Header = () => {
   return (
     <header className={header}>
       <div className={container}>
-        {/* Logo */}
+        {/* ===== Logo ===== */}
         <div className={logo} onClick={() => navigate("/")}>
           <div className={logoBox}>
             <span className={logoText}>H</span>
@@ -96,7 +101,7 @@ export const Header = () => {
           <span className={brand}>Hokori</span>
         </div>
 
-        {/* Navigation */}
+        {/* ===== Navigation ===== */}
         <nav className={nav}>
           <NavLink
             to="/"
@@ -105,18 +110,24 @@ export const Header = () => {
             Trang chủ
           </NavLink>
 
-          {/* Dropdown khóa học */}
-          <div className={dropdown} ref={dropdownRef}>
+          {/* ===== Dropdown: Khóa học ===== */}
+          <div className={dropdown} ref={courseDropdownRef}>
             <button
               className={dropdownToggle}
-              onClick={() => setOpenDropdown(!openDropdown)}
+              onClick={() =>
+                setOpenDropdown(openDropdown === "course" ? null : "course")
+              }
             >
               Khóa học{" "}
-              <span className={`${arrow} ${openDropdown ? rotate : ""}`}>
+              <span
+                className={`${arrow} ${
+                  openDropdown === "course" ? rotate : ""
+                }`}
+              >
                 ▾
               </span>
             </button>
-            {openDropdown && (
+            {openDropdown === "course" && (
               <div className={dropdownMenu}>
                 <NavLink to="/marketplace" className={dropdownItem}>
                   Tất cả khóa học
@@ -135,12 +146,36 @@ export const Header = () => {
             Thi thử JLPT
           </NavLink>
 
-          <NavLink
-            to="/about"
-            className={({ isActive }) => (isActive ? active : "")}
-          >
-            Về chúng tôi
-          </NavLink>
+          {/* ===== Dropdown: Về Hokori ===== */}
+          <div className={dropdown} ref={aboutDropdownRef}>
+            <button
+              className={dropdownToggle}
+              onClick={() =>
+                setOpenDropdown(openDropdown === "about" ? null : "about")
+              }
+            >
+              Về Hokori{" "}
+              <span
+                className={`${arrow} ${
+                  openDropdown === "about" ? rotate : ""
+                }`}
+              >
+                ▾
+              </span>
+            </button>
+            {openDropdown === "about" && (
+              <div className={dropdownMenu}>
+                <NavLink to="/about" className={dropdownItem}>
+                  Về chúng tôi
+                </NavLink>
+                <NavLink to="/policies" className={dropdownItem}>
+                  Chính sách & Điều khoản
+                </NavLink>
+              </div>
+            )}
+          </div>
+
+          {/* ===== Liên hệ ===== */}
           <NavLink
             to="/contact"
             className={({ isActive }) => (isActive ? active : "")}
@@ -149,7 +184,7 @@ export const Header = () => {
           </NavLink>
         </nav>
 
-        {/* Actions */}
+        {/* ===== User Actions ===== */}
         <div className={actions}>
           {!user ? (
             <>
@@ -165,7 +200,7 @@ export const Header = () => {
             </>
           ) : (
             <Space size={24} align="center">
-              {/*  Giỏ hàng */}
+              {/* 🛒 Giỏ hàng */}
               <div
                 onClick={() => navigate("/cart")}
                 style={{
@@ -209,7 +244,7 @@ export const Header = () => {
                 style={{
                   position: "relative",
                   cursor: "pointer",
-                  transition: "color 0.2s ease, transform 0.2s ease",
+                  transition: "transform 0.2s ease",
                 }}
                 onMouseEnter={(e) =>
                   (e.currentTarget.style.transform = "scale(1.1)")

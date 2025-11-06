@@ -11,7 +11,7 @@ export const CartProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // 🔹 Dùng map để lưu thời gian hành động gần nhất cho từng course id
+  // Dùng map để lưu thời gian hành động gần nhất cho từng course id
   const lastActionTime = useRef({});
 
   useEffect(() => {
@@ -28,7 +28,7 @@ export const CartProvider = ({ children }) => {
     return false;
   };
 
-  // ➕ Thêm vào giỏ hàng
+  //  Thêm vào giỏ hàng
   const addToCart = (course) => {
     setCart((prev) => {
       if (prev.some((c) => c.id === course.id)) {
@@ -50,12 +50,12 @@ export const CartProvider = ({ children }) => {
         });
       }
 
-      // 🔜 TODO: POST /api/cart/add
+      //  TODO: POST /api/cart/add
       return [...prev, course];
     });
   };
 
-  // ❌ Xóa khỏi giỏ hàng
+  //  Xóa khỏi giỏ hàng
   const removeFromCart = (id) => {
     const course = cart.find((c) => c.id === id);
     setCart((prev) => prev.filter((c) => c.id !== id));
@@ -67,10 +67,10 @@ export const CartProvider = ({ children }) => {
         autoClose: 1200,
       });
     }
-    // 🔜 TODO: DELETE /api/cart/:id
+    //  TODO: DELETE /api/cart/:id
   };
 
-  // 🧹 Xóa toàn bộ giỏ hàng
+  //  Xóa toàn bộ giỏ hàng
   const clearCart = () => {
     setCart([]);
     if (canTriggerToast("clear")) {
