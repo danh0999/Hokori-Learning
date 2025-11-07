@@ -13,29 +13,28 @@ import {
 const CartPage = () => {
   const dispatch = useDispatch();
 
-  // ✅ Lấy dữ liệu giỏ hàng từ Redux
-  const { items, loading, selectedSubtotal } = useSelector(
+  //  Lấy dữ liệu giỏ hàng từ Redux
+  const { items, loading } = useSelector(
     (state) => state.cart
   );
 
-  // ✅ Lấy giỏ hàng từ backend khi vào trang
+  //  Lấy giỏ hàng từ backend khi vào trang
   useEffect(() => {
     dispatch(fetchCart());
   }, [dispatch]);
-
-  // ✅ Xóa 1 khóa học khỏi giỏ
+  //  Xóa 1 khóa học khỏi giỏ
   const handleRemove = (itemId) => {
     dispatch(removeCartItem(itemId));
   };
 
-  // ✅ Xóa toàn bộ giỏ
+  //  Xóa toàn bộ giỏ
   const handleClearCart = () => {
     if (window.confirm("Bạn có chắc muốn xóa toàn bộ giỏ hàng?")) {
       dispatch(clearCart());
     }
   };
 
-  // ✅ Loading state
+  // 🔹 Hiển thị khi đang tải
   if (loading) {
     return (
       <main className={styles.main}>
@@ -46,7 +45,7 @@ const CartPage = () => {
     );
   }
 
-  // ✅ Hiển thị khi giỏ trống
+  //  Hiển thị khi giỏ trống
   if (!items || items.length === 0) {
     return (
       <main className={styles.main}>
@@ -59,7 +58,7 @@ const CartPage = () => {
     );
   }
 
-  // ✅ Giao diện chính
+  //  Giao diện chính
   return (
     <main className={styles.main}>
       <div className={styles.container}>
@@ -73,9 +72,10 @@ const CartPage = () => {
         <div className={styles.grid}>
           {/* Danh sách khóa học */}
           <div className={styles.courseList}>
-            {items.map((item) => (
+            {items.map((item, index) => (
+              //  thêm key dự phòng cả itemId, courseId, index để đảm bảo luôn unique
               <CartItem
-                key={item.itemId || item.courseId}
+                key={item.itemId || item.courseId || index}
                 item={item}
                 onRemove={() => handleRemove(item.itemId)}
               />
@@ -86,8 +86,8 @@ const CartPage = () => {
             </button>
           </div>
 
-          {/* Tóm tắt đơn hàng */}
-          <OrderSummary total={selectedSubtotal} />
+          {/*  Truyền đúng props cho OrderSummary */}
+          <OrderSummary courses={items} />
         </div>
 
         {/* Gợi ý khóa học */}

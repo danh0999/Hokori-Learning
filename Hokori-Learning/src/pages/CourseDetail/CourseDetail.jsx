@@ -12,8 +12,8 @@ import {
 
 /**
  * Trang chi tiết khóa học (Course Detail)
- * ✅ Đã hỗ trợ gọi API backend /courses/:id
- * 🔄 Tự fallback sang mock data nếu backend chưa phản hồi
+ *  Đã hỗ trợ gọi API backend /courses/:id
+ *  Tự fallback sang mock data nếu backend chưa phản hồi
  */
 
 const CourseDetail = () => {
