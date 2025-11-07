@@ -26,7 +26,7 @@ const CourseDetail = () => {
   useEffect(() => {
     /**
      * ================================================
-     * 🔹 API MODE — Gọi dữ liệu khóa học thật từ backend
+     *  API MODE — Gọi dữ liệu khóa học thật từ backend
      * ================================================
      */
     dispatch(fetchCourseById(id))
