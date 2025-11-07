@@ -1,8 +1,19 @@
-// src/pages/Teacher/ManageDocument/Quiz/QuizTable.jsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Table, Button, Space } from "antd";
+import { useNavigate } from "react-router-dom";
+import styles from "./QuizTable.module.scss";
 
 export default function QuizTable() {
+  const navigate = useNavigate();
+  const [data, setData] = useState([]);
+
+  // load list từ localStorage
+  useEffect(() => {
+    const raw = localStorage.getItem("hokori_quizzes");
+    const list = raw ? JSON.parse(raw) : [];
+    setData(list);
+  }, []);
+
   const columns = [
     {
       title: "Tên quiz",
@@ -11,9 +22,10 @@ export default function QuizTable() {
     },
     {
       title: "Tổng số câu hỏi",
-      dataIndex: "total_questions",
+      dataIndex: "questions",
       key: "total_questions",
       width: 150,
+      render: (qs) => (Array.isArray(qs) ? qs.length : 0),
     },
     {
       title: "Ngày tạo",
@@ -23,7 +35,7 @@ export default function QuizTable() {
       render: (value) => {
         if (!value) return "";
         const d = new Date(value);
-        return d.toLocaleString(); // sau này cần thì format lại cho đẹp
+        return d.toLocaleString();
       },
     },
     {
@@ -32,13 +44,15 @@ export default function QuizTable() {
       width: 220,
       render: (_, record) => (
         <Space>
-          <Button size="small" onClick={() => console.log("Edit", record.id)}>
-            Edit
-          </Button>
           <Button
             size="small"
-            onClick={() => console.log("Questions", record.id)}
+            onClick={() =>
+              navigate("/teacher/create-quiz", { state: { quizId: record.id } })
+            }
           >
+            Edit
+          </Button>
+          <Button size="small" onClick={() => console.log("Questions", record)}>
             Questions
           </Button>
           <Button
@@ -53,26 +67,16 @@ export default function QuizTable() {
     },
   ];
 
-  // dummy data: giả sử BE trả created_at dạng ISO string
-  const data = [
-    {
-      id: 1,
-      title: "JLPT N5 – Lesson 1",
-      total_questions: 10,
-      created_at: "2025-11-01T09:30:00Z",
-    },
-    {
-      id: 2,
-      title: "Kanji N5 – Bộ Thủ",
-      total_questions: 15,
-      created_at: "2025-11-03T14:15:00Z",
-    },
-  ];
+  const handleCreateQuiz = () => {
+    navigate("/teacher/create-quiz", {
+      state: { returnTo: "/teacher/manage-documents" },
+    });
+  };
 
   return (
     <>
       <div style={{ marginBottom: 16, textAlign: "right" }}>
-        <Button type="primary" onClick={() => console.log("Create new quiz")}>
+        <Button type="primary" onClick={handleCreateQuiz}>
           + Create quiz
         </Button>
       </div>
@@ -81,7 +85,10 @@ export default function QuizTable() {
         rowKey="id"
         columns={columns}
         dataSource={data}
-        pagination={{ pageSize: 10 }}
+        pagination={{
+          pageSize: 10,
+          className: styles.quizPagination,
+        }}
       />
     </>
   );

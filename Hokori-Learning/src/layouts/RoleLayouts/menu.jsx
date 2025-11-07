@@ -98,7 +98,6 @@ export const sidebarMenusByRole = {
       // ]
     ),
     mk("revenue", "Doanh thu", <DollarOutlined />, "/teacher/revenue"),
-    mk("manage", "Quản lý", <SettingOutlined />, "/teacher/manage"),
     mk("profile", "Hồ sơ cá nhân", <UserOutlined />, "/teacher/profile"),
   ],
   admin: [

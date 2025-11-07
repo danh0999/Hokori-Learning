@@ -1,0 +1,61 @@
+/* Đặt trong QuizTable.module.scss */
+:global(.ant-pagination.ant-table-pagination) {
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  width: auto !important;
+  box-shadow: none !important;
+  background: transparent !important;
+
+  display: flex !important;
+  flex-direction: row !important; /* 👈 chuyển mũi tên thành ngang */
+  align-items: flex-end !important; /* 👈 canh phải */
+  gap: 4px; /* khoảng cách giữa mũi tên và số trang */
+}
+
+/* căn chỉnh riêng cho từng phần tử */
+:global(.ant-pagination-item),
+:global(.ant-pagination-prev),
+:global(.ant-pagination-next) {
+  margin: 0 !important;
+}
+
+/* cho nút mũi tên nhỏ lại và canh giữa */
+:global(.ant-pagination-prev),
+:global(.ant-pagination-next) {
+  width: 28px !important;
+  height: 28px !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+/* Làm màu bảng đậm hơn một chút */
+:global(.ant-table) {
+  background-color: #fafafa !important; /* nền sáng hơn */
+  border-radius: 8px;
+}
+
+/* Màu header */
+:global(.ant-table-thead > tr > th) {
+  background-color: #f0f0f0 !important;
+  color: #1f1f1f !important;
+  font-weight: 600;
+  border-bottom: 1px solid #d9d9d9 !important;
+}
+
+/* Màu dòng dữ liệu */
+:global(.ant-table-tbody > tr > td) {
+  background-color: #ffffff !important;
+  border-bottom: 1px solid #e6e6e6 !important;
+}
+
+/* Hiệu ứng hover */
+:global(.ant-table-tbody > tr:hover > td) {
+  background-color: #f5faff !important;
+}
+
+/* Giữ border gọn gàng */
+:global(.ant-table-container) {
+  border: 1px solid #d9d9d9 !important;
+  border-radius: 8px;
+}
