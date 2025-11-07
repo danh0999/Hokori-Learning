@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Drawer,
   Tabs,
@@ -64,6 +64,13 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
       attachments: [...(local.attachments || []), ...newFiles],
     });
   };
+
+  // 🆕 Khi mở drawer, load thêm quiz từ QuizTable (localStorage)
+  useEffect(() => {
+    const raw = localStorage.getItem("hokori_quizzes");
+    const globalQuizzes = raw ? JSON.parse(raw) : [];
+    setQuizLibrary(globalQuizzes);
+  }, []);
 
   return (
     <Drawer

@@ -3,19 +3,38 @@
   flex-direction: column;
   gap: 12px;
 }
+
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
+
 .title {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
 }
+
 .item {
   padding: 8px 0;
+  display: flex; /* 👈 xếp hàng ngang */
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
+
+.itemInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.actions {
+  display: flex; /* 👈 2 nút nằm ngang */
+  align-items: center;
+  gap: 8px; /* khoảng cách giữa Edit & Remove */
+}
+
 .muted {
   color: #6b7280;
 }

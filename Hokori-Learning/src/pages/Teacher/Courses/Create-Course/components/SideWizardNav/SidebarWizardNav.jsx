@@ -1,14 +1,12 @@
 // src/pages/Teacher/Courses/Create-Course/components/SidebarWizardNav.jsx
 import React, { useMemo } from "react";
-import { Menu, Badge } from "antd";
 import {
   BulbOutlined,
   BookOutlined,
   RocketOutlined,
-  FileTextOutlined,
-  DollarOutlined,
-  CloudUploadOutlined,
+  CheckCircleFilled,
 } from "@ant-design/icons";
+import styles from "./SidebarWizardNav.module.scss";
 
 /**
  * Props:
@@ -22,156 +20,147 @@ import {
  *   }
  */
 export default function SidebarWizardNav({ step, onChangeStep, status }) {
-  // map sub-item key -> index step
-  const keyToStep = useMemo(
+  const stepDoneMap = useMemo(
     () => ({
-      "plan:course-info": 0,
-      "create:curriculum": 1,
-      "publish:pricing": 2,
-      "publish:review-submit": 3,
+      0: !!status?.basicsDone,
+      1: !!status?.curriculumDone,
+      2: !!status?.pricingDone,
+      3: !!status?.readyToPublish,
     }),
-    []
+    [status]
   );
 
-  const selectedKey = useMemo(() => {
-    switch (step) {
-      case 0:
-        return "plan:course-info";
-      case 1:
-        return "create:curriculum";
-      case 2:
-        return "publish:pricing";
-      default:
-        return "publish:review-submit";
-    }
-  }, [step]);
-
-  const items = useMemo(
+  const groups = useMemo(
     () => [
       {
         key: "plan",
         icon: <BulbOutlined />,
-        label: "Plan your course",
-        children: [
+        title: "Plan your course",
+        subtitle: "Set up the basics",
+        items: [
           {
-            key: "plan:course-info",
-            icon: <FileTextOutlined />,
-            label: (
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  width: "100%",
-                }}
-              >
-                <span>Course Info</span>
-                {status?.basicsDone ? (
-                  <Badge status="success" />
-                ) : (
-                  <Badge status="default" />
-                )}
-              </div>
-            ),
+            key: "course-info",
+            stepIndex: 0,
+            label: "Course info",
+            desc: "Title, subtitle, description, category, language",
           },
         ],
       },
       {
         key: "create",
         icon: <BookOutlined />,
-        label: "Create your content",
-        children: [
+        title: "Create your content",
+        subtitle: "Build your curriculum",
+        items: [
           {
-            key: "create:curriculum",
-            icon: <BookOutlined />,
-            label: (
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  width: "100%",
-                }}
-              >
-                <span>Curriculum</span>
-                {status?.curriculumDone ? (
-                  <Badge status="success" />
-                ) : (
-                  <Badge status="default" />
-                )}
-              </div>
-            ),
+            key: "curriculum",
+            stepIndex: 1,
+            label: "Curriculum",
+            desc: "Sections, lectures, quizzes, resources",
           },
         ],
       },
       {
         key: "publish",
         icon: <RocketOutlined />,
-        label: "Publish your course",
-        children: [
+        title: "Publish your course",
+        subtitle: "Get ready to go live",
+        items: [
           {
-            key: "publish:pricing",
-            icon: <DollarOutlined />,
-            label: (
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  width: "100%",
-                }}
-              >
-                <span>Pricing</span>
-                {status?.pricingDone ? (
-                  <Badge status="success" />
-                ) : (
-                  <Badge status="default" />
-                )}
-              </div>
-            ),
+            key: "pricing",
+            stepIndex: 2,
+            label: "Pricing",
+            desc: "Choose price for your course",
           },
           {
-            key: "publish:review-submit",
-            icon: <CloudUploadOutlined />,
-            label: (
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  width: "100%",
-                }}
-              >
-                <span>Review & Submit</span>
-                {status?.readyToPublish ? (
-                  <Badge status="success" />
-                ) : (
-                  <Badge status="processing" />
-                )}
-              </div>
-            ),
+            key: "review-submit",
+            stepIndex: 3,
+            label: "Review & submit",
+            desc: "Final check before submitting",
           },
         ],
       },
     ],
-    [status]
+    []
   );
 
-  const defaultOpenKeys = useMemo(() => {
-    if (selectedKey.startsWith("plan")) return ["plan"];
-    if (selectedKey.startsWith("create")) return ["create"];
-    return ["publish"];
-  }, [selectedKey]);
-
-  const handleClick = ({ key }) => {
-    const next = keyToStep[key];
-    if (typeof next === "number") onChangeStep(next);
+  const handleClick = (nextStep) => {
+    if (typeof onChangeStep === "function") {
+      onChangeStep(nextStep);
+    }
   };
 
   return (
-    <Menu
-      mode="inline"
-      items={items}
-      selectedKeys={[selectedKey]}
-      defaultOpenKeys={defaultOpenKeys}
-      onClick={handleClick}
-      style={{ borderInlineEnd: "none" }}
-    />
+    <div className={styles.sidebarNav}>
+      <div className={styles.navHeader}>
+        <div className={styles.navTitle}>Course setup</div>
+        <div className={styles.navSubtitle}>
+          Follow each step to create and publish your course.
+        </div>
+      </div>
+
+      {groups.map((group) => (
+        <div key={group.key} className={styles.group}>
+          <div className={styles.groupHeader}>
+            <div className={styles.groupIcon}>{group.icon}</div>
+            <div>
+              <div className={styles.groupTitle}>{group.title}</div>
+              <div className={styles.groupSubtitle}>{group.subtitle}</div>
+            </div>
+          </div>
+
+          <ul className={styles.stepList}>
+            {group.items.map((item) => {
+              const isActive = step === item.stepIndex;
+              const isDone = stepDoneMap[item.stepIndex];
+              // Có thể custom rule khóa step sau nếu muốn
+              const isLocked = false;
+
+              return (
+                <li
+                  key={item.key}
+                  className={[
+                    styles.stepItem,
+                    isActive ? styles.stepItemActive : "",
+                    isDone ? styles.stepItemDone : "",
+                    isLocked ? styles.stepItemDisabled : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  onClick={() => !isLocked && handleClick(item.stepIndex)}
+                >
+                  <div className={styles.stepLeft}>
+                    <div className={styles.bulletWrapper}>
+                      {isDone ? (
+                        <CheckCircleFilled className={styles.bulletDoneIcon} />
+                      ) : (
+                        <span className={styles.bulletDot} />
+                      )}
+                    </div>
+
+                    <div className={styles.stepText}>
+                      <div className={styles.stepLabel}>{item.label}</div>
+                      {item.desc && (
+                        <div className={styles.stepDesc}>{item.desc}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className={styles.stepStatus}>
+                    {isDone
+                      ? "Completed"
+                      : isActive
+                      ? "In progress"
+                      : isLocked
+                      ? "Locked"
+                      : "Not started"}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </div>
   );
 }

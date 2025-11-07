@@ -57,18 +57,19 @@
   position: sticky;
   top: 80px;
   height: fit-content;
+}
 
-  .ant-steps-item-title {
-    font-size: 14px;
-    font-weight: 500;
-    color: #111827;
-  }
+/* style cho AntD Steps bên trong sidebar */
+.sidebar :global(.ant-steps-item-title) {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+}
 
-  .ant-steps-item-description {
-    font-size: 13px;
-    line-height: 1.4;
-    color: #6b7280;
-  }
+.sidebar :global(.ant-steps-item-description) {
+  font-size: 13px;
+  line-height: 1.4;
+  color: #6b7280;
 }
 
 .mainPanel {

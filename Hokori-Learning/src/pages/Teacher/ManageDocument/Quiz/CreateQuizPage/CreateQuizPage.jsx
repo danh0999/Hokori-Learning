@@ -24,68 +24,21 @@ import {
 } from "antd";
 import {
   PlusOutlined,
-  ImportOutlined,
+  // ImportOutlined,  // ❌ không cần nữa
   SaveOutlined,
-  SendOutlined,
+  // SendOutlined,    // ❌ bỏ publish
   EyeOutlined,
   RollbackOutlined,
+  ArrowLeftOutlined,
 } from "@ant-design/icons";
 import { useLocation, useNavigate } from "react-router-dom";
 
-// ❗ dùng shared QuestionCard + newQuestion
 import QuestionCard from "../components/QuestionCard/QuestionCard.jsx";
 import { newQuestion } from "../components/quizUtils/quizUtils.js";
+import BulkImportModal from "../BulkImportModal/BulkImportModal.jsx"; // 👈 path tuỳ cấu trúc của bạn
 
 import styles from "./styles.module.scss";
-
 const { Text, Title } = Typography;
-
-/** ----- Import Modal (pick an existing quiz to import) ----- */
-function ImportModal({ open, onClose, library = [], onImport }) {
-  const [selected, setSelected] = useState(null);
-
-  return (
-    <Modal
-      open={open}
-      title="Import from Library"
-      onCancel={onClose}
-      okText="Import"
-      onOk={() => {
-        if (!selected) return;
-        onImport?.(selected);
-        onClose();
-      }}
-      destroyOnClose
-      width={720}
-    >
-      {library?.length ? (
-        <List
-          dataSource={library}
-          renderItem={(qz) => (
-            <List.Item
-              onClick={() => setSelected(qz)}
-              className={`${styles.importItem} ${
-                selected?.id === qz.id ? styles.active : ""
-              }`}
-            >
-              <Space direction="vertical" size={2}>
-                <Space>
-                  <Text strong>{qz.title}</Text>
-                  <Tag>
-                    {qz.questions?.length || qz.questionsCount || 0} questions
-                  </Tag>
-                </Space>
-                <Text type="secondary">{qz.description || "—"}</Text>
-              </Space>
-            </List.Item>
-          )}
-        />
-      ) : (
-        <Empty description="Chưa có quiz trong thư viện" />
-      )}
-    </Modal>
-  );
-}
 
 /** ----- Main Page ----- */
 export default function CreateQuizPage({
@@ -93,7 +46,7 @@ export default function CreateQuizPage({
   initialQuiz,
   libraryQuizzes = [],
   onBack,
-  onSave, // (quiz, { publish }) => void|Promise
+  onSave,
 }) {
   const navigate = useNavigate();
   const loc = useLocation();
@@ -119,7 +72,9 @@ export default function CreateQuizPage({
     }
   );
 
-  const [openImport, setOpenImport] = useState(false);
+  // ❗ mới: open modal bulk import
+  const [openBulk, setOpenBulk] = useState(false);
+
   const totalPoints = useMemo(
     () => quiz.questions.reduce((s, q) => s + (q.points || 0), 0),
     [quiz.questions]
@@ -162,30 +117,47 @@ export default function CreateQuizPage({
       return { ...q, questions: arr };
     });
 
-  const importQuiz = (picked) => {
+  const handleBulkDone = (questions) => {
+    if (!questions?.length) return;
     setQuiz((q) => ({
       ...q,
-      title: q.title || picked.title,
-      description: q.description || picked.description || "",
-      questions: [...q.questions, ...(picked.questions || [])],
-      tags: Array.from(new Set([...(q.tags || []), ...(picked.tags || [])])),
+      questions: [...q.questions, ...questions],
     }));
-    message.success("Đã import câu hỏi vào quiz hiện tại");
+    message.success(`Đã thêm ${questions.length} câu hỏi từ bulk import`);
+    setOpenBulk(false);
   };
-
-  const save = async (publish = false) => {
+  const save = async () => {
     try {
       const m = await meta.validateFields();
       const s = await settings.validateFields();
-      const payload = { ...quiz, ...m, ...s };
+      const payload = {
+        ...quiz,
+        ...m,
+        ...s,
+        created_at: quiz.created_at || new Date().toISOString(),
+      };
 
-      // TODO: call API sau này
+      // Nếu có onSave từ cha, ưu tiên dùng
+      if (onSave) {
+        await onSave(payload);
+      } else {
+        // Dev mode: lưu vào localStorage để QuizTable đọc được
+        const raw = localStorage.getItem("hokori_quizzes");
+        const list = raw ? JSON.parse(raw) : [];
+        const existIdx = list.findIndex((x) => x.id === payload.id);
+        let next;
+        if (existIdx >= 0) {
+          next = [...list];
+          next[existIdx] = payload;
+        } else {
+          next = [...list, payload];
+        }
+        localStorage.setItem("hokori_quizzes", JSON.stringify(next));
+      }
 
-      localStorage.setItem("hokori_new_quiz", JSON.stringify(payload));
-      message.success(publish ? "Published!" : "Saved as draft");
-
+      message.success("Quiz saved");
       if (returnTo) navigate(returnTo);
-      else navigate(-1);
+      else navigate(-1); // quay về trang manage-document
     } catch (e) {
       console.log(e);
     }
@@ -195,13 +167,12 @@ export default function CreateQuizPage({
     <div className={styles.page}>
       <div className={styles.headerBar}>
         <Space size="large" align="center">
-          {withinCourse && (
-            <Tooltip title="Back to Course Builder">
-              <Button icon={<RollbackOutlined />} onClick={onBack}>
-                Back
-              </Button>
-            </Tooltip>
-          )}
+          <Button
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate("/teacher/manage-documents")}
+          >
+            Back
+          </Button>
           <Title level={3} className={styles.pageTitle}>
             Create Quiz
           </Title>
@@ -210,18 +181,11 @@ export default function CreateQuizPage({
         </Space>
 
         <Space>
-          <Button icon={<ImportOutlined />} onClick={() => setOpenImport(true)}>
-            Import from Library
-          </Button>
-          <Button icon={<SaveOutlined />} onClick={() => save(false)}>
-            Save Draft
-          </Button>
-          <Button
-            type="primary"
-            icon={<SendOutlined />}
-            onClick={() => save(true)}
-          >
-            Publish
+          {/* Nút mở bulk import */}
+          <Button onClick={() => setOpenBulk(true)}>Bulk import</Button>
+          {/* Chỉ còn 1 nút Save */}
+          <Button type="primary" icon={<SaveOutlined />} onClick={save}>
+            Save
           </Button>
         </Space>
       </div>
@@ -482,22 +446,13 @@ export default function CreateQuizPage({
               </Space>
             </Form>
           </Card>
-
-          <Card className={styles.card} title="Mẹo thiết kế tốt">
-            <ul className={styles.tips}>
-              <li>Mỗi câu 1 mục tiêu nhỏ, ngắn gọn.</li>
-              <li>Dùng giải thích để giúp người học nhớ lâu.</li>
-              <li>Trộn câu hỏi và lựa chọn để chống học vẹt.</li>
-            </ul>
-          </Card>
         </Col>
       </Row>
 
-      <ImportModal
-        open={openImport}
-        onClose={() => setOpenImport(false)}
-        library={libraryQuizzes}
-        onImport={importQuiz}
+      <BulkImportModal
+        open={openBulk}
+        onCancel={() => setOpenBulk(false)}
+        onDone={handleBulkDone}
       />
     </div>
   );
