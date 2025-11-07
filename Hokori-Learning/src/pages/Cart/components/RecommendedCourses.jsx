@@ -1,31 +1,32 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchCourses } from "../../../redux/features/courseSlice";
+import CourseCard from "../../Marketplace/components/CourseCard/CourseCard";
 import styles from "./RecommendedCourses.module.scss";
 
 const RecommendedCourses = () => {
-  const suggestions = [
-    { title: "Ngữ Pháp N3 Nâng Cao", teacher: "Sensei Watanabe", price: 549000, old: 799000 },
-    { title: "Listening N2 Intensive", teacher: "Sensei Nakamura", price: 649000, old: 899000 },
-    { title: "Business Japanese", teacher: "Sensei Kimura", price: 749000 },
-    { title: "Văn Hóa Nhật Bản", teacher: "Sensei Hayashi", price: 299000, old: 499000 },
-  ];
+  const dispatch = useDispatch();
+  const { list: courses, loading } = useSelector((state) => state.courses);
+
+  useEffect(() => {
+    //  Lấy danh sách khóa học từ Redux (mock hoặc API)
+    if (!courses.length) dispatch(fetchCourses());
+  }, [dispatch, courses.length]);
 
   return (
     <section className={styles.section}>
-      <h2>Có thể bạn sẽ thích</h2>
+      <div className={styles.header}>
+        <h2 className={styles.title}>Có thể bạn sẽ thích</h2>
+      </div>
+
       <div className={styles.grid}>
-        {suggestions.map((c, i) => (
-          <div key={i} className={styles.card}>
-            <div className={styles.thumbnail}>Course Image</div>
-            <div className={styles.info}>
-              <h3>{c.title}</h3>
-              <p>{c.teacher}</p>
-              <div className={styles.price}>
-                <span>₫{c.price.toLocaleString()}</span>
-                {c.old && <span className={styles.old}>₫{c.old.toLocaleString()}</span>}
-              </div>
-            </div>
-          </div>
-        ))}
+        {loading ? (
+          <div className={styles.loading}>Đang tải...</div>
+        ) : (
+          courses
+            .slice(0, 4)
+            .map((course) => <CourseCard key={course.id} course={course} />)
+        )}
       </div>
     </section>
   );
