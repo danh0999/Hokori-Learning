@@ -152,7 +152,7 @@ const routes = [
         children: [
           { index: true, element: <Stub title="Admin Dashboard" /> },
           { path: "users", element: <Stub title="Users" /> },
-          { path: "catalog", element: <Stub title="Catalog" /> },
+          { path: "catalog", element: <Stub title="Catalog"/> },
           { path: "moderation", element: <Stub title="Moderation" /> },
           { path: "reports", element: <Stub title="Reports" /> },
           { path: "settings", element: <Stub title="Settings" /> },

@@ -34,7 +34,7 @@ const RegisterForm = () => {
 
   // --- Handle register via Google (Firebase) ---
   const handleGoogleRegister = async () => {
-    try {
+    try { 
       setLoadingGoogle(true);
 
       // 1) Đăng nhập Google qua Firebase (popup)
@@ -200,30 +200,11 @@ const RegisterForm = () => {
         </Form.Item>
 
         {/* --- Learner-only --- */}
-        <Form.Item
-          name="displayName"
-          label="Nickname"
-          hidden={role !== "learner"}
-          rules={
-            role === "learner"
-              ? [{ required: true, message: "Vui lòng nhập nickname" }]
-              : []
-          }
-        >
-          <Input />
-        </Form.Item>
 
-        <Form.Item name="country" label="Quốc gia" hidden={role !== "learner"}>
-          <Input placeholder="Vietnam" />
-        </Form.Item>
 
-        <Form.Item
-          name="nativeLanguage"
-          label="Tiếng mẹ đẻ"
-          hidden={role !== "learner"}
-        >
-          <Input placeholder="Vietnamese" />
-        </Form.Item>
+      
+
+      
 
         {/* --- Teacher-only --- */}
         <Form.Item

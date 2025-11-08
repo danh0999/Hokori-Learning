@@ -1,9 +1,19 @@
 .main {
-  background-color: #f9fafb;
+  background: #f9fafb;
   min-height: 100vh;
+  padding: 5rem 0 3rem;
 }
+
 .container {
   max-width: 960px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 0 1.5rem 3rem;
+}
+
+.empty,
+.container > .loading {
+  text-align: center;
+  color: #6b7280;
+  margin-top: 2rem;
+  font-size: 0.95rem;
 }
