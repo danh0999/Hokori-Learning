@@ -6,7 +6,7 @@ export const fetchTeacherProfile = createAsyncThunk(
   "teacherProfile/fetchTeacherProfile",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await api.get("teachers/me/profile");
+      const res = await api.get("profile/me");
       return res?.data?.data;
     } catch (err) {
       return rejectWithValue(

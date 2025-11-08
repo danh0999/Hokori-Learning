@@ -67,11 +67,11 @@ const routes = [
       { path: "policies", element: <Policies /> },
       // ===== Learner Area (Yêu cầu đăng nhập) =====
       {
-        // element: (
-        //   <ProtectedRoute
-        //     allow={["LEARNER", "TEACHER", "ADMIN", "MODERATOR"]}
-        //   />
-        // ),
+        element: (
+          <ProtectedRoute
+            allow={["LEARNER", "TEACHER", "ADMIN", "MODERATOR"]}
+          />
+        ),
         children: [
           { path: "payment", element: <PaymentPage /> },
           { path: "learner-dashboard", element: <LearnerDashboard /> },
@@ -107,7 +107,7 @@ const routes = [
   // ===== TEACHER AREA =====
   {
     path: "teacher",
-    // element: <ProtectedRoute allow={["TEACHER"]} />,
+    element: <ProtectedRoute allow={["TEACHER"]} />,
     children: [
       // ✅ Các trang có layout chung
       {
