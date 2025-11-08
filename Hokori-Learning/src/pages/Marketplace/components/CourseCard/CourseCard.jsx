@@ -4,7 +4,7 @@ import { Button } from "../../../../components/Button/Button";
 import { useNavigate } from "react-router-dom";
 import { FaShoppingCart } from "react-icons/fa";
 import { useDispatch } from "react-redux";
-import { addItem } from "../../../../redux/features/cartSlice";
+import { addToCart } from "../../../../redux/features/cartSlice";
 import { setCurrentCourse } from "../../../../redux/features/courseSlice";
 const FALLBACK_IMAGE =
   "https://thumbs.dreamstime.com/b/teacher-icon-vector-male-person-profile-avatar-book-teaching-school-college-university-education-glyph-113755262.jpg";
@@ -89,7 +89,7 @@ export default function CourseCard({ course }) {
                 Thêm vào giỏ hàng
               </>
             }
-            onClick={() => dispatch(addItem(course))}
+            onClick={() => dispatch(addToCart(course))}
             containerClassName={styles.actionItem}
             className={`${styles.actionButton} ${styles.cartButton}`}
           />
