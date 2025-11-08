@@ -165,7 +165,7 @@ const Listening = ({ onFinishTest }) => {
             </button>
 
             <div className={styles.progressContainer}>
-              <div className={styles.progressBar}>
+              <div className={styles.progressBar1}>
                 <div
                   className={styles.progressFill}
                   style={{

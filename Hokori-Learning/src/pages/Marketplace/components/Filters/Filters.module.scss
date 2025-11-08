@@ -165,17 +165,25 @@ h4 {
 }
 /* --- Thước đo giá tiền --- */
 .rangeContainer {
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.range {
   width: 100%;
-  padding-top: 20px;
+  accent-color: #2563eb;
 }
 
 .scaleMarks {
   display: flex;
   justify-content: space-between;
-  position: relative;
-  margin-top: 6px;
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 0.2rem;
 }
+
 
 .mark {
   display: flex;

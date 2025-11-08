@@ -6,11 +6,13 @@ import { toast } from "react-toastify";
 
 const EditProfileModal = ({ user, onClose }) => {
   const dispatch = useDispatch();
+
   const [form, setForm] = useState({
     username: user?.username || "",
     email: user?.email || "",
     phoneNumber: user?.phoneNumber || "",
   });
+
   const [errors, setErrors] = useState({});
 
   const validate = () => {
@@ -18,11 +20,17 @@ const EditProfileModal = ({ user, onClose }) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneRegex = /^(0|\+84)[0-9]{8,10}$/;
 
-    if (!form.username.trim()) err.username = "Vui lòng nhập tên hiển thị.";
-    if (!form.email.trim() || !emailRegex.test(form.email))
+    if (!form.username.trim()) {
+      err.username = "Vui lòng nhập tên hiển thị.";
+    }
+
+    if (!form.email.trim() || !emailRegex.test(form.email.trim())) {
       err.email = "Email không hợp lệ.";
-    if (form.phoneNumber && !phoneRegex.test(form.phoneNumber))
+    }
+
+    if (form.phoneNumber && !phoneRegex.test(form.phoneNumber.trim())) {
       err.phoneNumber = "Số điện thoại không hợp lệ.";
+    }
 
     setErrors(err);
     return Object.keys(err).length === 0;
@@ -35,9 +43,19 @@ const EditProfileModal = ({ user, onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate()) {
+      toast.warn("⚠️ Vui lòng kiểm tra lại thông tin!");
+      return;
+    }
 
-    await dispatch(updateMe(form));
+    const payload = {
+      ...user, // giữ các field khác của profile
+      username: form.username.trim(),
+      email: form.email.trim(),
+      phoneNumber: form.phoneNumber.trim() || null,
+    };
+
+    await dispatch(updateMe(payload));
     toast.success("✅ Cập nhật hồ sơ thành công!");
     onClose();
   };
@@ -45,11 +63,13 @@ const EditProfileModal = ({ user, onClose }) => {
   return (
     <div className={styles.overlay}>
       <div className={styles.modal}>
-        <h3>Chỉnh sửa hồ sơ</h3>
+        <h3 className={styles.title}>Chỉnh sửa hồ sơ</h3>
+
         <form onSubmit={handleSubmit} className={styles.form}>
-          <label>
-            Tên hiển thị
+          <div className={styles.field}>
+            <label htmlFor="username">Tên hiển thị</label>
             <input
+              id="username"
               type="text"
               name="username"
               value={form.username}
@@ -58,11 +78,12 @@ const EditProfileModal = ({ user, onClose }) => {
             {errors.username && (
               <span className={styles.error}>{errors.username}</span>
             )}
-          </label>
+          </div>
 
-          <label>
-            Email
+          <div className={styles.field}>
+            <label htmlFor="email">Email</label>
             <input
+              id="email"
               type="email"
               name="email"
               value={form.email}
@@ -71,11 +92,12 @@ const EditProfileModal = ({ user, onClose }) => {
             {errors.email && (
               <span className={styles.error}>{errors.email}</span>
             )}
-          </label>
+          </div>
 
-          <label>
-            Số điện thoại
+          <div className={styles.field}>
+            <label htmlFor="phoneNumber">Số điện thoại</label>
             <input
+              id="phoneNumber"
               type="text"
               name="phoneNumber"
               value={form.phoneNumber}
@@ -84,13 +106,20 @@ const EditProfileModal = ({ user, onClose }) => {
             {errors.phoneNumber && (
               <span className={styles.error}>{errors.phoneNumber}</span>
             )}
-          </label>
+          </div>
 
           <div className={styles.actions}>
-            <button type="button" className={styles.cancel} onClick={onClose}>
+            <button
+              type="button"
+              className={`${styles.btn} ${styles.cancel}`}
+              onClick={onClose}
+            >
               Hủy
             </button>
-            <button type="submit" className={styles.save}>
+            <button
+              type="submit"
+              className={`${styles.btn} ${styles.save}`}
+            >
               Lưu thay đổi
             </button>
           </div>

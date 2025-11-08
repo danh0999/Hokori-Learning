@@ -32,9 +32,7 @@ const Policies = () => {
           </section>
         ))}
 
-        <footer className={styles.footer}>
-          <p>© 2025 Hokori Learning. Mọi quyền được bảo lưu.</p>
-        </footer>
+  
       </div>
     </div>
   );
