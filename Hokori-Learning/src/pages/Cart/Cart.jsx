@@ -4,7 +4,10 @@ import CartItem from "./components/CartItem";
 import OrderSummary from "./components/OrderSummary";
 import RecommendedCourses from "./components/RecommendedCourses";
 import { useSelector, useDispatch } from "react-redux";
-import { removeItem, clearCart /* , fetchCart */ } from "../../redux/features/cartSlice";
+import {
+  removeItem,
+  clearCart /* , fetchCart */,
+} from "../../redux/features/cartSlice";
 //           ↑↑↑ fetchCart để dành cho API thật, hiện tại tạm comment lại
 
 const CartPage = () => {
