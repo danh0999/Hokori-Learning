@@ -6,8 +6,6 @@
   position: relative;
   width: 100%;
 
-
-
   border-radius: 0.5rem;
 
   /* căn giữa theo layout Hokori */
@@ -93,8 +91,8 @@
     justify-content: space-between;
   }
 }
-:global(body),
-:global(main),
-:global(#root) {
+:global(.quizPage) body,
+:global(.quizPage) main,
+:global(.quizPage) #root {
   background: #f9fafb !important;
 }
