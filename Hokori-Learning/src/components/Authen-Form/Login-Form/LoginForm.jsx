@@ -15,6 +15,8 @@ import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
 import { login } from "../../../redux/features/userSlice";
 import api from "../../../configs/axios";
+import { getAuth } from "firebase/auth";
+
 
 const LoginForm = () => {
   const [loadingGoogle, setLoadingGoogle] = useState(false);
@@ -45,20 +47,62 @@ const LoginForm = () => {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      setLoadingGoogle(true);
-      const profile = await loginWithGoogle();
-      toast.success(`Xin chào, ${profile.displayName || profile.email}!`);
-      dispatch(login(profile));
-      navigate("/");
-    } catch (e) {
-      console.error(e);
-      toast.error(mapFirebaseAuthError(e));
-    } finally {
-      setLoadingGoogle(false);
-    }
-  };
+const handleGoogleLogin = async () => {
+  try {
+    setLoadingGoogle(true);
+
+    // 1) Popup Google
+    const profile = await loginWithGoogle();
+
+    // 2) Lấy ID token từ Firebase (ép refresh)
+    const fbUser = getAuth().currentUser;                  // [CHANGED]
+    if (!fbUser) throw new Error("Không lấy được người dùng Firebase"); // [CHANGED]
+    const firebaseToken = await fbUser.getIdToken(true);    // [CHANGED]
+
+    // 3) Gọi BE: /auth/firebase (LOGIN) — KHÔNG kèm Bearer cũ      // [CHANGED]
+    const res = await api.post(
+      "/auth/firebase",
+      { firebaseToken },
+      { headers: { Authorization: undefined } }             // [CHANGED]
+    );
+
+    // 4) Lấy dữ liệu chuẩn từ BE                                     // [CHANGED]
+    const { user, roles, accessToken, refreshToken } = res.data.data || {};
+    const safeRoles =
+      Array.isArray(roles) && roles.length
+        ? roles
+        : user?.role?.roleName
+        ? [user.role.roleName]
+        : [];
+
+    // 5) Lưu Redux + token                                            // [CHANGED]
+    const payload = {
+      ...user,
+      roles: safeRoles,
+      role: safeRoles?.[0] || null, // để các chỗ cũ còn dùng được
+      accessToken,
+      refreshToken,
+    };
+    dispatch(login(payload));
+    if (accessToken) localStorage.setItem("token", accessToken);
+
+    // 6) Điều hướng theo role mới nhất                                // [CHANGED]
+    const isTeacher = safeRoles.map((r) => (r || "").toUpperCase()).includes("TEACHER");
+    toast.success(`Xin chào, ${user?.displayName || user?.email || profile?.displayName || profile?.email}!`);
+    navigate(isTeacher ? "/teacher" : "/");
+  } catch (e) {
+    console.error("Google login error:", e);
+    toast.error(
+      e?.response?.data?.message ||
+        e?.response?.data?.error ||
+        e?.message ||
+        "Đăng nhập bằng Google thất bại!"
+    );
+  } finally {
+    setLoadingGoogle(false);
+  }
+};
+
 
   return (
     <div className={styles.loginFormContainer}>

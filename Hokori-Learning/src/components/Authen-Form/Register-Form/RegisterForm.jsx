@@ -33,48 +33,45 @@ const RegisterForm = () => {
   }, [role, form]);
 
   // --- Handle register via Google (Firebase) ---
-  const handleGoogleRegister = async () => {
-    try { 
-      setLoadingGoogle(true);
+const handleGoogleRegister = async () => {
+  try {
+    setLoadingGoogle(true);
 
-      // 1) Đăng nhập Google qua Firebase (popup)
-      const profile = await loginWithGoogle(); // hàm của bạn
-      const fbUser = getAuth().currentUser;
-      if (!fbUser) throw new Error("Không lấy được người dùng Firebase");
+    const profile = await loginWithGoogle();
+    const fbUser = getAuth().currentUser;
+    if (!fbUser) throw new Error("Không lấy được người dùng Firebase");
 
-      // 2) Lấy Firebase ID token (ép refresh claim nếu cần)
-      const firebaseToken = await fbUser.getIdToken(true);
+    const firebaseToken = await fbUser.getIdToken(true);
 
-      // 3) Gọi BE: /auth/firebase  (KHÔNG kèm Bearer)
-      const res = await api.post("/auth/firebase", { firebaseToken });
-      const { user, roles, accessToken, refreshToken } = res.data.data;
+    // <<<<<< BẮT BUỘC: gọi endpoint đăng ký >>>>>>
+    const res = await api.post(
+      "/auth/firebase/register",
+      { firebaseToken },
+      { headers: { Authorization: undefined } } // tránh Bearer cũ
+    );
 
-      // 4) Lưu state + token theo roles từ BE
-      dispatch(
-        saveUser({
-          ...user,
-          roles,
-          role: roles?.[0] || null,
-          accessToken,
-          refreshToken,
-        })
-      );
-      localStorage.setItem("token", accessToken);
+    const { user, roles, accessToken, refreshToken } = res.data.data;
 
-      toast.success(`Xin chào, ${user.displayName || user.email}!`);
-      navigate("/");
-    } catch (err) {
-      console.error("Google auth error:", err);
-      toast.error(
-        err?.response?.data?.message ||
-          err?.response?.data?.error ||
-          err?.message ||
-          "Đăng nhập/Đăng ký bằng Google thất bại!"
-      );
-    } finally {
-      setLoadingGoogle(false);
+    dispatch(saveUser({ ...user, roles, role: roles?.[0] || null, accessToken, refreshToken }));
+    localStorage.setItem("token", accessToken);
+
+    // DẤU HIỆU: message này chỉ xuất hiện nếu đúng luồng register
+    toast.success(`Đăng ký thành công bằng Google. Xin chào, ${user.displayName || user.email}!`);
+    navigate(roles?.includes("TEACHER") ? "/teacher" : "/");
+  } catch (err) {
+    const status = err?.response?.status;
+    const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message;
+    if (status === 409) {
+      toast.info("Email đã tồn tại. Vui lòng Đăng nhập bằng Google.");
+      navigate("/login");
+      return;
     }
-  };
+    toast.error(msg || "Đăng ký bằng Google thất bại!");
+  } finally {
+    setLoadingGoogle(false);
+  }
+};
+
   // --- Handle register via classic form ---
   const onFinish = async (values) => {
     setLoading(true);
