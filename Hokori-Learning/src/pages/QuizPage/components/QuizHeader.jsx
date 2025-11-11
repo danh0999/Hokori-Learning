@@ -1,10 +1,9 @@
-// QuizHeader.jsx
+
 import React from "react";
-import { createPortal } from "react-dom";
 import styles from "./QuizHeader.module.scss";
 
 const QuizHeader = ({ quiz, timeLeft, onSubmit }) => {
-  const headerEl = (
+  return (
     <header className={styles.header}>
       <h1>{quiz?.title || "Tên bài Quiz"}</h1>
       <div className={styles.right}>
@@ -17,9 +16,6 @@ const QuizHeader = ({ quiz, timeLeft, onSubmit }) => {
       </div>
     </header>
   );
-
-  // (Có thể giữ portal hoặc render trực tiếp — portal giúp tránh overflow cha)
-  return createPortal(headerEl, document.body);
 };
 
 export default QuizHeader;

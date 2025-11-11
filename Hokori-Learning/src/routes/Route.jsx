@@ -25,6 +25,7 @@ import ProfilePage from "../pages/Profile/ProfilePage";
 import JLPTTestPage from "../pages/JLPTTest/JLPTTestPage";
 import Information from "../pages/Information/Information";
 import Policies from "../pages/Policies/Policies";
+import AiKaiwaPage from "../pages/AiKaiwa/AiKaiwaPage";
 // ===== Teacher/Admin/Moderator =====
 import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
 import ManageCourses from "../pages/Teacher/Courses/ManageCourses";
@@ -36,11 +37,11 @@ import TeacherProfilePage from "../pages/Teacher/TeacherProfilePage/TeacherProfi
 import CreateCoursePage from "../pages/Teacher/Courses/Create-Course/CreateCoursePage";
 
 import JLPTList from "../pages/JLPT/JLPTList";
-
 import ManageQueues from "../pages/Moderator/Queues/ManageQueues";
 import CreateQuizPage from "../pages/Teacher/ManageDocument/Quiz/CreateQuizPage/CreateQuizPage";
 import ManageDocumentPage from "../pages/Teacher/ManageDocument/ManageDocumentPage";
 import TeacherRevenue from "../pages/Teacher/Revenue/TeacherRevenue";
+
 
 // import CreateCoursePageUdemy from "../pages/Teacher/Courses/CreateCoursePageUdemy/CreateCoursePageUdemy";
 
@@ -79,6 +80,7 @@ const routes = [
           { path: "my-flashcards", element: <MyFlashcards /> },
           { path: "cart", element: <Cart /> },
           { path: "profile", element: <ProfilePage /> },
+          { path: "ai-kaiwa", element: <AiKaiwaPage /> },
           {
             path: "jlpt",
             element: <JLPTList />,

@@ -18,16 +18,19 @@ const AISidebar = () => {
         </h3>
         <div className={styles.buttons}>
           <Button
+            
             content="Kiểm tra chính tả"
             className={styles.aiButton}
             containerClassName={styles.aiButtonContainer}
           />
           <Button
+            to="/ai-kaiwa"
             content="Luyện nói"
             className={styles.aiButton}
             containerClassName={styles.aiButtonContainer}
           />
           <Button
+   
             content="Kiểm tra phát âm"
             className={styles.aiButton}
             containerClassName={styles.aiButtonContainer}

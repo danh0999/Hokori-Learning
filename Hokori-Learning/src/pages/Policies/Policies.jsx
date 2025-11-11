@@ -2,11 +2,11 @@ import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchMockPolicy } from "../../redux/features/policiesSlice";
 import styles from "./Policies.module.scss";
-import { Spin } from "antd";
+
 
 const Policies = () => {
   const dispatch = useDispatch();
-  const { currentPolicy, loading } = useSelector((state) => state.policies);
+  const { currentPolicy } = useSelector((state) => state.policies);
 
   useEffect(() => {
     //  Lúc này chỉ dùng mock data (giả lập API)
@@ -14,7 +14,7 @@ const Policies = () => {
     dispatch(fetchMockPolicy());
   }, [dispatch]);
 
-  if (loading || !currentPolicy) return <Spin className={styles.loader} />;
+  
 
   return (
     <div className={styles.wrapper}>

@@ -2,12 +2,20 @@ import axios from "axios";
 
 const api = axios.create({
   //key ĐA
+
   //  baseURL: "https://saner-eden-placably.ngrok-free.dev/api/",
+
+   //baseURL: "https://saner-eden-placably.ngrok-free.dev/api/",
+
   // timeout: 15000, // (tuỳ) tránh treo request quá lâu
 
   //Key phú
   // baseURL: "https://celsa-plumbaginaceous-unabjectly.ngrok-free.dev/api/",
+
   //key Deploy
+
+  //key Khoa
+
   baseURL: "https://hokoribe-production.up.railway.app/api/",
 });
 

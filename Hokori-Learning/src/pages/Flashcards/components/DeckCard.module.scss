@@ -1,60 +1,77 @@
+/* ======================================
+   HOKORI — DECK CARD
+   Clean, Isolated, and Readable Design
+   ====================================== */
+
 .card {
-  background: white;
-  border-radius: 0.75rem;
-  padding: 1.25rem;
-  border: 1px solid #e5e7eb;
-  transition: 0.3s;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+  transition: all 0.25s ease;
+  font-family: "Inter", sans-serif;
 
   &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
   }
-}
 
+  /* color variations (optional) */
+  
+
+/* ===== HEADER ===== */
 .header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
 
   h3 {
+    font-size: 1.05rem;
     font-weight: 600;
     color: #111827;
   }
 
   span {
-    font-size: 0.75rem;
-    background: #e0e7ff;
-    color: #3730a3;
-    padding: 0.25rem 0.5rem;
-    border-radius: 9999px;
-    font-weight: 500;
+    font-size: 0.85rem;
+    color: #6b7280;
+    background: #f3f4f6;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
   }
 }
 
+/* ===== CARD CONTENT ===== */
 .count {
-  color: #6b7280;
   font-size: 0.9rem;
-  margin-top: 0.25rem;
+  color: #374151;
+  margin: 0.3rem 0;
 }
 
 .progress {
-  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
   .bar {
     background: #e5e7eb;
+    border-radius: 8px;
     height: 6px;
-    border-radius: 0.5rem;
-    margin-bottom: 0.25rem;
+    overflow: hidden;
 
     div {
-      background: #2563eb;
-      height: 6px;
-      border-radius: 0.5rem;
+      height: 100%;
+      background: linear-gradient(90deg, #2563eb, #60a5fa);
+      border-radius: 8px;
       transition: width 0.3s ease;
     }
   }
 
   small {
+    font-size: 0.8rem;
     color: #6b7280;
   }
 }
@@ -62,83 +79,59 @@
 .last {
   font-size: 0.8rem;
   color: #9ca3af;
-  margin-top: 0.75rem;
 }
 
+/* ===== ACTION BUTTONS ===== */
 .actions {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  margin-top: 0.8rem;
-  gap: 8px;
+  gap: 0.5rem;
 
   button {
     flex: 1;
-    display: inline-flex; /* ✅ luôn cùng hàng */
+    display: flex;
     align-items: center;
     justify-content: center;
-    gap: 5px; /*  khoảng cách giữa icon và text */
-    white-space: nowrap; /* ✅ không xuống dòng */
-    padding: 10px 14px;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: 0.95rem;
-    line-height: 1; /* gọn hơn */
-    cursor: pointer;
+    gap: 5px;
+
+    /* removed typography overrides */
+    /* font-weight: 600; */
+    /* font-size: 0.95rem; */
+    /* line-height: 1; */
+
     border: none;
-    transition: all 0.2s ease;
-  }
+    border-radius: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    white-space: nowrap;
 
-  i {
-    font-size: 0.9rem; /* icon nhỏ hơn 1 chút để cân */
-  }
-}
+    i {
+      font-size: 0.85rem;
+    }
 
-.studyBtn {
-  background-color: #2563eb;
-  color: white;
-
-  &:hover {
-    filter: brightness(0.9);
-  }
-}
-
-.editBtn {
-  background-color: #f3f4f6;
-  color: #111827;
-
-  i {
-    color: #2563eb;
-  }
-
-  &:hover {
-    background-color: #e5e7eb;
+    span {
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
   }
 }
 
-.deleteBtn {
-  background-color: #fee2e2;
-  color: #dc2626;
-
-  i {
-    color: #dc2626;
-  }
-
-  &:hover {
-    background-color: #fecaca;
-  }
-}
-
+/* ===== BUTTON TYPES ===== */
 .studyBtn {
   background: #2563eb;
-  color: white;
+  color: #fff;
+
   &:hover {
-    background: #1e50c5;
+    background: #1e3a8a;
   }
 }
 
 .editBtn {
   background: #f3f4f6;
-  color: #374151;
+  color: #111827;
+
   &:hover {
     background: #e5e7eb;
   }
@@ -147,17 +140,23 @@
 .deleteBtn {
   background: #fee2e2;
   color: #dc2626;
+
   &:hover {
-    background: #fecaca;
+    background: #fca5a5;
   }
 }
 
-.xanh {
-  border-top: 4px solid #2563eb;
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .card {
+    padding: 1rem;
+  }
+
+  .actions {
+    flex-direction: column;
+    button {
+      width: 100%;
+    }
+  }
 }
-.xanhLa {
-  border-top: 4px solid #22c55e;
-}
-.tim {
-  border-top: 4px solid #9333ea;
 }

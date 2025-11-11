@@ -115,16 +115,16 @@ export const Contact = () => {
           <h2>Liên hệ Hokori</h2>
           <ul className={styles.infoList}>
             <li>
-              <span>Email hỗ trợ:</span>
+              <span className={styles.label}>Email hỗ trợ:</span>
               <p>contact.hokorivn@gmail.com</p>
             </li>
             <li>
-              <span>Hotline:</span>
+              <span className={styles.label}>Hotline:</span>
               <p>028 3868 5509</p>
               <p>028 3868 5507</p>
             </li>
             <li>
-              <span>Thời gian làm việc:</span>
+              <span className={styles.label}> Thời gian làm việc:</span>
               <p>Thứ Hai – Thứ Sáu: 8:30 – 17:30</p>
             </li>
           </ul>

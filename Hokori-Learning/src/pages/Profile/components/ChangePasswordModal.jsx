@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import styles from "./ChangePasswordModal.module.scss";
 import { useDispatch } from "react-redux";
 import { changePassword } from "../../../redux/features/profileSlice";
+import { toast } from "react-toastify";
 
 const ChangePasswordModal = ({ open, onClose }) => {
   const dispatch = useDispatch();
@@ -22,11 +23,11 @@ const ChangePasswordModal = ({ open, onClose }) => {
   const validate = () => {
     const err = {};
     if (!form.currentPassword.trim())
-      err.currentPassword = "Nhập mật khẩu hiện tại.";
+      err.currentPassword = "Vui lòng nhập mật khẩu hiện tại.";
     if (!form.newPassword.trim())
-      err.newPassword = "Nhập mật khẩu mới.";
+      err.newPassword = "Vui lòng nhập mật khẩu mới.";
     else if (form.newPassword.length < 5)
-      err.newPassword = "Mật khẩu mới ít nhất 5 ký tự.";
+      err.newPassword = "Mật khẩu mới phải có ít nhất 5 ký tự.";
     else if (form.newPassword === form.currentPassword)
       err.newPassword = "Mật khẩu mới không được trùng mật khẩu cũ.";
     if (form.confirmPassword !== form.newPassword)
@@ -39,6 +40,7 @@ const ChangePasswordModal = ({ open, onClose }) => {
     e.preventDefault();
     if (!validate()) return;
     await dispatch(changePassword(form));
+    toast.success("Đổi mật khẩu thành công!");
     onClose();
   };
 
@@ -47,8 +49,8 @@ const ChangePasswordModal = ({ open, onClose }) => {
       <div className={styles.modal}>
         <h3 className={styles.title}>Đổi mật khẩu</h3>
         <form className={styles.form} onSubmit={handleSubmit}>
-          <label>
-            Mật khẩu hiện tại
+          <div className={styles.field}>
+            <label>Mật khẩu hiện tại</label>
             <input
               type="password"
               name="currentPassword"
@@ -59,10 +61,10 @@ const ChangePasswordModal = ({ open, onClose }) => {
             {errors.currentPassword && (
               <span className={styles.error}>{errors.currentPassword}</span>
             )}
-          </label>
+          </div>
 
-          <label>
-            Mật khẩu mới
+          <div className={styles.field}>
+            <label>Mật khẩu mới</label>
             <input
               type="password"
               name="newPassword"
@@ -73,10 +75,10 @@ const ChangePasswordModal = ({ open, onClose }) => {
             {errors.newPassword && (
               <span className={styles.error}>{errors.newPassword}</span>
             )}
-          </label>
+          </div>
 
-          <label>
-            Xác nhận mật khẩu mới
+          <div className={styles.field}>
+            <label>Xác nhận mật khẩu mới</label>
             <input
               type="password"
               name="confirmPassword"
@@ -87,17 +89,20 @@ const ChangePasswordModal = ({ open, onClose }) => {
             {errors.confirmPassword && (
               <span className={styles.error}>{errors.confirmPassword}</span>
             )}
-          </label>
+          </div>
 
           <div className={styles.actions}>
             <button
               type="button"
-              className={styles.cancelBtn}
+              className={`${styles.btn} ${styles.cancel}`}
               onClick={onClose}
             >
               Hủy
             </button>
-            <button type="submit" className={styles.saveBtn}>
+            <button
+              type="submit"
+              className={`${styles.btn} ${styles.confirm}`}
+            >
               Xác nhận
             </button>
           </div>

@@ -1,49 +1,100 @@
+/* ===============================================
+   QUIZ HEADER — scrolls with page, fits tightly
+   =============================================== */
+
 .header {
-  margin-top: -62.6%;
-  inset: 0 0 auto 0; /* top:0; left:0; right:0 */
-  height: 64px;
-  width: 90%; /*  KHÔNG dùng 100vw để khỏi tràn ngang */
+  position: relative;
+  width: 100%;
+
+
+
+  border-radius: 0.5rem;
+
+  /* căn giữa theo layout Hokori */
+  max-width: 1120px;
+  margin: 110px auto 0.25rem; /* giảm khoảng cách sát phần trắc nghiệm */
+  padding: 0.75rem 1.5rem;
+
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0 28px;
+  justify-content: space-between;
   box-sizing: border-box;
-  border-radius: 10px; /* ép đứng trên mọi layer/stacking context của app */
-  z-index: 2147483647; /* max int */
-  will-change: transform; /* giúp chrome tối ưu fixed */
-  pointer-events: auto;
-  gap: 95px;
+
+  animation: fadeIn 0.25s ease;
 }
 
-h1 {
-  font-size: 18px;
-  font-weight: 700;
+/* hiệu ứng nhẹ khi xuất hiện */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== Title ===== */
+.header h1 {
+  font-size: 1.05rem;
+  font-weight: 600;
   color: #111827;
   margin: 0;
+  letter-spacing: 0.2px;
 }
 
+/* ===== Right side ===== */
 .right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 1rem;
 }
 
 .timer {
-  color: #2563eb;
-  font-weight: 600;
-  font-size: 15px;
+  font-size: 0.95rem;
+  color: #4b5563;
+
+  strong {
+    color: #111827;
+    font-weight: 600;
+  }
 }
 
 .submitBtn {
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  border-radius: 6px;
-  padding: 6px 12px;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 999px;
+  padding: 0.4rem 1.25rem;
   font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, transform 0.15s ease;
 }
 
 .submitBtn:hover {
-  background: #2563eb;
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0.75rem 1rem;
+    gap: 0.4rem;
+    text-align: left;
+  }
+
+  .right {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+:global(body),
+:global(main),
+:global(#root) {
+  background: #f9fafb !important;
 }
