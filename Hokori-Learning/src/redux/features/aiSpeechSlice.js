@@ -6,7 +6,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api from "../../configs/axios.js";
 
-// ✅ Lấy base URL từ file .env (ví dụ: VITE_API_BASE_URL=https://hokoribe-production.up.railway.app/api)
+//  Lấy base URL từ file .env (ví dụ: VITE_API_BASE_URL=https://hokoribe-production.up.railway.app/api)
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 // ================================
