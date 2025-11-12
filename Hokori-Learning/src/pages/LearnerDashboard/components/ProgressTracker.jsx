@@ -12,7 +12,7 @@ const icon = (s) => {
 
 const ProgressTracker = ({ overall = 0, jlptLevels = [] }) => (
   <section className="card">
-    <h2 className={styles.title}>Tiến độ học tập</h2>
+    <h3 className={styles.title}>Tiến độ học tập</h3>
     <div className={styles.overall}>
       <div className={styles.row}>
         <span>Tiến độ tổng thể</span>

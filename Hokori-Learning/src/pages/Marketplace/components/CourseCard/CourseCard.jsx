@@ -72,7 +72,7 @@ export default function CourseCard({ course }) {
 
         <div className={styles.actions}>
           <Button
-            content="Xem chi tiết khóa học"
+            content="Thông tin"
             onClick={() => {
               //  mapping dữ liệu sang Redux để CourseDetail hiển thị ngay
               dispatch(setCurrentCourse(course)); //  xóa khi có API thật
@@ -86,7 +86,7 @@ export default function CourseCard({ course }) {
             content={
               <>
                 <FaShoppingCart style={{ marginRight: "6px" }} />
-                Thêm vào giỏ hàng
+                Thêm vào giỏ 
               </>
             }
             onClick={() => dispatch(addToCart(course))}
