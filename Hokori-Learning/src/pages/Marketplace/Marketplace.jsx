@@ -5,14 +5,14 @@ import CourseGrid from "./components/CourseGrid/CourseGrid";
 import Pagination from "./components/Pagination/Pagination";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchCourses } from "../../redux/features/courseSlice"; // ✅ lấy mock từ slice
+import { fetchCourses } from "../../redux/features/courseSlice";
 
 export default function Marketplace() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   // ✅ Lấy dữ liệu từ Redux Store
-  const { list: courses, loading } = useSelector((state) => state.courses);
+  const { list: courses, loading, error } = useSelector((state) => state.courses);
 
   const [filters, setFilters] = useState({
     levels: [],
@@ -24,7 +24,7 @@ export default function Marketplace() {
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 9;
 
-  // ✅ Gọi load dữ liệu mock từ Redux (sau này thay API)
+  // ✅ Gọi API thật khi load trang
   useEffect(() => {
     dispatch(fetchCourses());
   }, [dispatch]);
@@ -34,29 +34,24 @@ export default function Marketplace() {
 
   // ===== FILTER + SORT =====
   const filtered = useMemo(() => {
-    let items = [...courses]; // ✅ Lấy từ Redux
+    let items = [...(courses || [])];
 
-    // JLPT levels
     if (filters.levels.length)
       items = items.filter((c) => filters.levels.includes(c.level));
 
-    // Ratings
     if (filters.ratings.length) {
       const min = Math.min(...filters.ratings);
       items = items.filter((c) => c.rating >= min);
     }
 
-    // Giá
     const max = Number(filters.priceMax) || 2000000;
     items = items.filter((c) => c.price <= max);
 
-    // Giáo viên
     if (filters.teacher.trim()) {
       const query = filters.teacher.toLowerCase();
-      items = items.filter((c) => c.teacher.toLowerCase().includes(query));
+      items = items.filter((c) => c.teacher?.toLowerCase().includes(query));
     }
 
-    // Sort
     switch (sort) {
       case "Giá tăng":
         items.sort((a, b) => a.price - b.price);
@@ -145,6 +140,8 @@ export default function Marketplace() {
           <div className={styles.resultsArea}>
             {loading ? (
               <div className={styles.loading}>Đang tải...</div>
+            ) : error ? (
+              <div className={styles.empty}>Lỗi tải dữ liệu: {error}</div>
             ) : pagedCourses.length ? (
               <CourseGrid courses={pagedCourses} />
             ) : (
