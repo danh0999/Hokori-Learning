@@ -41,7 +41,17 @@ import ManageQueues from "../pages/Moderator/Queues/ManageQueues";
 import CreateQuizPage from "../pages/Teacher/ManageDocument/Quiz/CreateQuizPage/CreateQuizPage";
 import ManageDocumentPage from "../pages/Teacher/ManageDocument/ManageDocumentPage";
 import TeacherRevenue from "../pages/Teacher/Revenue/TeacherRevenue";
+// ===== Admin =====
 
+import Dashboard from "../pages/Admin/pages/Dashboard";
+import Users from "../pages/Admin/pages/Users";
+import SystemLogs from "../pages/Admin/pages/SystemLogs";
+import Complaints from "../pages/Admin/pages/Complaints";
+import Revenue from "../pages/Admin/pages/Revenue";
+import JlptEvents from "../pages/Admin/pages/JlptEvents";
+import Withdrawals from "../pages/Admin/pages/Withdrawals";
+import TeacherCertificates from "../pages/Admin/pages/TeacherCertificates";
+import AiPackages from "../pages/Admin/pages/AiPackages";
 
 // import CreateCoursePageUdemy from "../pages/Teacher/Courses/CreateCoursePageUdemy/CreateCoursePageUdemy";
 
@@ -109,9 +119,9 @@ const routes = [
   // ===== TEACHER AREA =====
   {
     path: "teacher",
-    element: <ProtectedRoute allow={["TEACHER"]} />,
+    // element: <ProtectedRoute allow={["TEACHER"]} />,
     children: [
-      // ✅ Các trang có layout chung
+      // Các trang có layout chung
       {
         path: "",
         element: <RoleLayout role="teacher" />,
@@ -130,7 +140,7 @@ const routes = [
         ],
       },
 
-      // ✅ Trang tách riêng, không dùng RoleLayout
+      //  Trang tách riêng, không dùng RoleLayout
       {
         path: "create-course",
         element: <CreateCoursePage />,
@@ -141,23 +151,28 @@ const routes = [
       },
     ],
   },
+  { path: "*", element: <ErrorPage /> },
 
   // ===== ADMIN AREA =====
   {
     path: "admin",
-    // element: <ProtectedRoute allow={["ADMIN"]} />,
     children: [
       {
         path: "",
         element: <RoleLayout role="admin" />,
         errorElement: <ErrorPage />,
         children: [
-          { index: true, element: <Stub title="Admin Dashboard" /> },
-          { path: "users", element: <Stub title="Users" /> },
-          { path: "catalog", element: <Stub title="Catalog"/> },
-          { path: "moderation", element: <Stub title="Moderation" /> },
-          { path: "reports", element: <Stub title="Reports" /> },
-          { path: "settings", element: <Stub title="Settings" /> },
+          { index: true, element: <Dashboard /> },
+          { path: "users", element: <Users /> },
+
+          { path: "teacher-certificates", element: <TeacherCertificates /> },
+          { path: "jlpt", element: <JlptEvents /> },
+          { path: "ai-packages", element: <AiPackages /> },
+          { path: "revenue", element: <Revenue /> },
+          { path: "withdrawals", element: <Withdrawals /> },
+          { path: "complaints", element: <Complaints /> },
+          { path: "policies", element: <Policies /> },
+          { path: "system-logs", element: <SystemLogs /> },
           { path: "*", element: <ErrorPage /> },
         ],
       },

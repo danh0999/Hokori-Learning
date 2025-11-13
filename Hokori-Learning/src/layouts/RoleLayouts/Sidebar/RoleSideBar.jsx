@@ -105,11 +105,11 @@ export default function RoleSidebar({
     >
       <Menu
         mode="inline"
-        items={antdItems} // ✅ giữ children
+        items={antdItems} //  giữ children
         selectedKeys={selectedKey ? [selectedKey] : []}
-        openKeys={openKeys} // ✅ tự mở đúng parent
+        openKeys={openKeys} //  tự mở đúng parent
         onOpenChange={setOpenKeys}
-        onClick={onClick} // ✅ điều hướng cả item con
+        onClick={onClick} //  điều hướng cả item con
       />
     </Sider>
   );
