@@ -1,0 +1,159 @@
+.page {
+  padding: 1.25rem 1.5rem;
+  background: #f8fafc;
+  font-family: "Inter", sans-serif;
+}
+
+.title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 0.9rem;
+  color: #0f172a;
+}
+
+/* ====================
+   FILTER BAR
+==================== */
+.filters {
+  display: flex;
+  gap: 0.7rem;
+  margin-bottom: 0.9rem;
+  align-items: center;
+}
+
+.searchBox {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: white;
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.45rem;
+  border: 1px solid #e2e8f0;
+}
+
+.searchBox input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.85rem;
+}
+
+.searchBox svg {
+  color: #6b7280;
+}
+
+.select {
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.45rem;
+  border: 1px solid #e2e8f0;
+  background: white;
+  font-size: 0.85rem;
+}
+
+/* ====================
+   TABLE
+==================== */
+.tableWrap {
+  background: white;
+  padding: 1rem;
+  border-radius: 0.55rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+/* ====================
+   LEVEL BADGES
+==================== */
+.level {
+  padding: 0.25rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 0.4rem;
+}
+
+.info {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+
+.warning {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.error {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+/* ====================
+   SMALL BUTTON
+==================== */
+.btnSmall {
+  padding: 0.33rem 0.65rem;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 0.35rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+
+  &:hover {
+    background: #1e40af;
+  }
+}
+
+/* ====================
+   MODAL
+==================== */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal {
+  width: 420px;
+  background: white;
+  padding: 1.4rem;
+  border-radius: 0.6rem;
+  box-shadow: 0 14px 40px rgba(0,0,0,0.15);
+}
+
+.modalTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.7rem;
+}
+
+.modalBlock {
+  font-size: 0.9rem;
+  line-height: 1.55rem;
+  color: #374151;
+  margin-bottom: 1.1rem;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btnGhost {
+  padding: 0.4rem 0.85rem;
+  background: #f3f4f6;
+  border-radius: 0.4rem;
+  border: 1px solid #e5e7eb;
+  cursor: pointer;
+
+  &:hover {
+    background: #e2e8f0;
+  }
+}

@@ -1,0 +1,182 @@
+.page {
+  padding: 1.25rem 1.5rem;
+  font-family: "Inter", sans-serif;
+  background: #f8fafc;
+}
+
+/* ===========================
+   HEADER
+=========================== */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.select {
+  padding: 0.45rem 0.65rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.45rem;
+  background: white;
+  font-size: 0.85rem;
+  outline: none;
+
+  &:focus {
+    border-color: #2563eb;
+  }
+}
+
+/* ===========================
+   TABLE WRAPPER
+=========================== */
+.tableWrap {
+  margin-top: 0.5rem;
+  background: white;
+  padding: 1rem;
+  border-radius: 0.6rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
+}
+
+/* ===========================
+   STATUS BADGES
+=========================== */
+.status {
+  padding: 0.25rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 0.4rem;
+  display: inline-block;
+}
+
+.pending {
+  background: #fff7ed;
+  color: #b45309;
+  border: 1px solid #fed7aa;
+}
+
+.approved {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.rejected {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+/* ===========================
+   ACTION BUTTONS
+=========================== */
+.actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.actionApprove {
+  padding: 0.35rem 0.6rem;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 0.35rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: 0.15s;
+
+  &:hover {
+    background: #059669;
+  }
+}
+
+.actionReject {
+  padding: 0.35rem 0.6rem;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 0.35rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: 0.15s;
+
+  &:hover {
+    background: #dc2626;
+  }
+}
+
+/* ===========================
+   MODAL
+=========================== */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal {
+  width: 420px;
+  background: #ffffff;
+  border-radius: 0.6rem;
+  padding: 1.5rem;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.modalTitle {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.4rem;
+}
+
+.modalDesc {
+  font-size: 0.85rem;
+  color: #4b5563;
+  margin-bottom: 1.25rem;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.btnGhost {
+  padding: 0.45rem 0.8rem;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.4rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+
+  &:hover {
+    background: #e5e7eb;
+  }
+}
+
+.btnPrimary {
+  padding: 0.45rem 0.8rem;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 0.4rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: 0.15s;
+
+  &:hover {
+    background: #1e40af;
+  }
+}
