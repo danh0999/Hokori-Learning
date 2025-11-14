@@ -96,7 +96,7 @@ export const Contact = () => {
           error.response?.data ||
           "Có lỗi xảy ra. Vui lòng thử lại sau.";
 
-        toast.error(`❌ ${errorMsg}`);
+        toast.error(` ${errorMsg}`);
       }
     }
   };

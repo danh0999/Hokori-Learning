@@ -71,3 +71,21 @@
   background: #e0e7ff;
   transform: translateY(-1px);
 }
+.uploadArea {
+  cursor: pointer;
+  position: relative;
+  display: inline-block;
+}
+
+.uploadArea:hover::after {
+  content: "Đổi ảnh";
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 6px;
+}

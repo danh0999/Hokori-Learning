@@ -10,10 +10,11 @@ export const fetchCoursesProgress = createAsyncThunk(
   "progress/fetchCoursesProgress",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await api.get("/learner/courses");
+      
+      const res = await api.get("learner/courses");
       return res.data?.data || [];
     } catch (err) {
-      console.error("❌ fetchCoursesProgress error:", err);
+      console.error(" fetchCoursesProgress error:", err);
       return rejectWithValue(err.response?.data || err.message);
     }
   }
@@ -28,13 +29,14 @@ export const updateContentProgress = createAsyncThunk(
   "progress/updateContentProgress",
   async ({ contentId, payload }, { rejectWithValue }) => {
     try {
+      //  Không dùng `/learner/contents/...` nữa
       const res = await api.patch(
-        `/learner/contents/${contentId}/progress`,
+        `learner/contents/${contentId}/progress`,
         payload
       );
       return res.data;
     } catch (err) {
-      console.error("❌ updateContentProgress error:", err);
+      console.error(" updateContentProgress error:", err);
       return rejectWithValue(err.response?.data || err.message);
     }
   }
@@ -71,13 +73,14 @@ const progressSlice = createSlice({
         state.loading = false;
         state.courses = action.payload;
 
-        // 👉 Tính tổng thể & theo level
+        //  Tính tổng thể & theo level
         if (action.payload.length > 0) {
           const list = action.payload;
 
           // Tính overall %
           const overall = Math.round(
-            list.reduce((sum, c) => sum + (c.progress || 0), 0) / list.length
+            list.reduce((sum, c) => sum + (c.progress || 0), 0) /
+              list.length
           );
           state.overall = overall;
 
@@ -112,7 +115,7 @@ const progressSlice = createSlice({
 
       // === updateContentProgress ===
       .addCase(updateContentProgress.fulfilled, (state, action) => {
-        console.log("✅ Content progress updated:", action.payload);
+        console.log(" Content progress updated:", action.payload);
       });
   },
 });
