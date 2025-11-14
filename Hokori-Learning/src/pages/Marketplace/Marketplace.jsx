@@ -5,14 +5,16 @@ import CourseGrid from "./components/CourseGrid/CourseGrid";
 import Pagination from "./components/Pagination/Pagination";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchCourses } from "../../redux/features/courseSlice"; // ✅ lấy mock từ slice
+import { fetchCourses } from "../../redux/features/courseSlice";
 
 export default function Marketplace() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // ✅ Lấy dữ liệu từ Redux Store
-  const { list: courses, loading } = useSelector((state) => state.courses);
+  // Redux data
+  const { list: courses, loading, error } = useSelector(
+    (state) => state.courses
+  );
 
   const [filters, setFilters] = useState({
     levels: [],
@@ -24,7 +26,7 @@ export default function Marketplace() {
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 9;
 
-  // ✅ Gọi load dữ liệu mock từ Redux (sau này thay API)
+  // Fetch API data when component mounts
   useEffect(() => {
     dispatch(fetchCourses());
   }, [dispatch]);
@@ -32,40 +34,47 @@ export default function Marketplace() {
   const clearAll = () =>
     setFilters({ levels: [], priceMax: 2000000, ratings: [], teacher: "" });
 
-  // ===== FILTER + SORT =====
+  // ============================
+  // ⭐ FILTER + SORT — đã chỉnh sửa an toàn
+  // ============================
   const filtered = useMemo(() => {
-    let items = [...courses]; // ✅ Lấy từ Redux
+    let items = [...(courses ?? [])];
 
-    // JLPT levels
-    if (filters.levels.length)
-      items = items.filter((c) => filters.levels.includes(c.level));
+    // LEVEL FILTER (backend chưa có level → giữ nguyên)
+    if (filters.levels.length) {
+      items = items.filter((c) =>
+        c.level ? filters.levels.includes(c.level) : true
+      );
+    }
 
-    // Ratings
+    // RATING FILTER (backend chưa có rating)
     if (filters.ratings.length) {
       const min = Math.min(...filters.ratings);
-      items = items.filter((c) => c.rating >= min);
+      items = items.filter((c) => (c.rating ?? 0) >= min);
     }
 
-    // Giá
+    // PRICE FILTER (backend chưa có price)
     const max = Number(filters.priceMax) || 2000000;
-    items = items.filter((c) => c.price <= max);
+    items = items.filter((c) => (c.price ?? 0) <= max);
 
-    // Giáo viên
+    // TEACHER SEARCH (backend chưa có teacher)
     if (filters.teacher.trim()) {
-      const query = filters.teacher.toLowerCase();
-      items = items.filter((c) => c.teacher.toLowerCase().includes(query));
+      const q = filters.teacher.toLowerCase();
+      items = items.filter((c) =>
+        (c.teacher ?? "").toLowerCase().includes(q)
+      );
     }
 
-    // Sort
+    // SORTING
     switch (sort) {
       case "Giá tăng":
-        items.sort((a, b) => a.price - b.price);
+        items.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
         break;
       case "Giá giảm":
-        items.sort((a, b) => b.price - a.price);
+        items.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
         break;
       case "Đánh giá cao":
-        items.sort((a, b) => b.rating - a.rating);
+        items.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
         break;
       default:
         break;
@@ -74,7 +83,9 @@ export default function Marketplace() {
     return items;
   }, [courses, filters, sort]);
 
-  // ===== Pagination =====
+  // ============================
+  // Pagination
+  // ============================
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const start = (page - 1) * PAGE_SIZE;
   const pagedCourses = filtered.slice(start, start + PAGE_SIZE);
@@ -83,6 +94,7 @@ export default function Marketplace() {
     setPage(1);
   }, [filters, sort]);
 
+  // Preselected level from URL
   const [searchParams] = useSearchParams();
   const preselectedLevel = searchParams.get("level");
 
@@ -108,7 +120,7 @@ export default function Marketplace() {
 
       <h1 className={styles.heading}>Khóa học tiếng Nhật</h1>
       <p className={styles.subheading}>
-        Khám phá các khóa học JLPT và luyện thi tiếng Nhật hiệu quả
+        Khám phá các khóa học JLPT và tiếng Nhật hiệu quả
       </p>
 
       <div className={styles.container}>
@@ -141,14 +153,16 @@ export default function Marketplace() {
             </select>
           </div>
 
-          {/* Courses hoặc Empty */}
+          {/* Courses or Empty */}
           <div className={styles.resultsArea}>
             {loading ? (
               <div className={styles.loading}>Đang tải...</div>
+            ) : error ? (
+              <div className={styles.empty}>Lỗi tải dữ liệu: {error}</div>
             ) : pagedCourses.length ? (
               <CourseGrid courses={pagedCourses} />
             ) : (
-              <div className={styles.empty}>Không có khóa học nào phù hợp</div>
+              <div className={styles.empty}>Không có khóa học nào</div>
             )}
           </div>
         </section>

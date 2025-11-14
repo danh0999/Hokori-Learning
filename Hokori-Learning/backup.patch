@@ -1,0 +1,357 @@
+diff --git a/Hokori-Learning/src/pages/QuizPage/QuizPage.jsx b/Hokori-Learning/src/pages/QuizPage/QuizPage.jsx
+new file mode 100644
+index 0000000..5d57210
+--- /dev/null
++++ b/Hokori-Learning/src/pages/QuizPage/QuizPage.jsx
+@@ -0,0 +1,226 @@
++import React from "react";
++import "./QuizPage.scss";
++
++const QuizPage = () => {
++  return (
++    <>
++      <header
++        id="header"
++        className="fixed top-0 left-0 right-0 bg-white border-b border-neutral-200 z-50"
++      >
++        <div className="flex items-center justify-between px-6 py-4">
++          <div className="flex items-center space-x-4">
++            <i className="fa-solid fa-graduation-cap text-xl text-neutral-700"></i>
++            <h1 className="text-lg text-neutral-900">
++              JLPT N3 Mock Test - Reading Comprehension
++            </h1>
++          </div>
++
++          <div className="flex items-center space-x-6">
++            <div className="flex items-center space-x-2 text-neutral-600">
++              <i className="fa-regular fa-clock"></i>
++              <span className="text-lg">28:45</span>
++            </div>
++
++            <div className="flex items-center space-x-2">
++              <span className="text-sm text-neutral-600">Progress:</span>
++              <div className="w-32 h-2 bg-neutral-200 rounded-full">
++                <div className="w-3/5 h-full bg-neutral-600 rounded-full"></div>
++              </div>
++              <span className="text-sm text-neutral-600">12/20</span>
++            </div>
++
++            <button className="px-4 py-2 bg-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors">
++              <i className="fa-solid fa-paper-plane mr-2"></i>
++              Submit Test
++            </button>
++          </div>
++        </div>
++      </header>
++
++      <main id="main-content" className="pt-20 min-h-screen bg-neutral-50">
++        <div className="flex">
++          <div id="quiz-content" className="flex-1 max-w-4xl mx-auto p-6">
++            <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-8">
++              <div className="mb-6">
++                <div className="flex items-center justify-between mb-4">
++                  <span className="text-sm text-neutral-500">
++                    Question 12 of 20
++                  </span>
++                  <div className="flex items-center space-x-2">
++                    <span className="px-2 py-1 bg-neutral-100 text-neutral-800 text-xs rounded-full">
++                      AI-generated quiz
++                    </span>
++                    <span className="px-2 py-1 bg-neutral-100 text-neutral-800 text-xs rounded-full">
++                      Multiple Choice
++                    </span>
++                  </div>
++                </div>
++
++                <h2 className="text-xl text-neutral-900 mb-4">
++                  次の文章を読んで、最も適切な答えを選んでください。
++                </h2>
++
++                <div className="bg-neutral-50 p-4 rounded-lg mb-6">
++                  <p className="text-neutral-800 leading-relaxed">
++                    日本の伝統的な建築は、自然との調和を重視している。木材を主な材料として使用し、
++                    季節の変化に対応できるような設計になっている。また、地震が多い日本では、
++                    建物の柔軟性も重要な要素となっている。
++                  </p>
++                </div>
++
++                <p className="text-lg text-neutral-900 mb-6">
++                  この文章によると、日本の伝統建築の特徴として正しいものはどれですか。
++                </p>
++              </div>
++
++              <div className="space-y-3 mb-8">
++                {["A", "B", "C", "D"].map((option, index) => (
++                  <label
++                    key={option}
++                    className={`flex items-start space-x-3 p-4 border ${
++                      option === "B"
++                        ? "border-2 border-neutral-500 bg-neutral-50"
++                        : "border-neutral-200 hover:bg-neutral-50"
++                    } rounded-lg cursor-pointer`}
++                  >
++                    <input
++                      type="radio"
++                      name="answer"
++                      value={option}
++                      defaultChecked={option === "B"}
++                      className="mt-1"
++                    />
++                    <div>
++                      <span className="text-neutral-700">{option}.</span>
++                      <span className="ml-2 text-neutral-800">
++                        {[
++                          "石材を主に使用している",
++                          "自然環境に配慮した設計である",
++                          "西洋建築の影響を受けている",
++                          "装飾を重視した建築様式である",
++                        ][index]}
++                      </span>
++                    </div>
++                  </label>
++                ))}
++              </div>
++
++              <div className="flex items-center justify-between">
++                <button className="flex items-center space-x-2 px-4 py-2 border border-neutral-300 rounded-lg hover:bg-neutral-50 transition-colors">
++                  <i className="fa-solid fa-chevron-left"></i>
++                  <span>Previous</span>
++                </button>
++
++                <button className="px-4 py-2 bg-neutral-100 text-neutral-800 rounded-lg hover:bg-neutral-200 transition-colors">
++                  <i className="fa-solid fa-robot mr-2"></i>
++                  AI Explanation
++                </button>
++
++                <button className="flex items-center space-x-2 px-4 py-2 bg-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors">
++                  <span>Next</span>
++                  <i className="fa-solid fa-chevron-right"></i>
++                </button>
++              </div>
++            </div>
++          </div>
++
++          <div id="sidebar" className="w-80 bg-white border-l border-neutral-200 p-6">
++            <div className="mb-6">
++              <h3 className="text-neutral-900 mb-4">Question Navigator</h3>
++              <div className="grid grid-cols-5 gap-2">
++                {Array.from({ length: 20 }, (_, i) => (
++                  <button
++                    key={i + 1}
++                    className={`w-10 h-10 rounded-lg text-sm ${
++                      i + 1 === 12
++                        ? "bg-neutral-600 text-white"
++                        : "bg-neutral-100 text-neutral-800"
++                    }`}
++                  >
++                    {i + 1}
++                  </button>
++                ))}
++              </div>
++            </div>
++
++            <div className="mb-6">
++              <h4 className="text-neutral-900 mb-3">Legend</h4>
++              <div className="space-y-2 text-sm">
++                <div className="flex items-center space-x-2">
++                  <div className="w-4 h-4 bg-neutral-100 rounded"></div>
++                  <span className="text-neutral-600">Answered</span>
++                </div>
++                <div className="flex items-center space-x-2">
++                  <div className="w-4 h-4 bg-neutral-600 rounded"></div>
++                  <span className="text-neutral-600">Current</span>
++                </div>
++                <div className="flex items-center space-x-2">
++                  <div className="w-4 h-4 bg-neutral-100 rounded"></div>
++                  <span className="text-neutral-600">Not answered</span>
++                </div>
++                <div className="flex items-center space-x-2">
++                  <div className="w-4 h-4 bg-neutral-100 rounded"></div>
++                  <span className="text-neutral-600">Marked for review</span>
++                </div>
++              </div>
++            </div>
++
++            <div className="border-t border-neutral-200 pt-4">
++              <h4 className="text-neutral-900 mb-3">Test Summary</h4>
++              <div className="space-y-2 text-sm text-neutral-600">
++                <div className="flex justify-between">
++                  <span>Answered:</span>
++                  <span>11/20</span>
++                </div>
++                <div className="flex justify-between">
++                  <span>Remaining:</span>
++                  <span>9</span>
++                </div>
++                <div className="flex justify-between">
++                  <span>Time left:</span>
++                  <span className="text-neutral-600">28:45</span>
++                </div>
++              </div>
++
++              <button className="w-full mt-4 px-4 py-2 bg-neutral-100 text-neutral-800 rounded-lg hover:bg-neutral-200 transition-colors">
++                <i className="fa-solid fa-bookmark mr-2"></i>
++                Mark for Review
++              </button>
++            </div>
++          </div>
++        </div>
++      </main>
++
++      {/* Submit Modal */}
++      <div
++        id="submit-modal"
++        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden"
++      >
++        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
++          <div className="text-center">
++            <i className="fa-solid fa-exclamation-triangle text-4xl text-neutral-500 mb-4"></i>
++            <h3 className="text-lg text-neutral-900 mb-2">
++              Submit Test Confirmation
++            </h3>
++            <p className="text-neutral-600 mb-6">
++              Are you sure you want to submit your test? You have 9 unanswered
++              questions remaining.
++            </p>
++
++            <div className="flex space-x-3">
++              <button className="flex-1 px-4 py-2 border border-neutral-300 rounded-lg hover:bg-neutral-50 transition-colors">
++                Cancel
++              </button>
++              <button className="flex-1 px-4 py-2 bg-neutral-600 text-white rounded-lg hover:bg-neutral-700 transition-colors">
++                Submit Test
++              </button>
++            </div>
++          </div>
++        </div>
++      </div>
++    </>
++  );
++};
++
++export default QuizPage;
+diff --git a/Hokori-Learning/src/pages/QuizPage/QuizPage.scss b/Hokori-Learning/src/pages/QuizPage/QuizPage.scss
+new file mode 100644
+index 0000000..c7edf92
+--- /dev/null
++++ b/Hokori-Learning/src/pages/QuizPage/QuizPage.scss
+@@ -0,0 +1,23 @@
++#header {
++  transition: all 0.3s ease-in-out;
++}
++
++#quiz-content {
++  h2 {
++    font-weight: 600;
++  }
++}
++
++#sidebar {
++  button {
++    transition: background-color 0.2s ease;
++  }
++}
++
++#submit-modal {
++  .text-center {
++    i {
++      color: #737373;
++    }
++  }
++}
+diff --git a/Hokori-Learning/src/routes/Route.jsx b/Hokori-Learning/src/routes/Route.jsx
+index feb793f..5d45da6 100644
+--- a/Hokori-Learning/src/routes/Route.jsx
++++ b/Hokori-Learning/src/routes/Route.jsx
+@@ -1,5 +1,4 @@
+ import Home from "../pages/Home/Home";
+-
+ import ErrorPage from "../pages/ErrorPage";
+ import MainLayout from "../layouts/Mainlayout";
+ import CourseDetail from "../pages/CourseDetail/CourseDetail";
+@@ -16,9 +15,9 @@ import { Contact } from "../pages/Contact/Contact";
+ import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
+ import CourseInformation from "../pages/Teacher/Courses/CourseInformation/CourseInformation";
+ import MyCourses from "../pages/MyCourses/MyCourses";
+-
+ import ManageCourses from "../pages/Teacher/Courses/ManageCourses";
+ import Cart from "../pages/Cart/Cart";
++import QuizPage from "../pages/QuizPage/QuizPage"; 
+ 
+ const Stub = ({ title }) => <div style={{ padding: 12 }}>{title}</div>;
+ 
+@@ -31,7 +30,7 @@ const routes = [
+     path: "/register",
+     element: <Register />,
+   },
+-  //Guest,Learner
++  // Guest, Learner
+   {
+     path: "/",
+     element: <MainLayout />,
+@@ -44,9 +43,24 @@ const routes = [
+       { path: "/payment", element: <PaymentPage /> },
+       { path: "/learner-dashboard", element: <LearnerDashboard /> },
+       { path: "/contact", element: <Contact /> },
+-
+       { path: "/my-courses", element: <MyCourses /> },
+       { path: "/cart", element: <Cart /> },
++
++      // 🧠 Learner Role Layout
++      {
++        path: "/learner",
++        element: <RoleLayout role="learner" />,
++        errorElement: <ErrorPage />,
++        children: [
++          { index: true, element: <LearnerDashboard /> },
++          { path: "quiz", element: <QuizPage /> }, // ✅ đường dẫn mới /learner/quiz
++          { path: "profile", element: <Stub title="Learner Profile" /> },
++          { path: "progress", element: <Stub title="Progress Tracking" /> },
++          { path: "settings", element: <Stub title="Settings" /> },
++        ],
++      },
++
++      // 👩‍🏫 Teacher shell
+       {
+         path: "/teacher",
+         element: <RoleLayout role="teacher" />,
+@@ -60,11 +74,10 @@ const routes = [
+           { path: "revenue", element: <Stub title="Revenue" /> },
+           { path: "messages", element: <Stub title="Messages" /> },
+           { path: "profile", element: <Stub title="Profile" /> },
+-          // { path: "*", element: <Navigate to="/teacher" replace /> }, // optional
+         ],
+       },
+ 
+-      // Admin shell
++      // 🛠️ Admin shell
+       {
+         path: "/admin",
+         element: <RoleLayout role="admin" />,
+@@ -79,7 +92,7 @@ const routes = [
+         ],
+       },
+ 
+-      // Moderator shell
++      // 🧩 Moderator shell
+       {
+         path: "/moderator",
+         element: <RoleLayout role="moderator" />,
+@@ -99,4 +112,5 @@ const routes = [
+     ],
+   },
+ ];
++
+ export default routes;
+diff --git a/package-lock.json b/package-lock.json
+new file mode 100644
+index 0000000..ddb3108
+--- /dev/null
++++ b/package-lock.json
+@@ -0,0 +1,6 @@
++{
++  "name": "Hokori-Learning",
++  "lockfileVersion": 3,
++  "requires": true,
++  "packages": {}
++}

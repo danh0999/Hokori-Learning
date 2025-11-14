@@ -1,24 +1,46 @@
 import React, { useEffect, useState } from "react";
 import s from "./Revenue.module.scss";
+
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
 import { Line } from "react-chartjs-2";
-import { Chart, registerables } from "chart.js";
+
 import DataTable from "../components/DataTable";
 import { toast } from "react-toastify";
 import { AiOutlineMoneyCollect } from "react-icons/ai";
 import { FaShoppingCart } from "react-icons/fa";
 
-Chart.register(...registerables);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+
+//Chart.register(...registerables);
 
 // Chart safe mode fix (React StrictMode)
-Chart.register({
-  id: "safe",
-  beforeDraw: (chart) => {
-    if (chart.canvas) {
-      const ctx = chart.canvas.getContext("2d");
-      ctx.save();
-    }
-  },
-});
+// Chart.register({
+//   id: "safe",
+//   beforeDraw: (chart) => {
+//     if (chart.canvas) {
+//       const ctx = chart.canvas.getContext("2d");
+//       ctx.save();
+//     }
+//   },
+// });
 
 // =========================
 // Modal xem chi tiết giao dịch
