@@ -1,34 +1,45 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import api from "../../configs/axios"; // axios instance đã cấu hình sẵn baseURL
+import api from "../../configs/axios";
 
 // =============================================================
-// ========== ASYNC ACTIONS (API thật) ==========================
+// ========== FETCH ALL COURSES (API THẬT) =======================
 // =============================================================
 
-// 🧠 Fetch toàn bộ khóa học đã publish
 export const fetchCourses = createAsyncThunk(
   "courses/fetchAll",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get("/courses"); // ✅ Endpoint: /api/courses
-      // Giả sử backend trả về { data: [...] } hoặc mảng trực tiếp
-      return response.data.data || response.data;
+      const response = await api.get("/courses"); 
+      // Backend trả dạng Spring Pageable:
+      // { content: [...], totalPages: 1, totalElements: 3, ... }
+
+      const data = response.data;
+
+      if (!data || !Array.isArray(data.content)) {
+        console.warn("⚠ API /courses không trả về content hợp lệ:", data);
+        return [];
+      }
+
+      return data.content; // ✅ lấy danh sách khóa học thực tế
     } catch (err) {
       console.error("❌ Error fetching courses:", err);
       return rejectWithValue(
-        err.response?.data?.message || "Lỗi khi tải danh sách khóa học."
+        err.response?.data?.message || "Không thể tải danh sách khóa học."
       );
     }
   }
 );
 
-// 🧠 Fetch chi tiết 1 khóa học theo id
+// =============================================================
+// ========== FETCH COURSE BY ID ================================
+// =============================================================
+
 export const fetchCourseById = createAsyncThunk(
   "courses/fetchById",
   async (id, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/courses/${id}`);
-      return response.data.data || response.data;
+      const response = await api.get(`/courses/${id}`); 
+      return response.data;
     } catch (err) {
       console.error("❌ Error fetching course by id:", err);
       return rejectWithValue(
@@ -39,8 +50,9 @@ export const fetchCourseById = createAsyncThunk(
 );
 
 // =============================================================
-// ========== SLICE SETUP ======================================
+// ========== SLICE =============================================
 // =============================================================
+
 const courseSlice = createSlice({
   name: "courses",
   initialState: {
@@ -59,34 +71,23 @@ const courseSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // ===== Fetch all =====
+      // ===== FETCH ALL =====
       .addCase(fetchCourses.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchCourses.fulfilled, (state, action) => {
         state.loading = false;
-        state.list = Array.isArray(action.payload)
-          ? action.payload
-          : action.payload?.courses || [];
+        state.list = action.payload || [];
       })
       .addCase(fetchCourses.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
 
-      // ===== Fetch by id =====
-      .addCase(fetchCourseById.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
+      // ===== FETCH BY ID =====
       .addCase(fetchCourseById.fulfilled, (state, action) => {
-        state.loading = false;
         state.current = action.payload;
-      })
-      .addCase(fetchCourseById.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
       });
   },
 });

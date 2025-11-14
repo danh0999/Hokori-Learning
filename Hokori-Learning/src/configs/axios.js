@@ -10,13 +10,13 @@ const api = axios.create({
   // timeout: 15000, // (tuỳ) tránh treo request quá lâu
 
   //Key phú
-  // baseURL: "https://celsa-plumbaginaceous-unabjectly.ngrok-free.dev/api/",
+  baseURL: "https://celsa-plumbaginaceous-unabjectly.ngrok-free.dev/api/",
 
   //key Deploy
 
   //key Khoa
 
-  baseURL: "https://hokoribe-production.up.railway.app/api/",
+  //baseURL: "https://hokoribe-production.up.railway.app/api/",
 });
 
 // === Request interceptor: gắn Bearer token (trừ login/register) ===
