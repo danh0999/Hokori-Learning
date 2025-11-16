@@ -41,18 +41,13 @@ export const headerMenusByRole = {
     mk("messages", "Messages", <MessageOutlined />, "/teacher/messages"),
   ],
   admin: [
-    mk("dashboard", "Dashboard", <DashboardOutlined />, "/admin"),
-    mk("users", "Users", <UserOutlined />, "/admin/users"),
-    mk("catalog", "Catalog", <DatabaseOutlined />, "/admin/catalog"),
-    mk(
-      "moderation",
-      "Moderation",
-      <SafetyCertificateOutlined />,
-      "/admin/moderation"
-    ),
-    mk("reports", "Reports", <ProfileOutlined />, "/admin/reports"),
-    mk("settings", "Settings", <SettingOutlined />, "/admin/settings"),
+    mk("dashboard", "Tổng quan", <DashboardOutlined />, "/admin"),
+    mk("users", "Người dùng", <UserOutlined />, "/admin/users"),
+
+    mk("complaints", "Khiếu nại", <ProfileOutlined />, "/admin/complaints"),
+    mk("revenue", "Tài chính", <DollarOutlined />, "/admin/revenue"),
   ],
+
   moderator: [
     mk("dashboard", "Dashboard", <DashboardOutlined />, "/moderator"),
     mk("reviews", "Reviews", <AuditOutlined />, "/moderator/reviews"),
@@ -102,16 +97,31 @@ export const sidebarMenusByRole = {
   ],
   admin: [
     mk("dashboard", "Tổng quan", <DashboardOutlined />, "/admin"),
-    mk("users", "Quản lý người dùng", <UserOutlined />, "/admin/users"),
-    mk("courses", "Quản lý khoá học", <BookOutlined />, "/admin/courses"),
-    mk("finance", "Tài chính", <DollarOutlined />, "/admin/finance"),
+    mk("users", "Người dùng", <UserOutlined />, "/admin/users"),
+
     mk(
-      "moderation",
-      "Kiểm duyệt",
-      <SafetyCertificateOutlined />,
-      "/admin/moderation"
+      "teacher-certs",
+      "Chứng chỉ GV",
+      <ProfileOutlined />,
+      "/admin/teacher-certificates"
     ),
-    mk("settings", "Cấu hình hệ thống", <SettingOutlined />, "/admin/settings"),
+    mk("jlpt", "Sự kiện JLPT", <ReadOutlined />, "/admin/jlpt"),
+    mk("ai-packages", "Gói AI", <ExperimentOutlined />, "/admin/ai-packages"),
+    mk("revenue", "Tài chính", <DollarOutlined />, "/admin/revenue"),
+    mk(
+      "withdrawals",
+      "Rút tiền GV",
+      <DatabaseOutlined />,
+      "/admin/withdrawals"
+    ),
+    mk("complaints", "Khiếu nại", <ProfileOutlined />, "/admin/complaints"),
+    // mk(
+    //   "policies",
+    //   "Chính sách",
+    //   <SafetyCertificateOutlined />,
+    //   "/admin/policies"
+    // ),
+    mk("system-logs", "System Log", <SettingOutlined />, "/admin/system-logs"),
   ],
   moderator: [
     mk("dashboard", "Tổng quan", <DashboardOutlined />, "/moderator"),

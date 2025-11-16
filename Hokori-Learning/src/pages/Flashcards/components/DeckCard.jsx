@@ -23,17 +23,17 @@ const DeckCard = ({ deck, onStudy, onEdit, onDelete }) => {
       <div className={styles.actions}>
         <button className={styles.studyBtn} onClick={onStudy}>
           <i className="fa-solid fa-play" />
-          <span>Học ngay</span>
+          <span className={styles.text}>Học ngay</span>
         </button>
 
         <button className={styles.editBtn} onClick={() => onEdit(deck)}>
           <i className="fa-solid fa-pen" />
-          <span>Chỉnh sửa</span>
+          <span className={styles.text}>Chỉnh sửa</span>
         </button>
 
         <button className={styles.deleteBtn} onClick={() => onDelete(deck)}>
           <i className="fa-solid fa-trash" />
-          <span>Xóa</span>
+          <span className={styles.text}>Xóa</span>
         </button>
       </div>
     </div>

@@ -1,27 +1,62 @@
+// src/pages/Profile/components/ProfileHeader.jsx
 import React from "react";
 import styles from "./ProfileHeader.module.scss";
+import { useDispatch } from "react-redux";
+import { uploadAvatar } from "../../../redux/features/profileSlice";
 
-const ProfileHeader = ({ user, onOpenModal }) => {
-  if (!user) return null; // tránh crash khi chưa có data
+const ProfileHeader = ({ user, onOpenChangePassword }) => {
+  const dispatch = useDispatch();
+
+  if (!user) return null;
 
   const avatar =
-    user?.avatarUrl ||
+    user.avatarUrl ||
+    user.avatar_url ||
     "https://api.dicebear.com/7.x/notionists/svg?seed=hokori";
 
+  const displayName =
+    user.displayName ||
+    user.username ||
+    user.userName ||
+    user.fullName ||
+    [user.firstName, user.lastName].filter(Boolean).join(" ") ||
+    "Chưa cập nhật";
+
+  const role = user.roleName || user.role || "Học viên";
+
+  const handleUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    dispatch(uploadAvatar(file));
+  };
+
   return (
-    <section className={styles.header}>
-      <div className={styles.avatarWrap}>
-        <img src={avatar} alt="avatar" className={styles.avatar} />
+    <section className={styles.wrapper}>
+      <div className={styles.avatarBox}>
+        <label className={styles.uploadArea}>
+          <img src={avatar} alt="avatar" className={styles.avatar} />
+          <input
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={handleUpload}
+          />
+        </label>
       </div>
 
       <div className={styles.info}>
-        <h1>{user?.displayName || "Người dùng"}</h1>
-        <span className={styles.role}>Học viên</span>
-        <p className={styles.email}>{user?.email || ""}</p>
+        <p className={styles.role}>{role}</p>
+        <h1 className={styles.name}>{displayName}</h1>
+
+        {user.email && <p className={styles.email}>{user.email}</p>}
 
         <div className={styles.actions}>
-          <button className={styles.editBtn}>Chỉnh sửa hồ sơ</button>
-          <button className={styles.pwBtn} onClick={onOpenModal}>
+          <button
+            type="button"
+            className={styles.secondaryBtn}
+            onClick={onOpenChangePassword}
+          >
             Đổi mật khẩu
           </button>
         </div>

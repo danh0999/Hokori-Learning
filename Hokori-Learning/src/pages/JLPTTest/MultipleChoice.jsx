@@ -49,9 +49,7 @@ const MultipleChoice = ({ onNextSection, onFinishTest }) => {
   // ===== STATE =====
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState({});
-  const [timeLeft, setTimeLeft] = useState(
-    jlpt_test.time_limit_minutes * 60
-  );
+  const [timeLeft, setTimeLeft] = useState(jlpt_test.time_limit_minutes * 60);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContext, setModalContext] = useState(null); // "submit" | "next"
@@ -59,10 +57,7 @@ const MultipleChoice = ({ onNextSection, onFinishTest }) => {
   // ===== TIMER =====
   useEffect(() => {
     if (timeLeft <= 0) return;
-    const t = setInterval(
-      () => setTimeLeft((s) => (s > 0 ? s - 1 : 0)),
-      1000
-    );
+    const t = setInterval(() => setTimeLeft((s) => (s > 0 ? s - 1 : 0)), 1000);
     return () => clearInterval(t);
   }, [timeLeft]);
 
@@ -83,9 +78,24 @@ const MultipleChoice = ({ onNextSection, onFinishTest }) => {
   const handleSelectAnswer = (qid, opt) =>
     setAnswers((prev) => ({ ...prev, [qid]: opt }));
 
-  const handleNextQuestion = () => {
-    if (currentIndex < total - 1) setCurrentIndex((i) => i + 1);
-  };
+ const handleNextQuestion = () => {
+  if (currentIndex < total - 1) {
+    setCurrentIndex((i) => i + 1);
+  } else {
+    // Khi đã ở câu cuối cùng
+    const answeredCount = Object.keys(answers).length;
+
+    // Nếu tất cả đều được chọn rồi → quay lại câu 1
+    if (answeredCount === total) {
+      setCurrentIndex(0);
+    } else {
+      // Nếu chưa làm hết thì không vòng lại (tuỳ ý bạn)
+      // Hoặc có thể alert người dùng:
+      // alert("Bạn chưa làm hết các câu hỏi!");
+    }
+  }
+};
+
 
   const handlePrevQuestion = () => {
     if (currentIndex > 0) setCurrentIndex((i) => i - 1);
@@ -139,14 +149,13 @@ const MultipleChoice = ({ onNextSection, onFinishTest }) => {
   return (
     <div className={styles.wrapper}>
       {/* HEADER */}
+
       <header className={styles.headerBar}>
         <h1 className={styles.testTitle}>{jlpt_test.title}</h1>
         <div className={styles.headerRight}>
           <div className={styles.timerBox}>
             <i className="fa-regular fa-clock" />
-            <span className={styles.timerText}>
-              {formatTime(timeLeft)}
-            </span>
+            <span className={styles.timerText}>{formatTime(timeLeft)}</span>
           </div>
           <button className={styles.submitBtn} onClick={handleClickSubmit}>
             Nộp bài
@@ -172,6 +181,18 @@ const MultipleChoice = ({ onNextSection, onFinishTest }) => {
         {/* CÂU HỎI + TIẾN ĐỘ */}
         <section className={styles.questionArea}>
           <div className={styles.questionCardWrap}>
+            <div className={styles.progressCard}>
+              <div className={styles.progressTopRow}>
+                <span className={styles.progressLabel}>Tiến độ hoàn thành</span>
+                <span className={styles.progressPct}>{progress}%</span>
+              </div>
+              <div className={styles.progressTrack}>
+                <div
+                  className={styles.progressBar}
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
             <QuestionCard
               question={{
                 question_id: currentQ.id,
@@ -199,21 +220,6 @@ const MultipleChoice = ({ onNextSection, onFinishTest }) => {
               Tiếp tục phần Đọc hiểu
             </button>
           </div>
-
-          <div className={styles.progressCard}>
-            <div className={styles.progressTopRow}>
-              <span className={styles.progressLabel}>
-                Tiến độ hoàn thành
-              </span>
-              <span className={styles.progressPct}>{progress}%</span>
-            </div>
-            <div className={styles.progressTrack}>
-              <div
-                className={styles.progressBar}
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
         </section>
       </main>
 
@@ -234,7 +240,9 @@ const MultipleChoice = ({ onNextSection, onFinishTest }) => {
             ? `Bạn mới trả lời ${answered}/${total} câu. Sang phần Đọc hiểu, các câu chưa làm sẽ bị tính sai.`
             : "Bạn đã hoàn thành phần Từ vựng & Ngữ pháp. Sang phần Đọc hiểu chứ?"
         }
-        confirmLabel={modalContext === "submit" ? "Nộp bài" : "Sang phần Đọc hiểu"}
+        confirmLabel={
+          modalContext === "submit" ? "Nộp bài" : "Sang phần Đọc hiểu"
+        }
         cancelLabel="Ở lại làm tiếp"
         onConfirm={handleModalConfirm}
         onCancel={handleModalCancel}

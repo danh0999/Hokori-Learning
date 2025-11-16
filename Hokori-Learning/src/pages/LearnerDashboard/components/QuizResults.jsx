@@ -4,7 +4,7 @@ import styles from "./QuizResults.module.scss";
 
 const QuizResults = ({ results = [] }) => (
   <section className="card">
-    <h2 className={styles.title}>Kết quả kiểm tra gần đây</h2>
+    <h3 className={styles.title}>Kết quả kiểm tra gần đây</h3>
     <div className={styles.list}>
       {results.length ? (
         results.map((r) => (

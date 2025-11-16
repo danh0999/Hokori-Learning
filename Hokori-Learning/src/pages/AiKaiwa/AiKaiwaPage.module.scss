@@ -1,0 +1,28 @@
+.page {
+  background: linear-gradient(135deg, #ffffff, #f5f5f7);
+  min-height: 100vh;
+}
+
+/* vùng nội dung dưới hero */
+.main {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+}
+
+/* 2 cột: trái ghi âm, phải feedback */
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .main {
+    padding-top: 1.5rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -14,7 +14,7 @@ const CompletedLessons = ({ lessons = [], onViewAll }) => {
   return (
     <section className="card">
       <div className={styles.header}>
-        <h2>Bài học đã hoàn thành</h2>
+        <h3>Bài học đã hoàn thành</h3>
         <button className={styles.linkBtn} onClick={onViewAll}>Xem tất cả</button>
       </div>
 

@@ -2,7 +2,9 @@ import React from "react";
 import styles from "./styles.module.scss";
 import { PlayCircleOutlined, UserOutlined } from "@ant-design/icons";
 import { FaToriiGate } from "react-icons/fa6"; // icon cổng Torii
-
+import { IoHardwareChipOutline } from "react-icons/io5";
+import { GiFlatPlatform } from "react-icons/gi";
+import { BiSupport } from "react-icons/bi";
 const Features = () => {
   const features = [
     {
@@ -12,7 +14,7 @@ const Features = () => {
     },
     {
       icon: <UserOutlined style={{ fontSize: "36px" }} />,
-      title: "Giáo viên bản xứ",
+      title: "Giáo viên chuyên môn cao",
       desc: "Học trực tiếp từ giáo viên người Nhật với phát âm chuẩn và kinh nghiệm giảng dạy",
     },
     {
@@ -20,6 +22,21 @@ const Features = () => {
       title: "Kiến thức văn hóa",
       desc: "Tìm hiểu sâu về văn hóa, phong tục và lịch sử Nhật Bản qua từng bài học",
     },
+    {
+      icon : <IoHardwareChipOutline size={36} />,
+      title: "AI hỗ trợ trong học tập",
+      desc: "Công cụ AI hỗ trợ trong học tập, giúp đạt hiệu quả học tập nhanh hơn",
+    },
+    {
+      icon : <GiFlatPlatform size={36} />,
+      title: "Đa dạng khóa học tiếng Nhật",
+      desc: "Nền tảng sở hữu nhiều khóa học đa dạng từ mọi cấp độ cho học viên ",
+    },
+    {
+      icon : <BiSupport size={36}/>,
+      title: "Dịch vụ hỗ trợ 24/7",
+      desc: "Hỗ trợ cho học viên trong các vấn đề khác nhau ",
+    }
   ];
 
   return (

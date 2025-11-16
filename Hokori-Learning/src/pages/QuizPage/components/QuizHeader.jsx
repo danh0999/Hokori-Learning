@@ -1,15 +1,20 @@
-// QuizHeader.jsx
-import React from "react";
-import { createPortal } from "react-dom";
+import React, { useEffect } from "react";
 import styles from "./QuizHeader.module.scss";
 
 const QuizHeader = ({ quiz, timeLeft, onSubmit }) => {
-  const headerEl = (
+  // ✅ Gắn class page-quiz vào body để đổi nền toàn trang
+  useEffect(() => {
+    document.body.classList.add("page-quiz");
+    return () => document.body.classList.remove("page-quiz");
+  }, []);
+
+  return (
     <header className={styles.header}>
       <h1>{quiz?.title || "Tên bài Quiz"}</h1>
+
       <div className={styles.right}>
         <span className={styles.timer}>
-          ⏱ Thời gian còn lại: <strong>{timeLeft}</strong>
+          Thời gian còn lại: <strong>{timeLeft}</strong>
         </span>
         <button className={styles.submitBtn} onClick={onSubmit}>
           Nộp bài
@@ -17,9 +22,6 @@ const QuizHeader = ({ quiz, timeLeft, onSubmit }) => {
       </div>
     </header>
   );
-
-  // (Có thể giữ portal hoặc render trực tiếp — portal giúp tránh overflow cha)
-  return createPortal(headerEl, document.body);
 };
 
 export default QuizHeader;

@@ -120,9 +120,12 @@
 .nextSection {
   display: flex;
   justify-content: center;
+   margin-top: -96px;
+   pointer-events: none;
 }
 
 .nextSectionBtn {
+  pointer-events: all;
   background: #2563eb;
   color: #fff;
   font-weight: 600;
