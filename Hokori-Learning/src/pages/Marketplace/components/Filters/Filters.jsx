@@ -43,19 +43,21 @@ export default function Filters({ filters, setFilters, onClear }) {
           />
         </div>
       </div>
-      <div className={styles.group}>
+      <div className={`${styles.group} ${styles.jlptRow}`}>
         <h4>Cấp độ JLPT</h4>
-        {JLPT_LEVELS.map((level) => (
-          <label key={level} className={styles.row}>
-            <input
-              type="checkbox"
-              value={level}
-              checked={filters.levels.includes(level)}
-              onChange={handleLevelChange}
-            />
-            <span>{level}</span>
-          </label>
-        ))}
+        <div className={styles.levelContainer}>
+          {JLPT_LEVELS.map((level) => (
+            <label key={level} className={styles.levelItem}>
+              <input
+                type="checkbox"
+                value={level}
+                checked={filters.levels.includes(level)}
+                onChange={handleLevelChange}
+              />
+              <span>{level}</span>
+            </label>
+          ))}
+        </div>
       </div>
 
       <div className={styles.group}>

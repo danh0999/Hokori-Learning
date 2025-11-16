@@ -256,3 +256,28 @@ h4 {
     width: 100%;
   }
 }
+/* --- Cấp độ JLPT nằm ngang --- */
+.jlptRow {
+  display: flex;
+  flex-direction: column;
+}
+
+.levelContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px; /* dãn đều theo hàng + cột */
+  margin-top: 6px;
+}
+
+.levelItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.levelItem input {
+  width: 16px;
+  height: 16px;
+}

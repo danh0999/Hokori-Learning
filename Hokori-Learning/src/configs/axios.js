@@ -71,7 +71,7 @@ async function autoBackend() {
   // 1) Return cached URL if still valid
   const cached = getCachedBackend();
   if (cached) {
-    console.log("⚡ Using cached backend:", cached);
+    console.log(" Using cached backend:", cached);
     return cached;
   }
 
@@ -89,20 +89,20 @@ async function autoBackend() {
   // 4) Localhost (last)
   candidates.push(LOCAL);
 
-  console.log("🔍 Checking backends:", candidates);
+  console.log(" Checking backends:", candidates);
 
   // HEARTBEAT CHECK IN PRIORITY ORDER
   for (const url of candidates) {
     const alive = await isAlive(url);
     if (alive) {
-      console.log("✅ Backend selected:", url);
+      console.log(" Backend selected:", url);
       saveBackend(url);
       return url;
     }
   }
 
   // If all failed → fallback to production
-  console.warn("❌ All backends failed — fallback to Railway");
+  console.warn(" All backends failed — fallback to Railway");
   saveBackend(PRIMARY);
   return PRIMARY;
 }
@@ -118,7 +118,7 @@ const api = axios.create({
 // Set actual backend asynchronously without blocking UI
 autoBackend().then((realURL) => {
   api.defaults.baseURL = realURL;
-  console.log("🚀 Axios backend active:", realURL);
+  console.log(" Axios backend active:", realURL);
 });
 
 /* ===========================================================
