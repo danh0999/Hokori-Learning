@@ -15,9 +15,9 @@ export const analyzeSpeech = createAsyncThunk(
         audioData: base64Audio,
         level,
         language: "ja-JP",
-        voice: "female",         // ✔ REQUIRED (theo Swagger)
-        speed: "normal",          // ✔ REQUIRED
-        audioFormat: "wav",
+        voice: "female",
+        speed: "normal",
+        audioFormat: "webm", // <-- PHẢI ĐỂ WEBM, không được để WAV
         validAudioFormat: true,
         validSpeed: true,
         validLevel: true,
