@@ -6,10 +6,10 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import api from "../../../configs/axios";
+
 import AuthLogo from "../Auth-Logo/AuthLogo";
 import styles from "./styles.module.scss";
 
-// 🔑 Firebase login helpers (đã dùng ở LoginForm)
 import { loginWithGoogle } from "../../../redux/features/auth";
 import { useDispatch } from "react-redux";
 import { login as saveUser } from "../../../redux/features/userSlice";
@@ -19,62 +19,79 @@ const { Option } = Select;
 
 const RegisterForm = () => {
   const [form] = Form.useForm();
-  const [role, setRole] = useState("learner"); // "learner" | "teacher"
+  const [role, setRole] = useState("learner");
   const [loading, setLoading] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  // đổi tab → set default JLPT theo role
+  // Reset JLPT khi đổi tab
   useEffect(() => {
     form.setFieldsValue({
       currentJlptLevel: role === "teacher" ? "N1" : "N5",
     });
   }, [role, form]);
 
-  // --- Handle register via Google (Firebase) ---
-const handleGoogleRegister = async () => {
-  try {
-    setLoadingGoogle(true);
+  // =============================
+  //  GOOGLE REGISTER
+  // =============================
+  const handleGoogleRegister = async () => {
+    try {
+      setLoadingGoogle(true);
 
-    const profile = await loginWithGoogle();
-    const fbUser = getAuth().currentUser;
-    if (!fbUser) throw new Error("Không lấy được người dùng Firebase");
+      await loginWithGoogle();
+      const fbUser = getAuth().currentUser;
+      if (!fbUser) throw new Error("Không lấy được tài khoản Google");
 
-    const firebaseToken = await fbUser.getIdToken(true);
+      const firebaseToken = await fbUser.getIdToken(true);
 
-    // <<<<<< BẮT BUỘC: gọi endpoint đăng ký >>>>>>
-    const res = await api.post(
-      "/auth/firebase/register",
-      { firebaseToken },
-      { headers: { Authorization: undefined } } // tránh Bearer cũ
-    );
+      const res = await api.post(
+        "/auth/firebase/register",
+        { firebaseToken },
+        { headers: { Authorization: undefined } }
+      );
 
-    const { user, roles, accessToken, refreshToken } = res.data.data;
+      const { user, roles, accessToken, refreshToken } = res.data.data;
 
-    dispatch(saveUser({ ...user, roles, role: roles?.[0] || null, accessToken, refreshToken }));
-    localStorage.setItem("token", accessToken);
+      dispatch(
+        saveUser({
+          ...user,
+          roles,
+          role: roles?.[0] || null,
+          accessToken,
+          refreshToken,
+        })
+      );
 
-    // DẤU HIỆU: message này chỉ xuất hiện nếu đúng luồng register
-    toast.success(`Đăng ký thành công bằng Google. Xin chào, ${user.displayName || user.email}!`);
-    navigate(roles?.includes("TEACHER") ? "/teacher" : "/");
-  } catch (err) {
-    const status = err?.response?.status;
-    const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message;
-    if (status === 409) {
-      toast.info("Email đã tồn tại. Vui lòng Đăng nhập bằng Google.");
-      navigate("/login");
-      return;
+      localStorage.setItem("token", accessToken);
+
+      toast.success(`Đăng ký thành công bằng Google. Xin chào ${user?.displayName || user?.email}!`);
+
+      navigate(roles?.includes("TEACHER") ? "/teacher" : "/");
+    } catch (err) {
+      const status = err?.response?.status;
+      const msg =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.message;
+      if (status === 409) {
+        toast.info("Email đã tồn tại. Vui lòng đăng nhập bằng Google.");
+        navigate("/login");
+        return;
+      }
+      toast.error(msg || "Đăng ký Google thất bại!");
+    } finally {
+      setLoadingGoogle(false);
     }
-    toast.error(msg || "Đăng ký bằng Google thất bại!");
-  } finally {
-    setLoadingGoogle(false);
-  }
-};
+  };
 
-  // --- Handle register via classic form ---
+  // =============================
+  // EMAIL REGISTER
+  // =============================
   const onFinish = async (values) => {
     setLoading(true);
+
     try {
       const endpoint =
         role === "teacher"
@@ -89,16 +106,9 @@ const handleGoogleRegister = async () => {
               password: values.password,
               firstName: values.firstName,
               lastName: values.lastName,
-              headline: values.headline || "",
               bio: values.bio || "",
               websiteUrl: values.websiteUrl || "",
-              facebook: values.facebook || "",
-              instagram: values.instagram || "",
               linkedin: values.linkedin || "",
-              tiktok: values.tiktok || "",
-              x: values.x || "",
-              youtube: values.youtube || "",
-              language: values.language || "Japanese",
               currentJlptLevel: values.currentJlptLevel || "N1",
             }
           : {
@@ -106,16 +116,14 @@ const handleGoogleRegister = async () => {
               email: values.email,
               password: values.password,
               displayName: values.displayName,
-              country: values.country || "Vietnam",
-              nativeLanguage: values.nativeLanguage || "Vietnamese",
               currentJlptLevel: values.currentJlptLevel || "N5",
             };
 
       await api.post(endpoint, payload);
+
       toast.success("Đăng ký thành công!");
       navigate("/login");
     } catch (e) {
-      console.error("Register error:", e);
       toast.error(
         e?.response?.data?.error ||
           e?.response?.data?.message ||
@@ -130,11 +138,11 @@ const handleGoogleRegister = async () => {
   return (
     <div className={styles.registerFormContainer}>
       <AuthLogo />
+
       <Title level={2} style={{ textAlign: "center", marginBottom: 8 }}>
         Đăng ký
       </Title>
 
-      {/* Google button */}
       <Button
         block
         size="large"
@@ -157,21 +165,19 @@ const handleGoogleRegister = async () => {
         ]}
       />
 
-      {/* layout vertical để form vào giữa gọn gàng */}
       <Form
         form={form}
-        name="register"
         layout="vertical"
         onFinish={onFinish}
         className={styles.antFormStretch}
         style={{ maxWidth: 560, margin: "0 auto" }}
         scrollToFirstError
       >
-        {/* --- Common fields --- */}
+        {/* COMMON FIELDS */}
         <Form.Item
           name="username"
           label="Username"
-          rules={[{ required: true, message: "Vui lòng nhập username" }]}
+          rules={[{ required: true, message: "Vui lòng nhập Username" }]}
         >
           <Input autoComplete="username" />
         </Form.Item>
@@ -187,102 +193,109 @@ const handleGoogleRegister = async () => {
           <Input autoComplete="email" />
         </Form.Item>
 
+        {/* PASSWORD */}
         <Form.Item
           name="password"
           label="Password"
           hasFeedback
-          rules={[{ required: true, message: "Vui lòng nhập mật khẩu" }]}
+          rules={[
+            { required: true, message: "Vui lòng nhập mật khẩu" },
+            { min: 6, message: "Mật khẩu phải ít nhất 6 ký tự" },
+          ]}
         >
           <Input.Password autoComplete="new-password" />
         </Form.Item>
 
-        {/* --- Learner-only --- */}
-
-
-      
-
-      
-
-        {/* --- Teacher-only --- */}
+        {/* CONFIRM PASSWORD */}
         <Form.Item
-          name="firstName"
-          label="First name"
-          hidden={role !== "teacher"}
-          rules={
-            role === "teacher"
-              ? [{ required: true, message: "Vui lòng nhập First name" }]
-              : []
-          }
+          name="confirmPassword"
+          label="Xác nhận mật khẩu"
+          dependencies={["password"]}
+          hasFeedback
+          rules={[
+            { required: true, message: "Vui lòng xác nhận mật khẩu" },
+            ({ getFieldValue }) => ({
+              validator(_, value) {
+                if (!value || getFieldValue("password") === value) {
+                  return Promise.resolve();
+                }
+                return Promise.reject(
+                  new Error("Mật khẩu xác nhận không khớp!")
+                );
+              },
+            }),
+          ]}
         >
-          <Input />
+          <Input.Password autoComplete="new-password" />
         </Form.Item>
 
-        <Form.Item
-          name="lastName"
-          label="Last name"
-          hidden={role !== "teacher"}
-          rules={
-            role === "teacher"
-              ? [{ required: true, message: "Vui lòng nhập Last name" }]
-              : []
-          }
-        >
-          <Input />
-        </Form.Item>
+        {/* ======================== */}
+        {/*  LEARNER ONLY */}
+        {/* ======================== */}
+        {role === "learner" && (
+          <>
+            <Form.Item
+              name="displayName"
+              label="Tên hiển thị"
+              rules={[{ required: true, message: "Vui lòng nhập tên hiển thị" }]}
+            >
+              <Input />
+            </Form.Item>
+          </>
+        )}
 
-        <Form.Item name="headline" label="Headline" hidden={role !== "teacher"}>
-          <Input placeholder="VD: JLPT N1 | 5 năm giảng dạy" />
-        </Form.Item>
+        {/* ======================== */}
+        {/*  TEACHER ONLY */}
+        {/* ======================== */}
+        {role === "teacher" && (
+          <>
+            <Form.Item
+              name="firstName"
+              label="First name"
+              rules={[{ required: true, message: "Vui lòng nhập First name" }]}
+            >
+              <Input />
+            </Form.Item>
 
-        <Form.Item name="bio" label="Bio" hidden={role !== "teacher"}>
-          <Input.TextArea rows={3} />
-        </Form.Item>
+            <Form.Item
+              name="lastName"
+              label="Last name"
+              rules={[{ required: true, message: "Vui lòng nhập Last name" }]}
+            >
+              <Input />
+            </Form.Item>
 
-        <Form.Item
-          name="websiteUrl"
-          label="Website"
-          hidden={role !== "teacher"}
-        >
-          <Input />
-        </Form.Item>
+            {/* Bio — giới hạn 200 ký tự */}
+            <Form.Item
+              name="bio"
+              label="Giới thiệu (tối đa 200 ký tự)"
+              rules={[
+                {
+                  max: 200,
+                  message: "Bio tối đa 200 ký tự!",
+                },
+              ]}
+            >
+              <Input.TextArea
+                rows={3}
+                placeholder="Giới thiệu ngắn gọn về kinh nghiệm giảng dạy hoặc thành tựu…"
+                maxLength={200}
+                showCount
+              />
+            </Form.Item>
 
-        <Form.Item name="facebook" label="Facebook" hidden={role !== "teacher"}>
-          <Input />
-        </Form.Item>
-        <Form.Item
-          name="instagram"
-          label="Instagram"
-          hidden={role !== "teacher"}
-        >
-          <Input />
-        </Form.Item>
-        <Form.Item name="linkedin" label="LinkedIn" hidden={role !== "teacher"}>
-          <Input />
-        </Form.Item>
-        <Form.Item name="tiktok" label="TikTok" hidden={role !== "teacher"}>
-          <Input />
-        </Form.Item>
-        <Form.Item name="x" label="X" hidden={role !== "teacher"}>
-          <Input />
-        </Form.Item>
-        <Form.Item name="youtube" label="YouTube" hidden={role !== "teacher"}>
-          <Input />
-        </Form.Item>
+            <Form.Item name="websiteUrl" label="Website (nếu có)">
+              <Input placeholder="https://your-website.com" />
+            </Form.Item>
 
-        <Form.Item
-          name="language"
-          label="Ngôn ngữ dạy"
-          hidden={role !== "teacher"}
-        >
-          <Input placeholder="Japanese" />
-        </Form.Item>
+            <Form.Item name="linkedin" label="LinkedIn (nếu có)">
+              <Input placeholder="https://linkedin.com/in/your-profile" />
+            </Form.Item>
+          </>
+        )}
 
-        {/* --- Shared: JLPT --- */}
-        <Form.Item
-          name="currentJlptLevel"
-          label="JLPT hiện tại"
-          initialValue={role === "teacher" ? "N1" : "N5"}
-        >
+        {/* JLPT LEVEL */}
+        <Form.Item name="currentJlptLevel" label="JLPT hiện tại">
           <Select allowClear placeholder="Chọn cấp JLPT">
             {["N5", "N4", "N3", "N2", "N1"].map((l) => (
               <Option key={l} value={l}>
@@ -292,7 +305,7 @@ const handleGoogleRegister = async () => {
           </Select>
         </Form.Item>
 
-        {/* Actions */}
+        {/* SUBMIT */}
         <Form.Item>
           <Button type="primary" htmlType="submit" loading={loading} block>
             Đăng ký {role === "teacher" ? "Giáo viên" : "Học viên"}
