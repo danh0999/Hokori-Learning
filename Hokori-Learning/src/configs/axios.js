@@ -1,48 +1,119 @@
 import axios from "axios";
 
 /* ===========================================================
-   AUTO DETECT BACKEND (Hokori Version 3 — Stable)
-   Ưu tiên theo thứ tự:
-   1. Nếu url FE chứa ngrok → backend = origin + /api
-   2. Nếu backend ngrok cũ của team còn hoạt động → dùng nó
-   3. Nếu không → dùng Railway (production)
-   4. Chỉ dùng localhost nếu bạn BẬT BE local
+    Priority:
+    (1) Railway (prod)
+    (2) FE ngrok → origin/api
+    (3) Internal ngrok backend
+    (4) Localhost
 =========================================================== */
 
-function autoBackend() {
-  const origin = window.location.origin;
-  const host = window.location.host;
+const PRIMARY = "https://hokoribe-production.up.railway.app/api";
+const NGROK_FE_FALLBACK = () => `${window.location.origin}/api`;
+const NGROK_BACKENDS = [
+  "https://saner-eden-placably.ngrok-free.dev/api",
+];
+const LOCAL = "http://localhost:8080/api";
 
-  // 1) FE chạy trên NGROK → dùng chung domain
-  if (host.includes("ngrok-free.dev")) {
-    return `${origin}/api`;
+const CACHE_KEY = "hokori_backend_url";
+const CACHE_EXP_KEY = "hokori_backend_exp";
+
+async function isAlive(url) {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 250);
+
+    await fetch(url + "/health", {
+      method: "GET",
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+    return true;
+  } catch  {
+    return false;
   }
-
-  // 2) NGROK BACKEND của team (kiểm tra nhanh bằng HEAD)
-  const ngrokCandidates = [
-    "https://celsa-plumbaginaceous-unabjectly.ngrok-free.dev/api",
-    "https://saner-eden-placably.ngrok-free.dev/api",
-  ];
-
-  // Chọn ngrok nếu FE detect mạng OK
-  for (const url of ngrokCandidates) {
-    // không block FE, chỉ check URL tồn tại
-    return url; // dùng luôn, tránh lỗi chờ HEAD
-  }
-
-  // 3) Default → Railway (prod)
-  return "https://hokoribe-production.up.railway.app/api";
 }
 
+
+function getCachedBackend() {
+  const saved = localStorage.getItem(CACHE_KEY);
+  const exp = localStorage.getItem(CACHE_EXP_KEY);
+
+  if (!saved || !exp) return null;
+
+  if (Date.now() > Number(exp)) {
+    localStorage.removeItem(CACHE_KEY);
+    localStorage.removeItem(CACHE_EXP_KEY);
+    return null;
+  }
+  return saved;
+}
+
+function saveBackend(url) {
+  localStorage.setItem(CACHE_KEY, url);
+  localStorage.setItem(CACHE_EXP_KEY, Date.now() + 24 * 60 * 60 * 1000);
+}
+
+/* ===========================================================
+    MAIN AUTO SELECTOR
+=========================================================== */
+async function autoBackend() {
+  // 1) Return cached URL if still valid
+  const cached = getCachedBackend();
+  if (cached) {
+    console.log(" Using cached backend:", cached);
+    return cached;
+  }
+
+  // PRIORITY LIST
+  const candidates = [PRIMARY];
+
+  // 2) FE running via NGROK → add origin/api
+  if (window.location.host.includes("ngrok")) {
+    candidates.push(NGROK_FE_FALLBACK());
+  }
+
+  // 3) Add internal ngrok backends
+  candidates.push(...NGROK_BACKENDS);
+
+  // 4) Localhost (last)
+  candidates.push(LOCAL);
+
+  console.log("🔍 Checking backends:", candidates);
+
+  // HEARTBEAT CHECK IN PRIORITY ORDER
+  for (const url of candidates) {
+    const alive = await isAlive(url);
+    if (alive) {
+      console.log(" Backend selected:", url);
+      saveBackend(url);
+      return url;
+    }
+  }
+
+  // If all failed → fallback to production
+  console.warn(" All backends failed — fallback to Railway");
+  saveBackend(PRIMARY);
+  return PRIMARY;
+}
+
+/* ===========================================================
+    INIT AXIOS WITH DYNAMIC BASE URL
+=========================================================== */
 const api = axios.create({
-  baseURL: autoBackend(),
+  baseURL: PRIMARY, // temporary, updated below
   withCredentials: false,
 });
 
-console.log("🔧 Axios Backend URL:", api.defaults.baseURL);
+// Set actual backend asynchronously without blocking UI
+autoBackend().then((realURL) => {
+  api.defaults.baseURL = realURL;
+  console.log(" Axios backend active:", realURL);
+});
 
 /* ===========================================================
-   REQUEST INTERCEPTOR
+    REQUEST INTERCEPTOR
 =========================================================== */
 api.interceptors.request.use(
   (config) => {
@@ -67,7 +138,7 @@ api.interceptors.request.use(
 );
 
 /* ===========================================================
-   RESPONSE INTERCEPTOR
+    RESPONSE INTERCEPTOR
 =========================================================== */
 api.interceptors.response.use(
   (res) => {
