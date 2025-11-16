@@ -1,101 +1,61 @@
-// ================================
-// Hokori Kaiwa — AI Speech Slice (FINAL & CORRECT VERSION)
-// Convert WebM (Opus 48kHz) -> WAV (PCM16 16kHz) -> Base64 -> Backend JSON
-// ================================
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import api from "../../configs/axios";
+import { convertBlobToBase64 } from "../../utils/convertBlobToBase64";
 
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import api from "../../configs/axios.js";
-import { convertWebmToWav } from "../../utils/convertWebmToWav.js";
-
-// ================================
-// Helper — Convert Blob -> Base64
-// ================================
-const blobToBase64 = (blob) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(blob);
-    reader.onloadend = () => {
-      const base64 = reader.result.split(",")[1]; // remove header
-      resolve(base64);
-    };
-    reader.onerror = reject;
-  });
-
-// ================================
-// Thunk: gửi audio -> Backend
-// ================================
 export const analyzeSpeech = createAsyncThunk(
   "aiSpeech/analyzeSpeech",
-  async (audioBlob, { rejectWithValue }) => {
+  async ({ audioBlob, targetText, level }, { rejectWithValue }) => {
     try {
       if (!audioBlob) {
-        return rejectWithValue("Không có dữ liệu âm thanh để phân tích.");
+        return rejectWithValue("Không có dữ liệu âm thanh.");
       }
 
-      console.log("🎤 Original WebM:", audioBlob.type, audioBlob.size);
+      const base64Audio = await convertBlobToBase64(audioBlob);
 
-      // 1️⃣ Convert WebM -> WAV (PCM16 16kHz)
-      const wavBlob = await convertWebmToWav(audioBlob);
-      console.log("🎧 Converted WAV:", wavBlob.type, wavBlob.size);
-
-      // 2️⃣ Convert WAV -> Base64
-      const audioBase64 = await blobToBase64(wavBlob);
-
-      // 3️⃣ Payload JSON theo Swagger backend
       const payload = {
-        audioData: audioBase64,
+        targetText: targetText,
+        audioData: base64Audio,
+        level: level,
         language: "ja-JP",
-        audioFormat: "wav",          // ✔ Backend mặc định WAV
-        validAudioFormat: true       // ✔ Swagger field
+        audioFormat: "wav",
+        validAudioFormat: true,
+        validSpeed: true,
+        validLevel: true
       };
 
-      console.log("📡 Sending to backend:", {
-        url: "ai/speech-to-text",
-        audioFormat: payload.audioFormat,
-        base64_length: audioBase64.length,
-      });
+      const res = await api.post("ai/kaiwa-practice", payload);
 
-      const response = await api.post("ai/speech-to-text", payload, {
-        headers: { "Content-Type": "application/json" },
-      });
-
-      return response.data;
-
-    } catch (error) {
-      console.error("❌ analyzeSpeech error:", error);
+      return res.data.data;
+    } catch (err) {
       return rejectWithValue(
-        error.response?.data?.message ||
-          "Không thể phân tích giọng nói. Vui lòng thử lại."
+        err.response?.data?.message || "Không thể phân tích giọng nói"
       );
     }
   }
 );
 
-// ================================
-// Slice
-// ================================
-const initialState = {
-  loading: false,
-  error: null,
-  transcript: "",
-  overallScore: null,
-  pronunciation: null,
-  intonation: null,
-  fluency: null,
-};
-
 const aiSpeechSlice = createSlice({
   name: "aiSpeech",
-  initialState,
+  initialState: {
+    loading: false,
+    error: null,
+    transcript: "",
+    overallScore: null,
+    pronunciationScore: null,
+    accuracyScore: null,
+    feedback: null,
+    userTranscript: "",
+    targetText: "",
+  },
   reducers: {
-    resetAiSpeech: (state) => {
+    resetAiSpeech(state) {
       state.loading = false;
       state.error = null;
       state.transcript = "";
       state.overallScore = null;
-      state.pronunciation = null;
-      state.intonation = null;
-      state.fluency = null;
+      state.pronunciationScore = null;
+      state.accuracyScore = null;
+      state.feedback = null;
     },
   },
   extraReducers: (builder) => {
@@ -106,23 +66,19 @@ const aiSpeechSlice = createSlice({
       })
       .addCase(analyzeSpeech.fulfilled, (state, action) => {
         state.loading = false;
-        const {
-          transcript,
-          overallScore,
-          pronunciation,
-          intonation,
-          fluency,
-        } = action.payload || {};
 
-        state.transcript = transcript || "";
-        state.overallScore = overallScore ?? null;
-        state.pronunciation = pronunciation ?? null;
-        state.intonation = intonation ?? null;
-        state.fluency = fluency ?? null;
+        const data = action.payload;
+
+        state.transcript = data.userTranscript;
+        state.targetText = data.targetText;
+        state.overallScore = data.overallScore;
+        state.pronunciationScore = data.pronunciationScore;
+        state.accuracyScore = data.accuracyScore;
+        state.feedback = data.feedback;
       })
       .addCase(analyzeSpeech.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || "Có lỗi xảy ra khi phân tích giọng nói.";
+        state.error = action.payload;
       });
   },
 });
