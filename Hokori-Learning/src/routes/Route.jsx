@@ -134,6 +134,10 @@ const routes = [
         element: <CreateCoursePage />,
       },
       {
+        path: "create-course/:courseId",
+        element: <CreateCoursePage />,
+      },
+      {
         path: "create-quiz",
         element: <CreateQuizPage />,
       },

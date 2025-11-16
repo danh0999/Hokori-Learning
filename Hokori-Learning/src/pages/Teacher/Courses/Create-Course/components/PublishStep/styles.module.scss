@@ -1,5 +1,5 @@
 .cardBig {
-  background: #fff;
+  background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 16px;
 
@@ -8,13 +8,21 @@
   }
 
   .ant-card-body {
-    padding: 24px 24px 32px;
+    padding: 24px 24px 28px;
   }
 }
 
-/* header cho step */
+/* header: title + status pill */
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
 .stepHeader {
-  margin-bottom: 24px;
+  margin-bottom: 4px;
 }
 
 .stepTitle {
@@ -31,29 +39,41 @@
   line-height: 1.4;
 }
 
+.statusPill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  text-transform: uppercase;
+}
+
 /* review summary block */
 .reviewBlock {
   background: #f9fafb;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  padding: 16px 20px;
+  padding: 14px 18px;
   margin-bottom: 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .row {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  border-bottom: 1px solid #f0f0f0;
-  padding-bottom: 8px;
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 6px;
   font-size: 14px;
   line-height: 1.4;
 
   &:last-child {
     border-bottom: none;
+    padding-bottom: 0;
   }
 }
 
@@ -71,22 +91,75 @@
   word-break: break-word;
 }
 
-.thumbPreviewSmall {
-  width: 120px;
-  height: 68px;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  object-fit: cover;
-  background: #000;
+.valueOk {
+  color: #166534;
 }
 
+.valuePending {
+  color: #b91c1c;
+}
+
+/* curriculum overview */
+.curriculumPreview {
+  margin-top: 8px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.previewTitle {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.previewChapterList {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.previewChapterItem {
+  margin-bottom: 8px;
+}
+
+.previewChapterLine {
+  margin-bottom: 4px;
+}
+
+.previewLessonList {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+}
+
+.previewLessonItem {
+  line-height: 1.6;
+}
+
+.previewLessonEmpty {
+  font-style: italic;
+  color: #9ca3af;
+}
+
+.previewEmpty {
+  font-style: italic;
+  color: #9ca3af;
+}
+
+/* warning */
 .warningBox {
   background: #fef2f2;
   border: 1px solid #fee2e2;
   color: #b91c1c;
   font-size: 13px;
   line-height: 1.5;
-  padding: 12px 14px;
+  padding: 10px 12px;
   border-radius: 8px;
-  margin-bottom: 16px;
+  margin-top: 16px;
+}
+
+/* action buttons */
+.actionRow {
+  margin-top: 20px;
+  display: flex;
+  gap: 12px;
 }

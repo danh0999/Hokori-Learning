@@ -1,0 +1,117 @@
+.layout {
+  display: flex;
+  gap: 16px;
+}
+
+.treeCol {
+  flex: 2;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.previewCol {
+  flex: 1.2;
+  min-width: 0;
+}
+
+.courseSummary {
+  margin-bottom: 8px;
+}
+
+.thumbBox {
+  width: 80px;
+  height: 60px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #f3f4f6;
+}
+
+.thumbImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chapterCollapse {
+  background: #fff;
+}
+
+.lessonItem {
+  padding-left: 0;
+}
+
+.lessonMain {
+  width: 100%;
+}
+
+.lessonTitle {
+  font-weight: 500;
+}
+
+.lessonMeta {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.sectionBlock {
+  margin-top: 8px;
+  padding-left: 8px;
+  border-left: 2px solid #e5e7eb;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.contentItem {
+  cursor: pointer;
+  padding-inline: 4px !important;
+}
+
+.contentItemActive {
+  @extend .contentItem;
+  background: #e5f0ff;
+}
+
+.previewEmpty {
+  text-align: center;
+  padding: 24px 8px;
+}
+
+.previewBody {
+  min-height: 120px;
+}
+
+.previewTitle {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.previewVideo {
+  width: 100%;
+  border-radius: 8px;
+}
+
+.previewImage {
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+.previewRich {
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-size: 13px;
+}
+
+.center {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+}

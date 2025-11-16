@@ -6,8 +6,11 @@ const api = axios.create({
   // timeout: 15000, // (tuỳ) tránh treo request quá lâu
 
   //Key phú
-  baseURL: "https://celsa-plumbaginaceous-unabjectly.ngrok-free.dev/api/",
+  // baseURL: "https://celsa-plumbaginaceous-unabjectly.ngrok-free.dev/api/",
   //key Khoa
+
+  //key deploy
+  baseURL: "https://hokoribe-production.up.railway.app/api/",
 });
 
 // === Request interceptor: gắn Bearer token (trừ login/register) ===
@@ -25,6 +28,15 @@ api.interceptors.request.use(
     ) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    console.log(
+      "[API REQUEST]",
+      config.method?.toUpperCase(),
+      config.baseURL + config.url,
+      "Authorization:",
+      config.headers.Authorization
+    );
+
     return config;
   },
   (error) => Promise.reject(error)

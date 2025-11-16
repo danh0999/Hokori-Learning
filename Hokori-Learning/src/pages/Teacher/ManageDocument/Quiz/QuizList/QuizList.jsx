@@ -12,8 +12,39 @@ export default function QuizList({
   onEdit,
   onRemove,
 }) {
+  // 🔹 Helper: ưu tiên dùng totalQuestions từ BE, fallback sang mảng questions
+  const getQuestionCount = (qz) => {
+    if (typeof qz.totalQuestions === "number") {
+      return qz.totalQuestions;
+    }
+    if (Array.isArray(qz.questions)) {
+      return qz.questions.length;
+    }
+    return 0;
+  };
+
   return (
     <div className={styles.wrap}>
+      {/* Header có nút New quiz / Import nếu bạn muốn */}
+      {(onCreateNew || onImport) && (
+        <div className={styles.header}>
+          {onCreateNew && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => onCreateNew?.()}
+            >
+              New quiz
+            </Button>
+          )}
+          {onImport && (
+            <Button style={{ marginLeft: 8 }} onClick={() => onImport?.()}>
+              Import from library
+            </Button>
+          )}
+        </div>
+      )}
+
       <Card>
         <List
           dataSource={value}
@@ -26,7 +57,7 @@ export default function QuizList({
                   <Space>
                     <b>{qz.title}</b>
                     <span className={styles.muted}>
-                      · {qz.questions?.length || 0} questions
+                      · {getQuestionCount(qz)} questions
                     </span>
                   </Space>
                   {qz.description && (
