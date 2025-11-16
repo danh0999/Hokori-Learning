@@ -110,7 +110,21 @@ const Listening = ({ onFinishTest }) => {
 
   // ====== Next/Prev ======
   const handleNextQuestion = () => {
-    if (currentIndex < total - 1) setCurrentIndex((i) => i + 1);
+    if (currentIndex < total - 1) {
+      setCurrentIndex((i) => i + 1);
+    } else {
+      // Khi đã ở câu cuối cùng
+      const answeredCount = Object.keys(answers).length;
+
+      // Nếu tất cả đều được chọn rồi → quay lại câu 1
+      if (answeredCount === total) {
+        setCurrentIndex(0);
+      } else {
+        // Nếu chưa làm hết thì không vòng lại (tuỳ ý bạn)
+        // Hoặc có thể alert người dùng:
+        // alert("Bạn chưa làm hết các câu hỏi!");
+      }
+    }
   };
 
   const handlePrevQuestion = () => {
@@ -131,11 +145,6 @@ const Listening = ({ onFinishTest }) => {
       {/* Header */}
       <header className={styles.headerBar}>
         <h1 className={styles.testTitle}>{jlpt_test.title}</h1>
-        <div className={styles.headerRight}>
-          <button className={styles.submitBtn} onClick={openSubmitModal}>
-            Nộp bài
-          </button>
-        </div>
       </header>
 
       {/* Main */}
@@ -153,87 +162,92 @@ const Listening = ({ onFinishTest }) => {
         </aside>
 
         <section className={styles.questionArea}>
-          {/* AUDIO PLAYER */}
-          <div className={styles.audioBlock}>
-            <audio ref={audioRef} src={currentQ.audio_url} preload="metadata" />
-            <button className={styles.audioBtn} onClick={handlePlayPause}>
-              {isPlaying ? (
-                <i className="fa-solid fa-pause" />
-              ) : (
-                <i className="fa-solid fa-play" />
-              )}
-            </button>
-
-            <div className={styles.progressContainer}>
-              <div className={styles.progressBar}>
-                <div
-                  className={styles.progressFill}
-                  style={{
-                    width: `${audioDuration
-                      ? (audioProgress / audioDuration) * 100
-                      : 0}%`,
-                  }}
-                ></div>
+          <div className={styles.questionCardWrap}>
+            {/* Thanh tiến độ bên trong */}
+            <div className={styles.progressCard}>
+              <div className={styles.progressTopRow}>
+                <span className={styles.progressLabel}>Tiến độ hoàn thành</span>
+                <span className={styles.progressPct}>{progress}%</span>
               </div>
-              <div className={styles.timeBox}>
-                <span>{formatTime(audioProgress)}</span>
-                <span>{formatTime(audioDuration)}</span>
+              <div className={styles.progressTrack}>
+                <div
+                  className={styles.progressBar}
+                  style={{ width: `${progress}%` }}
+                />
               </div>
             </div>
 
-            <div className={styles.waveWrapper}>
-              {[...Array(4)].map((_, i) => (
-                <div
-                  key={i}
-                  className={`${styles.waveBar} ${
-                    isPlaying ? styles.playing : ""
-                  }`}
-                ></div>
-              ))}
+            {/* AUDIO PLAYER */}
+            <div className={styles.audioBlock}>
+              <audio
+                ref={audioRef}
+                src={currentQ.audio_url}
+                preload="metadata"
+              />
+              <button className={styles.audioBtn} onClick={handlePlayPause}>
+                {isPlaying ? (
+                  <i className="fa-solid fa-pause" />
+                ) : (
+                  <i className="fa-solid fa-play" />
+                )}
+              </button>
+
+              <div className={styles.progressContainer}>
+                <div className={styles.progressBar1}>
+                  <div
+                    className={styles.progressFill}
+                    style={{
+                      width: `${
+                        audioDuration
+                          ? (audioProgress / audioDuration) * 100
+                          : 0
+                      }%`,
+                    }}
+                  ></div>
+                </div>
+                <div className={styles.timeBox}>
+                  <span>{formatTime(audioProgress)}</span>
+                  <span>{formatTime(audioDuration)}</span>
+                </div>
+              </div>
+
+              <div className={styles.waveWrapper}>
+                {[...Array(4)].map((_, i) => (
+                  <div
+                    key={i}
+                    className={`${styles.waveBar} ${
+                      isPlaying ? styles.playing : ""
+                    }`}
+                  ></div>
+                ))}
+              </div>
             </div>
+
+            {/* Câu hỏi */}
+            <QuestionCard
+              question={{
+                question_id: currentQ.id,
+                order_index: currentIndex + 1,
+                content: currentQ.content,
+                options: currentQ.options.map((opt, i) => ({
+                  option_id: i,
+                  label: String.fromCharCode(65 + i),
+                  text: opt,
+                })),
+              }}
+              selectedOptionId={answers[currentQ.id]}
+              onSelectOption={handleSelectAnswer}
+              onPrev={handlePrevQuestion}
+              onNext={handleNextQuestion}
+              lastSavedAt="Tự động lưu"
+            />
           </div>
 
-          {/* Câu hỏi */}
-          <QuestionCard
-            question={{
-              question_id: currentQ.id,
-              order_index: currentIndex + 1,
-              content: currentQ.content,
-              options: currentQ.options.map((opt, i) => ({
-                option_id: i,
-                label: String.fromCharCode(65 + i),
-                text: opt,
-              })),
-            }}
-            selectedOptionId={answers[currentQ.id]}
-            onSelectOption={handleSelectAnswer}
-            onPrev={handlePrevQuestion}
-            onNext={handleNextQuestion}
-            lastSavedAt="Tự động lưu"
-          />
-
-          {/* Nút hoàn thành */}
+          {/* Nút hoàn thành (nút duy nhất) */}
           <div className={styles.nextSection}>
-            <button
-              className={styles.nextSectionBtn}
-              onClick={openSubmitModal}
-            >
+            <button className={styles.nextSectionBtn} onClick={openSubmitModal}>
               Hoàn thành phần Nghe hiểu & Xem kết quả
             </button>
-          </div>
-
-          {/* Tiến độ */}
-          <div className={styles.progressCard}>
-            <div className={styles.progressTopRow}>
-              <span className={styles.progressLabel}>Tiến độ hoàn thành</span>
-              <span className={styles.progressPct}>{progress}%</span>
-            </div>
-            <div className={styles.progressTrack}>
-              <div
-                className={styles.progressBar}
-                style={{ width: `${progress}%` }}
-              />
-            </div>
           </div>
         </section>
       </main>

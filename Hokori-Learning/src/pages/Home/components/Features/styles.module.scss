@@ -29,13 +29,14 @@
     padding: 20px;
     border-radius: 12px;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-
+    box-shadow: 0 4px 12px #ffc3c3;
+    
     h3 {
       margin: 16px 0 8px;
       font-size: 18px;
       font-weight: 600;
       color: #222;
+      justify-content: center;
     }
 
     p {

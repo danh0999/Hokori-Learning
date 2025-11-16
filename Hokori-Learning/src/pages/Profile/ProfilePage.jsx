@@ -1,14 +1,8 @@
 import React, { useEffect, useState } from "react";
 import styles from "./ProfilePage.module.scss";
-
 import { useDispatch, useSelector } from "react-redux";
 
-import {
-  fetchMe,
-  updateMe,
-  changePassword,
-  resetPwState,
-} from "../../redux/features/profileSlice";
+import { fetchMe } from "../../redux/features/profileSlice";
 
 import ProfileHeader from "./components/ProfileHeader";
 import PersonalInfoForm from "./components/PersonalInfoForm";
@@ -16,57 +10,18 @@ import ChangePasswordModal from "./components/ChangePasswordModal";
 
 const ProfilePage = () => {
   const dispatch = useDispatch();
-  const {
-    data: user,
-    loading,
-    error,
-    saving,
-    changingPw,
-    pwError,
-    pwSuccess,
-  } = useSelector((s) => s.profile);
+  const { data: user, loading } = useSelector((state) => state.profile);
+  const [openPwModal, setOpenPwModal] = useState(false);
 
-  const [openModal, setOpenModal] = useState(false);
-
+  // 🔹 Lấy thông tin user khi mở trang
   useEffect(() => {
     dispatch(fetchMe());
   }, [dispatch]);
 
-  useEffect(() => {
-    if (pwSuccess) {
-      alert("🔒 Đổi mật khẩu thành công!");
-      setOpenModal(false);
-      dispatch(resetPwState());
-    }
-    if (pwError) {
-      alert(`❌ ${pwError}`);
-      dispatch(resetPwState());
-    }
-  }, [pwSuccess, pwError, dispatch]);
-
-  const handleSave = (values) => {
-    dispatch(updateMe(values))
-      .unwrap()
-      .then(() => alert("✅ Cập nhật thành công!"))
-      .catch((e) => alert(`❌ ${e}`));
-  };
-
-  const handleChangePassword = (values) => {
-    dispatch(changePassword(values));
-  };
-
-  if (loading) {
+  if (loading && !user) {
     return (
       <main className={styles.main}>
-        <div className={styles.container}>Đang tải dữ liệu…</div>
-      </main>
-    );
-  }
-
-  if (error && !user) {
-    return (
-      <main className={styles.main}>
-        <div className={styles.container}>Lỗi: {error}</div>
+        <div className={styles.container}>Đang tải dữ liệu hồ sơ...</div>
       </main>
     );
   }
@@ -76,13 +31,19 @@ const ProfilePage = () => {
       <div className={styles.container}>
         {user ? (
           <>
-            <ProfileHeader user={user} onOpenModal={() => setOpenModal(true)} />
-            <PersonalInfoForm user={user} saving={saving} onSave={handleSave} />
+            {/* Header hiển thị avatar, role, email */}
+            <ProfileHeader
+              user={user}
+              onOpenChangePassword={() => setOpenPwModal(true)}
+            />
+
+            {/* Truyền user xuống để PersonalInfoForm hiển thị đúng */}
+            <PersonalInfoForm user={user} />
+
+            {/* Modal đổi mật khẩu */}
             <ChangePasswordModal
-              open={openModal}
-              onClose={() => setOpenModal(false)}
-              onSubmit={handleChangePassword}
-              loading={changingPw}
+              open={openPwModal}
+              onClose={() => setOpenPwModal(false)}
             />
           </>
         ) : (

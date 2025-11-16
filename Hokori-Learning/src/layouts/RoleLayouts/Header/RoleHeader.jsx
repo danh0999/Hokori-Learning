@@ -21,13 +21,13 @@ export default function RoleHeader({ role = "teacher", user }) {
 
     if (key === "logout") {
       try {
-        // ✅ Logout Firebase (nếu user đăng nhập bằng Google/Firebase)
+        //  Logout Firebase (nếu user đăng nhập bằng Google/Firebase)
         await logoutFirebase();
 
-        // ✅ Xoá Redux + token
+        //  Xoá Redux + token
         dispatch(logout());
 
-        // ✅ Chuyển hướng
+        //  Chuyển hướng
         navigate("/login", { replace: true });
       } catch (err) {
         console.error("Logout failed:", err);

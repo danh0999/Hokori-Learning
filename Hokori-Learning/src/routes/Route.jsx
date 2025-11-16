@@ -6,7 +6,7 @@ import MainLayout from "../layouts/Mainlayout";
 import RoleLayout from "../layouts/RoleLayouts/RoleLayout";
 import ErrorPage from "../pages/ErrorPage";
 
-// ===== Public & Learner =====
+// ===== Public =====
 import Home from "../pages/Home/Home";
 import Login from "../pages/authen/login/login";
 import Register from "../pages/authen/register/register";
@@ -25,34 +25,49 @@ import ProfilePage from "../pages/Profile/ProfilePage";
 import JLPTTestPage from "../pages/JLPTTest/JLPTTestPage";
 import Information from "../pages/Information/Information";
 import Policies from "../pages/Policies/Policies";
-// ===== Teacher/Admin/Moderator =====
+import AiKaiwaPage from "../pages/AiKaiwa/AiKaiwaPage";
+
+// ===== Teacher =====
 import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
 import ManageCourses from "../pages/Teacher/Courses/ManageCourses";
 import CourseInformation from "../pages/Teacher/Courses/CourseInformation/CourseInformation";
-
-// ===== Guards =====
-import ProtectedRoute from "./ProtectedRoute";
 import TeacherProfilePage from "../pages/Teacher/TeacherProfilePage/TeacherProfilePage";
 import CreateCoursePage from "../pages/Teacher/Courses/Create-Course/CreateCoursePage";
-
-import JLPTList from "../pages/JLPT/JLPTList";
-
-import ManageQueues from "../pages/Moderator/Queues/ManageQueues";
 import CreateQuizPage from "../pages/Teacher/ManageDocument/Quiz/CreateQuizPage/CreateQuizPage";
 import ManageDocumentPage from "../pages/Teacher/ManageDocument/ManageDocumentPage";
 import TeacherRevenue from "../pages/Teacher/Revenue/TeacherRevenue";
 
-// import CreateCoursePageUdemy from "../pages/Teacher/Courses/CreateCoursePageUdemy/CreateCoursePageUdemy";
+// ===== Moderator =====
+import JLPTList from "../pages/JLPT/JLPTList";
+import ManageQueues from "../pages/Moderator/Queues/ManageQueues";
 
-// ===== Stub (tạm cho trang chưa code) =====
+// ===== Admin =====
+import Dashboard from "../pages/Admin/pages/Dashboard";
+import Users from "../pages/Admin/pages/Users";
+import SystemLogs from "../pages/Admin/pages/SystemLogs";
+import Complaints from "../pages/Admin/pages/Complaints";
+import Revenue from "../pages/Admin/pages/Revenue";
+import JlptEvents from "../pages/Admin/pages/JlptEvents";
+import Withdrawals from "../pages/Admin/pages/Withdrawals";
+import TeacherCertificates from "../pages/Admin/pages/TeacherCertificates";
+import AiPackages from "../pages/Admin/pages/AiPackages";
+
+// ===== Guards =====
+import ProtectedRoute from "./ProtectedRoute";
+
+// ===== Stub for unfinished pages =====
 const Stub = ({ title }) => <div style={{ padding: 12 }}>{title}</div>;
 
 const routes = [
-  // ===== Auth (No Layout) =====
+  // ============================
+  // AUTH (No layout)
+  // ============================
   { path: "login", element: <Login /> },
   { path: "register", element: <Register /> },
 
-  // ===== Public Layout (có Header/Footer) =====
+  // ============================
+  // PUBLIC + LEARNER AREA
+  // ============================
   {
     path: "/",
     element: <MainLayout />,
@@ -65,7 +80,8 @@ const routes = [
       { path: "contact", element: <Contact /> },
       { path: "information", element: <Information /> },
       { path: "policies", element: <Policies /> },
-      // ===== Learner Area (Yêu cầu đăng nhập) =====
+
+      // Protected Routes (Learner/Teacher/Admin/Moderator)
       {
         element: (
           <ProtectedRoute
@@ -79,51 +95,38 @@ const routes = [
           { path: "my-flashcards", element: <MyFlashcards /> },
           { path: "cart", element: <Cart /> },
           { path: "profile", element: <ProfilePage /> },
-          {
-            path: "jlpt",
-            element: <JLPTList />,
-          },
-          {
-            path: "jlpt/test/:testId",
-            element: <JLPTTestPage />, // import ở trên
-          },
+          { path: "ai-kaiwa", element: <AiKaiwaPage /> },
 
-          {
-            path: "lesson/:lessonId",
-            element: <LessonPlayer />,
-          },
-          {
-            path: "lesson/:lessonId/quiz/:quizId", //  tách riêng ra ngoài
-            element: <QuizPage />,
-          },
+          { path: "jlpt", element: <JLPTList /> },
+          { path: "jlpt/test/:testId", element: <JLPTTestPage /> },
+
+          { path: "lesson/:lessonId", element: <LessonPlayer /> },
+          { path: "lesson/:lessonId/quiz/:quizId", element: <QuizPage /> }
         ],
       },
 
-      // ===== Error fallback trong MainLayout =====
-      { path: "error", element: <ErrorPage /> },
+      // fallback for all unknown under MainLayout
+      { path: "*", element: <ErrorPage /> },
     ],
   },
 
-  // ===== TEACHER AREA =====
+  // ============================
+  // TEACHER AREA
+  // ============================
   {
     path: "teacher",
-    element: <ProtectedRoute allow={["TEACHER"]} />,
     children: [
-      // ✅ Các trang có layout chung
       {
         path: "",
         element: <RoleLayout role="teacher" />,
-        errorElement: <ErrorPage />,
         children: [
           { index: true, element: <TeacherDashboard /> },
           { path: "manage-courses", element: <ManageCourses /> },
           { path: "courseinfo/:id", element: <CourseInformation /> },
-          {
-            path: "manage-documents",
-            element: <ManageDocumentPage />,
-          },
+          { path: "manage-documents", element: <ManageDocumentPage /> },
           { path: "revenue", element: <TeacherRevenue /> },
           { path: "profile", element: <TeacherProfilePage /> },
+
           { path: "*", element: <ErrorPage /> },
         ],
       },
@@ -141,40 +144,20 @@ const routes = [
         path: "create-quiz",
         element: <CreateQuizPage />,
       },
+      { path: "create-course", element: <CreateCoursePage /> },
+      { path: "create-quiz", element: <CreateQuizPage /> },
     ],
   },
 
-  // ===== ADMIN AREA =====
-  {
-    path: "admin",
-    // element: <ProtectedRoute allow={["ADMIN"]} />,
-    children: [
-      {
-        path: "",
-        element: <RoleLayout role="admin" />,
-        errorElement: <ErrorPage />,
-        children: [
-          { index: true, element: <Stub title="Admin Dashboard" /> },
-          { path: "users", element: <Stub title="Users" /> },
-          { path: "catalog", element: <Stub title="Catalog" /> },
-          { path: "moderation", element: <Stub title="Moderation" /> },
-          { path: "reports", element: <Stub title="Reports" /> },
-          { path: "settings", element: <Stub title="Settings" /> },
-          { path: "*", element: <ErrorPage /> },
-        ],
-      },
-    ],
-  },
-
-  // ===== MODERATOR AREA =====
+  // ============================
+  // MODERATOR AREA
+  // ============================
   {
     path: "moderator",
-    // element: <ProtectedRoute allow={["MODERATOR"]} />,
     children: [
       {
         path: "",
         element: <RoleLayout role="moderator" />,
-        errorElement: <ErrorPage />,
         children: [
           { index: true, element: <Stub title="Moderator Dashboard" /> },
           { path: "reviews", element: <Stub title="Reviews" /> },
@@ -182,14 +165,43 @@ const routes = [
           { path: "ai-check", element: <Stub title="AI Check" /> },
           { path: "messages", element: <Stub title="Messages" /> },
           { path: "settings", element: <Stub title="Settings" /> },
+
           { path: "*", element: <ErrorPage /> },
         ],
       },
-      { path: "*", element: <Navigate to="/" replace /> },
     ],
   },
 
-  // ===== Global Fallback =====
+  // ============================
+  // ADMIN AREA
+  // ============================
+  {
+    path: "admin",
+    children: [
+      {
+        path: "",
+        element: <RoleLayout role="admin" />,
+        children: [
+          { index: true, element: <Dashboard /> },
+          { path: "users", element: <Users /> },
+          { path: "teacher-certificates", element: <TeacherCertificates /> },
+          { path: "jlpt", element: <JlptEvents /> },
+          { path: "ai-packages", element: <AiPackages /> },
+          { path: "revenue", element: <Revenue /> },
+          { path: "withdrawals", element: <Withdrawals /> },
+          { path: "complaints", element: <Complaints /> },
+          { path: "policies", element: <Policies /> },
+          { path: "system-logs", element: <SystemLogs /> },
+
+          { path: "*", element: <ErrorPage /> },
+        ],
+      },
+    ],
+  },
+
+  // ============================
+  // GLOBAL FALLBACK
+  // ============================
   { path: "*", element: <ErrorPage /> },
 ];
 

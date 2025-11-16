@@ -13,7 +13,7 @@
       level: "N4",
       title: "Khóa học tiếng Nhật N4",
       desc: "Mở rộng vốn từ và ngữ pháp cho giao tiếp hàng ngày.",
-      tag: "Sơ cấp",
+      tag: "Sơ cấp", 
     },
     {
       level: "N3",

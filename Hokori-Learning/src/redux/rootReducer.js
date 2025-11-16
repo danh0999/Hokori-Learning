@@ -8,6 +8,8 @@ import courseSlice from "./features/courseSlice.js";
 import teacherCourseReducer from "./features/teacherCourseSlice.js";
 import quizReducer from "./features/quizSlice.js";
 import flashcardReducer from "./features/flashcardSlice.js";
+import aiSpeechSlice from "./features/aiSpeechSlice.js";
+import progressSlice from "./features/progressSlice.js";
 const rootReducer = combineReducers({
   user: userReducer,
   teacherProfile: teacherProfileReducer,
@@ -18,5 +20,7 @@ const rootReducer = combineReducers({
   teacherCourse: teacherCourseReducer,
   quiz: quizReducer,
   flashcard: flashcardReducer,
+  aiSpeech: aiSpeechSlice,
+  progress: progressSlice,
 });
 export default rootReducer;

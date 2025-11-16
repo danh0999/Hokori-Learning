@@ -7,7 +7,7 @@ import { IoIosStarOutline } from "react-icons/io";
 const JLPT_LEVELS = ["N5", "N4", "N3", "N2", "N1"];
 const RATING_OPTIONS = [4, 4.5];
 
-export default function Filters({ filters, setFilters, onClear, onApply }) {
+export default function Filters({ filters, setFilters, onClear }) {
   const handleLevelChange = (event) => {
     const { value, checked } = event.target;
     const nextLevels = checked
@@ -34,20 +34,30 @@ export default function Filters({ filters, setFilters, onClear, onApply }) {
   return (
     <aside className={styles.filters}>
       <h3 className={styles.title}>Bộ lọc</h3>
-
       <div className={styles.group}>
+        <h4>Giáo viên</h4>
+        <div className={styles.searchWrap}>
+          <SearchBar
+            placeholder="Tìm giáo viên..."
+            onSearch={handleTeacherSearch}
+          />
+        </div>
+      </div>
+      <div className={`${styles.group} ${styles.jlptRow}`}>
         <h4>Cấp độ JLPT</h4>
-        {JLPT_LEVELS.map((level) => (
-          <label key={level} className={styles.row}>
-            <input
-              type="checkbox"
-              value={level}
-              checked={filters.levels.includes(level)}
-              onChange={handleLevelChange}
-            />
-            <span>{level}</span>
-          </label>
-        ))}
+        <div className={styles.levelContainer}>
+          {JLPT_LEVELS.map((level) => (
+            <label key={level} className={styles.levelItem}>
+              <input
+                type="checkbox"
+                value={level}
+                checked={filters.levels.includes(level)}
+                onChange={handleLevelChange}
+              />
+              <span>{level}</span>
+            </label>
+          ))}
+        </div>
       </div>
 
       <div className={styles.group}>
@@ -110,27 +120,14 @@ export default function Filters({ filters, setFilters, onClear, onApply }) {
         ))}
       </div>
 
-      <div className={styles.group}>
-        <h4>Giáo viên</h4>
-        <div className={styles.searchWrap}>
-          <SearchBar
-            placeholder="Tìm giáo viên..."
-            onSearch={handleTeacherSearch}
+      <div className={styles.buttonRow}>
+        <div className={styles.buttonCenter}>
+          <Button
+            content="Xóa bộ lọc"
+            onClick={onClear}
+            containerClassName={`${styles.buttonContainer} ${styles.secondary}`}
           />
         </div>
-      </div>
-
-      <div className={styles.buttonRow}>
-        <Button
-          content="Tìm"
-          onClick={onApply}
-          containerClassName={styles.buttonContainer}
-        />
-        <Button
-          content="Xóa bộ lọc"
-          onClick={onClear}
-          containerClassName={`${styles.buttonContainer} ${styles.secondary}`}
-        />
       </div>
     </aside>
   );

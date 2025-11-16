@@ -10,7 +10,7 @@
 }
 
 .grid {
-  display: grid;
+  display: inline-flex;
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   gap: 1.25rem;
 }
