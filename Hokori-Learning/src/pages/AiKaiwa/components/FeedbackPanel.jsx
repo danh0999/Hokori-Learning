@@ -12,59 +12,90 @@ const FeedbackPanel = () => {
     fluencyScore,
     feedback,
     userTranscript,
+    transcript,
     targetText,
-  } = useSelector((state) => state.aiSpeech);
+  } = useSelector((state) => state.aiSpeech || {});
+
+  const effectiveTranscript = userTranscript || transcript || "";
 
   const renderBar = (label, val) => (
-    <div className={styles.subItem}>
-      <div className={styles.subHeader}>
+    <div className={styles.barItem} key={label}>
+      <div className={styles.barHeader}>
         <span>{label}</span>
         <span>{val != null ? `${val}/100` : "--/100"}</span>
       </div>
-      <div className={styles.subBar}>
+      <div className={styles.barTrack}>
         <div
-          className={styles.subFill}
+          className={styles.barFill}
           style={{ width: val != null ? `${val}%` : 0 }}
-        ></div>
+        />
       </div>
     </div>
   );
 
+  const hasScore = overallScore != null && !loading;
+
   return (
-    <div className={styles.root}>
-      <h3 className={styles.title}>Phản hồi AI</h3>
+    <section className={styles.card}>
+      <header className={styles.header}>
+        <span className={styles.dot} />
+        <h3 className={styles.title}>Phản hồi của AI</h3>
+      </header>
 
-      {loading && <p>AI đang phân tích...</p>}
-      {error && <p className={styles.error}>{error}</p>}
+      {loading && <p className={styles.helper}>AI đang phân tích giọng nói...</p>}
 
-      {overallScore != null && !loading && (
+      {error && (
+        <div className={styles.errorBox}>
+          <p>{error}</p>
+        </div>
+      )}
+
+      {hasScore ? (
         <>
-          <div className={styles.scoreBox}>
-            <span className={styles.totalScore}>{overallScore}</span>
-            <p>Tổng điểm phát âm</p>
+          <div className={styles.scoreRow}>
+            <div className={styles.scoreCircle}>
+              <span className={styles.scoreValue}>{overallScore}</span>
+              <span className={styles.scoreUnit}>điểm</span>
+            </div>
+            <p className={styles.scoreCaption}>Tổng điểm phát âm</p>
           </div>
 
-          <div className={styles.subscores}>
+          <div className={styles.barGroup}>
             {renderBar("Phát âm", pronunciationScore)}
             {renderBar("Độ chính xác", accuracyScore)}
             {renderBar("Độ trôi chảy", fluencyScore)}
           </div>
 
-          <div className={styles.box}>
-            <h4 className={styles.subTitle}>Câu bạn đọc</h4>
-            <p className={styles.transcript}>{userTranscript || "--"}</p>
+          <div className={styles.detailCard}>
+            <h4 className={styles.detailTitle}>Câu bạn vừa đọc</h4>
+            <p className={styles.textLine}>
+              {effectiveTranscript || "Chưa có nội dung nhận diện."}
+            </p>
 
-            <h4 className={styles.subTitle}>Câu mẫu</h4>
-            <p className={styles.sample}>{targetText || "--"}</p>
+            <h4 className={styles.detailTitle}>Câu mẫu</h4>
+            <p className={styles.textLine}>
+              {targetText || "Chưa có câu mẫu."}
+            </p>
 
-            <h4 className={styles.subTitle}>Nhận xét của AI</h4>
-            <p className={styles.feedback}>
+            <h4 className={styles.detailTitle}>Nhận xét chi tiết</h4>
+            <p className={styles.textLine}>
               {feedback || "Không có phản hồi chi tiết."}
             </p>
           </div>
+
+          <p className={styles.footerNote}>
+            Bạn có thể luyện lại nhiều lần để cải thiện phát âm và nhịp điệu.
+          </p>
         </>
+      ) : (
+        !loading &&
+        !error && (
+          <p className={styles.helper}>
+            Hãy ghi âm một câu nói của bạn. AI sẽ phân tích và phản hồi chi tiết ở đây.
+          </p>
+        )
       )}
-    </div>
+    </section>
   );
 };
 

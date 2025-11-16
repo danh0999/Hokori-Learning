@@ -8,8 +8,8 @@ import styles from "./AiKaiwaPage.module.scss";
 const AiKaiwaPage = () => {
   const [audioBlob, setAudioBlob] = useState(null);
 
-  // câu mẫu người dùng phải đọc
-  const targetText = "私は日本語を勉強しています";  
+  // Câu mẫu người dùng phải đọc (sau này có thể lấy từ API)
+  const targetText = "私は日本語を勉強しています";
   const level = "N5";
 
   return (
@@ -17,17 +17,22 @@ const AiKaiwaPage = () => {
       <HeroSection />
 
       <main className={styles.main}>
-        <AudioRecorder onAudioReady={setAudioBlob} />
+        {/* Cột trái: Ghi âm */}
+        <section className={styles.leftColumn}>
+          <AudioRecorder onAudioReady={setAudioBlob} />
+        </section>
 
-        <div className={styles.grid}>
-          <RecordingPanel
-            audioBlob={audioBlob}
-            targetText={targetText}
-            level={level}
-          />
-
+        {/* Cột phải: Phản hồi AI */}
+        <section className={styles.rightColumn}>
           <FeedbackPanel />
-        </div>
+        </section>
+
+        {/* Không hiển thị UI, chỉ lo dispatch gọi API */}
+        <RecordingPanel
+          audioBlob={audioBlob}
+          targetText={targetText}
+          level={level}
+        />
       </main>
     </div>
   );

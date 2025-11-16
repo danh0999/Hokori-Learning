@@ -1,28 +1,26 @@
-.page {
-  background: linear-gradient(135deg, #ffffff, #f5f5f7);
+.wrapper {
+  background: #f5f7fa;
   min-height: 100vh;
 }
 
-/* vùng nội dung dưới hero */
+/* Layout 2 cột ở giữa, giống mẫu nhưng gọn hơn */
 .main {
-  max-width: 1120px;
+  max-width: 1220px;
   margin: 0 auto;
   padding: 2rem 1.5rem 3rem;
-}
 
-/* 2 cột: trái ghi âm, phải feedback */
-.grid {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-  gap: 1.5rem;
+  gap: 2rem;
 }
 
-@media (max-width: 900px) {
-  .main {
-    padding-top: 1.5rem;
-  }
+.leftColumn,
+.rightColumn {
+  min-width: 0; // tránh overflow
+}
 
-  .grid {
+@media (max-width: 1024px) {
+  .main {
     grid-template-columns: 1fr;
   }
 }
