@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { FaShoppingCart } from "react-icons/fa";
 import { addToCart } from "../../../../redux/features/cartSlice";
-import { setCurrentCourse } from "../../../../redux/features/courseSlice";
 
 const FALLBACK_THUMB = "https://placehold.co/600x400?text=Course+Image";
 const FALLBACK_AVATAR =
@@ -15,24 +14,31 @@ export default function CourseCard({ course }) {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  // Backend fields
+  // ============================================
+  // 🧩 BACKEND FIELDS — TÙY API TRẢ VỀ
+  // ============================================
   const {
     id,
     title,
-    slug,
     subtitle,
+    thumbnailUrl,
+    teacherName,
+    teacherAvatar,
   } = course;
 
-  // UI fallback vì backend chưa hỗ trợ đầy đủ meta
+  // ============================================
+  // 🧩 UI FALLBACKS
+  // ============================================
   const displaySubtitle = subtitle || "Khóa học đang cập nhật nội dung";
-  const displayTeacher = "Giáo viên đang cập nhật";
-  const thumbnailUrl = FALLBACK_THUMB;
+  const displayThumbnail = thumbnailUrl || FALLBACK_THUMB;
+  const displayTeacher = teacherName || "Giáo viên đang cập nhật";
+  const avatar = teacherAvatar || FALLBACK_AVATAR;
 
   return (
     <div className={styles.card}>
       {/* Thumbnail */}
       <div className={styles.thumb}>
-        <img src={thumbnailUrl} alt={title} />
+        <img src={displayThumbnail} alt={title} />
       </div>
 
       <div className={styles.body}>
@@ -42,24 +48,23 @@ export default function CourseCard({ course }) {
         {/* Subtitle */}
         <p className={styles.subtitle}>{displaySubtitle}</p>
 
-        {/* Teacher (fallback) */}
+        {/* Teacher */}
         <div className={styles.teacher}>
-          <img src={FALLBACK_AVATAR} alt="Teacher" />
+          <img src={avatar} alt={displayTeacher} />
           <span className={styles.name}>{displayTeacher}</span>
         </div>
 
         {/* Actions */}
         <div className={styles.actions}>
+          {/* View Detail */}
           <Button
             content="Thông tin"
-            onClick={() => {
-              dispatch(setCurrentCourse(course));
-              navigate(`/course/${id}`);
-            }}
+            onClick={() => navigate(`/course/${id}`)} // 🔥 API MODE — KHÔNG DÙNG setCurrentCourse
             containerClassName={styles.actionItem}
             className={styles.actionButton}
           />
 
+          {/* Add to cart */}
           <Button
             content={
               <>
