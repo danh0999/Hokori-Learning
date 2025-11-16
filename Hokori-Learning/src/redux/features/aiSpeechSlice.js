@@ -1,28 +1,28 @@
 // ================================
-// Hokori Kaiwa — AI Speech Slice (Final Stable Version)
-// Gửi audio base64 -> backend JSON (Google Cloud Speech-to-Text)
+// Hokori Kaiwa — AI Speech Slice (FINAL & CORRECT VERSION)
+// Convert WebM (Opus 48kHz) -> WAV (PCM16 16kHz) -> Base64 -> Backend JSON
 // ================================
 
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api from "../../configs/axios.js";
+import { convertWebmToWav } from "../../utils/convertWebmToWav.js";
 
 // ================================
-// Helper — Chuyển Blob sang base64 (WebM -> base64 string)
+// Helper — Convert Blob -> Base64
 // ================================
 const blobToBase64 = (blob) =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(blob);
     reader.onloadend = () => {
-      const result = reader.result || "";
-      const base64 = result.toString().split(",")[1];
+      const base64 = reader.result.split(",")[1]; // remove header
       resolve(base64);
     };
     reader.onerror = reject;
   });
 
 // ================================
-// Thunk: Gửi audio -> AI API
+// Thunk: gửi audio -> Backend
 // ================================
 export const analyzeSpeech = createAsyncThunk(
   "aiSpeech/analyzeSpeech",
@@ -32,32 +32,37 @@ export const analyzeSpeech = createAsyncThunk(
         return rejectWithValue("Không có dữ liệu âm thanh để phân tích.");
       }
 
-      const audioBase64 = await blobToBase64(audioBlob);
+      console.log("🎤 Original WebM:", audioBlob.type, audioBlob.size);
 
+      // 1️⃣ Convert WebM -> WAV (PCM16 16kHz)
+      const wavBlob = await convertWebmToWav(audioBlob);
+      console.log("🎧 Converted WAV:", wavBlob.type, wavBlob.size);
+
+      // 2️⃣ Convert WAV -> Base64
+      const audioBase64 = await blobToBase64(wavBlob);
+
+      // 3️⃣ Payload JSON theo Swagger backend
       const payload = {
         audioData: audioBase64,
         language: "ja-JP",
-        audioFormat: "ogg",
-        validAudioFormat: true,
+        audioFormat: "wav",          // ✔ Backend mặc định WAV
+        validAudioFormat: true       // ✔ Swagger field
       };
 
-      // Debug log theo baseURL thực tế của axios
-      console.log(" Gửi request Kaiwa:", {
-        baseURL: api.defaults.baseURL,
+      console.log("📡 Sending to backend:", {
         url: "ai/speech-to-text",
-        size: audioBlob.size,
-        type: audioBlob.type,
         audioFormat: payload.audioFormat,
+        base64_length: audioBase64.length,
       });
 
-      // ❗ Chỉ dùng relative path, không dùng thêm BASE_URL
       const response = await api.post("ai/speech-to-text", payload, {
         headers: { "Content-Type": "application/json" },
       });
 
       return response.data;
+
     } catch (error) {
-      console.error(" analyzeSpeech error:", error);
+      console.error("❌ analyzeSpeech error:", error);
       return rejectWithValue(
         error.response?.data?.message ||
           "Không thể phân tích giọng nói. Vui lòng thử lại."
@@ -67,7 +72,7 @@ export const analyzeSpeech = createAsyncThunk(
 );
 
 // ================================
-// Redux State + Slice
+// Slice
 // ================================
 const initialState = {
   loading: false,
@@ -83,7 +88,7 @@ const aiSpeechSlice = createSlice({
   name: "aiSpeech",
   initialState,
   reducers: {
-    resetAiSpeech(state) {
+    resetAiSpeech: (state) => {
       state.loading = false;
       state.error = null;
       state.transcript = "";
@@ -101,8 +106,6 @@ const aiSpeechSlice = createSlice({
       })
       .addCase(analyzeSpeech.fulfilled, (state, action) => {
         state.loading = false;
-        state.error = null;
-
         const {
           transcript,
           overallScore,
@@ -119,7 +122,7 @@ const aiSpeechSlice = createSlice({
       })
       .addCase(analyzeSpeech.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || "Có lỗi xảy ra khi phân tích.";
+        state.error = action.payload || "Có lỗi xảy ra khi phân tích giọng nói.";
       });
   },
 });
