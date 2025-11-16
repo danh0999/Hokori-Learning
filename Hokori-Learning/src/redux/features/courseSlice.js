@@ -1,26 +1,21 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../configs/axios";
 
-// =============================================================
-// ========== FETCH ALL COURSES (API THẬT) =======================
-// =============================================================
-
+// ========================================================================
+// 📌 FETCH ALL COURSES — GET /api/courses
+// ========================================================================
 export const fetchCourses = createAsyncThunk(
   "courses/fetchAll",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get("/courses"); 
-      // Backend trả dạng Spring Pageable:
-      // { content: [...], totalPages: 1, totalElements: 3, ... }
+      const res = await api.get("/courses");
 
-      const data = response.data;
-
-      if (!data || !Array.isArray(data.content)) {
-        console.warn("⚠ API /courses không trả về content hợp lệ:", data);
+      if (!res.data || !Array.isArray(res.data.content)) {
+        console.warn("⚠ API /courses không trả về content hợp lệ:", res.data);
         return [];
       }
 
-      return data.content; // ✅ lấy danh sách khóa học thực tế
+      return res.data.content; // danh sách khóa học
     } catch (err) {
       console.error("❌ Error fetching courses:", err);
       return rejectWithValue(
@@ -30,29 +25,27 @@ export const fetchCourses = createAsyncThunk(
   }
 );
 
-// =============================================================
-// ========== FETCH COURSE BY ID ================================
-// =============================================================
-
-export const fetchCourseById = createAsyncThunk(
-  "courses/fetchById",
+// ========================================================================
+// 📌 FETCH COURSE TREE — GET /api/courses/{id}/tree
+// ========================================================================
+export const fetchCourseTree = createAsyncThunk(
+  "courses/fetchCourseTree",
   async (id, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/courses/${id}`); 
-      return response.data;
+      const res = await api.get(`/courses/${id}/tree`);
+      return res.data;
     } catch (err) {
-      console.error("❌ Error fetching course by id:", err);
+      console.error("❌ Error fetching course tree:", err);
       return rejectWithValue(
-        err.response?.data?.message || "Không thể tải khóa học."
+        err.response?.data?.message || "Không thể tải dữ liệu khóa học."
       );
     }
   }
 );
 
-// =============================================================
-// ========== SLICE =============================================
-// =============================================================
-
+// ========================================================================
+// 📌 SLICE
+// ========================================================================
 const courseSlice = createSlice({
   name: "courses",
   initialState: {
@@ -61,36 +54,49 @@ const courseSlice = createSlice({
     loading: false,
     error: null,
   },
+
   reducers: {
     clearCurrentCourse: (state) => {
       state.current = null;
     },
-    setCurrentCourse: (state, action) => {
-      state.current = action.payload;
-    },
   },
+
   extraReducers: (builder) => {
     builder
-      // ===== FETCH ALL =====
+      // ============================================
+      // 🔥 FETCH ALL COURSES
+      // ============================================
       .addCase(fetchCourses.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchCourses.fulfilled, (state, action) => {
         state.loading = false;
-        state.list = action.payload || [];
+        state.list = action.payload;
       })
       .addCase(fetchCourses.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
 
-      // ===== FETCH BY ID =====
-      .addCase(fetchCourseById.fulfilled, (state, action) => {
-        state.current = action.payload;
+      // ============================================
+      // 🔥 FETCH COURSE DETAIL TREE
+      // ============================================
+      .addCase(fetchCourseTree.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.current = null;
+      })
+      .addCase(fetchCourseTree.fulfilled, (state, action) => {
+        state.loading = false;
+        state.current = action.payload; // full detail
+      })
+      .addCase(fetchCourseTree.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
 
-export const { clearCurrentCourse, setCurrentCourse } = courseSlice.actions;
+export const { clearCurrentCourse } = courseSlice.actions;
 export default courseSlice.reducer;
