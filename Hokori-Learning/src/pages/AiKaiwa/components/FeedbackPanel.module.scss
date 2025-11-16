@@ -1,144 +1,125 @@
 .card {
   background: #ffffff;
-  border-radius: 28px;
-  padding: 2.3rem 2.2rem;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 16px 42px rgba(15, 23, 42, 0.07);
+  padding: 1.8rem 1.6rem 2rem;
+  border-radius: 22px;
+  border: 1px solid #e6ebf2;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.05);
 
   display: flex;
   flex-direction: column;
-  gap: 1.4rem;
-  font-family: "Inter", sans-serif;
+  gap: 1.15rem;
 }
 
 .header {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 6px;
 }
 
 .dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background: linear-gradient(to right, #2563eb, #22c55e);
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #10b981;
 }
 
 .title {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: #0f172a;
 }
 
-.helper {
-  font-size: 0.95rem;
-  color: #64748b;
-}
-
-/* ERROR */
+/* error box đẹp hơn */
 .errorBox {
-  background: #fee2e2;
-  border-radius: 16px;
-  border: 1px solid #fecaca;
-  padding: 0.9rem 1.1rem;
+  background: #ffe2e2;
+  border: 1px solid #ffcccc;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
   font-size: 0.9rem;
   color: #b91c1c;
 }
 
-/* SCORE */
+/* score circle */
 .scoreRow {
   text-align: center;
 }
 
 .scoreCircle {
-  width: 140px;
-  height: 140px;
-  border-radius: 999px;
-  border: 6px solid #e2e8f0;
-  margin: 0 auto 0.6rem;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 5px solid #e2e8f0;
 
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+
+  margin: 0 auto 0.4rem;
 }
 
 .scoreValue {
-  font-size: 2.3rem;
+  font-size: 2rem;
   font-weight: 700;
-  color: #111827;
 }
 
 .scoreUnit {
   font-size: 0.8rem;
   color: #94a3b8;
-  margin-top: -0.2rem;
+  margin-top: -0.15rem;
 }
 
-.scoreCaption {
-  font-size: 0.9rem;
-  color: #6b7280;
-}
-
-/* BARS */
-.barGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-}
-
+/* bars */
 .barItem {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
+  margin-bottom: 0.55rem;
 }
 
 .barHeader {
   display: flex;
   justify-content: space-between;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   color: #4b5563;
 }
 
 .barTrack {
-  width: 100%;
   height: 6px;
   background: #f1f5f9;
-  border-radius: 999px;
-  overflow: hidden;
+  border-radius: 99px;
+  margin-top: 0.25rem;
 }
 
 .barFill {
   height: 6px;
-  background: linear-gradient(90deg, #2563eb, #22c55e);
-  border-radius: 999px;
+  border-radius: 99px;
+  background: #2563eb;
   transition: width 0.35s ease;
 }
 
-/* DETAIL BOX */
+/* detail card */
 .detailCard {
   background: #f9fafb;
-  border-radius: 18px;
+  border-radius: 14px;
   border: 1px solid #e5e7eb;
-  padding: 1.1rem 1.3rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.55rem;
 }
 
 .detailTitle {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  color: #111827;
+  color: #1f2937;
 }
 
 .textLine {
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   color: #4b5563;
+  line-height: 1.35;
 }
 
 .footerNote {
   margin-top: 0.4rem;
-  font-size: 0.86rem;
+  font-size: 0.85rem;
   color: #9ca3af;
+  text-align: center;
 }

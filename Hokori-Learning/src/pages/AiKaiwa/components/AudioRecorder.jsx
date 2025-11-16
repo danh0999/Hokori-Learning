@@ -1,6 +1,7 @@
+// src/pages/AiKaiwa/components/AudioRecorder.jsx
 import React, { useState, useRef } from "react";
 import styles from "./AudioRecorder.module.scss";
-import { FaMicrophone, FaStop } from "react-icons/fa";
+import { BsMicFill, BsStopFill } from "react-icons/bs";
 
 const AudioRecorder = ({ onAudioReady }) => {
   const [recording, setRecording] = useState(false);
@@ -24,13 +25,13 @@ const AudioRecorder = ({ onAudioReady }) => {
 
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        onAudioReady?.(blob);
+        onAudioReady && onAudioReady(blob);
       };
 
       mediaRecorder.start();
       setRecording(true);
     } catch {
-      alert("Không thể truy cập microphone. Vui lòng kiểm tra lại quyền trình duyệt.");
+      alert("Không thể truy cập micro. Vui lòng kiểm tra lại quyền của trình duyệt.");
     }
   };
 
@@ -43,53 +44,36 @@ const AudioRecorder = ({ onAudioReady }) => {
 
   return (
     <div className={styles.card}>
-      <header className={styles.header}>
-        <h2 className={styles.title}>Ghi âm giọng nói của bạn</h2>
-        <p className={styles.subtitle}>
-          Nhấn vào micro để bắt đầu luyện nói. Hệ thống sẽ phân tích phát âm và phản hồi ngay.
-        </p>
-      </header>
+      <h2 className={styles.title}>Ghi âm giọng nói của bạn</h2>
+      <p className={styles.subtitle}>
+        Nhấn vào micro để bắt đầu luyện nói. Hệ thống sẽ phân tích phát âm và phản hồi ngay.
+      </p>
 
-      <div className={styles.center}>
-        {!recording ? (
-          <button className={styles.micBtn} onClick={startRecording}>
-            <FaMicrophone className={styles.micIcon} />
-          </button>
+      <button
+        type="button"
+        className={recording ? styles.micBtnStop : styles.micBtn}
+        onClick={recording ? stopRecording : startRecording}
+      >
+        {recording ? (
+          <BsStopFill className={styles.micIcon} />
         ) : (
-          <button className={styles.micBtnStop} onClick={stopRecording}>
-            <FaStop className={styles.micIcon} />
-          </button>
+          <BsMicFill className={styles.micIcon} />
         )}
+      </button>
 
-        <p className={styles.status}>
-          {recording ? "Đang ghi âm... Nhấn để dừng." : "Sẵn sàng ghi âm"}
-        </p>
+      <p className={styles.status}>
+        {recording ? "Đang ghi âm... Nhấn để dừng." : "Sẵn sàng ghi âm"}
+      </p>
 
-        <div className={styles.waveBox}>
-          {[...Array(7)].map((_, idx) => (
-            <span
-              key={idx}
-              className={`${styles.wave} ${recording ? styles.waveActive : ""}`}
-            />
-          ))}
-        </div>
+      <div className={styles.waveBox}>
+        {[...Array(6)].map((_, i) => (
+          <span
+            key={i}
+            className={`${styles.wave} ${recording ? styles.waveActive : ""}`}
+            style={{ animationDelay: `${i * 0.1}s` }}
+          />
+        ))}
       </div>
-
-      <footer className={styles.footer}>
-        <div className={styles.textBox}>
-          <div className={styles.textLabel}>Văn bản nhận diện</div>
-          <div className={styles.textContent}>Chưa có bản ghi nào...</div>
-        </div>
-
-        <div className={styles.actions}>
-          <button className={styles.actionBtn} disabled>
-            ⏵ Phát lại
-          </button>
-          <button className={styles.actionBtn} disabled>
-            🗑 Xóa bản ghi
-          </button>
-        </div>
-      </footer>
     </div>
   );
 };

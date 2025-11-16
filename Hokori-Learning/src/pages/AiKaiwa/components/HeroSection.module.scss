@@ -1,40 +1,29 @@
 .heroSection {
-  background: radial-gradient(circle at top, #e0edff, #f8fafc 55%, #f5f7fa);
-  border-bottom: 1px solid #e2e8f0;
-  padding: 2.8rem 1.5rem 2.2rem;
+  padding: 2.3rem 1rem 1.8rem;
+  background: linear-gradient(to bottom, #f0f5ff, #ffffff);
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .inner {
-  max-width: 1220px;
+  max-width: 860px;
   margin: 0 auto;
   text-align: center;
-}
-
-.iconWrap {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 999px;
-  background: rgba(37, 99, 235, 0.08);
-  margin-bottom: 0.8rem;
 }
 
 .icon {
   font-size: 30px;
   color: #2563eb;
+  margin-bottom: 0.6rem;
 }
 
 .title {
-  font-size: 2rem;
+  font-size: 1.9rem;
   font-weight: 700;
   color: #0f172a;
-  letter-spacing: 0.01em;
 }
 
 .subtitle {
-  margin-top: 0.45rem;
-  font-size: 1rem;
+  margin-top: 0.25rem;
+  font-size: 0.95rem;
   color: #64748b;
 }
