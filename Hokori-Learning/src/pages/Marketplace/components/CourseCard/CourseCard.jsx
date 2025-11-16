@@ -15,7 +15,7 @@ export default function CourseCard({ course }) {
   const dispatch = useDispatch();
 
   // ============================================
-  // 🧩 BACKEND FIELDS — TÙY API TRẢ VỀ
+  //  BACKEND FIELDS — TÙY API TRẢ VỀ
   // ============================================
   const {
     id,
@@ -27,7 +27,7 @@ export default function CourseCard({ course }) {
   } = course;
 
   // ============================================
-  // 🧩 UI FALLBACKS
+  //  UI FALLBACKS
   // ============================================
   const displaySubtitle = subtitle || "Khóa học đang cập nhật nội dung";
   const displayThumbnail = thumbnailUrl || FALLBACK_THUMB;
@@ -59,7 +59,7 @@ export default function CourseCard({ course }) {
           {/* View Detail */}
           <Button
             content="Thông tin"
-            onClick={() => navigate(`/course/${id}`)} // 🔥 API MODE — KHÔNG DÙNG setCurrentCourse
+            onClick={() => navigate(`/course/${id}`)} //  API MODE — KHÔNG DÙNG setCurrentCourse
             containerClassName={styles.actionItem}
             className={styles.actionButton}
           />
