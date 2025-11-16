@@ -15,7 +15,7 @@ const RecordingPanel = ({ audioBlob, targetText, level }) => {
         })
       );
     }
-  }, [audioBlob]);
+  }, [audioBlob]) ;
 
   return null;
 };

@@ -6,25 +6,24 @@ export const analyzeSpeech = createAsyncThunk(
   "aiSpeech/analyzeSpeech",
   async ({ audioBlob, targetText, level }, { rejectWithValue }) => {
     try {
-      if (!audioBlob) {
-        return rejectWithValue("Không có dữ liệu âm thanh.");
-      }
+      if (!audioBlob) return rejectWithValue("Không có dữ liệu âm thanh.");
 
       const base64Audio = await convertBlobToBase64(audioBlob);
 
       const payload = {
-        targetText: targetText,
+        targetText,
         audioData: base64Audio,
-        level: level,
+        level,
         language: "ja-JP",
+        voice: "female",         // ✔ REQUIRED (theo Swagger)
+        speed: "normal",          // ✔ REQUIRED
         audioFormat: "wav",
         validAudioFormat: true,
         validSpeed: true,
-        validLevel: true
+        validLevel: true,
       };
 
       const res = await api.post("ai/kaiwa-practice", payload);
-
       return res.data.data;
     } catch (err) {
       return rejectWithValue(
@@ -47,28 +46,15 @@ const aiSpeechSlice = createSlice({
     userTranscript: "",
     targetText: "",
   },
-  reducers: {
-    resetAiSpeech(state) {
-      state.loading = false;
-      state.error = null;
-      state.transcript = "";
-      state.overallScore = null;
-      state.pronunciationScore = null;
-      state.accuracyScore = null;
-      state.feedback = null;
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
       .addCase(analyzeSpeech.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
       .addCase(analyzeSpeech.fulfilled, (state, action) => {
         state.loading = false;
-
         const data = action.payload;
-
         state.transcript = data.userTranscript;
         state.targetText = data.targetText;
         state.overallScore = data.overallScore;
@@ -83,5 +69,4 @@ const aiSpeechSlice = createSlice({
   },
 });
 
-export const { resetAiSpeech } = aiSpeechSlice.actions;
 export default aiSpeechSlice.reducer;
