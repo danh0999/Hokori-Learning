@@ -5,7 +5,7 @@ import profileReducer from "./features/profileSlice.js";
 import policiesSlice from "./features/policiesSlice.js";
 import cartSlice from "./features/cartSlice.js";
 import courseSlice from "./features/courseSlice.js";
-import aiSpeechSlice from "./features/aiSpeechSlice.js";
+
 import progressSlice from "./features/progressSlice.js";
 const rootReducer = combineReducers({
   user: userReducer,
@@ -14,7 +14,7 @@ const rootReducer = combineReducers({
   policies: policiesSlice,
   cart: cartSlice,
   courses: courseSlice,
-  aiSpeech: aiSpeechSlice,
+
   progress: progressSlice,
 });
 export default rootReducer;

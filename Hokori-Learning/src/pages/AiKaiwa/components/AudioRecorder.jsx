@@ -1,79 +1,65 @@
-// src/pages/AiKaiwa/components/AudioRecorder.jsx
-import React, { useState, useRef } from "react";
+// src/pages/AiKaiwaPage/components/AudioRecorder.jsx
+import React, { useEffect, useState } from "react";
+import { useAudioRecorder } from "../../../hooks/useAudioRecorder";
 import styles from "./AudioRecorder.module.scss";
-import { BsMicFill, BsStopFill } from "react-icons/bs";
+import { FaMicrophoneAlt } from "react-icons/fa";
 
 const AudioRecorder = ({ onAudioReady }) => {
-  const [recording, setRecording] = useState(false);
-  const mediaRecorderRef = useRef(null);
-  const chunksRef = useRef([]);
+  const { isRecording, audioBlob, startRecording, stopRecording } =
+    useAudioRecorder();
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const [audioUrl, setAudioUrl] = useState(null);
 
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: "audio/webm",
-      });
+  // Khi audioBlob mới được tạo → gửi lên parent + tạo URL local để phát
+  useEffect(() => {
+    if (!audioBlob) return;
 
-      mediaRecorderRef.current = mediaRecorder;
-      chunksRef.current = [];
+    onAudioReady?.(audioBlob);
 
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        onAudioReady && onAudioReady(blob);
-      };
-
-      mediaRecorder.start();
-      setRecording(true);
-    } catch {
-      alert("Không thể truy cập micro. Vui lòng kiểm tra lại quyền của trình duyệt.");
+    // clear URL cũ nếu có
+    if (audioUrl) {
+      URL.revokeObjectURL(audioUrl);
     }
-  };
+    const url = URL.createObjectURL(audioBlob);
+    setAudioUrl(url);
+  }, [audioBlob]); // cố tình KHÔNG để audioUrl vào dependency
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-      setRecording(false);
-    }
+  const handleClick = () => {
+    if (isRecording) stopRecording();
+    else startRecording();
   };
 
   return (
-    <div className={styles.card}>
-      <h2 className={styles.title}>Ghi âm giọng nói của bạn</h2>
-      <p className={styles.subtitle}>
-        Nhấn vào micro để bắt đầu luyện nói. Hệ thống sẽ phân tích phát âm và phản hồi ngay.
-      </p>
-
+    <div className={styles.container}>
+      {/* Nút ghi âm */}
       <button
         type="button"
-        className={recording ? styles.micBtnStop : styles.micBtn}
-        onClick={recording ? stopRecording : startRecording}
+        className={`${styles.recordButton} ${
+          isRecording ? styles.recording : ""
+        }`}
+        onClick={handleClick}
       >
-        {recording ? (
-          <BsStopFill className={styles.micIcon} />
-        ) : (
-          <BsMicFill className={styles.micIcon} />
-        )}
+        {isRecording ? "⏹ Dừng" : <FaMicrophoneAlt />}{" "}
+        <span>Bắt đầu nói</span>
       </button>
 
-      <p className={styles.status}>
-        {recording ? "Đang ghi âm... Nhấn để dừng." : "Sẵn sàng ghi âm"}
-      </p>
-
-      <div className={styles.waveBox}>
-        {[...Array(6)].map((_, i) => (
-          <span
-            key={i}
-            className={`${styles.wave} ${recording ? styles.waveActive : ""}`}
-            style={{ animationDelay: `${i * 0.1}s` }}
-          />
-        ))}
+      {/* Waveform khi ghi âm */}
+      <div
+        className={`${styles.waveform} ${
+          isRecording ? styles.activeWave : ""
+        }`}
+      >
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
       </div>
+
+      {/* Playback audio */}
+      {audioUrl && !isRecording && (
+        <audio className={styles.player} src={audioUrl} controls />
+      )}
     </div>
   );
 };

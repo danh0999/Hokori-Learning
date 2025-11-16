@@ -1,100 +1,109 @@
+// src/pages/AiKaiwaPage/components/FeedbackPanel.jsx
 import React from "react";
-import { useSelector } from "react-redux";
 import styles from "./FeedbackPanel.module.scss";
 
-const FeedbackPanel = () => {
+const normalizeScore = (val) => {
+  if (val == null || isNaN(val)) return null;
+  if (val <= 1) return Math.round(val * 100);
+  if (val <= 100) return Math.round(val);
+  return Math.round(val);
+};
+
+const FeedbackPanel = ({ loading, error, result }) => {
+  if (loading) {
+    return (
+      <section className={styles.panel}>
+        <h3 className={styles.heading}>Phản hồi AI</h3>
+        <p>⏳ AI đang phân tích giọng nói của bạn...</p>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className={styles.panel}>
+        <h3 className={styles.heading}>Phản hồi AI</h3>
+        <p className={styles.error}>❌ {error}</p>
+      </section>
+    );
+  }
+
+  if (!result) {
+    return (
+      <section className={styles.panel}>
+        <h3 className={styles.heading}>Phản hồi AI</h3>
+        <p>Hãy ghi âm và bấm luyện tập để nhận phản hồi.</p>
+      </section>
+    );
+  }
+
   const {
-    loading,
-    error,
     overallScore,
     pronunciationScore,
     accuracyScore,
     fluencyScore,
-    feedback,
     userTranscript,
-    transcript,
     targetText,
-  } = useSelector((state) => state.aiSpeech || {});
+    feedback,
+  } = result;
 
-  const effectiveTranscript = userTranscript || transcript || "";
+  const total = normalizeScore(overallScore);
+  const pron = normalizeScore(pronunciationScore);
+  const acc = normalizeScore(accuracyScore);
+  const flu = normalizeScore(fluencyScore);
 
-  const renderBar = (label, val) => (
-    <div className={styles.barItem} key={label}>
-      <div className={styles.barHeader}>
-        <span>{label}</span>
-        <span>{val != null ? `${val}/100` : "--/100"}</span>
+  const renderBar = (label, value) => {
+    const v = normalizeScore(value);
+    return (
+      <div className={styles.subRow}>
+        <div className={styles.subHeader}>
+          <span>{label}</span>
+          <span>{v != null ? `${v}/100` : "--/100"}</span>
+        </div>
+        <div className={styles.bar}>
+          <div
+            className={styles.fill}
+            style={{ width: v != null ? `${v}%` : 0 }}
+          />
+        </div>
       </div>
-      <div className={styles.barTrack}>
-        <div
-          className={styles.barFill}
-          style={{ width: val != null ? `${val}%` : 0 }}
-        />
-      </div>
-    </div>
-  );
-
-  const hasScore = overallScore != null && !loading;
+    );
+  };
 
   return (
-    <section className={styles.card}>
-      <header className={styles.header}>
-        <span className={styles.dot} />
-        <h3 className={styles.title}>Phản hồi của AI</h3>
-      </header>
+    <section className={styles.panel}>
+      <h3 className={styles.heading}>Phản hồi AI</h3>
 
-      {loading && <p className={styles.helper}>AI đang phân tích giọng nói...</p>}
+      <div className={styles.scoreCircle}>
+        {total != null ? total : "--"}
+      </div>
+      <p className={styles.totalLabel}>Tổng điểm phát âm</p>
 
-      {error && (
-        <div className={styles.errorBox}>
-          <p>{error}</p>
-        </div>
-      )}
+      {renderBar("Phát âm", pron)}
+      {renderBar("Độ chính xác", acc)}
+      {renderBar("Độ trôi chảy", flu)}
 
-      {hasScore ? (
-        <>
-          <div className={styles.scoreRow}>
-            <div className={styles.scoreCircle}>
-              <span className={styles.scoreValue}>{overallScore}</span>
-              <span className={styles.scoreUnit}>điểm</span>
-            </div>
-            <p className={styles.scoreCaption}>Tổng điểm phát âm</p>
-          </div>
+      <div className={styles.textBlock}>
+        <div className={styles.title}>Câu bạn đọc</div>
+        <p className={styles.detail}>{userTranscript || "--"}</p>
+      </div>
 
-          <div className={styles.barGroup}>
-            {renderBar("Phát âm", pronunciationScore)}
-            {renderBar("Độ chính xác", accuracyScore)}
-            {renderBar("Độ trôi chảy", fluencyScore)}
-          </div>
+      <div className={styles.textBlock}>
+        <div className={styles.title}>Câu mẫu</div>
+        <p className={`${styles.detail} ${styles.target}`}>
+          {targetText || "--"}
+        </p>
+      </div>
 
-          <div className={styles.detailCard}>
-            <h4 className={styles.detailTitle}>Câu bạn vừa đọc</h4>
-            <p className={styles.textLine}>
-              {effectiveTranscript || "Chưa có nội dung nhận diện."}
-            </p>
-
-            <h4 className={styles.detailTitle}>Câu mẫu</h4>
-            <p className={styles.textLine}>
-              {targetText || "Chưa có câu mẫu."}
-            </p>
-
-            <h4 className={styles.detailTitle}>Nhận xét chi tiết</h4>
-            <p className={styles.textLine}>
-              {feedback || "Không có phản hồi chi tiết."}
-            </p>
-          </div>
-
-          <p className={styles.footerNote}>
-            Bạn có thể luyện lại nhiều lần để cải thiện phát âm và nhịp điệu.
-          </p>
-        </>
-      ) : (
-        !loading &&
-        !error && (
-          <p className={styles.helper}>
-            Hãy ghi âm một câu nói của bạn. AI sẽ phân tích và phản hồi chi tiết ở đây.
-          </p>
-        )
-      )}
+      <div className={styles.textBlock}>
+        <div className={styles.title}>Nhận xét của AI</div>
+        <p className={`${styles.detail} ${styles.feedbackText}`}>
+          {feedback?.overallFeedbackVi ||
+            feedback?.overallFeedback ||
+            feedback ||
+            "Chưa có phản hồi chi tiết."}
+        </p>
+      </div>
     </section>
   );
 };

@@ -1,8 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../configs/axios";
 
-// ========================================================================
-// 📌 FETCH ALL COURSES — GET /api/courses
+// =======================================================================
+//  FETCH ALL COURSES — GET /api/courses
 // ========================================================================
 export const fetchCourses = createAsyncThunk(
   "courses/fetchAll",
@@ -11,13 +11,13 @@ export const fetchCourses = createAsyncThunk(
       const res = await api.get("/courses");
 
       if (!res.data || !Array.isArray(res.data.content)) {
-        console.warn("⚠ API /courses không trả về content hợp lệ:", res.data);
+        console.warn(" API /courses không trả về content hợp lệ:", res.data);
         return [];
       }
 
       return res.data.content; // danh sách khóa học
     } catch (err) {
-      console.error("❌ Error fetching courses:", err);
+      console.error(" Error fetching courses:", err);
       return rejectWithValue(
         err.response?.data?.message || "Không thể tải danh sách khóa học."
       );
@@ -26,7 +26,7 @@ export const fetchCourses = createAsyncThunk(
 );
 
 // ========================================================================
-// 📌 FETCH COURSE TREE — GET /api/courses/{id}/tree
+//  FETCH COURSE TREE — GET /api/courses/{id}/tree
 // ========================================================================
 export const fetchCourseTree = createAsyncThunk(
   "courses/fetchCourseTree",
@@ -44,7 +44,7 @@ export const fetchCourseTree = createAsyncThunk(
 );
 
 // ========================================================================
-// 📌 SLICE
+//  SLICE
 // ========================================================================
 const courseSlice = createSlice({
   name: "courses",
@@ -64,7 +64,7 @@ const courseSlice = createSlice({
   extraReducers: (builder) => {
     builder
       // ============================================
-      // 🔥 FETCH ALL COURSES
+      //  FETCH ALL COURSES
       // ============================================
       .addCase(fetchCourses.pending, (state) => {
         state.loading = true;
@@ -80,7 +80,7 @@ const courseSlice = createSlice({
       })
 
       // ============================================
-      // 🔥 FETCH COURSE DETAIL TREE
+      //  FETCH COURSE DETAIL TREE
       // ============================================
       .addCase(fetchCourseTree.pending, (state) => {
         state.loading = true;
