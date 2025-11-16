@@ -1,126 +1,254 @@
-// src/pages/Teacher/Courses/Create-Course/CourseOverview.jsx
-import React from "react";
-import { Card, Form, Input, Select, Upload, Button } from "antd";
-import { UploadOutlined } from "@ant-design/icons";
+// src/pages/Teacher/Courses/Create-Course/components/CourseOverview/CourseOverview.jsx
+import React, { useEffect, useMemo, useState, useRef } from "react";
+import { Card, Form, Input, Select, Upload, Button, message } from "antd";
+import { UploadOutlined, DeleteOutlined } from "@ant-design/icons";
+import { useDispatch, useSelector } from "react-redux";
+
+import {
+  updateCourseThunk,
+  uploadCourseCoverThunk,
+} from "../../../../../../redux/features/teacherCourseSlice.js";
+
 import styles from "./styles.module.scss";
 
-export default function CourseOverview({ value, onChange }) {
-  const {
-    title,
-    subtitle,
-    description,
-    category,
-    level,
-    language,
-    thumbnailUrl,
-  } = value || {};
+const { TextArea } = Input;
 
-  const update = (patch) => {
-    onChange?.({ ...value, ...patch });
+// build URL từ coverImagePath (BE gợi ý: preview bằng "/files/" + path)
+const buildFileUrl = (filePath) => {
+  if (!filePath) return null;
+  if (/^https?:\/\//i.test(filePath)) return filePath;
+  return `${window.location.origin}/files/${filePath}`.replace(
+    /([^:]\/)\/+/g,
+    "$1"
+  );
+};
+
+const getFileNameFromPath = (p) => {
+  if (!p) return "";
+  const parts = p.split("/");
+  return parts[parts.length - 1];
+};
+
+export default function CourseOverview({ courseId }) {
+  const [form] = Form.useForm();
+  const dispatch = useDispatch();
+
+  const { currentCourseMeta, saving } = useSelector((s) => s.teacherCourse);
+
+  const [uploadingThumb, setUploadingThumb] = useState(false);
+  const [pendingFileName, setPendingFileName] = useState("");
+
+  const isMetaInitialized = useRef(false);
+
+  // URL ảnh cover hiện tại (lấy từ coverImagePath)
+  const thumbUrl = useMemo(
+    () => buildFileUrl(currentCourseMeta?.coverImagePath),
+    [currentCourseMeta?.coverImagePath]
+  );
+
+  // Fill form
+  useEffect(() => {
+    if (!currentCourseMeta) return;
+
+    // Chỉ fill form LẦN ĐẦU khi có currentCourseMeta
+    if (!isMetaInitialized.current) {
+      form.setFieldsValue({
+        title: currentCourseMeta.title,
+        subtitle: currentCourseMeta.subtitle,
+        description: currentCourseMeta.description,
+        level: currentCourseMeta.level || "N5",
+      });
+      isMetaInitialized.current = true;
+    }
+  }, [currentCourseMeta, form]);
+
+  // Save basics
+  const handleFinish = async (values) => {
+    if (!courseId) return;
+    const payload = { ...currentCourseMeta, ...values };
+    const action = await dispatch(
+      updateCourseThunk({ courseId, data: payload })
+    );
+    if (updateCourseThunk.fulfilled.match(action)) {
+      message.success("Đã lưu thông tin khoá học.");
+    } else {
+      message.error("Lưu thất bại, vui lòng thử lại.");
+    }
   };
+
+  // Upload thumbnail = gọi POST /teacher/courses/{courseId}/cover-image
+  const handleThumbnailUpload = async ({ file, onSuccess, onError }) => {
+    if (!courseId || !file) {
+      onError?.();
+      return;
+    }
+    setPendingFileName(file.name);
+
+    try {
+      setUploadingThumb(true);
+
+      const action = await dispatch(uploadCourseCoverThunk({ courseId, file }));
+
+      if (uploadCourseCoverThunk.fulfilled.match(action)) {
+        message.success("Đã cập nhật thumbnail.");
+        onSuccess?.("ok");
+      } else {
+        message.error("Không lưu được thumbnail.");
+        onError?.();
+      }
+    } catch (e) {
+      console.error(e);
+      message.error("Upload thumbnail thất bại.");
+      onError?.(e);
+    } finally {
+      setUploadingThumb(false);
+      setPendingFileName("");
+    }
+  };
+
+  const handleRemoveThumb = async () => {
+    if (!courseId) return;
+    const action = await dispatch(
+      updateCourseThunk({
+        courseId,
+        data: { ...currentCourseMeta, coverImagePath: null },
+      })
+    );
+    if (updateCourseThunk.fulfilled.match(action)) {
+      message.success("Đã xoá thumbnail.");
+    } else {
+      message.error("Xoá thumbnail thất bại.");
+    }
+  };
+
+  const hasThumb = !!thumbUrl || !!pendingFileName;
 
   return (
     <Card className={styles.cardBig}>
       <div className={styles.stepHeader}>
-        <div className={styles.stepTitle}>Course Basics</div>
+        <div className={styles.stepTitle}>Course basics</div>
         <div className={styles.stepDesc}>
-          This is what students see on the course page. Make it attractive and
-          clear.
+          Đặt tiêu đề, mô tả, cấp độ cho khoá học của bạn.
         </div>
       </div>
 
-      <Form layout="vertical" className={styles.formGrid}>
-        <Form.Item label="Course title" required>
-          <Input
-            placeholder="JLPT N5 Grammar Basics"
-            value={title}
-            onChange={(e) => update({ title: e.target.value })}
-          />
+      <Form
+        form={form}
+        layout="vertical"
+        className={styles.formGrid}
+        onFinish={handleFinish}
+      >
+        <Form.Item
+          name="title"
+          label="Course title"
+          rules={[
+            { required: true, message: "Vui lòng nhập tiêu đề." },
+            { max: 120 },
+          ]}
+        >
+          <Input placeholder="JLPT N5 – Nền tảng tiếng Nhật cho người mới" />
         </Form.Item>
 
-        <Form.Item label="Short subtitle / headline">
-          <Input
-            placeholder="Master core N5 grammar in simple Vietnamese"
-            value={subtitle}
-            onChange={(e) => update({ subtitle: e.target.value })}
-          />
+        <Form.Item name="subtitle" label="Subtitle" rules={[{ max: 160 }]}>
+          <Input placeholder="Khoá học giúp bạn chinh phục JLPT N5 từ con số 0." />
         </Form.Item>
 
-        <Form.Item label="Description" required>
-          <Input.TextArea
+        <Form.Item
+          name="description"
+          label="Course description"
+          rules={[{ required: true, message: "Vui lòng nhập mô tả." }]}
+        >
+          <TextArea
             rows={6}
-            placeholder="What will students learn? Who is this course for?"
-            value={description}
-            onChange={(e) => update({ description: e.target.value })}
+            placeholder="Giới thiệu nội dung, phương pháp giảng dạy, đối tượng phù hợp, v.v."
           />
         </Form.Item>
 
-        <div className={styles.row2}>
-          <Form.Item label="Category">
-            <Select
-              value={category}
-              onChange={(v) => update({ category: v })}
-              options={[
-                { value: "JLPT N5", label: "JLPT N5" },
-                { value: "JLPT N3 Listening", label: "JLPT N3 Listening" },
-                { value: "Pronunciation", label: "Pronunciation" },
-                { value: "Business Japanese", label: "Business Japanese" },
-              ]}
-            />
-          </Form.Item>
+        <Form.Item name="level" label="Level" rules={[{ required: true }]}>
+          <Select
+            options={[
+              { label: "JLPT N5", value: "N5" },
+              { label: "JLPT N4", value: "N4" },
+              { label: "JLPT N3", value: "N3" },
+              { label: "JLPT N2", value: "N2" },
+              { label: "JLPT N1", value: "N1" },
+            ]}
+          />
+        </Form.Item>
 
-          <Form.Item label="Level">
-            <Select
-              value={level}
-              onChange={(v) => update({ level: v })}
-              options={[
-                { value: "Beginner", label: "Beginner (N5~N4)" },
-                { value: "Intermediate", label: "Intermediate (N3~N2)" },
-                { value: "Advanced", label: "Advanced (N1/business)" },
-              ]}
-            />
-          </Form.Item>
-
-          <Form.Item label="Language">
-            <Select
-              value={language}
-              onChange={(v) => update({ language: v })}
-              options={[
-                { value: "Japanese", label: "Japanese" },
-                { value: "Vietnamese", label: "Vietnamese" },
-                { value: "English", label: "English" },
-              ]}
-            />
-          </Form.Item>
-        </div>
-
-        <Form.Item label="Thumbnail (preview image)" required>
-          <div className={styles.thumbRow}>
-            {thumbnailUrl ? (
-              <img
-                src={thumbnailUrl}
-                alt="thumb"
-                className={styles.thumbPreview}
-              />
-            ) : (
-              <div className={styles.thumbPlaceholder}>No thumbnail yet</div>
-            )}
-
-            <Upload
-              beforeUpload={(file) => {
-                const url = URL.createObjectURL(file);
-                update({ thumbnailUrl: url });
-                return false;
-              }}
+        <Form.Item label="Course thumbnail">
+          {!hasThumb ? (
+            <Upload.Dragger
+              multiple={false}
               showUploadList={false}
+              customRequest={handleThumbnailUpload}
             >
-              <Button icon={<UploadOutlined />}>Upload thumbnail</Button>
-            </Upload>
-          </div>
+              <p className="ant-upload-drag-icon">
+                <UploadOutlined />
+              </p>
+              <p className="ant-upload-text">
+                Click hoặc kéo thả ảnh thumbnail vào đây
+              </p>
+              <p className={styles.hintText}>
+                Khuyến nghị 1280x720, &lt; 2MB. Ảnh sẽ được upload bằng API{" "}
+                <code>POST /teacher/courses/{"{courseId}"}/cover-image</code>.
+              </p>
+            </Upload.Dragger>
+          ) : (
+            <div className={styles.thumbCard}>
+              {thumbUrl ? (
+                <img
+                  src={thumbUrl}
+                  alt="thumbnail"
+                  className={styles.thumbImg}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+              ) : (
+                <div className={styles.thumbPlaceholder}>No preview</div>
+              )}
 
-          <div className={styles.hintText}>
-            Recommended 1280x720, under 2MB.
-          </div>
+              <div className={styles.thumbMetaRow}>
+                <div className={styles.thumbName}>
+                  {pendingFileName ||
+                    getFileNameFromPath(currentCourseMeta?.coverImagePath)}
+                </div>
+              </div>
+
+              <div className={styles.thumbActions}>
+                <Upload
+                  multiple={false}
+                  showUploadList={false}
+                  customRequest={handleThumbnailUpload}
+                >
+                  <Button type="default" size="small">
+                    Change thumbnail
+                  </Button>
+                </Upload>
+                <Button
+                  danger
+                  type="text"
+                  icon={<DeleteOutlined />}
+                  onClick={handleRemoveThumb}
+                  size="small"
+                >
+                  Remove thumbnail
+                </Button>
+              </div>
+            </div>
+          )}
+        </Form.Item>
+
+        <Form.Item>
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={saving || uploadingThumb}
+          >
+            Save basics
+          </Button>
         </Form.Item>
       </Form>
     </Card>

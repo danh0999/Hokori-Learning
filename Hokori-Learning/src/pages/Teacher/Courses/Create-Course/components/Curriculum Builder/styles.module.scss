@@ -1,142 +1,100 @@
-.cardBig {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-
-  .ant-card-head {
-    display: none;
-  }
-
-  .ant-card-body {
-    padding: 24px 24px 32px;
-  }
-}
-
-/* header cho step */
-.stepHeader {
-  margin-bottom: 24px;
-}
-
-.stepTitle {
-  font-size: 20px;
-  font-weight: 600;
-  color: #111827;
-  line-height: 1.2;
-  margin-bottom: 4px;
-}
-
-.stepDesc {
-  font-size: 14px;
-  color: #6b7280;
-  line-height: 1.4;
-}
-
-/* curriculum layout */
 .curriculumWrap {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  padding: 10px;
 }
 
-.emptyBox {
-  background: #f9fafb;
-  border: 1px dashed #d1d5db;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #6b7280;
-  text-align: center;
-  padding: 24px 16px;
+/* Row tạo chapter */
+.newChapterRow {
+  display: flex;
+  align-items: center;
+  gap: 12px; // nút cách ra đẹp
+  margin-bottom: 10px;
 }
 
-/* section block */
+/* Box chapter */
 .sectionBlock {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  border-radius: 10px !important;
+  margin-bottom: 16px;
+  padding: 0 6px !important;
 }
 
-.sectionHeader {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: flex-start;
-  justify-content: space-between;
-}
-
-.sectionTitleInput {
-  font-weight: 600;
-  font-size: 15px;
-  max-width: 480px;
-}
-
-/* lessons */
+/* Danh sách lesson */
 .lessonList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 12px; // Tăng khoảng cách item
+  padding-top: 6px;
 }
 
-.lessonEmpty {
-  font-size: 13px;
-  color: #6b7280;
-  background: #f9fafb;
-  border: 1px dashed #d1d5db;
-  border-radius: 8px;
-  padding: 12px 16px;
-}
-
+/* Lesson item */
 .lessonItem {
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 12px 16px;
-  background: #fafafa;
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
   justify-content: space-between;
-  align-items: flex-start;
+  background: #fafafa;
+  border: 1px solid #e5e7eb;
+  padding: 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  align-items: center;
+
+  &:hover {
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
 }
 
+/* Lesson phần text */
 .lessonMain {
-  flex: 1;
-  min-width: 220px;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
+/* Input tiêu đề bài học */
 .lessonTitleInput {
-  font-weight: 500;
-  font-size: 14px;
+  width: 280px;
 }
 
+/* Meta mô tả */
 .lessonMeta {
-  font-size: 13px;
+  font-size: 12px;
   color: #6b7280;
-  line-height: 1.4;
 }
 
+/* Nhóm nút bên phải */
 .lessonActions {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: flex-end;
-  min-width: 120px;
+  align-items: center;
+  gap: 10px; // chỉnh khoảng cách đẹp hơn giữa nút Edit/Delete
 }
 
+/* Nút Add Lesson */
 .addLessonBtn {
-  font-size: 13px;
-  font-weight: 500;
+  width: 100%;
+  border-style: dashed !important;
+  padding: 10px 0;
+  margin-top: 6px;
+  color: #555;
+  border-color: #d0d7de !important;
+
+  &:hover {
+    border-color: #1890ff !important;
+    color: #1890ff !important;
+    background: #f0f7ff !important;
+  }
 }
 
-.videoBox {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 12px;
+/* Khi không có lesson */
+.lessonEmpty {
+  padding: 12px;
+  font-style: italic;
+  color: #999;
+}
+
+/* Empty chapter state */
+.emptyBox {
+  text-align: center;
+  padding: 20px;
 }

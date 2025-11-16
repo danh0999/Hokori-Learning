@@ -2,12 +2,15 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchTeacherProfile,
+  fetchTeacherCertificates,
   submitTeacherProfile,
   selectTeacherProfile,
   selectTeacherProfileStatus,
   selectTeacherProfileError,
   selectTeacherApproved,
   selectTeacherProfileSubmitting,
+  selectTeacherCertificates,
+  selectTeacherCertificatesStatus,
 } from "../../../redux/features/teacherprofileSlice.js";
 import {
   Card,
@@ -18,10 +21,11 @@ import {
   Alert,
   Popconfirm,
   message,
+  List,
 } from "antd";
 import { EditOutlined, IdcardOutlined } from "@ant-design/icons";
 import styles from "./styles.module.scss";
-import ModalQualifications from "../TeacherProfilePage/components/ModalQualifications.jsx";
+import ModalCertificates from "./components/ModalQualifications.jsx";
 
 const statusMap = {
   DRAFT: { color: "default", text: "Draft" },
@@ -37,23 +41,20 @@ export default function TeacherProfilePage() {
   const error = useSelector(selectTeacherProfileError);
   const isApproved = useSelector(selectTeacherApproved);
   const submitting = useSelector(selectTeacherProfileSubmitting);
+  const certificates = useSelector(selectTeacherCertificates);
+  const certStatus = useSelector(selectTeacherCertificatesStatus);
 
   const [openModal, setOpenModal] = useState(false);
 
   useEffect(() => {
     dispatch(fetchTeacherProfile());
+    dispatch(fetchTeacherCertificates());
   }, [dispatch]);
 
-  const canSubmit = (() => {
-    const p = profile || {};
-    const hasDegree = !!p?.highestDegree;
-    const hasMajor = !!p?.major;
-    const hasYoE = Number.isFinite(p?.yearsOfExperience);
-    const hasProof = !!p?.evidenceUrls || !!p?.certifications;
-    const headlineOk = !!p?.headline && p.headline.trim().length > 0;
-    const bioOk = !!p?.bio && p.bio.trim().length >= 50;
-    return hasDegree && hasMajor && hasYoE && hasProof && headlineOk && bioOk;
-  })();
+  const canSubmit =
+    !!profile?.headline &&
+    profile.bio?.trim()?.length >= 50 &&
+    certificates?.length > 0;
 
   const showSubmit =
     profile?.approvalStatus === "DRAFT" ||
@@ -105,9 +106,7 @@ export default function TeacherProfilePage() {
           >
             Cung cấp chứng chỉ
           </Button>
-          <Button icon={<EditOutlined />} onClick={() => setOpenModal(true)}>
-            Chỉnh sửa hồ sơ
-          </Button>
+          <Button icon={<EditOutlined />}>Chỉnh sửa hồ sơ</Button>
         </Space>
       </div>
 
@@ -164,37 +163,36 @@ export default function TeacherProfilePage() {
                 <label>Giới thiệu</label>
                 <div>{profile?.bio || "—"}</div>
               </div>
+            </div>
 
-              <div className={styles.field}>
-                <label>Bằng cấp cao nhất</label>
-                <div>{profile?.highestDegree ?? "—"}</div>
-              </div>
-              <div className={styles.field}>
-                <label>Chuyên ngành</label>
-                <div>{profile?.major ?? "—"}</div>
-              </div>
-              <div className={styles.field}>
-                <label>Kinh nghiệm (năm)</label>
-                <div>{profile?.yearsOfExperience ?? "—"}</div>
-              </div>
-              <div className={styles.fieldFull}>
-                <label>Chứng chỉ</label>
-                <div>{profile?.certifications ?? "—"}</div>
-              </div>
-              <div className={styles.fieldFull}>
-                <label>Evidence URLs</label>
-                <div>{profile?.evidenceUrls ?? "—"}</div>
-              </div>
+            <div style={{ marginTop: 24 }}>
+              <h3>Chứng chỉ ({certificates?.length || 0})</h3>
+              {certStatus === "loading" ? (
+                <Skeleton active />
+              ) : (
+                <List
+                  dataSource={certificates}
+                  renderItem={(item) => (
+                    <List.Item>
+                      <List.Item.Meta
+                        title={item.title}
+                        description={`${item.issuer || ""} - ${
+                          item.year || ""
+                        }`}
+                      />
+                    </List.Item>
+                  )}
+                />
+              )}
             </div>
           </>
         )}
       </Card>
 
       {openModal && (
-        <ModalQualifications
+        <ModalCertificates
           open={openModal}
           onClose={() => setOpenModal(false)}
-          initial={profile}
         />
       )}
     </div>

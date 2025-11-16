@@ -115,6 +115,12 @@ const api = axios.create({
   withCredentials: false,
 });
 
+  //Key phú
+  // baseURL: "https://celsa-plumbaginaceous-unabjectly.ngrok-free.dev/api/",
+  //key Khoa
+
+  //key deploy
+  baseURL: "https://hokoribe-production.up.railway.app/api/",
 // Set actual backend asynchronously without blocking UI
 autoBackend().then((realURL) => {
   api.defaults.baseURL = realURL;
@@ -140,6 +146,14 @@ api.interceptors.request.use(
     if (token && isAuth) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    console.log(
+      "[API REQUEST]",
+      config.method?.toUpperCase(),
+      config.baseURL + config.url,
+      "Authorization:",
+      config.headers.Authorization
+    );
 
     return config;
   },
