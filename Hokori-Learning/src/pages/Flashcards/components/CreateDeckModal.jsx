@@ -8,25 +8,22 @@ const CreateDeckModal = ({ onClose, onCreate }) => {
     name: "",
     description: "",
     level: "",
-    type: "",
   });
 
   const [errors, setErrors] = useState({});
 
-  // Validate tất cả field
   const validate = () => {
     const newErrors = {};
     if (!form.name.trim()) newErrors.name = "Tên bộ thẻ là bắt buộc.";
     if (!form.level) newErrors.level = "Vui lòng chọn cấp độ JLPT.";
-    if (!form.type) newErrors.type = "Vui lòng chọn loại thẻ.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-    if (errors[name]) setErrors({ ...errors, [name]: "" }); // clear lỗi khi user sửa
+    setForm((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const handleSubmit = (e) => {
@@ -37,10 +34,7 @@ const CreateDeckModal = ({ onClose, onCreate }) => {
     }
 
     try {
-      console.log("Created deck:", form);
-      toast.success("Tạo bộ thẻ thành công!");
       onCreate?.(form);
-      onClose?.();
     } catch (err) {
       console.error(err);
       toast.error("Có lỗi xảy ra, vui lòng thử lại!");
@@ -63,7 +57,6 @@ const CreateDeckModal = ({ onClose, onCreate }) => {
 
         {/* Body */}
         <div className={styles.body}>
-          {/* Form */}
           <form className={styles.form} onSubmit={handleSubmit}>
             <div className={styles.formGroup}>
               <label>Tên bộ thẻ *</label>
@@ -106,22 +99,6 @@ const CreateDeckModal = ({ onClose, onCreate }) => {
               {errors.level && (
                 <p className={styles.errorMsg}>{errors.level}</p>
               )}
-            </div>
-
-            <div className={styles.formGroup}>
-              <label>Loại thẻ *</label>
-              <select
-                name="type"
-                value={form.type}
-                onChange={handleChange}
-                className={errors.type ? styles.errorInput : ""}
-              >
-                <option value="">-- Chọn loại thẻ --</option>
-                <option value="vocabulary">Từ vựng</option>
-                <option value="kanji">Kanji</option>
-                <option value="phrases">Cụm câu</option>
-              </select>
-              {errors.type && <p className={styles.errorMsg}>{errors.type}</p>}
             </div>
           </form>
 

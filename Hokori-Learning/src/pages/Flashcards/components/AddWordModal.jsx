@@ -7,7 +7,6 @@ const AddWordModal = ({ deck, onClose, onSave }) => {
   const [word, setWord] = useState({ term: "", meaning: "", example: "" });
   const [cards, setCards] = useState([]);
 
-  // chặn scroll nền & ESC để đóng
   useEffect(() => {
     const original = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -45,9 +44,7 @@ const AddWordModal = ({ deck, onClose, onSave }) => {
       toast.error("Bạn chưa thêm thẻ nào!");
       return;
     }
-    onSave?.(cards);
-    toast.success("Đã lưu bộ thẻ thành công!");
-    onClose?.();
+    onSave?.(cards); // MyFlashcards sẽ dispatch thunk
   };
 
   const modalUi = (
@@ -57,7 +54,7 @@ const AddWordModal = ({ deck, onClose, onSave }) => {
         <div className={styles.header}>
           <div className={styles.titleBox}>
             <i className="fa-solid fa-book" />
-            <h2>Thêm từ vựng vào bộ “{deck?.tenBo || "Mới tạo"}”</h2>
+            <h2>Thêm từ vựng vào bộ “{deck?.title || "Mới tạo"}”</h2>
           </div>
           <button
             type="button"
@@ -144,7 +141,11 @@ const AddWordModal = ({ deck, onClose, onSave }) => {
           <button type="button" className={styles.cancelBtn} onClick={onClose}>
             Hủy
           </button>
-          <button type="button" className={styles.saveBtn} onClick={handleSaveDeck}>
+          <button
+            type="button"
+            className={styles.saveBtn}
+            onClick={handleSaveDeck}
+          >
             <i className="fa-solid fa-floppy-disk" />
             Lưu bộ thẻ
           </button>
@@ -153,7 +154,6 @@ const AddWordModal = ({ deck, onClose, onSave }) => {
     </div>
   );
 
-  // render ra body để tránh CSS bên ngoài ảnh hưởng
   return createPortal(modalUi, document.body);
 };
 
