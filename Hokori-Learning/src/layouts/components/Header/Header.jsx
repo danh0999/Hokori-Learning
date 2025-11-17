@@ -8,6 +8,7 @@ import { logoutFirebase } from "../../../redux/features/auth";
 import { UserOutlined } from "@ant-design/icons";
 import { Avatar, Dropdown, Space } from "antd";
 import { FiShoppingCart, FiBell } from "react-icons/fi";
+
 import { fetchCart } from "../../../redux/features/cartSlice";
 import styles from "./styles.module.scss";
 
@@ -35,19 +36,31 @@ export const Header = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const user = useSelector((state) => state.user);
+  // ============================
+  //  LẤY USER & PROFILE
+  // ============================
+  const user = useSelector((state) => state.user); // token, role, email
+  const profile = useSelector((state) => state.profile.data); // avatar, name,...
+
   const cartItems = useSelector((state) => state.cart.items);
   const cartCount = cartItems?.length || 0;
 
+  // ============================
+  // AUTO FETCH CART WHEN LOGIN
+  // ============================
+  useEffect(() => {
+    if (user?.accessToken) {
+      dispatch(fetchCart());
+    }
+  }, [user, dispatch]);
+
+  // ============================
+  // DROPDOWN CONTROL
+  // ============================
   const [openDropdown, setOpenDropdown] = useState(null);
   const courseDropdownRef = useRef(null);
   const aboutDropdownRef = useRef(null);
 
-  useEffect(() => {
-    if (user?.accessToken) dispatch(fetchCart());
-  }, [user, dispatch]);
-
-  // Đóng dropdown khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
@@ -64,6 +77,9 @@ export const Header = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // ============================
+  // LOGOUT
+  // ============================
   const handleLogout = async () => {
     try {
       await logoutFirebase();
@@ -74,6 +90,9 @@ export const Header = () => {
     }
   };
 
+  // ============================
+  // USER MENU
+  // ============================
   const userMenu = [
     {
       key: "profile",
@@ -85,9 +104,7 @@ export const Header = () => {
       label: "Thống kê học tập",
       onClick: () => navigate("/learner-dashboard"),
     },
-    {
-      type: "divider",
-    },
+    { type: "divider" },
     {
       key: "logout",
       label: "Đăng xuất",
@@ -98,7 +115,7 @@ export const Header = () => {
   return (
     <header className={header}>
       <div className={container}>
-        {/* ===== Logo ===== */}
+        {/* ===== LOGO ===== */}
         <div className={logo} onClick={() => navigate("/")}>
           <div className={logoBox}>
             <span className={logoText}>H</span>
@@ -106,16 +123,13 @@ export const Header = () => {
           <span className={brand}>Hokori</span>
         </div>
 
-        {/* ===== Navigation ===== */}
+        {/* ===== NAVIGATION ===== */}
         <nav className={nav}>
-          <NavLink
-            to="/"
-            className={({ isActive }) => (isActive ? active : "")}
-          >
+          <NavLink to="/" className={({ isActive }) => (isActive ? active : "")}>
             Trang chủ
           </NavLink>
 
-          {/* ===== Dropdown: Khóa học ===== */}
+          {/* Dropdown Khóa học */}
           <div className={dropdown} ref={courseDropdownRef}>
             <button
               className={dropdownToggle}
@@ -132,6 +146,7 @@ export const Header = () => {
                 ▾
               </span>
             </button>
+
             {openDropdown === "course" && (
               <div className={dropdownMenu}>
                 <NavLink to="/marketplace" className={dropdownItem}>
@@ -151,7 +166,7 @@ export const Header = () => {
             Thi thử JLPT
           </NavLink>
 
-          {/* ===== Dropdown: Về Hokori ===== */}
+          {/* Dropdown Về Hokori */}
           <div className={dropdown} ref={aboutDropdownRef}>
             <button
               className={dropdownToggle}
@@ -161,11 +176,14 @@ export const Header = () => {
             >
               Về Hokori{" "}
               <span
-                className={`${arrow} ${openDropdown === "about" ? rotate : ""}`}
+                className={`${arrow} ${
+                  openDropdown === "about" ? rotate : ""
+                }`}
               >
                 ▾
               </span>
             </button>
+
             {openDropdown === "about" && (
               <div className={dropdownMenu}>
                 <NavLink to="/about" className={dropdownItem}>
@@ -178,7 +196,6 @@ export const Header = () => {
             )}
           </div>
 
-          {/* ===== Liên hệ ===== */}
           <NavLink
             to="/contact"
             className={({ isActive }) => (isActive ? active : "")}
@@ -187,8 +204,9 @@ export const Header = () => {
           </NavLink>
         </nav>
 
-        {/* ===== User Actions ===== */}
+        {/* ===== USER ACTIONS ===== */}
         <div className={actions}>
+          {/* Chưa đăng nhập */}
           {!user ? (
             <>
               <button className={loginBtn} onClick={() => navigate("/login")}>
@@ -203,7 +221,7 @@ export const Header = () => {
             </>
           ) : (
             <Space size={24} align="center">
-              {/* 🛒 Giỏ hàng */}
+              {/* Cart */}
               <div
                 onClick={() => navigate("/cart")}
                 style={{
@@ -242,7 +260,7 @@ export const Header = () => {
                 )}
               </div>
 
-              {/* 🔔 Notification */}
+              {/* Notification */}
               <div
                 style={{
                   position: "relative",
@@ -270,7 +288,7 @@ export const Header = () => {
                 />
               </div>
 
-              {/* 👤 User Avatar */}
+              {/* Avatar */}
               <Dropdown
                 menu={{ items: userMenu }}
                 placement="bottomRight"
@@ -280,7 +298,7 @@ export const Header = () => {
                 <Space style={{ cursor: "pointer" }}>
                   <Avatar
                     size={36}
-                    src={user.photoURL}
+                    src={profile?.avatarUrl}
                     icon={<UserOutlined />}
                   />
                 </Space>

@@ -1,0 +1,109 @@
+.card {
+  background: white;
+  padding: 32px;
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  width: 100%;
+}
+
+h3 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 14px;
+  color: #0f172a;
+}
+
+.section {
+  margin-top: 18px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.value {
+  background: #eef2ff;
+  padding: 10px 16px;
+  border-radius: 10px;
+  margin-top: 6px;
+  color: #4338ca;
+  font-weight: 600;
+  font-size: 15px;
+  display: inline-block;
+}
+
+.block {
+  background: #f1f5f9;
+  padding: 14px;
+  border-radius: 12px;
+  margin-top: 6px;
+  line-height: 1.6;
+  font-size: 15px;
+  white-space: pre-line;
+}
+
+/* 2 cột lớn */
+.grid {
+  margin-top: 28px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+
+.column {
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+}
+
+.colTitle {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #1e3a8a;
+}
+
+.list {
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.item {
+  background: white;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.empty {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.loading {
+  padding: 40px;
+  text-align: center;
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.error {
+  padding: 16px;
+  background: #fee2e2;
+  color: #dc2626;
+  border-radius: 12px;
+}
+
+.placeholder {
+  padding: 20px;
+  text-align: center;
+  color: #94a3b8;
+}

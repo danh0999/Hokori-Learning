@@ -1,0 +1,14 @@
+.page {
+  padding: 40px 0 80px;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+.content {
+  width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-top: 40px;
+}
