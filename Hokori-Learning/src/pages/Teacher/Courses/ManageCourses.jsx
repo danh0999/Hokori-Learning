@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+// src/pages/Teacher/Courses/ManageCourses/ManageCourses.jsx
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Card,
   Table,
@@ -19,67 +20,17 @@ import {
   ExclamationCircleFilled,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+
+import {
+  fetchTeacherCourses,
+  deleteCourseThunk,
+} from "../../../redux/features/teacherCourseSlice";
 import styles from "./styles.module.scss";
 
 const { confirm } = Modal;
 
-const mock = [
-  {
-    id: 1,
-    title: "JLPT N5 Grammar Basics",
-    code: "N5-GR-101",
-    students: 210,
-    rating: 4.7,
-    status: "Published",
-    updatedAt: "2025-10-10",
-  },
-  {
-    id: 2,
-    title: "Kanji 100 – Starter",
-    code: "KJI-100",
-    students: 98,
-    rating: 4.5,
-    status: "Review",
-    updatedAt: "2025-10-11",
-  },
-  {
-    id: 3,
-    title: "N3 Listening Drills",
-    code: "N3-LS-220",
-    students: 320,
-    rating: 4.8,
-    status: "Published",
-    updatedAt: "2025-10-09",
-  },
-  {
-    id: 4,
-    title: "Pronunciation Workshop",
-    code: "PRON-150",
-    students: 65,
-    rating: 4.2,
-    status: "Draft",
-    updatedAt: "2025-10-06",
-  },
-  {
-    id: 5,
-    title: "N2 Reading Practice",
-    code: "N2-RD-330",
-    students: 120,
-    rating: 4.6,
-    status: "Rejected",
-    updatedAt: "2025-10-02",
-  },
-  {
-    id: 6,
-    title: "Hiragana & Katakana",
-    code: "BAS-ALPHA",
-    students: 512,
-    rating: 4.9,
-    status: "Published",
-    updatedAt: "2025-09-28",
-  },
-];
-
+// helper: render Tag status
 const statusTag = (s) => {
   const map = {
     Draft: "default",
@@ -90,28 +41,102 @@ const statusTag = (s) => {
   return <Tag color={map[s] || "default"}>{s}</Tag>;
 };
 
+// helper: map enum BE → text status ở bảng
+const mapStatusLabel = (status) => {
+  if (!status) return "Draft";
+
+  switch (status) {
+    case "DRAFT":
+      return "Draft";
+    case "PUBLISHED":
+      return "Published";
+    case "REVIEWING":
+    case "IN_REVIEW":
+      return "Review";
+    case "REJECTED":
+      return "Rejected";
+    default:
+      return status;
+  }
+};
+
 export default function ManageCourses() {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const { list, listLoading } = useSelector((state) => state.teacherCourse);
+
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("All");
-  const [data, setData] = useState(mock);
-  const navigate = useNavigate();
+  const [data, setData] = useState([]); // rows đang hiển thị (sau khi map từ list)
 
+  // gọi API lấy danh sách course 1 lần
+  useEffect(() => {
+    dispatch(fetchTeacherCourses());
+  }, [dispatch]);
+
+  // chuẩn hoá dữ liệu từ Redux → rows cho Table
+  const tableData = useMemo(() => {
+    // list có thể là [], hoặc {content:[...]} hoặc object khác → ép về array an toàn
+    let raw = list;
+    if (Array.isArray(raw)) {
+      // ok
+    } else if (Array.isArray(raw?.content)) {
+      raw = raw.content;
+    } else {
+      raw = [];
+    }
+
+    return raw.map((c) => {
+      const statusLabel = mapStatusLabel(c.status);
+
+      return {
+        id: c.id,
+        title: c.title,
+        code: c.slug || c.code || `COURSE-${c.id}`,
+        students: c.studentsCount ?? c.enrolledCount ?? 0,
+        rating: c.rating ?? c.averageRating ?? "-",
+        status: statusLabel,
+        updatedAt: (c.updatedAt || c.publishedAt || c.createdAt || "").slice(
+          0,
+          10
+        ),
+      };
+    });
+  }, [list]);
+
+  // mỗi khi data từ Redux đổi → sync vào local state để filter / duplicate...
+  useEffect(() => {
+    setData(tableData);
+  }, [tableData]);
+
+  // filter theo search + status
   const filtered = useMemo(() => {
-    return data.filter((c) => {
+    return (data || []).filter((c) => {
       const okQuery =
         !q ||
-        c.title.toLowerCase().includes(q.toLowerCase()) ||
-        c.code.toLowerCase().includes(q.toLowerCase());
+        c.title?.toLowerCase().includes(q.toLowerCase()) ||
+        c.code?.toLowerCase().includes(q.toLowerCase());
+
       const okStatus = status === "All" || c.status === status;
+
       return okQuery && okStatus;
     });
   }, [q, status, data]);
 
+  // mấy action tạm thời chỉ thao tác frontend (chưa call BE)
   const onSubmitForReview = (id) => {
     setData((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, status: "Review" } : c))
+      prev.map((c) =>
+        c.id === id
+          ? {
+              ...c,
+              status: "Review",
+            }
+          : c
+      )
     );
-    message.success("Submitted for review");
+    message.success("Submitted for review (frontend only).");
   };
 
   const onDuplicate = (row) => {
@@ -123,7 +148,7 @@ export default function ManageCourses() {
       updatedAt: new Date().toISOString().slice(0, 10),
     };
     setData((prev) => [copy, ...prev]);
-    message.success("Duplicated");
+    message.success("Duplicated (frontend only).");
   };
 
   const onDelete = (id) => {
@@ -132,7 +157,21 @@ export default function ManageCourses() {
       icon: <ExclamationCircleFilled />,
       content: "This action cannot be undone.",
       okType: "danger",
-      onOk: () => setData((prev) => prev.filter((c) => c.id !== id)),
+      centered: true,
+      onOk() {
+        console.log("CONFIRM OK CLICKED", id);
+        // 💥 QUAN TRỌNG: return Promise để AntD hiểu là async
+        return dispatch(deleteCourseThunk(id))
+          .unwrap()
+          .then(() => {
+            message.success("Deleted course.");
+            return dispatch(fetchTeacherCourses());
+          })
+          .catch((err) => {
+            console.error(err);
+            message.error("Delete failed. Please try again.");
+          });
+      },
     });
   };
 
@@ -148,8 +187,18 @@ export default function ManageCourses() {
         </div>
       ),
     },
-    { title: "Students", dataIndex: "students", key: "students", width: 120 },
-    { title: "Rating", dataIndex: "rating", key: "rating", width: 100 },
+    {
+      title: "Students",
+      dataIndex: "students",
+      key: "students",
+      width: 120,
+    },
+    {
+      title: "Rating",
+      dataIndex: "rating",
+      key: "rating",
+      width: 100,
+    },
     {
       title: "Status",
       dataIndex: "status",
@@ -157,7 +206,12 @@ export default function ManageCourses() {
       width: 130,
       render: statusTag,
     },
-    { title: "Updated", dataIndex: "updatedAt", key: "updatedAt", width: 140 },
+    {
+      title: "Updated",
+      dataIndex: "updatedAt",
+      key: "updatedAt",
+      width: 140,
+    },
     {
       title: "Actions",
       key: "actions",
@@ -167,33 +221,44 @@ export default function ManageCourses() {
           {
             key: "manage",
             label: "Manage",
-            onClick: () => navigate(`/teacher/courseinfo/${row.id}`),
           },
           ...(row.status === "Draft"
             ? [
                 {
                   key: "submit",
                   label: "Submit for review",
-                  onClick: () => onSubmitForReview(row.id),
                 },
               ]
             : []),
-          { key: "dup", label: "Duplicate", onClick: () => onDuplicate(row) },
+          {
+            key: "dup",
+            label: "Duplicate",
+          },
           { type: "divider" },
           {
             key: "del",
             danger: true,
             label: "Delete",
-            onClick: () => onDelete(row.id),
           },
         ];
+
         return (
           <Dropdown
             trigger={["click"]}
             menu={{
-              items: items.map(({ key, label, danger, onClick, type }) =>
-                type === "divider" ? { type } : { key, label, danger, onClick }
-              ),
+              items,
+              onClick: ({ key }) => {
+                // 👇 TẤT CẢ action xử lý tập trung ở đây
+                if (key === "manage") {
+                  navigate(`/teacher/courseinfo/${row.id}`);
+                } else if (key === "submit") {
+                  onSubmitForReview(row.id);
+                } else if (key === "dup") {
+                  onDuplicate(row);
+                } else if (key === "del") {
+                  onDelete(row.id); // ✅ sẽ gọi confirm
+                }
+              },
             }}
           >
             <Button type="text" icon={<MoreOutlined />} />
@@ -250,6 +315,7 @@ export default function ManageCourses() {
           size="middle"
           columns={columns}
           dataSource={filtered}
+          loading={listLoading}
           pagination={{ defaultPageSize: 8 }}
         />
       </Card>

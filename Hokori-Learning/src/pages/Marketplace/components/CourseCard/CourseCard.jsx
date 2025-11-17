@@ -3,7 +3,10 @@ import styles from "./CourseCard.module.scss";
 import { Button } from "../../../../components/Button/Button";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
+import { addToCart } from "../../../../redux/features/cartSlice"; //import addItem
 import { FaShoppingCart } from "react-icons/fa";
+// import { addToCart } from "../../../../redux/features/cartSlice";
+import { setCurrentCourse } from "../../../../redux/features/courseSlice";
 import { addToCart } from "../../../../redux/features/cartSlice";
 
 const FALLBACK_THUMB = "https://placehold.co/600x400?text=Course+Image";
@@ -14,6 +17,8 @@ export default function CourseCard({ course }) {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
+  // Backend fields
+  const { id, title, slug, subtitle } = course;
   // ============================================
   //  BACKEND FIELDS — TÙY API TRẢ VỀ
   // ============================================
@@ -72,7 +77,7 @@ export default function CourseCard({ course }) {
                 Thêm vào giỏ
               </>
             }
-            onClick={() => dispatch(addToCart(course))}
+            onClick={() => dispatch(addToCart(course))} //muốn demo thì dùng dispatch(addItem(course))} nhớ import nha
             containerClassName={styles.actionItem}
             className={`${styles.actionButton} ${styles.cartButton}`}
           />

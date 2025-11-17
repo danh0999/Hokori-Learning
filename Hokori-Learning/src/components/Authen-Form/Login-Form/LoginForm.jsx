@@ -40,6 +40,7 @@ const LoginForm = () => {
       dispatch(login(payload));
       localStorage.setItem("token", accessToken);
       navigate("/");
+      toast.success(`Xin chào, ${user.fullName || user.username}!`);
     } catch (err) {
       console.error("Login error:", err);
       console.error("Response data:", err?.response?.data);

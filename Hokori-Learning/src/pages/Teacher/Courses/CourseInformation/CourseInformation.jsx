@@ -1,95 +1,147 @@
-import React, { useState, useMemo } from "react";
-import { useParams } from "react-router-dom";
+// src/pages/Teacher/Courses/CourseInformation/CourseInformation.jsx
+import React, { useEffect, useMemo, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Card, Tabs, Button, Tag, Space, message } from "antd";
+import { useDispatch, useSelector } from "react-redux";
 
 import CourseOverview from "../Create-Course/components/CourseOverview/CourseOverview.jsx";
-import CurriculumBuilder from "../Create-Course/components/Curriculum Builder/CurriculumBuilder.jsx";
 import PricingStep from "../Create-Course/components/PricingStep/PricingStep.jsx";
-import QuizList from "../../ManageDocument/Quiz/QuizList/QuizList.jsx"; // bạn đã có QuizList
-import FlashcardPanel from "../../ManageDocument/Flashcard/FlashcardPanel.jsx"; // bạn đã có FlashcardPanel
-import UploadMedia from "../components/Upload Media/UploadMedia.jsx"; // quản lý thư viện media của course
+import CourseCurriculumView from "../CourseCurriculumView/CourseCurriculumView.jsx";
+import LessonEditorDrawer from "../Create-Course/components/Curriculum Builder/LessonEditorDrawer/LessonEditorDrawer.jsx";
+
+import {
+  fetchCourseTree,
+  updateCourseThunk,
+  publishCourseThunk,
+  unpublishCourseThunk,
+} from "../../../../redux/features/teacherCourseSlice.js";
 
 import styles from "./styles.module.scss";
 
 const statusColor = {
-  Draft: "default",
-  Review: "warning",
-  Published: "success",
-  Rejected: "error",
+  DRAFT: "default",
+  REVIEW: "warning",
+  PUBLISHED: "success",
+  REJECTED: "error",
 };
 
 export default function CourseInformation() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const courseId = id ? Number(id) : null;
 
-  // Fake data load cho ví dụ này
-  // sau này bạn sẽ fetch từ API bằng id
-  const [status, setStatus] = useState("Review");
-  const [basics, setBasics] = useState({
-    title: "JLPT N5 Grammar Basics",
-    subtitle: "Master core N5 grammar in simple Vietnamese",
-    description:
-      "We'll cover must-know grammar patterns for JLPT N5 with lots of examples.",
-    category: "JLPT N5",
-    level: "Beginner",
-    language: "Japanese",
-    thumbnailUrl: "",
-  });
+  const dispatch = useDispatch();
+  const {
+    currentCourseMeta,
+    currentCourseTree,
+    loadingMeta,
+    loadingTree,
+    saving,
+  } = useSelector((state) => state.teacherCourse);
+  // ====== LOCAL STATE: lesson editor drawer ======
+  const [lessonDrawerOpen, setLessonDrawerOpen] = useState(false);
+  const [selectedLesson, setSelectedLesson] = useState(null);
 
-  const [sections, setSections] = useState([
-    {
-      id: "sec_1",
-      title: "Module 1: Hiragana Basics",
-      lessons: [
-        {
-          id: "les_1",
-          title: "Hiragana vowels (a i u e o)",
-          contentSummary: "Video (6:32) + PDF practice sheet",
-        },
-      ],
-    },
-  ]);
-
-  const [price, setPrice] = useState(199000);
-
-  const [quizPool, setQuizPool] = useState([
-    { id: "quiz_1", title: "N5 Grammar Check 01", questions: 10 },
-  ]);
-
-  const [flashcards, setFlashcards] = useState([
-    {
-      id: 1,
-      term: "勉強 (べんきょう)",
-      meaning: "study",
-      example: "日本語を勉強します。",
-    },
-  ]);
-
-  // actions
-  const handleSaveDraft = () => {
-    // TODO: call API PUT /courses/:id (save current edits)
-    message.success("Draft saved");
+  const handleEditLesson = (lesson) => {
+    setSelectedLesson(lesson);
+    setLessonDrawerOpen(true);
   };
 
-  const handleSubmitForReview = () => {
-    // TODO: call API to mark course as 'Review'
-    setStatus("Review");
-    message.success("Submitted for review");
+  const handleCloseLessonDrawer = () => {
+    setLessonDrawerOpen(false);
   };
 
-  // summary if you want validation (optional)
+  const handleLessonSaved = async () => {
+    if (courseId) {
+      await dispatch(fetchCourseTree(courseId));
+    }
+  };
+  // ====== LOAD COURSE DATA ======
+  useEffect(() => {
+    if (!courseId) return;
+    dispatch(fetchCourseTree(courseId)); // /detail: vừa meta vừa tree
+  }, [courseId, dispatch]);
+
+  // ====== ACTIONS ======
+  const handleSaveDraft = async () => {
+    if (!courseId || !currentCourseMeta) return;
+
+    const payload = {
+      ...currentCourseMeta,
+    };
+
+    const action = await dispatch(
+      updateCourseThunk({ courseId, data: payload })
+    );
+
+    if (updateCourseThunk.fulfilled.match(action)) {
+      message.success("Draft saved");
+    } else {
+      message.error("Save failed, please try again");
+    }
+  };
+
+  const handleSubmitForReview = async () => {
+    if (!courseId) return;
+
+    const action = await dispatch(publishCourseThunk(courseId));
+
+    if (publishCourseThunk.fulfilled.match(action)) {
+      message.success("Submitted for review / published");
+    } else {
+      message.error("Submit failed, please try again");
+    }
+  };
+
+  const handleUnpublish = async () => {
+    if (!courseId) return;
+
+    const action = await dispatch(unpublishCourseThunk(courseId));
+    if (unpublishCourseThunk.fulfilled.match(action)) {
+      message.success("Unpublished");
+    } else {
+      message.error("Unpublish failed, please try again");
+    }
+  };
+
+  // ====== VALIDATION ĐỂ ENABLE SUBMIT ======
   const canSubmit = useMemo(() => {
-    const hasTitle = basics.title.trim().length > 0;
-    const hasDesc = basics.description.trim().length > 0;
-    const hasAnyLesson = sections.some((s) => s.lessons.length > 0);
-    return hasTitle && hasDesc && hasAnyLesson;
-  }, [basics, sections]);
+    const basicsDone =
+      !!currentCourseMeta?.title &&
+      !!currentCourseMeta?.description &&
+      !!currentCourseMeta?.level;
+
+    const hasLessons =
+      currentCourseTree?.chapters?.some(
+        (ch) => Array.isArray(ch.lessons) && ch.lessons.length > 0
+      ) || false;
+
+    const pricingDone = (currentCourseMeta?.priceCents || 0) > 0;
+
+    return basicsDone && hasLessons && pricingDone;
+  }, [currentCourseMeta, currentCourseTree]);
+
+  const status = currentCourseMeta?.status || "DRAFT";
+
+  if (!courseId) {
+    return (
+      <div className={styles.wrap}>
+        <p>No course id in URL.</p>
+        <Button onClick={() => navigate("/teacher/manage-courses")}>
+          Back to list
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.wrap}>
       {/* HEADER */}
       <div className={styles.header}>
         <div>
-          <h1 className={styles.title}>{basics.title || `Course #${id}`}</h1>
+          <h1 className={styles.title}>
+            {currentCourseMeta?.title || `Course #${courseId}`}
+          </h1>
           <p className={styles.subtitle}>
             Edit content, manage media & assessments
           </p>
@@ -98,13 +150,20 @@ export default function CourseInformation() {
         <Space wrap>
           <Tag color={statusColor[status] || "default"}>{status}</Tag>
 
-          <Button onClick={handleSaveDraft}>Save draft</Button>
+          <Button onClick={handleSaveDraft} loading={saving || loadingMeta}>
+            Save draft
+          </Button>
 
-          {status !== "Review" && status !== "Published" && (
+          {status === "PUBLISHED" ? (
+            <Button danger onClick={handleUnpublish} loading={saving}>
+              Unpublish
+            </Button>
+          ) : (
             <Button
               type="primary"
               disabled={!canSubmit}
               onClick={handleSubmitForReview}
+              loading={saving}
             >
               Submit for review
             </Button>
@@ -120,41 +179,36 @@ export default function CourseInformation() {
             {
               key: "basic",
               label: "Basic",
-              children: <CourseOverview value={basics} onChange={setBasics} />,
+              children: (
+                <CourseOverview courseId={courseId} loading={loadingMeta} />
+              ),
             },
             {
               key: "curriculum",
               label: "Curriculum",
               children: (
-                <CurriculumBuilder
-                  sections={sections}
-                  setSections={setSections}
+                <CourseCurriculumView
+                  courseMeta={currentCourseMeta}
+                  courseTree={currentCourseTree}
+                  loading={loadingTree}
+                  onEditLesson={handleEditLesson}
                 />
               ),
             },
             {
-              key: "media",
-              label: "Media",
-              children: <UploadMedia />,
-            },
-            {
-              key: "assess",
-              label: "Assessments",
-              children: (
-                <>
-                  <QuizList value={quizPool} onChange={setQuizPool} />
-                  <FlashcardPanel value={flashcards} onChange={setFlashcards} />
-                </>
-              ),
-            },
-            {
               key: "settings",
-              label: "Settings",
-              children: <PricingStep price={price} setPrice={setPrice} />,
+              label: "Pricing",
+              children: <PricingStep courseId={courseId} />,
             },
           ]}
         />
       </Card>
+      <LessonEditorDrawer
+        open={lessonDrawerOpen}
+        lesson={selectedLesson}
+        onClose={handleCloseLessonDrawer}
+        onSave={handleLessonSaved}
+      />
     </div>
   );
 }

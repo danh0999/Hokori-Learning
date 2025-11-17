@@ -1,139 +1,209 @@
-import React, { useState } from "react";
-import { Card, Button, Input, Space, Tooltip } from "antd";
+// src/pages/Teacher/Courses/Create-Course/components/Curriculum Builder/CurriculumBuilder.jsx
+import React, { useState, useMemo } from "react";
+import { Card, Button, Input, Tooltip, Spin, Empty } from "antd";
 import { PlusOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
-import LessonEditorDrawer from "./LessonEditorDrawer";
+import { useDispatch, useSelector } from "react-redux";
+
+import LessonEditorDrawer from "./LessonEditorDrawer/LessonEditorDrawer.jsx";
+
+import {
+  createChapterThunk,
+  deleteChapterThunk,
+  createLessonThunk,
+  deleteLessonThunk,
+  updateLessonThunk,
+  fetchCourseTree,
+} from "../../../../../../redux/features/teacherCourseSlice.js";
+
 import styles from "./styles.module.scss";
 
 /**
  * Props:
- *  - sections: [{id, title, lessons:[{id,title,...lessonData}]}]
- *  - setSections(next)
+ *  - courseId
+ *  - loadingTree
  */
-export default function CurriculumBuilder({ sections = [], setSections }) {
-  const [newSec, setNewSec] = useState("");
-  const [openLesson, setOpenLesson] = useState(null); // {secId, lesId}
+export default function CurriculumBuilder({ courseId, loadingTree }) {
+  const dispatch = useDispatch();
+  const { currentCourseTree } = useSelector((state) => state.teacherCourse);
 
-  const uid = () => Date.now() + Math.random();
+  const [newChapterTitle, setNewChapterTitle] = useState("");
+  const [openLesson, setOpenLesson] = useState(null); // {chapterId, lesson}
+  const [lessonTitleDrafts, setLessonTitleDrafts] = useState({}); // { lessonId: "tên đang gõ" }
 
-  const addSection = () => {
-    if (!newSec.trim()) return;
-    setSections([
-      ...sections,
-      { id: uid(), title: newSec.trim(), lessons: [] },
-    ]);
-    setNewSec("");
+  const chapters = useMemo(
+    () => currentCourseTree?.chapters || [],
+    [currentCourseTree]
+  );
+
+  // =======================
+  // Chapter actions
+  // =======================
+  const handleAddChapter = async () => {
+    if (!courseId || !newChapterTitle.trim()) return;
+
+    await dispatch(
+      createChapterThunk({
+        courseId,
+        data: {
+          title: newChapterTitle.trim(),
+          orderIndex: chapters.length,
+          summary: "",
+          isTrial: false,
+        },
+      })
+    ).unwrap();
+
+    setNewChapterTitle("");
+    await dispatch(fetchCourseTree(courseId));
   };
 
-  const addLesson = (secId) => {
-    setSections(
-      sections.map((s) =>
-        s.id === secId
-          ? {
-              ...s,
-              lessons: [
-                ...s.lessons,
-                {
-                  id: uid(),
-                  title: "New Lesson",
-                  video: null,
-                  attachments: [],
-                },
-              ],
-            }
-          : s
-      )
+  const handleDeleteChapter = async (chapterId) => {
+    await dispatch(deleteChapterThunk(chapterId)).unwrap();
+    await dispatch(fetchCourseTree(courseId));
+  };
+
+  // =======================
+  // Lesson actions
+  // =======================
+  const handleAddLesson = async (chapterId) => {
+    await dispatch(
+      createLessonThunk({
+        chapterId,
+        data: { title: "New lesson", orderIndex: 0, totalDurationSec: 0 },
+      })
+    ).unwrap();
+    await dispatch(fetchCourseTree(courseId));
+  };
+
+  const handleDeleteLesson = async (chapterId, lessonId) => {
+    await dispatch(deleteLessonThunk({ chapterId, lessonId })).unwrap();
+    await dispatch(fetchCourseTree(courseId));
+  };
+
+  // chỉ cập nhật draft trên FE, KHÔNG gọi API
+  const handleChangeLessonTitle = (lessonId, value) => {
+    setLessonTitleDrafts((prev) => ({
+      ...prev,
+      [lessonId]: value,
+    }));
+  };
+
+  // khi rời ô input mới gọi API update
+  const handleBlurLessonTitle = async (lessonId, originalTitle) => {
+    const draft = lessonTitleDrafts[lessonId];
+
+    const trimmed = (draft ?? "").trim();
+    if (!trimmed || trimmed === originalTitle) return;
+
+    try {
+      await dispatch(
+        updateLessonThunk({
+          lessonId,
+          data: { title: trimmed },
+        })
+      ).unwrap();
+
+      setLessonTitleDrafts((prev) => {
+        const next = { ...prev };
+        delete next[lessonId];
+        return next;
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Khi drawer lưu xong
+  const handleLessonSaved = async () => {
+    if (courseId) {
+      await dispatch(fetchCourseTree(courseId));
+    }
+  };
+
+  const renderLessonMeta = (lesson) => {
+    const sectionCount = lesson.sections?.length || 0;
+    const contentCount = (lesson.sections || []).reduce(
+      (sum, s) => sum + (s.contents?.length || 0),
+      0
     );
+    return `${sectionCount} section(s) · ${contentCount} content item(s)`;
   };
 
-  const removeSection = (id) => {
-    setSections(sections.filter((s) => s.id !== id));
-  };
-
-  const removeLesson = (secId, lesId) => {
-    setSections(
-      sections.map((s) =>
-        s.id === secId
-          ? { ...s, lessons: s.lessons.filter((l) => l.id !== lesId) }
-          : s
-      )
+  if (loadingTree && !chapters.length) {
+    return (
+      <div className={styles.curriculumWrap}>
+        <Spin />
+      </div>
     );
-  };
-
-  const updateLesson = (secId, lesId, updated) => {
-    setSections(
-      sections.map((s) =>
-        s.id === secId
-          ? {
-              ...s,
-              lessons: s.lessons.map((l) =>
-                l.id === lesId ? { ...l, ...updated } : l
-              ),
-            }
-          : s
-      )
-    );
-  };
+  }
 
   return (
     <div className={styles.curriculumWrap}>
-      <div style={{ display: "flex", gap: 8 }}>
+      {/* input tạo chapter mới */}
+      <div className={styles.newChapterRow}>
         <Input
-          placeholder="New section title"
-          value={newSec}
-          onChange={(e) => setNewSec(e.target.value)}
-          onPressEnter={addSection}
+          placeholder="New chapter title"
+          value={newChapterTitle}
+          onChange={(e) => setNewChapterTitle(e.target.value)}
+          onPressEnter={handleAddChapter}
           style={{ maxWidth: 320 }}
         />
-        <Button type="primary" icon={<PlusOutlined />} onClick={addSection}>
-          Add Section
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={handleAddChapter}
+        >
+          Add chapter
         </Button>
       </div>
 
-      {sections.length === 0 ? (
-        <div className={styles.emptyBox}>No sections yet</div>
+      {/* danh sách chapter */}
+      {chapters.length === 0 ? (
+        <div className={styles.emptyBox}>
+          <Empty description="Chưa có chapter nào" />
+        </div>
       ) : (
-        sections.map((sec) => (
+        chapters.map((ch) => (
           <Card
-            key={sec.id}
-            title={sec.title}
+            key={ch.id}
             className={styles.sectionBlock}
+            title={
+              <div className={styles.chapterTitleRow}>
+                <span>{ch.title}</span>
+              </div>
+            }
             extra={
-              <Tooltip title="Delete section">
+              <Tooltip title="Delete chapter">
                 <Button
                   icon={<DeleteOutlined />}
                   type="text"
                   danger
-                  onClick={() => removeSection(sec.id)}
+                  onClick={() => handleDeleteChapter(ch.id)}
                 />
               </Tooltip>
             }
           >
             <div className={styles.lessonList}>
-              {sec.lessons.length === 0 ? (
-                <div className={styles.lessonEmpty}>
-                  No lessons in this section
-                </div>
+              {(ch.lessons || []).length === 0 ? (
+                <div className={styles.lessonEmpty}>No lessons yet</div>
               ) : (
-                sec.lessons.map((les) => (
+                (ch.lessons || []).map((les) => (
                   <div key={les.id} className={styles.lessonItem}>
                     <div className={styles.lessonMain}>
                       <Input
-                        value={les.title}
-                        onChange={(e) =>
-                          updateLesson(sec.id, les.id, {
-                            title: e.target.value,
-                          })
+                        value={
+                          lessonTitleDrafts[les.id] !== undefined
+                            ? lessonTitleDrafts[les.id]
+                            : les.title
                         }
+                        onChange={(e) =>
+                          handleChangeLessonTitle(les.id, e.target.value)
+                        }
+                        onBlur={() => handleBlurLessonTitle(les.id, les.title)}
                         className={styles.lessonTitleInput}
                       />
                       <div className={styles.lessonMeta}>
-                        {les.video
-                          ? `🎥 ${les.video.title || "Video attached"}`
-                          : "No video yet"}{" "}
-                        · {les.attachments?.length || 0} files ·{" "}
-                        {(les.quizQuick?.length || 0) +
-                          (les.flashcards?.length || 0)}{" "}
-                        activities
+                        {renderLessonMeta(les)}
                       </div>
                     </div>
                     <div className={styles.lessonActions}>
@@ -141,26 +211,25 @@ export default function CurriculumBuilder({ sections = [], setSections }) {
                         icon={<EditOutlined />}
                         size="small"
                         onClick={() =>
-                          setOpenLesson({ secId: sec.id, lesId: les.id })
+                          setOpenLesson({ chapterId: ch.id, lesson: les })
                         }
-                      >
-                        Add Content
-                      </Button>
+                      />
                       <Button
                         icon={<DeleteOutlined />}
                         size="small"
                         danger
-                        onClick={() => removeLesson(sec.id, les.id)}
+                        onClick={() => handleDeleteLesson(ch.id, les.id)}
                       />
                     </div>
                   </div>
                 ))
               )}
+
               <Button
                 type="dashed"
                 icon={<PlusOutlined />}
                 className={styles.addLessonBtn}
-                onClick={() => addLesson(sec.id)}
+                onClick={() => handleAddLesson(ch.id)}
               >
                 Add lesson
               </Button>
@@ -169,18 +238,13 @@ export default function CurriculumBuilder({ sections = [], setSections }) {
         ))
       )}
 
-      {/* Drawer editor */}
+      {/* Drawer edit lesson */}
       {openLesson && (
         <LessonEditorDrawer
           open
-          lesson={sections
-            .find((s) => s.id === openLesson.secId)
-            ?.lessons.find((l) => l.id === openLesson.lesId)}
+          lesson={openLesson.lesson}
           onClose={() => setOpenLesson(null)}
-          onSave={(updated) => {
-            updateLesson(openLesson.secId, openLesson.lesId, updated);
-            setOpenLesson(null);
-          }}
+          onSave={handleLessonSaved}
         />
       )}
     </div>

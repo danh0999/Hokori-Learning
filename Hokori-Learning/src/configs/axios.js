@@ -14,9 +14,7 @@ import axios from "axios";
 
 const PRIMARY = "https://hokoribe-production.up.railway.app/api";
 const NGROK_FE_FALLBACK = () => `${window.location.origin}/api`;
-const NGROK_BACKENDS = [
-  "https://saner-eden-placably.ngrok-free.dev/api",
-];
+const NGROK_BACKENDS = ["https://saner-eden-placably.ngrok-free.dev/api"];
 const LOCAL = "http://localhost:8080/api";
 
 const CACHE_KEY = "hokori_backend_url";
@@ -106,7 +104,6 @@ async function autoBackend() {
   saveBackend(PRIMARY);
   return PRIMARY;
 }
-
 /* ===========================================================
     INIT AXIOS WITH DYNAMIC BASE URL
 =========================================================== */

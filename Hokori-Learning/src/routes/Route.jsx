@@ -101,7 +101,7 @@ const routes = [
           { path: "jlpt/test/:testId", element: <JLPTTestPage /> },
 
           { path: "lesson/:lessonId", element: <LessonPlayer /> },
-          { path: "lesson/:lessonId/quiz/:quizId", element: <QuizPage /> }
+          { path: "lesson/:lessonId/quiz/:quizId", element: <QuizPage /> },
         ],
       },
 
@@ -131,6 +131,19 @@ const routes = [
         ],
       },
 
+      // ✅ Trang tách riêng, không dùng RoleLayout
+      {
+        path: "create-course",
+        element: <CreateCoursePage />,
+      },
+      {
+        path: "create-course/:courseId",
+        element: <CreateCoursePage />,
+      },
+      {
+        path: "create-quiz",
+        element: <CreateQuizPage />,
+      },
       { path: "create-course", element: <CreateCoursePage /> },
       { path: "create-quiz", element: <CreateQuizPage /> },
     ],

@@ -1,8 +1,9 @@
 // src/pages/Teacher/Courses/Create-Course/CreateCoursePage.jsx
-import React, { useState, useMemo } from "react";
-import { Button, Steps, message } from "antd";
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { Button, message } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 
 import CourseOverview from "./components/CourseOverview/CourseOverview.jsx";
 import CurriculumBuilder from "./components/Curriculum Builder/CurriculumBuilder.jsx";
@@ -10,111 +11,116 @@ import PricingStep from "./components/PricingStep/PricingStep.jsx";
 import PublishStep from "./components/PublishStep/PublishStep.jsx";
 import SidebarWizardNav from "./components/SideWizardNav/SidebarWizardNav.jsx";
 
+import {
+  createCourseThunk,
+  fetchCourseTree,
+  clearCourseTree,
+} from "../../../../redux/features/teacherCourseSlice.js";
+
 import styles from "./styles.module.scss";
 import ScrollToTopButton from "../../../../components/SrcollToTopButton/ScrollToTopButton.jsx";
 
 export default function CreateCoursePage() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { courseId: courseIdParam } = useParams(); // /teacher/create-course/:courseId
+  const courseId = courseIdParam ? Number(courseIdParam) : null;
+
   const [step, setStep] = useState(0);
 
-  // 1️⃣ State chính luôn phải khai báo trước
-  const [courseBasics, setCourseBasics] = useState({
-    title: "",
-    subtitle: "",
-    description: "",
-    category: "JLPT N5",
-    level: "Beginner",
-    language: "Japanese",
-    thumbnailUrl: "",
-  });
+  const { currentCourseMeta, currentCourseTree, loadingTree } = useSelector(
+    (state) => state.teacherCourse
+  );
 
-  const [sections, setSections] = useState([]);
-  const [price, setPrice] = useState(199000);
+  // flag chống double-create trong StrictMode
+  const createdRef = useRef(false);
 
-  // 2️⃣ Sau đó mới đến useMemo
-  const canPublish = useMemo(() => {
-    const hasTitle = courseBasics.title.trim().length > 0;
-    const hasDesc = courseBasics.description.trim().length > 0;
-    const hasThumb = !!courseBasics.thumbnailUrl;
-    const hasAnyLesson = sections.some((s) => s.lessons.length > 0);
-    return hasTitle && hasDesc && hasThumb && hasAnyLesson;
-  }, [courseBasics, sections]);
+  // 1. Khi đổi courseId trên URL ⇒ clear tree cũ + load meta + detail mới
+  useEffect(() => {
+    // luôn clear tree để tránh recycle curriculum của course trước
+    dispatch(clearCourseTree());
 
-  const basicsDone = useMemo(() => {
-    const hasTitle = courseBasics.title.trim().length > 0;
-    const hasDesc = courseBasics.description.trim().length > 0;
-    const hasThumb = !!courseBasics.thumbnailUrl;
-    return hasTitle && hasDesc && hasThumb;
-  }, [courseBasics]);
+    if (!courseId) return;
 
-  const curriculumDone = useMemo(() => {
-    return sections.some((s) => s.lessons && s.lessons.length > 0);
-  }, [sections]);
+    dispatch(fetchCourseTree(courseId));
+  }, [courseId, dispatch]);
 
-  const pricingDone = useMemo(() => Number(price) > 0, [price]);
+  // 2. Nếu KHÔNG có courseId trên URL ⇒ tạo nháp 1 lần rồi điều hướng sang /:id
+  useEffect(() => {
+    if (courseId) return; // đã có id trên URL thì thôi
+    if (createdRef.current) return; // đã gửi request rồi thì thôi (chống StrictMode)
 
-  const status = {
-    basicsDone,
-    curriculumDone,
-    pricingDone,
-    readyToPublish: canPublish,
-  };
-
-  const handleSubmitForReview = () => {
-    if (!canPublish) {
-      message.error(
-        "Please complete title, description, thumbnail and at least one lesson."
-      );
-      return;
-    }
+    createdRef.current = true;
 
     const payload = {
-      ...courseBasics,
-      price,
-      sections,
-      status: "Review",
+      title: "Untitled course",
+      subtitle: "",
+      description: "",
+      level: "N5",
+      currency: "VND",
+      priceCents: 0,
+      discountedPriceCents: 0,
+      coverAssetId: null,
     };
 
-    console.log("SUBMIT PAYLOAD", payload);
+    dispatch(createCourseThunk(payload))
+      .unwrap()
+      .then((course) => {
+        navigate(`/teacher/create-course/${course.id}`, { replace: true });
+      })
+      .catch((err) => {
+        createdRef.current = false;
+        console.error(err);
+        message.error("Tạo nháp khoá học thất bại, thử lại nhé.");
+      });
+  }, [courseId, dispatch, navigate]);
 
-    message.success("Course submitted for review");
-    navigate("/teacher/manage-courses");
-  };
+  // trạng thái cho SidebarWizardNav
+  const status = useMemo(() => {
+    const basicsDone =
+      !!currentCourseMeta?.title &&
+      !!currentCourseMeta?.description &&
+      !!currentCourseMeta?.level;
 
-  // ----- render current step main panel -----
+    const hasLessons =
+      currentCourseTree?.chapters?.some(
+        (ch) => Array.isArray(ch.lessons) && ch.lessons.length > 0
+      ) || false;
+
+    const pricingDone = (currentCourseMeta?.priceCents || 0) > 0;
+    const readyToPublish = basicsDone && hasLessons && pricingDone;
+
+    return {
+      basicsDone,
+      curriculumDone: hasLessons,
+      pricingDone,
+      readyToPublish,
+    };
+  }, [currentCourseMeta, currentCourseTree]);
+
   const renderStep = () => {
-    if (step === 0)
-      return <CourseOverview value={courseBasics} onChange={setCourseBasics} />;
+    if (!courseId) {
+      return <div className={styles.loadingBox}>Đang tạo khoá học nháp...</div>;
+    }
 
-    if (step === 1)
-      return (
-        <CurriculumBuilder
-          sections={sections}
-          setSections={setSections}
-          // sau này bạn sẽ truyền thêm:
-          // mediaLibrary={mediaLibrary}
-          // onUploadMedia={handleUploadMedia}
-          // quizPool={quizPool} setQuizPool={setQuizPool}
-          // flashcards={flashcards} setFlashcards={setFlashcards}
-        />
-      );
-
-    if (step === 2) return <PricingStep price={price} setPrice={setPrice} />;
-
-    return (
-      <PublishStep
-        courseBasics={courseBasics}
-        sections={sections}
-        price={price}
-        canPublish={canPublish}
-        onSubmit={handleSubmitForReview}
-      />
-    );
+    switch (step) {
+      case 0:
+        return <CourseOverview courseId={courseId} />;
+      case 1:
+        return (
+          <CurriculumBuilder courseId={courseId} loadingTree={loadingTree} />
+        );
+      case 2:
+        return <PricingStep courseId={courseId} />;
+      case 3:
+        return <PublishStep courseId={courseId} statusFlags={status} />;
+      default:
+        return null;
+    }
   };
 
   return (
     <div className={styles.page}>
-      {/* Top row giống Udemy */}
       <div className={styles.topRow}>
         <div className={styles.leftGroup}>
           <Button
@@ -125,21 +131,13 @@ export default function CreateCoursePage() {
             Back to Courses
           </Button>
 
-          <div className={styles.statusText}>Draft · Not submitted</div>
+          <div className={styles.statusText}>
+            {currentCourseMeta?.status || "DRAFT"} · Not submitted
+          </div>
         </div>
-
-        <Button
-          type="primary"
-          className={styles.submitBtnTop}
-          disabled={step !== 3 || !canPublish}
-          onClick={handleSubmitForReview}
-        >
-          Submit for review
-        </Button>
       </div>
 
       <div className={styles.contentRow}>
-        {/* Sidebar steps / wizard nav */}
         <aside className={styles.sidebar}>
           <SidebarWizardNav
             step={step}
@@ -148,9 +146,14 @@ export default function CreateCoursePage() {
           />
         </aside>
 
-        {/* Main panel */}
-        <main className={styles.mainPanel}>{renderStep()}</main>
+        <main
+          className={styles.mainPanel}
+          style={{ marginTop: 0, paddingTop: 0 }}
+        >
+          {renderStep()}
+        </main>
       </div>
+
       <ScrollToTopButton />
     </div>
   );
