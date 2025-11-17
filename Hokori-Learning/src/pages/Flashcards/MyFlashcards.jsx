@@ -1,151 +1,150 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import styles from "./MyFlashcards.module.scss";
 import { toast } from "react-hot-toast";
+import { useDispatch, useSelector } from "react-redux";
 
 import DeckCard from "./components/DeckCard";
 import StudyModal from "./components/StudyModal";
 import CreateDeckModal from "./components/CreateDeckModal";
 import AddWordModal from "./components/AddWordModal";
 
-const MyFlashcards = () => {
-  //  Mock data (sẽ thay bằng API sau)
-  const mockDecks = [
-    {
-      id: 1,
-      tenBo: "Từ vựng JLPT N4",
-      capDo: "N4",
-      loai: "Từ vựng",
-      tongThe: 45,
-      tienDo: 80,
-      lanCuoi: "2 giờ trước",
-      mau: "xanh",
-    },
-    {
-      id: 2,
-      tenBo: "Kanji cơ bản",
-      capDo: "N3",
-      loai: "Kanji",
-      tongThe: 80,
-      tienDo: 52,
-      lanCuoi: "Hôm qua",
-      mau: "xanhLa",
-    },
-    {
-      id: 3,
-      tenBo: "Cụm giao tiếp hàng ngày",
-      capDo: "N5",
-      loai: "Cụm từ",
-      tongThe: 30,
-      tienDo: 95,
-      lanCuoi: "30 phút trước",
-      mau: "tim",
-    },
-  ];
+import {
+  fetchPersonalSetsWithCounts,
+  createPersonalSet,
+  addCardsBatchToSet,
+  removeDeckLocally,
+} from "../../redux/features/flashcardLearnerSlice";
 
-  // State
-  const [decks, setDecks] = useState(mockDecks);
-  const [filteredDecks, setFilteredDecks] = useState(mockDecks);
+const MyFlashcards = () => {
+  const dispatch = useDispatch();
+  const { sets, loadingSets } = useSelector((state) => state.flashcards);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [levelFilter, setLevelFilter] = useState("Tất cả");
-  const [typeFilter, setTypeFilter] = useState("Tất cả");
 
-  const [selectedDeck, setSelectedDeck] = useState(null);
+  const [selectedDeck, setSelectedDeck] = useState(null); // học
+  const [editingDeck, setEditingDeck] = useState(null); // thêm thẻ
+
   const [showCreate, setShowCreate] = useState(false);
   const [showAddWord, setShowAddWord] = useState(false);
-  const [newDeck, setNewDeck] = useState(null);
 
-  // 🔍 Lọc danh sách bộ thẻ theo 3 điều kiện
+  // ============ Fetch sets lần đầu ============
   useEffect(() => {
+    dispatch(fetchPersonalSetsWithCounts());
+  }, [dispatch]);
+
+  // ============ Filter ============
+  const filteredDecks = useMemo(() => {
     const lowerSearch = searchTerm.toLowerCase();
-
-    const result = decks.filter((deck) => {
-      const matchSearch = deck.tenBo.toLowerCase().includes(lowerSearch);
-      const matchLevel = levelFilter === "Tất cả" || deck.capDo === levelFilter;
-      const matchType = typeFilter === "Tất cả" || deck.loai === typeFilter;
-      return matchSearch && matchLevel && matchType;
+    return (sets || []).filter((deck) => {
+      const matchSearch = deck.title.toLowerCase().includes(lowerSearch);
+      const matchLevel = levelFilter === "Tất cả" || deck.level === levelFilter;
+      return matchSearch && matchLevel;
     });
+  }, [sets, searchTerm, levelFilter]);
 
-    setFilteredDecks(result);
-  }, [searchTerm, levelFilter, typeFilter, decks]);
+  const totalCards = useMemo(
+    () => filteredDecks.reduce((sum, d) => sum + (d.totalCards || 0), 0),
+    [filteredDecks]
+  );
 
-  // 🪄 Khi tạo bộ thẻ mới
-  const handleCreateDeck = (formData) => {
-    const newDeckObj = {
-      id: Date.now(),
-      tenBo: formData.name,
-      capDo: formData.level,
-      loai: formData.type,
-      tongThe: 0,
-      tienDo: 0,
-      lanCuoi: "Chưa có",
-      mau: "xanh",
-    };
+  // ============ Tạo set ============
+  const handleCreateDeck = async (formData) => {
+    try {
+      const payload = {
+        title: formData.name,
+        description: formData.description,
+        level: formData.level,
+      };
 
-    setDecks([...decks, newDeckObj]);
-    setNewDeck(newDeckObj);
-    toast.success("Tạo bộ thẻ thành công!");
+      const action = await dispatch(createPersonalSet(payload));
+      if (createPersonalSet.fulfilled.match(action)) {
+        const newDeck = action.payload;
+        toast.success("Tạo bộ thẻ thành công!");
 
-    setShowCreate(false);
-    setShowAddWord(true); // Mở modal thêm từ ngay sau khi tạo
+        setEditingDeck(newDeck);
+        setShowCreate(false);
+        setShowAddWord(true);
+      } else {
+        toast.error("Không tạo được bộ thẻ.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Có lỗi xảy ra, vui lòng thử lại.");
+    }
   };
 
-  //  Khi lưu các thẻ trong AddWordModal
-  const handleSaveWords = (cards) => {
-    console.log("Các thẻ đã lưu:", cards);
-    // Sau này gọi API: POST /api/flashcards/cards
-    toast.success(`Đã lưu ${cards.length} thẻ vào bộ "${newDeck.tenBo}"!`);
-
-    // Cập nhật tổng số thẻ của deck đó
-    setDecks((prev) =>
-      prev.map((deck) =>
-        deck.id === newDeck.id
-          ? { ...deck, tongThe: cards.length, lanCuoi: "Vừa tạo" }
-          : deck
-      )
-    );
-
-    setShowAddWord(false);
+  // ============ Lưu các thẻ từ AddWordModal ============
+  const handleSaveWords = async (cards) => {
+    if (!editingDeck) return;
+    try {
+      const action = await dispatch(
+        addCardsBatchToSet({ setId: editingDeck.id, cards })
+      );
+      if (addCardsBatchToSet.fulfilled.match(action)) {
+        toast.success(
+          `Đã lưu ${cards.length} thẻ vào bộ "${editingDeck.title}"!`
+        );
+        setShowAddWord(false);
+        setEditingDeck(null);
+      } else {
+        toast.error("Lưu thẻ thất bại. Vui lòng thử lại.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Có lỗi xảy ra khi lưu thẻ.");
+    }
   };
 
+  // ============ Xoá deck (FE-only) ============
+  const handleDeleteDeck = (deck) => {
+    if (!window.confirm(`Bạn có chắc muốn xóa bộ "${deck.title}"?`)) return;
+    dispatch(removeDeckLocally(deck.id));
+    toast.success("Đã xóa bộ thẻ khỏi danh sách hiển thị (FE-only).");
+  };
+
+  // ============ Render ============
   return (
     <div className={styles.wrapper}>
-      {/* ================= Header ================= */}
+      {/* Header */}
       <div className={styles.header}>
         <div>
           <h1>Bộ thẻ ghi nhớ của tôi</h1>
           <p className={styles.sub}>
-            Ôn tập từ vựng, kanji và cụm câu tiếng Nhật của riêng bạn
+            Ôn tập từ vựng, kanji và cụm câu tiếng Nhật do chính bạn tạo ra.
           </p>
         </div>
-        <button className={styles.addBtn} onClick={() => setShowCreate(true)}>
+        <button
+          className={styles.addBtn}
+          onClick={() => {
+            setShowCreate(true);
+          }}
+        >
           <i className="fa-solid fa-plus"></i> Tạo bộ mới
         </button>
       </div>
 
-      {/* ================= Thống kê ================= */}
+      {/* Stats */}
       <div className={styles.stats}>
         <div>
           <span>{filteredDecks.length}</span>
           <p>Bộ thẻ</p>
         </div>
         <div>
-          <span>
-            {filteredDecks.reduce((sum, d) => sum + (d.tongThe || 0), 0)}
-          </span>
+          <span>{totalCards}</span>
           <p>Tổng số thẻ</p>
         </div>
         <div>
-          <span>20</span>
+          <span>0</span>
           <p>Đã ôn hôm nay</p>
         </div>
         <div>
-          <span>7</span>
+          <span>0</span>
           <p>Chuỗi ngày học</p>
         </div>
       </div>
 
-      {/* ================= Bộ lọc ================= */}
+      {/* Filters */}
       <div className={styles.filters}>
         <input
           placeholder="Tìm kiếm bộ thẻ..."
@@ -164,35 +163,23 @@ const MyFlashcards = () => {
           <option value="N2">JLPT N2</option>
           <option value="N1">JLPT N1</option>
         </select>
-
-        <select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-        >
-          <option value="Tất cả">Tất cả loại thẻ</option>
-          <option value="Từ vựng">Từ vựng</option>
-          <option value="Kanji">Kanji</option>
-          <option value="Cụm từ">Cụm từ</option>
-        </select>
       </div>
 
-      {/* ================= Danh sách bộ thẻ ================= */}
+      {/* Deck list */}
       <div className={styles.grid}>
-        {filteredDecks.length > 0 ? (
+        {loadingSets && sets.length === 0 ? (
+          <p>Đang tải bộ thẻ...</p>
+        ) : filteredDecks.length > 0 ? (
           filteredDecks.map((deck) => (
             <DeckCard
               key={deck.id}
               deck={deck}
               onStudy={() => setSelectedDeck(deck)}
-              onEdit={(deck) => {
-                setNewDeck(deck);
-                setShowAddWord(true); // mở modal thêm/sửa từ vựng
+              onEdit={(d) => {
+                setEditingDeck(d);
+                setShowAddWord(true);
               }}
-              onDelete={(deck) => {
-                if (confirm(`Bạn có chắc muốn xóa bộ "${deck.tenBo}"?`)) {
-                  setDecks((prev) => prev.filter((d) => d.id !== deck.id));
-                }
-              }}
+              onDelete={handleDeleteDeck}
             />
           ))
         ) : (
@@ -200,12 +187,12 @@ const MyFlashcards = () => {
         )}
       </div>
 
-      {/* ================= Modal học thẻ ================= */}
+      {/* Study modal */}
       {selectedDeck && (
         <StudyModal deck={selectedDeck} onClose={() => setSelectedDeck(null)} />
       )}
 
-      {/* ================= Modal tạo bộ thẻ mới ================= */}
+      {/* Create deck modal */}
       {showCreate && (
         <CreateDeckModal
           onClose={() => setShowCreate(false)}
@@ -213,11 +200,14 @@ const MyFlashcards = () => {
         />
       )}
 
-      {/* ================= Modal thêm từ vựng ================= */}
-      {showAddWord && (
+      {/* Add word modal */}
+      {showAddWord && editingDeck && (
         <AddWordModal
-          deck={newDeck}
-          onClose={() => setShowAddWord(false)}
+          deck={editingDeck}
+          onClose={() => {
+            setShowAddWord(false);
+            setEditingDeck(null);
+          }}
           onSave={handleSaveWords}
         />
       )}

@@ -1,3 +1,5 @@
+/* src/pages/Flashcards/CreateDeckModal.module.scss */
+
 .overlay {
   position: fixed;
   inset: 0;
@@ -18,6 +20,9 @@
   flex-direction: column;
 }
 
+/* ===============================================================
+   HEADER
+=============================================================== */
 .header {
   display: flex;
   justify-content: space-between;
@@ -65,12 +70,18 @@
   }
 }
 
+/* ===============================================================
+   BODY
+=============================================================== */
 .body {
   display: flex;
   padding: 1.5rem;
   gap: 1.5rem;
 }
 
+/* ===============================================================
+   FORM
+=============================================================== */
 .form {
   flex: 1;
   display: flex;
@@ -99,6 +110,8 @@
     outline: none;
     padding-left: 9px;
     font-family: sans-serif;
+    transition: all 0.15s ease-in-out;
+
     &:focus {
       border-color: #2563eb;
       box-shadow: 0 0 0 2px #2563eb20;
@@ -106,6 +119,22 @@
   }
 }
 
+/* Input lỗi */
+.errorInput {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 2px #dc262620 !important;
+}
+
+/* Error text */
+.errorMsg {
+  color: #dc2626;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+/* ===============================================================
+   PREVIEW
+=============================================================== */
 .preview {
   width: 260px;
   background: #f9fafb;
@@ -176,6 +205,9 @@
   }
 }
 
+/* ===============================================================
+   FOOTER BUTTONS
+=============================================================== */
 .footer {
   display: flex;
   justify-content: flex-end;
@@ -192,6 +224,7 @@
     border-radius: 0.5rem;
     padding: 0.6rem 1.25rem;
     cursor: pointer;
+    transition: 0.2s;
 
     &:hover {
       background: #f3f4f6;
@@ -209,14 +242,10 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    transition: 0.2s;
 
     &:hover {
       background: #1e50c5;
     }
   }
-}
-
-.errorMsg{
-  color: #dc2626;
-  font-size: 0.85rem;
 }

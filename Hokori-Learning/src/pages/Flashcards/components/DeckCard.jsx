@@ -3,22 +3,22 @@ import styles from "./DeckCard.module.scss";
 
 const DeckCard = ({ deck, onStudy, onEdit, onDelete }) => {
   return (
-    <div className={`${styles.card} ${styles[deck.mau]}`}>
+    <div className={`${styles.card} ${styles[deck.colorClass] || ""}`}>
       <div className={styles.header}>
-        <h3>{deck.tenBo}</h3>
-        <span>{deck.capDo}</span>
+        <h3>{deck.title}</h3>
+        <span>{deck.level}</span>
       </div>
 
-      <p className={styles.count}>{deck.tongThe} thẻ</p>
+      <p className={styles.count}>{deck.totalCards || 0} thẻ</p>
 
       <div className={styles.progress}>
         <div className={styles.bar}>
-          <div style={{ width: `${deck.tienDo}%` }}></div>
+          <div style={{ width: `${deck.progressPercent || 0}%` }}></div>
         </div>
-        <small>Tiến độ: {deck.tienDo}%</small>
+        <small>Tiến độ: {deck.progressPercent || 0}%</small>
       </div>
 
-      <p className={styles.last}>Lần ôn gần nhất: {deck.lanCuoi}</p>
+      <p className={styles.last}>Lần cập nhật: {deck.lastReviewText}</p>
 
       <div className={styles.actions}>
         <button className={styles.studyBtn} onClick={onStudy}>
@@ -28,7 +28,7 @@ const DeckCard = ({ deck, onStudy, onEdit, onDelete }) => {
 
         <button className={styles.editBtn} onClick={() => onEdit(deck)}>
           <i className="fa-solid fa-pen" />
-          <span className={styles.text}>Chỉnh sửa</span>
+          <span className={styles.text}>Thêm thẻ</span>
         </button>
 
         <button className={styles.deleteBtn} onClick={() => onDelete(deck)}>

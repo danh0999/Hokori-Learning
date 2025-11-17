@@ -1,6 +1,6 @@
 /* ======================================
-   HOKORI — DECK CARD
-   Clean, Isolated, and Readable Design
+   HOKORI — DECK CARD STYLES
+   Clean, Consistent & Ready for API data
    ====================================== */
 
 .card {
@@ -19,11 +19,41 @@
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     transform: translateY(-2px);
   }
+}
 
-  /* color variations (optional) */
-  
+/* ======================================
+   JLPT Color Variants (tự động theo level)
+   ====================================== */
 
-/* ===== HEADER ===== */
+.xanh,
+.N5 {
+  border-top: 4px solid #3b82f6;
+}
+
+.xanhLa,
+.N4 {
+  border-top: 4px solid #10b981;
+}
+
+.tim,
+.N3 {
+  border-top: 4px solid #8b5cf6;
+}
+
+.cam,
+.N2 {
+  border-top: 4px solid #fb923c;
+}
+
+.do,
+.N1 {
+  border-top: 4px solid #ef4444;
+}
+
+/* ======================================
+   HEADER
+   ====================================== */
+
 .header {
   display: flex;
   align-items: center;
@@ -44,7 +74,10 @@
   }
 }
 
-/* ===== CARD CONTENT ===== */
+/* ======================================
+   CARD CONTENT
+   ====================================== */
+
 .count {
   font-size: 0.9rem;
   color: #374151;
@@ -81,7 +114,10 @@
   color: #9ca3af;
 }
 
-/* ===== ACTION BUTTONS ===== */
+/* ======================================
+   ACTION BUTTONS
+   ====================================== */
+
 .actions {
   display: flex;
   align-items: center;
@@ -94,11 +130,6 @@
     align-items: center;
     justify-content: center;
     gap: 5px;
-
-    /* removed typography overrides */
-    /* font-weight: 600; */
-    /* font-size: 0.95rem; */
-    /* line-height: 1; */
 
     border: none;
     border-radius: 10px;
@@ -118,7 +149,10 @@
   }
 }
 
-/* ===== BUTTON TYPES ===== */
+/* ======================================
+   BUTTON VARIANTS
+   ====================================== */
+
 .studyBtn {
   background: #2563eb;
   color: #fff;
@@ -146,7 +180,10 @@
   }
 }
 
-/* ===== RESPONSIVE ===== */
+/* ======================================
+   RESPONSIVE
+   ====================================== */
+
 @media (max-width: 768px) {
   .card {
     padding: 1rem;
@@ -154,9 +191,9 @@
 
   .actions {
     flex-direction: column;
+
     button {
       width: 100%;
     }
   }
-}
 }
