@@ -18,7 +18,7 @@ const AISidebar = () => {
         </h3>
         <div className={styles.buttons}>
           <Button
-            
+            to ="/ai-analyse"
             content="Kiểm tra chính tả"
             className={styles.aiButton}
             containerClassName={styles.aiButtonContainer}

@@ -1,0 +1,39 @@
+/* Hero — Hokori Premium */
+
+.hero {
+ 
+  padding: 2.1rem 1.25rem 1.9rem;
+}
+
+.inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+}
+
+.icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 1.4rem;
+  box-shadow: 0 12px 32px rgba(37, 99, 235, 0.45);
+}
+
+.title {
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.subtitle {
+  margin-top: 0.2rem;
+  font-size: 0.95rem;
+  color: #64748b;
+}
