@@ -1,132 +1,110 @@
-import React, { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+// src/pages/AiKaiwaPage/components/FeedbackPanel.jsx
+import React from "react";
 import styles from "./FeedbackPanel.module.scss";
 
-const FeedbackPanel = () => {
-  const { loading, error, overallScore, pronunciation, intonation, fluency } =
-    useSelector((state) => state.aiSpeech);
+const normalizeScore = (val) => {
+  if (val == null || isNaN(val)) return null;
+  if (val <= 1) return Math.round(val * 100);
+  if (val <= 100) return Math.round(val);
+  return Math.round(val);
+};
 
-  const [animatedScore, setAnimatedScore] = useState(0);
+const FeedbackPanel = ({ loading, error, result }) => {
+  if (loading) {
+    return (
+      <section className={styles.panel}>
+        <h3 className={styles.heading}>Phản hồi AI</h3>
+        <p>⏳ AI đang phân tích giọng nói của bạn...</p>
+      </section>
+    );
+  }
 
-  useEffect(() => {
-    if (typeof overallScore === "number") {
-      let val = 0;
-      const step = Math.max(1, Math.floor(overallScore / 30));
-      const timer = setInterval(() => {
-        val += step;
-        if (val >= overallScore) {
-          val = overallScore;
-          clearInterval(timer);
-        }
-        setAnimatedScore(val);
-      }, 25);
-      return () => clearInterval(timer);
-    } else setAnimatedScore(0);
-  }, [overallScore]);
+  if (error) {
+    return (
+      <section className={styles.panel}>
+        <h3 className={styles.heading}>Phản hồi AI</h3>
+        <p className={styles.error}>❌ {error}</p>
+      </section>
+    );
+  }
 
-  const circleR = 60;
-  const circleC = 2 * Math.PI * circleR;
-  const progress =
-    typeof overallScore === "number"
-      ? circleC * (1 - overallScore / 100)
-      : circleC;
+  if (!result) {
+    return (
+      <section className={styles.panel}>
+        <h3 className={styles.heading}>Phản hồi AI</h3>
+        <p>Hãy ghi âm và bấm luyện tập để nhận phản hồi.</p>
+      </section>
+    );
+  }
 
-  const renderSub = (label, val) => (
-    <div className={styles.feedbackPanel_subItem}>
-      <div className={styles.feedbackPanel_subHeader}>
-        <span>{label}</span>
-        <span>{val != null ? `${val}/100` : "--/100"}</span>
+  const {
+    overallScore,
+    pronunciationScore,
+    accuracyScore,
+    fluencyScore,
+    userTranscript,
+    targetText,
+    feedback,
+  } = result;
+
+  const total = normalizeScore(overallScore);
+  const pron = normalizeScore(pronunciationScore);
+  const acc = normalizeScore(accuracyScore);
+  const flu = normalizeScore(fluencyScore);
+
+  const renderBar = (label, value) => {
+    const v = normalizeScore(value);
+    return (
+      <div className={styles.subRow}>
+        <div className={styles.subHeader}>
+          <span>{label}</span>
+          <span>{v != null ? `${v}/100` : "--/100"}</span>
+        </div>
+        <div className={styles.bar}>
+          <div
+            className={styles.fill}
+            style={{ width: v != null ? `${v}%` : 0 }}
+          />
+        </div>
       </div>
-      <div className={styles.feedbackPanel_subBar}>
-        <div
-          className={styles.feedbackPanel_subFill}
-          style={{ width: val != null ? `${val}%` : "0%" }}
-        />
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
-    <div className={styles.feedbackPanel_root}>
-      <div className={styles.feedbackPanel_header}>
-        <div className={styles.feedbackPanel_headerLeft}>
-          <i className="fa-solid fa-robot" />
-          <span className={styles.feedbackPanel_title}>Phản hồi của AI</span>
-        </div>
-        <div className={styles.feedbackPanel_infoIcon}>
-          <i className="fa-solid fa-circle-info" />
-          <div className={styles.feedbackPanel_tooltip}>
-            Đánh giá được tạo tự động bằng AI Hokori Kaiwa.
-          </div>
-        </div>
+    <section className={styles.panel}>
+      <h3 className={styles.heading}>Phản hồi AI</h3>
+
+      <div className={styles.scoreCircle}>
+        {total != null ? total : "--"}
+      </div>
+      <p className={styles.totalLabel}>Tổng điểm phát âm</p>
+
+      {renderBar("Phát âm", pron)}
+      {renderBar("Độ chính xác", acc)}
+      {renderBar("Độ trôi chảy", flu)}
+
+      <div className={styles.textBlock}>
+        <div className={styles.title}>Câu bạn đọc</div>
+        <p className={styles.detail}>{userTranscript || "--"}</p>
       </div>
 
-      <div className={styles.feedbackPanel_scoreBox}>
-        <div className={styles.feedbackPanel_circle}>
-          <svg>
-            <circle
-              className={styles.feedbackPanel_bgCircle}
-              cx="72"
-              cy="72"
-              r={circleR}
-            />
-            <circle
-              className={styles.feedbackPanel_fgCircle}
-              cx="72"
-              cy="72"
-              r={circleR}
-              strokeDasharray={circleC}
-              strokeDashoffset={progress}
-            />
-          </svg>
-          <div className={styles.feedbackPanel_scoreValue}>
-            {overallScore != null ? animatedScore : "--"}
-            <span style={{ fontSize: "0.8rem", color: "#6b7280" }}>điểm</span>
-          </div>
-        </div>
-        <p className={styles.feedbackPanel_label}>Tổng điểm phát âm</p>
+      <div className={styles.textBlock}>
+        <div className={styles.title}>Câu mẫu</div>
+        <p className={`${styles.detail} ${styles.target}`}>
+          {targetText || "--"}
+        </p>
       </div>
 
-      <div className={styles.feedbackPanel_subscores}>
-        {renderSub("Phát âm", pronunciation)}
-        {renderSub("Ngữ điệu", intonation)}
-        {renderSub("Trôi chảy", fluency)}
+      <div className={styles.textBlock}>
+        <div className={styles.title}>Nhận xét của AI</div>
+        <p className={`${styles.detail} ${styles.feedbackText}`}>
+          {feedback?.overallFeedbackVi ||
+            feedback?.overallFeedback ||
+            feedback ||
+            "Chưa có phản hồi chi tiết."}
+        </p>
       </div>
-
-      <div className={styles.feedbackPanel_box}>
-        {loading ? (
-          <p className={styles.feedbackPanel_loading}>AI đang phân tích dữ liệu...</p>
-        ) : error ? (
-          <p style={{ color: "#dc2626" }}>{error}</p>
-        ) : overallScore != null ? (
-          <>
-            <div className={styles.feedbackPanel_iconText}>
-              <i className="fa-solid fa-lightbulb" />
-              <span>Nhận xét chi tiết</span>
-            </div>
-            <p>
-              Điểm số phản ánh mức độ tự nhiên của giọng nói. Hãy luyện tập thêm để
-              cải thiện phát âm.
-            </p>
-          </>
-        ) : (
-          <>
-            <div className={styles.feedbackPanel_iconText}>
-              <i className="fa-solid fa-lightbulb" />
-              <span>Nhận xét chi tiết</span>
-            </div>
-            <p>
-              Hãy ghi âm để nhận phản hồi chi tiết từ AI về phát âm, ngữ điệu và độ trôi
-              chảy của bạn.
-            </p>
-          </>
-        )}
-      </div>
-
-      <p className={styles.feedbackPanel_hint}>
-        Bạn có thể luyện lại nhiều lần để cải thiện phát âm.
-      </p>
-    </div>
+    </section>
   );
 };
 

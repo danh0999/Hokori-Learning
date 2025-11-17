@@ -9,6 +9,7 @@ import teacherCourseReducer from "./features/teacherCourseSlice.js";
 import quizReducer from "./features/quizSlice.js";
 import flashcardReducer from "./features/flashcardSlice.js";
 import aiSpeechSlice from "./features/aiSpeechSlice.js";
+
 import progressSlice from "./features/progressSlice.js";
 import walletReducer from "./features/walletSlice.js";
 const rootReducer = combineReducers({
@@ -22,6 +23,7 @@ const rootReducer = combineReducers({
   quiz: quizReducer,
   flashcard: flashcardReducer,
   aiSpeech: aiSpeechSlice,
+
   progress: progressSlice,
   wallet: walletReducer,
 });

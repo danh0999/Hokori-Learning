@@ -26,7 +26,7 @@ import JLPTTestPage from "../pages/JLPTTest/JLPTTestPage";
 import Information from "../pages/Information/Information";
 import Policies from "../pages/Policies/Policies";
 import AiKaiwaPage from "../pages/AiKaiwa/AiKaiwaPage";
-
+import AiAnalysePage from "../pages/AiAnalyse/AiAnalysePage";
 // ===== Teacher =====
 import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
 import ManageCourses from "../pages/Teacher/Courses/ManageCourses";
@@ -96,7 +96,7 @@ const routes = [
           { path: "cart", element: <Cart /> },
           { path: "profile", element: <ProfilePage /> },
           { path: "ai-kaiwa", element: <AiKaiwaPage /> },
-
+          { path: "ai-analyse", element: <AiAnalysePage /> },
           { path: "jlpt", element: <JLPTList /> },
           { path: "jlpt/test/:testId", element: <JLPTTestPage /> },
 

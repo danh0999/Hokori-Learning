@@ -2,38 +2,39 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { addItem } from "../../../redux/features/cartSlice";
-import { message } from "antd"; 
+import { message } from "antd";
 
 const CourseHero = ({ course }) => {
+  
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  if (!course) return <div>Loading...</div>;
+
   const {
     title,
     shortDesc,
     rating,
     students,
     tags,
-    // teacher,
     price,
     oldPrice,
     discount,
   } = course;
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
 
-  // const handleBuyNow = () => {
-  //   navigate("/payment");
-  // };
   const handleBuyNow = () => {
     dispatch(addItem(course));
     navigate("/cart");
   };
+
   const handleAddToCart = () => {
     dispatch(addItem(course));
     message.success("Đã thêm khóa học vào giỏ hàng!");
   };
+
   return (
     <section className="hero-section">
       <div className="container">
-        {/* Video preview placeholder */}
+        {/* Video preview */}
         <div className="video-preview">
           {course.videoUrl ? (
             <iframe
@@ -52,7 +53,7 @@ const CourseHero = ({ course }) => {
           )}
         </div>
 
-        {/* Course info */}
+        {/* Info */}
         <div className="info">
           <div className="tags">
             {tags?.map((tag, idx) => (
@@ -80,13 +81,13 @@ const CourseHero = ({ course }) => {
             <img
               src={
                 course.teacherAvatar ||
-                "https://cdn-icons-png.flaticon.com/512/4140/4140048.png" // fallback nếu link lỗi
+                "https://cdn-icons-png.flaticon.com/512/4140/4140048.png"
               }
               alt={course.teacher || "Giảng viên"}
-              onError={(e) => {
-                e.target.src =
-                  "https://cdn-icons-png.flaticon.com/512/4140/4140048.png"; // fallback khi 404
-              }}
+              onError={(e) =>
+                (e.target.src =
+                  "https://cdn-icons-png.flaticon.com/512/4140/4140048.png")
+              }
             />
             <div>
               <p>{course.teacher}</p>
@@ -94,12 +95,18 @@ const CourseHero = ({ course }) => {
             </div>
           </div>
 
+          {/* SAFE PRICE */}
           <div className="price">
-            <span className="current">{price.toLocaleString()} VNĐ</span>
+            <span className="current">
+              {(Number(price) || 0).toLocaleString()} VNĐ
+            </span>
+
             {oldPrice && (
               <>
-                <span className="old">{oldPrice.toLocaleString()} VNĐ</span>
-                <span className="discount">-{discount}%</span>
+                <span className="old">
+                  {(Number(oldPrice) || 0).toLocaleString()} VNĐ
+                </span>
+                <span className="discount">-{discount || 0}%</span>
               </>
             )}
           </div>

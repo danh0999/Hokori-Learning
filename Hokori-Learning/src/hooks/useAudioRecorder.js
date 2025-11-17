@@ -1,72 +1,87 @@
 // src/hooks/useAudioRecorder.js
-import { useEffect, useRef, useState } from "react";
+// ============================================
+// Hook ghi âm dùng cho Kaiwa (WebM + Opus)
+// ============================================
+import { useCallback, useEffect, useRef, useState } from "react";
 
-export function useAudioRecorder() {
+export const useAudioRecorder = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
-  const [permissionError, setPermissionError] = useState(null);
 
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
+  const streamRef = useRef(null);
 
-  useEffect(() => {
-    return () => {
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-        mediaRecorderRef.current.stop();
-      }
-    };
-  }, []);
-
-  const startRecording = async () => {
+  const startRecording = useCallback(async () => {
     try {
-      setPermissionError(null);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType =
-        MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-          ? "audio/webm;codecs=opus"
-          : "audio/webm";
+      streamRef.current = stream;
 
-      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      const recorder = new MediaRecorder(stream, {
+        mimeType: "audio/webm;codecs=opus",
+      });
+
+      mediaRecorderRef.current = recorder;
       chunksRef.current = [];
-      mediaRecorderRef.current = mediaRecorder;
+      setAudioBlob(null);
 
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
           chunksRef.current.push(e.data);
         }
       };
 
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: mimeType });
-        setAudioBlob(blob);
-        stream.getTracks().forEach((t) => t.stop());
+      recorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        chunksRef.current = [];
+
+        if (blob.size > 2000) {
+          setAudioBlob(blob);
+        } else {
+          console.warn("⚠ Blob quá nhỏ, vui lòng ghi âm lại.");
+          setAudioBlob(null);
+        }
+
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach((t) => t.stop());
+          streamRef.current = null;
+        }
       };
 
-      mediaRecorder.start();
+      // timeslice 100ms để flush dữ liệu đều hơn
+      recorder.start(100);
       setIsRecording(true);
     } catch (err) {
-      console.error("getUserMedia error", err);
-      setPermissionError("Không thể truy cập micro. Vui lòng kiểm tra quyền trình duyệt.");
+      console.error("Failed to start recording:", err);
+      alert("Không thể truy cập micro. Vui lòng kiểm tra cài đặt trình duyệt.");
     }
-  };
+  }, []);
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
+  const stopRecording = useCallback(() => {
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state === "recording") {
+      recorder.stop();
     }
-  };
+    setIsRecording(false);
+  }, []);
 
-  const resetAudio = () => {
-    setAudioBlob(null);
-  };
+  // Cleanup khi unmount
+  useEffect(() => {
+    return () => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+        mediaRecorderRef.current.stop();
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+    };
+  }, []);
 
   return {
     isRecording,
     audioBlob,
-    permissionError,
     startRecording,
     stopRecording,
-    resetAudio,
   };
-}
+};
