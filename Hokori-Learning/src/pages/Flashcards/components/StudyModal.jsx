@@ -1,35 +1,57 @@
-// src/pages/Flashcards/StudyModal.jsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styles from "./StudyModal.module.scss";
+import { toast } from "react-hot-toast";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchCardsBySet } from "../../../redux/features/flashcardLearnerSlice";
 
 const StudyModal = ({ deck, onClose }) => {
-  // ⚠️ MOCK DATA — sẽ thay bằng API thật
-  const cards = [
-    { id: 1, front: "食べる", back: "Ăn / to eat (taberu)" },
-    { id: 2, front: "飲む", back: "Uống / to drink (nomu)" },
-    { id: 3, front: "行く", back: "Đi / to go (iku)" },
-  ];
+  const dispatch = useDispatch();
+  const { cardsBySet, loadingCards } = useSelector(
+    (state) => state.flashcards
+  );
 
   const [current, setCurrent] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [finished, setFinished] = useState(false);
 
-  const card = cards[current];
+  const rawCards = cardsBySet[deck.id] || [];
+  const loading = loadingCards[deck.id];
 
-  const handleFlip = () => setIsFlipped((f) => !f);
+  const cards = rawCards.map((c) => ({
+    id: c.id,
+    front: c.frontText,
+    back:
+      c.backText +
+      (c.reading ? ` (${c.reading})` : "") +
+      (c.exampleSentence ? `\nVí dụ: ${c.exampleSentence}` : ""),
+  }));
 
-  const handleResult = async (result) => {
-    //  FE chỉ gửi event học — BE xử lý SRS & DB
-    try {
-      await fetch(`/api/flashcards/${deck.id}/study`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cardId: card.id, result }),
-      });
-    } catch (e) {
-      console.error("Mock study submit failed:", e);
+  // Fetch cards nếu chưa có
+  useEffect(() => {
+    if (!deck?.id) return;
+    if (!cardsBySet[deck.id] || cardsBySet[deck.id].length === 0) {
+      dispatch(fetchCardsBySet(deck.id))
+        .unwrap()
+        .catch(() => {
+          toast.error("Không tải được thẻ trong bộ này.");
+        });
     }
+  }, [deck, dispatch, cardsBySet]);
 
+  useEffect(() => {
+    // reset state khi deck/cards change
+    setCurrent(0);
+    setIsFlipped(false);
+    setFinished(cards.length === 0);
+  }, [deck.id, cards.length]);
+
+  const handleFlip = () => {
+    if (!cards.length) return;
+    setIsFlipped((f) => !f);
+  };
+
+  const handleResult = () => {
+    // chưa có SRS backend → chỉ next card
     if (current < cards.length - 1) {
       setCurrent((i) => i + 1);
       setIsFlipped(false);
@@ -38,24 +60,42 @@ const StudyModal = ({ deck, onClose }) => {
     }
   };
 
+  const card = cards[current];
+
   return (
     <div className={styles.overlay}>
       <div className={styles.modal}>
         <div className={styles.header}>
-          <h2>{deck.tenBo}</h2>
+          <h2>{deck.title}</h2>
           <button onClick={onClose}>
             <i className="fa-solid fa-xmark"></i>
           </button>
         </div>
 
-        {!finished ? (
+        {loading ? (
+          <p className={styles.loading}>Đang tải thẻ...</p>
+        ) : !cards.length ? (
+          <div className={styles.doneBox}>
+            <h3>Chưa có thẻ nào trong bộ này</h3>
+            <p>Hãy thêm một vài thẻ trước khi bắt đầu ôn tập.</p>
+            <button className={styles.closeBtn} onClick={onClose}>
+              Đóng
+            </button>
+          </div>
+        ) : !finished ? (
           <>
             <div
-              className={`${styles.flashcard} ${isFlipped ? styles.flipped : ""}`}
+              className={`${styles.flashcard} ${
+                isFlipped ? styles.flipped : ""
+              }`}
               onClick={handleFlip}
             >
               <div className={styles.front}>{card.front}</div>
-              <div className={styles.back}>{card.back}</div>
+              <div className={styles.back}>
+                {card.back.split("\n").map((line, idx) => (
+                  <p key={idx}>{line}</p>
+                ))}
+              </div>
             </div>
 
             <div className={styles.progressText}>
@@ -63,16 +103,24 @@ const StudyModal = ({ deck, onClose }) => {
             </div>
 
             <div className={styles.actions}>
-              <button className={styles.again} onClick={() => handleResult("AGAIN")}>Chưa nhớ</button>
-              <button className={styles.medium} onClick={() => handleResult("MEDIUM")}>Tạm ổn</button>
-              <button className={styles.easy} onClick={() => handleResult("EASY")}>Nhớ tốt</button>
+              <button className={styles.again} onClick={handleResult}>
+                Chưa nhớ
+              </button>
+              <button className={styles.medium} onClick={handleResult}>
+                Tạm ổn
+              </button>
+              <button className={styles.easy} onClick={handleResult}>
+                Nhớ tốt
+              </button>
             </div>
           </>
         ) : (
           <div className={styles.doneBox}>
-            <h3> Hoàn thành buổi ôn tập!</h3>
+            <h3>Hoàn thành buổi ôn tập!</h3>
             <p>Bạn đã học xong {cards.length} thẻ trong bộ này.</p>
-            <button className={styles.closeBtn} onClick={onClose}>Đóng</button>
+            <button className={styles.closeBtn} onClick={onClose}>
+              Đóng
+            </button>
           </div>
         )}
       </div>
