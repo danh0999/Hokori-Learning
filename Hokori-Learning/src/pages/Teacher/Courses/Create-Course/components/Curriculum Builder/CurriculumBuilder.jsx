@@ -4,7 +4,7 @@ import { Card, Button, Input, Tooltip, Spin, Empty } from "antd";
 import { PlusOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 
-import LessonEditorDrawer from "./LessonEditorDrawer.jsx";
+import LessonEditorDrawer from "./LessonEditorDrawer/LessonEditorDrawer.jsx";
 
 import {
   createChapterThunk,
@@ -193,8 +193,8 @@ export default function CurriculumBuilder({ courseId, loadingTree }) {
                       <Input
                         value={
                           lessonTitleDrafts[les.id] !== undefined
-                            ? lessonTitleDrafts[les.id] // ưu tiên text đang gõ
-                            : les.title // nếu chưa gõ gì thì lấy từ store
+                            ? lessonTitleDrafts[les.id]
+                            : les.title
                         }
                         onChange={(e) =>
                           handleChangeLessonTitle(les.id, e.target.value)

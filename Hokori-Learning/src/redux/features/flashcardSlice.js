@@ -8,7 +8,7 @@ export const fetchSetBySectionContent = createAsyncThunk(
   async (sectionContentId, { rejectWithValue }) => {
     try {
       const res = await api.get(
-        `/api/flashcards/sets/by-section-content/${sectionContentId}`
+        `flashcards/sets/by-section-content/${sectionContentId}`
       );
       return res.data; // FlashcardSet | null
     } catch (err) {
@@ -30,7 +30,7 @@ export const createCourseVocabSet = createAsyncThunk(
   ) => {
     try {
       const body = { title, description, level, sectionContentId };
-      const res = await api.post("/api/flashcards/sets/course-vocab", body);
+      const res = await api.post("flashcards/sets/course-vocab", body);
       return res.data; // FlashcardSet
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
@@ -43,7 +43,7 @@ export const fetchCardsBySetId = createAsyncThunk(
   "flashcard/fetchCardsBySetId",
   async (setId, { rejectWithValue }) => {
     try {
-      const res = await api.get(`/api/flashcards/sets/${setId}/cards`);
+      const res = await api.get(`flashcards/sets/${setId}/cards`);
       return res.data; // array card
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
@@ -57,7 +57,7 @@ export const addFlashcardToSet = createAsyncThunk(
   async ({ setId, card }, { rejectWithValue }) => {
     // card = { frontText, backText, reading, exampleSentence, orderIndex }
     try {
-      const res = await api.post(`/api/flashcards/sets/${setId}/cards`, card);
+      const res = await api.post(`flashcards/sets/${setId}/cards`, card);
       return res.data; // card mới
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
@@ -70,7 +70,7 @@ export const fetchMyFlashcardSets = createAsyncThunk(
   "flashcard/fetchMyFlashcardSets",
   async ({ type }, { rejectWithValue }) => {
     try {
-      const res = await api.get("/api/flashcards/sets/me", {
+      const res = await api.get("flashcards/sets/me", {
         params: type ? { type } : {},
       });
       return res.data; // array set

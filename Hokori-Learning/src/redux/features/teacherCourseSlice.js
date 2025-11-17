@@ -24,18 +24,18 @@ export const fetchTeacherCourses = createAsyncThunk(
   }
 );
 
-// GET teacher/courses/{id}  (metadata)
-export const fetchCourseMeta = createAsyncThunk(
-  "teacherCourse/fetchCourseMeta",
-  async (courseId, { rejectWithValue }) => {
-    try {
-      const res = await api.get(`teacher/courses/${courseId}`);
-      return res.data;
-    } catch (err) {
-      return rejectWithValue(getError(err));
-    }
-  }
-);
+// // GET teacher/courses/{id}  (metadata ngắn)
+// export const fetchCourseMeta = createAsyncThunk(
+//   "teacherCourse/fetchCourseMeta",
+//   async (courseId, { rejectWithValue }) => {
+//     try {
+//       const res = await api.get(`teacher/courses/${courseId}`);
+//       return res.data;
+//     } catch (err) {
+//       return rejectWithValue(getError(err));
+//     }
+//   }
+// );
 
 // POST teacher/courses  (tạo course – chỉ metadata)
 export const createCourseThunk = createAsyncThunk(
@@ -62,6 +62,7 @@ export const updateCourseThunk = createAsyncThunk(
     }
   }
 );
+
 // POST teacher/courses/{courseId}/cover-image (multipart/form-data)
 export const uploadCourseCoverThunk = createAsyncThunk(
   "teacherCourse/uploadCourseCover",
@@ -85,6 +86,7 @@ export const uploadCourseCoverThunk = createAsyncThunk(
     }
   }
 );
+
 // DELETE teacher/courses/{id}
 export const deleteCourseThunk = createAsyncThunk(
   "teacherCourse/deleteCourse",
@@ -124,13 +126,14 @@ export const unpublishCourseThunk = createAsyncThunk(
   }
 );
 
-// GET teacher/courses/{id}/tree  (full cấu trúc Course → Chapters → Lessons → Sections → Contents)
+// GET teacher/courses/{id}/detail  (FULL TREE cho màn soạn)
 export const fetchCourseTree = createAsyncThunk(
   "teacherCourse/fetchCourseTree",
   async (courseId, { rejectWithValue }) => {
     try {
-      const res = await api.get(`teacher/courses/${courseId}/tree`);
-      return res.data;
+      const res = await api.get(`teacher/courses/${courseId}/detail`);
+      const body = res.data;
+      return body?.data ?? body; // phòng trường hợp BE bọc {data: ...}
     } catch (err) {
       return rejectWithValue(getError(err));
     }
@@ -181,7 +184,6 @@ export const deleteChapterThunk = createAsyncThunk(
 );
 
 // PATCH teacher/courses/chapters/{chapterId}/reorder
-// data tuỳ bạn: ví dụ {newIndex: 2}
 export const reorderChapterThunk = createAsyncThunk(
   "teacherCourse/reorderChapter",
   async ({ chapterId, data }, { rejectWithValue }) => {
@@ -190,7 +192,7 @@ export const reorderChapterThunk = createAsyncThunk(
         `teacher/courses/chapters/${chapterId}/reorder`,
         data
       );
-      return res.data; // giả sử trả về full list chapters đã reorder
+      return res.data;
     } catch (err) {
       return rejectWithValue(getError(err));
     }
@@ -223,7 +225,7 @@ export const updateLessonThunk = createAsyncThunk(
   async ({ lessonId, data }, { rejectWithValue }) => {
     try {
       const res = await api.put(`teacher/courses/lessons/${lessonId}`, data);
-      return res.data; // lesson updated
+      return res.data;
     } catch (err) {
       return rejectWithValue(getError(err));
     }
@@ -322,7 +324,6 @@ export const reorderSectionThunk = createAsyncThunk(
 );
 
 // POST teacher/courses/sections/{sectionId}/files (multipart/form-data)
-// BE trả về { filePath, url }
 export const uploadSectionFileThunk = createAsyncThunk(
   "teacherCourse/uploadSectionFile",
   async ({ sectionId, file }, { rejectWithValue }) => {
@@ -338,7 +339,6 @@ export const uploadSectionFileThunk = createAsyncThunk(
         }
       );
 
-      // res.data: { filePath, url }
       return { sectionId, ...res.data };
     } catch (err) {
       return rejectWithValue(getError(err));
@@ -441,6 +441,12 @@ const teacherCourseSlice = createSlice({
       state.saving = false;
       state.error = null;
     },
+    // chỉ clear tree khi đổi course để tránh recycle curriculum cũ
+    clearCourseTree(state) {
+      state.currentCourseTree = null;
+      state.loadingTree = false;
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     /* ----- LIST ----- */
@@ -459,19 +465,19 @@ const teacherCourseSlice = createSlice({
       });
 
     /* ----- META ----- */
-    builder
-      .addCase(fetchCourseMeta.pending, (state) => {
-        state.loadingMeta = true;
-        state.error = null;
-      })
-      .addCase(fetchCourseMeta.fulfilled, (state, action) => {
-        state.loadingMeta = false;
-        state.currentCourseMeta = action.payload;
-      })
-      .addCase(fetchCourseMeta.rejected, (state, action) => {
-        state.loadingMeta = false;
-        state.error = action.payload;
-      });
+    // builder
+    //   .addCase(fetchCourseMeta.pending, (state) => {
+    //     state.loadingMeta = true;
+    //     state.error = null;
+    //   })
+    //   .addCase(fetchCourseMeta.fulfilled, (state, action) => {
+    //     state.loadingMeta = false;
+    //     state.currentCourseMeta = action.payload;
+    //   })
+    //   .addCase(fetchCourseMeta.rejected, (state, action) => {
+    //     state.loadingMeta = false;
+    //     state.error = action.payload;
+    //   });
 
     builder
       .addCase(createCourseThunk.pending, (state) => {
@@ -558,18 +564,22 @@ const teacherCourseSlice = createSlice({
     builder
       .addCase(fetchCourseTree.pending, (state) => {
         state.loadingTree = true;
+        state.loadingMeta = true; // meta và tree cùng loading
         state.error = null;
       })
       .addCase(fetchCourseTree.fulfilled, (state, action) => {
         state.loadingTree = false;
+        state.loadingMeta = false;
         state.currentCourseTree = action.payload;
+        state.currentCourseMeta = action.payload; // /detail trả luôn meta
       })
       .addCase(fetchCourseTree.rejected, (state, action) => {
         state.loadingTree = false;
+        state.loadingMeta = false;
         state.error = action.payload;
       });
 
-    /* ----- CHAPTER CRUD (update state.currentCourseTree) ----- */
+    /* ----- CHAPTER CRUD ----- */
     builder
       .addCase(createChapterThunk.fulfilled, (state, action) => {
         const chapter = action.payload.chapter;
@@ -591,7 +601,6 @@ const teacherCourseSlice = createSlice({
           state.currentCourseTree.chapters.filter((c) => c.id !== id);
       })
       .addCase(reorderChapterThunk.fulfilled, (state, action) => {
-        // nếu BE trả về mảng chapters mới thì gán luôn
         if (state.currentCourseTree) {
           state.currentCourseTree.chapters =
             action.payload.chapters || action.payload;
@@ -629,7 +638,6 @@ const teacherCourseSlice = createSlice({
         chapter.lessons = chapter.lessons.filter((l) => l.id !== lessonId);
       })
       .addCase(reorderLessonThunk.fulfilled, (state, action) => {
-        // tuỳ payload BE – nếu là {chapterId, lessons:[...]} thì map lại
         const payload = action.payload;
         if (!state.currentCourseTree?.chapters) return;
         if (payload.chapterId && payload.lessons) {
@@ -679,7 +687,6 @@ const teacherCourseSlice = createSlice({
         }
       })
       .addCase(reorderSectionThunk.fulfilled, (state, action) => {
-        // tương tự, nếu BE trả về {lessonId, sections:[...]}
         const payload = action.payload;
         if (!state.currentCourseTree?.chapters) return;
         if (payload.lessonId && payload.sections) {
@@ -738,7 +745,6 @@ const teacherCourseSlice = createSlice({
         }
       })
       .addCase(reorderContentThunk.fulfilled, (state, action) => {
-        // nếu payload = {sectionId, contents:[...]}
         const payload = action.payload;
         if (!state.currentCourseTree?.chapters) return;
         if (payload.sectionId && payload.contents) {
@@ -756,6 +762,7 @@ const teacherCourseSlice = createSlice({
   },
 });
 
-export const { clearTeacherCourseState } = teacherCourseSlice.actions;
+export const { clearTeacherCourseState, clearCourseTree } =
+  teacherCourseSlice.actions;
 
 export default teacherCourseSlice.reducer;

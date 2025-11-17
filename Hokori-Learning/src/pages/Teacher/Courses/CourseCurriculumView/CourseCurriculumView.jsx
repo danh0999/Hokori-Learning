@@ -21,17 +21,19 @@ import {
 } from "@ant-design/icons";
 
 import styles from "./CourseCurriculumView.module.scss";
+import api from "../../../../configs/axios";
 
 const { Panel } = Collapse;
 const { Text } = Typography;
 
+const API_BASE_URL =
+  api.defaults.baseURL?.replace(/\/api\/?$/, "") ||
+  import.meta.env.VITE_API_BASE_URL?.replace(/\/api\/?$/, "") ||
+  "";
 const buildFileUrl = (filePath) => {
   if (!filePath) return null;
   if (/^https?:\/\//i.test(filePath)) return filePath;
-  return `${window.location.origin}/files/${filePath}`.replace(
-    /([^:]\/)\/+/g,
-    "$1"
-  );
+  return `${API_BASE_URL}/files/${filePath}`.replace(/([^:]\/)\/+/g, "$1");
 };
 
 export default function CourseCurriculumView({

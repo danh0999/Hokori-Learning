@@ -1,3 +1,4 @@
+// src/redux/features/quizSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../configs/axios";
 
@@ -7,9 +8,12 @@ const getError = (err) =>
   err.message ||
   "Something went wrong";
 
+// helper bóc data cho mềm (BE hay bọc { success, data, ... })
+const unwrap = (res) => res.data?.data ?? res.data;
+
 /**
  * Convert FE question.type -> BE questionType
- * FE: "single" | "multiple" (chỉ dùng 2 loại này cho BE)
+ * FE: "single" | "multiple"
  * BE: "SINGLE_CHOICE" | "MULTIPLE_CHOICE"
  */
 const mapQuestionType = (type) => {
@@ -18,9 +22,10 @@ const mapQuestionType = (type) => {
 };
 
 /**
- * Chuẩn hóa questions trước khi gửi lên BE:
- * - chỉ giữ loại `single` và `multiple`
- * - bỏ qua câu không có text hoặc < 2 options
+ * Chuẩn hoá list câu hỏi trước khi gửi lên BE:
+ * - Chỉ giữ single / multiple
+ * - Bỏ những câu ko có text hoặc < 2 options
+ * - Gán _orderIndex để giữ thứ tự
  */
 const normalizeQuestions = (questions = []) =>
   questions
@@ -35,9 +40,9 @@ const normalizeQuestions = (questions = []) =>
       _orderIndex: idx,
     }));
 
-/* =========================
-   THUNKS DÙNG CHUNG
-   ========================= */
+/* =========================================================
+ *                    THUNKS
+ * ======================================================= */
 
 /**
  * Lấy quiz của 1 lesson (nếu không có sẽ trả null)
@@ -48,38 +53,64 @@ export const fetchLessonQuizThunk = createAsyncThunk(
   async (lessonId, { rejectWithValue }) => {
     try {
       const res = await api.get(`teacher/lessons/${lessonId}/quizzes`);
-      // BE có thể trả object hoặc array, xử lý mềm dẻo
-      const data = res.data;
+      const data = unwrap(res);
       if (!data) return null;
       return Array.isArray(data) ? data[0] : data;
     } catch (err) {
-      if (err?.response?.status === 404) {
-        // lesson chưa có quiz
-        return null;
+      const status = err?.response?.status;
+      const msg = err?.response?.data?.message;
+
+      // BE đang trả 400 + "Quiz not found for this lesson" khi chưa có quiz
+      if (
+        status === 404 ||
+        (status === 400 &&
+          typeof msg === "string" &&
+          msg.includes("Quiz not found"))
+      ) {
+        return null; // lesson chưa có quiz
       }
+
       return rejectWithValue(getError(err));
     }
   }
 );
 
 /**
- * Tạo / cập nhật quiz cho 1 lesson + tạo toàn bộ questions & options.
- * Dùng được cho cả:
- * 1) tạo quiz khi đang tạo course (LessonEditorDrawer + QuizBuilderModal)
- * 2) import quiz từ CreateQuizPage (lấy từ library rồi push lên lesson)
+ * Lấy danh sách câu hỏi của 1 quiz
+ * GET /api/teacher/lessons/{lessonId}/quizzes/{quizId}/questions
+ */
+export const fetchQuizQuestionsThunk = createAsyncThunk(
+  "quiz/fetchQuizQuestions",
+  async ({ lessonId, quizId }, { rejectWithValue }) => {
+    try {
+      const res = await api.get(
+        `teacher/lessons/${lessonId}/quizzes/${quizId}/questions`
+      );
+      return unwrap(res) || [];
+    } catch (err) {
+      return rejectWithValue(getError(err));
+    }
+  }
+);
+
+/**
+ * Tạo / cập nhật quiz cho 1 lesson + toàn bộ questions & options
  *
- * draftQuiz structure (FE):
+ * draftQuiz từ QuizBuilderModal:
  * {
- *   id?, title, description,
- *   timeLimit,        // phút
- *   passingScore,     // %
+ *   id?,
+ *   title,
+ *   description,
+ *   timeLimit,      // phút
+ *   passingScore,   // %
  *   questions: [
  *     {
- *       id,
+ *       id?,
  *       text,
  *       explanation,
  *       type: "single" | "multiple",
- *       options: [{ id, text, isCorrect }]
+ *       points,
+ *       options: [{ text, isCorrect }]
  *     }
  *   ]
  * }
@@ -88,25 +119,38 @@ export const saveLessonQuizThunk = createAsyncThunk(
   "quiz/saveLessonQuiz",
   async ({ lessonId, draftQuiz }, { rejectWithValue }) => {
     try {
-      // 1. Chuẩn hoá câu hỏi
       const questions = normalizeQuestions(draftQuiz.questions);
 
-      // 2. Kiểm tra xem lesson đã có quiz chưa
+      // 1. Check lesson đã có quiz chưa
       let existingQuiz = null;
       try {
         const res = await api.get(`teacher/lessons/${lessonId}/quizzes`);
-        const data = res.data;
+        const data = unwrap(res);
         existingQuiz = Array.isArray(data) ? data[0] : data;
       } catch (err) {
-        if (err?.response?.status !== 404) {
+        const status = err?.response?.status;
+        const msg = err?.response?.data?.message;
+
+        if (
+          status === 404 ||
+          (status === 400 &&
+            typeof msg === "string" &&
+            msg.includes("Quiz not found"))
+        ) {
+          existingQuiz = null;
+        } else {
           throw err;
         }
       }
 
+      // 2. Payload meta quiz (swagger: title, description, timeLimitSec, passScorePercent)
       const quizPayload = {
         title: draftQuiz.title,
         description: draftQuiz.description,
-        timeLimitSec: draftQuiz.timeLimit ? draftQuiz.timeLimit * 60 : null,
+        timeLimitSec:
+          draftQuiz.timeLimit && Number(draftQuiz.timeLimit) > 0
+            ? Number(draftQuiz.timeLimit) * 60
+            : null, // null = không giới hạn
         passScorePercent:
           typeof draftQuiz.passingScore === "number"
             ? draftQuiz.passingScore
@@ -115,13 +159,14 @@ export const saveLessonQuizThunk = createAsyncThunk(
 
       let quizId;
 
-      // 3. Tạo mới hoặc cập nhật metadata quiz
+      // 3. Tạo mới hoặc update quiz meta
       if (!existingQuiz) {
         const res = await api.post(
           `teacher/lessons/${lessonId}/quizzes`,
           quizPayload
         );
-        quizId = res.data.id;
+        const quizObj = unwrap(res); // { id, lessonId, ... }
+        quizId = quizObj.id; // 👈 FIX quizId
       } else {
         quizId = existingQuiz.id;
         await api.put(
@@ -135,7 +180,7 @@ export const saveLessonQuizThunk = createAsyncThunk(
         const qRes = await api.get(
           `teacher/lessons/${lessonId}/quizzes/${quizId}/questions`
         );
-        const oldQuestions = qRes.data || [];
+        const oldQuestions = unwrap(qRes) || [];
         for (const q of oldQuestions) {
           await api.delete(
             `teacher/lessons/${lessonId}/quizzes/questions/${q.id}`
@@ -147,9 +192,9 @@ export const saveLessonQuizThunk = createAsyncThunk(
         }
       }
 
-      // 5. Tạo lại questions + options
+      // 5. Tạo lại từng câu hỏi + options
       for (const q of questions) {
-        // 5.1 Create question
+        // 5.1 Tạo question
         const qRes = await api.post(
           `teacher/lessons/${lessonId}/quizzes/${quizId}/questions`,
           {
@@ -159,10 +204,40 @@ export const saveLessonQuizThunk = createAsyncThunk(
             orderIndex: q._orderIndex ?? 0,
           }
         );
-        const questionId = qRes.data.id;
+        const questionObj = unwrap(qRes);
+        const questionId = questionObj.id;
 
-        // 5.2 Create options (array)
-        const optionsPayload = (q.options || []).map((opt, idx) => ({
+        // 5.2 Chuẩn hoá options để đảm bảo
+        //     - single: EXACTLY 1 isCorrect
+        //     - multiple: ít nhất 1 isCorrect
+        const rawOptions = q.options || [];
+        let correctIdxs = [];
+
+        rawOptions.forEach((opt, idx) => {
+          if (opt.isCorrect) correctIdxs.push(idx);
+        });
+
+        if (q.type === "single") {
+          if (correctIdxs.length === 0) {
+            correctIdxs = [0]; // auto chọn option đầu nếu user quên tick
+          } else if (correctIdxs.length > 1) {
+            correctIdxs = [correctIdxs[0]]; // chỉ giữ 1 cái đầu tiên
+          }
+        } else {
+          // multiple choice
+          if (correctIdxs.length === 0 && rawOptions.length > 0) {
+            correctIdxs = [0]; // ít nhất 1 cái đúng cho BE
+          }
+        }
+
+        const correctSet = new Set(correctIdxs);
+
+        const normalizedOptions = rawOptions.map((opt, idx) => ({
+          ...opt,
+          isCorrect: correctSet.has(idx),
+        }));
+
+        const optionsPayload = normalizedOptions.map((opt, idx) => ({
           content: opt.text || "",
           isCorrect: !!opt.isCorrect,
           orderIndex: idx,
@@ -174,11 +249,10 @@ export const saveLessonQuizThunk = createAsyncThunk(
         );
       }
 
-      // 6. Lấy lại quiz meta để trả về cho FE
+      // 6. Lấy lại quiz meta sau khi đã có câu hỏi
       const finalRes = await api.get(`teacher/lessons/${lessonId}/quizzes`);
-      const savedQuiz = Array.isArray(finalRes.data)
-        ? finalRes.data[0]
-        : finalRes.data;
+      const finalData = unwrap(finalRes);
+      const savedQuiz = Array.isArray(finalData) ? finalData[0] : finalData;
 
       return { lessonId, quiz: savedQuiz };
     } catch (err) {
@@ -187,12 +261,12 @@ export const saveLessonQuizThunk = createAsyncThunk(
   }
 );
 
-/* =========================
-   SLICE
-   ========================= */
+/* =========================================================
+ *                    SLICE
+ * ======================================================= */
 
 const initialState = {
-  currentQuiz: null, // quiz đang edit trong QuizBuilderModal / CreateQuizPage
+  currentQuiz: null,
   loading: false,
   saving: false,
   error: null,
@@ -202,7 +276,6 @@ const quizSlice = createSlice({
   name: "quiz",
   initialState,
   reducers: {
-    // set quiz đang edit (dùng cho cả 2 màn)
     setCurrentQuiz(state, action) {
       state.currentQuiz = action.payload;
     },
@@ -212,7 +285,7 @@ const quizSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // FETCH
+    // fetchLessonQuiz
     builder
       .addCase(fetchLessonQuizThunk.pending, (state) => {
         state.loading = true;
@@ -227,7 +300,7 @@ const quizSlice = createSlice({
         state.error = action.payload;
       });
 
-    // SAVE
+    // saveLessonQuiz
     builder
       .addCase(saveLessonQuizThunk.pending, (state) => {
         state.saving = true;

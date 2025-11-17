@@ -5,16 +5,11 @@ import { Card, Tabs, Button, Tag, Space, message } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 
 import CourseOverview from "../Create-Course/components/CourseOverview/CourseOverview.jsx";
-import CurriculumBuilder from "../Create-Course/components/Curriculum Builder/CurriculumBuilder.jsx";
 import PricingStep from "../Create-Course/components/PricingStep/PricingStep.jsx";
-import QuizList from "../../ManageDocument/Quiz/QuizList/QuizList.jsx";
-import FlashcardPanel from "../../ManageDocument/Flashcard/FlashcardPanel.jsx";
-import UploadMedia from "../components/Upload Media/UploadMedia.jsx";
 import CourseCurriculumView from "../CourseCurriculumView/CourseCurriculumView.jsx";
-import LessonEditorDrawer from "../Create-Course/components/Curriculum Builder/LessonEditorDrawer.jsx";
+import LessonEditorDrawer from "../Create-Course/components/Curriculum Builder/LessonEditorDrawer/LessonEditorDrawer.jsx";
 
 import {
-  fetchCourseMeta,
   fetchCourseTree,
   updateCourseThunk,
   publishCourseThunk,
@@ -64,8 +59,7 @@ export default function CourseInformation() {
   // ====== LOAD COURSE DATA ======
   useEffect(() => {
     if (!courseId) return;
-    dispatch(fetchCourseMeta(courseId));
-    dispatch(fetchCourseTree(courseId));
+    dispatch(fetchCourseTree(courseId)); // /detail: vừa meta vừa tree
   }, [courseId, dispatch]);
 
   // ====== ACTIONS ======
@@ -199,23 +193,6 @@ export default function CourseInformation() {
                   loading={loadingTree}
                   onEditLesson={handleEditLesson}
                 />
-              ),
-            },
-
-            {
-              key: "media",
-              label: "Media",
-              children: <UploadMedia courseId={courseId} />,
-            },
-            {
-              key: "assess",
-              label: "Assessments",
-              children: (
-                <>
-                  {/* phần này vẫn fake data / local, tuỳ bạn nối API sau */}
-                  <QuizList />
-                  <FlashcardPanel />
-                </>
               ),
             },
             {

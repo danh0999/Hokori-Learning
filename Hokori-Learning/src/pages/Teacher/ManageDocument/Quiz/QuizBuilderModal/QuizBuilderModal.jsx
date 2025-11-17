@@ -13,23 +13,28 @@ import {
   Switch,
   Divider,
   Typography,
+  message,
 } from "antd";
 import { PlusOutlined, SaveOutlined } from "@ant-design/icons";
+
 import QuestionCard from "../../Quiz/components/QuestionCard/QuestionCard.jsx";
 import { newQuestion } from "../../Quiz/components/quizUtils/quizUtils.js";
-import api from "../../../../../configs/axios"; // 👈 nhớ path này đúng với dự án
+import api from "../../../../../configs/axios";
 import styles from "./styles.module.scss";
 
 const { Text } = Typography;
 
+/**
+ * Chuyển initial (từ BE hoặc từ library) -> state quiz nội bộ cho builder
+ */
 const buildQuizFromInitial = (initial) => {
   if (!initial) {
     return {
       id: crypto.randomUUID(),
       title: "",
       description: "",
-      timeLimit: 30,
-      passingScore: 60,
+      timeLimit: 30, // phút
+      passingScore: 60, // %
       shuffleQuestions: false,
       shuffleOptions: true,
       showExplanation: true,
@@ -42,7 +47,7 @@ const buildQuizFromInitial = (initial) => {
   const timeLimitMinutes =
     typeof initial.timeLimit === "number"
       ? initial.timeLimit
-      : initial.timeLimitSec
+      : typeof initial.timeLimitSec === "number"
       ? Math.round(initial.timeLimitSec / 60)
       : 30;
 
@@ -73,25 +78,50 @@ const buildQuizFromInitial = (initial) => {
 
 const mapQuestionTypeFromBE = (questionType) => {
   if (questionType === "MULTIPLE_CHOICE") return "multiple";
+  if (questionType === "TRUE_FALSE") return "truefalse";
+  if (questionType === "FILL_IN") return "fill";
   return "single";
 };
 
+/**
+ * Props:
+ * - open: boolean
+ * - lessonId?: number (cần nếu muốn tự fetch câu hỏi từ BE khi edit)
+ * - initial?: quiz meta + questions (từ library hoặc từ BE)
+ * - onCancel: () => void
+ * - onSave: (quizDraft) => Promise | void
+ *      quizDraft có dạng:
+ *      {
+ *        id?,
+ *        title,
+ *        description,
+ *        timeLimit,      // phút
+ *        passingScore,   // %
+ *        shuffleQuestions,
+ *        shuffleOptions,
+ *        showExplanation,
+ *        isRequired,
+ *        tags,
+ *        questions: [...]
+ *      }
+ * - saving?: boolean (loading cho nút Save)
+ */
 export default function QuizBuilderModal({
   open,
-  lessonId, // 👈 thêm vào props
+  lessonId,
   initial,
   onCancel,
   onSave,
-  saving,
+  saving = false,
 }) {
   const [quiz, setQuiz] = useState(() => buildQuizFromInitial(initial));
   const [metaForm] = Form.useForm();
   const isNew = !initial?.id;
 
+  // Khi open/initial/lessonId thay đổi → setup lại state + meta form
   useEffect(() => {
     if (!open) return;
 
-    // 1. Base meta
     const base = buildQuizFromInitial(initial || null);
     setQuiz(base);
 
@@ -106,10 +136,10 @@ export default function QuizBuilderModal({
       isRequired: base.isRequired,
     });
 
-    // 2. Nếu initial đã có sẵn questions (từ CreateQuizPage / library) thì khỏi fetch
+    // Nếu đã có questions sẵn (vd: import từ library) → không fetch nữa
     if (initial?.questions && initial.questions.length > 0) return;
 
-    // 3. Nếu đang edit quiz đã lưu trên BE => fetch questions
+    // Nếu đang edit quiz đã có trên BE → fetch danh sách câu hỏi
     if (!lessonId || !initial?.id) return;
 
     (async () => {
@@ -117,7 +147,7 @@ export default function QuizBuilderModal({
         const res = await api.get(
           `teacher/lessons/${lessonId}/quizzes/${initial.id}/questions`
         );
-        const list = res.data || [];
+        const list = res.data?.data ?? res.data ?? [];
 
         const mapped = list.map((q, idx) => ({
           id: q.id,
@@ -146,6 +176,7 @@ export default function QuizBuilderModal({
     [quiz.questions]
   );
 
+  // ====== thao tác với câu hỏi ======
   const addQuestion = (type = "single") =>
     setQuiz((q) => ({
       ...q,
@@ -186,13 +217,34 @@ export default function QuizBuilderModal({
       return { ...q, questions: arr };
     });
 
-  const handleSave = async () => {
+  // ====== SAVE ======
+  const handleClickSave = async () => {
     try {
       const meta = await metaForm.validateFields();
-      const payload = { ...quiz, ...meta };
-      onSave?.(payload);
-    } catch (e) {
-      console.log(e);
+
+      // Validate tối thiểu
+      if (!quiz.questions || quiz.questions.length === 0) {
+        message.error("Quiz cần ít nhất 1 câu hỏi.");
+        return;
+      }
+
+      const payload = {
+        ...quiz,
+        ...meta,
+        // đảm bảo timeLimit & passingScore kiểu số
+        timeLimit: Number(meta.timeLimit ?? quiz.timeLimit ?? 30),
+        passingScore: Number(meta.passingScore ?? quiz.passingScore ?? 60),
+      };
+
+      // Trả quizDraft cho cha xử lý (POST/PUT BE)
+      if (onSave) {
+        await onSave(payload);
+      }
+    } catch (err) {
+      // metaForm.validateFields lỗi
+      if (err?.errorFields) return;
+      console.error(err);
+      message.error("Lưu quiz thất bại.");
     }
   };
 
@@ -207,6 +259,7 @@ export default function QuizBuilderModal({
       destroyOnClose
       footer={null}
     >
+      {/* ===== Top bar: toolbar + Save button ===== */}
       <div className={styles.topBar}>
         <Space wrap>
           <Button
@@ -228,7 +281,7 @@ export default function QuizBuilderModal({
           <Button
             type="primary"
             icon={<SaveOutlined />}
-            onClick={handleSave}
+            onClick={handleClickSave}
             loading={saving}
           >
             Save changes
@@ -238,20 +291,109 @@ export default function QuizBuilderModal({
 
       <Divider style={{ margin: "8px 0 12px" }} />
 
-      {/* Meta form & question list giữ nguyên như bạn đang có */}
-      {/* ... (phần còn lại y chang file bạn gửi, không đổi) */}
-      {/* (Để ngắn gọn mình bỏ bớt, nhưng bạn có thể giữ nguyên từ chỗ Form trở xuống) */}
-      {/* ------------- FORM + QUESTIONS (giống file của bạn) ------------- */}
+      {/* ===== Meta form (title, desc, time, passingScore, options) ===== */}
       <Form
         form={metaForm}
         layout="vertical"
         className={styles.metaForm}
         onValuesChange={(_, all) => setQuiz((q) => ({ ...q, ...all }))}
       >
-        {/* ... phần meta form của bạn ... */}
+        <Row gutter={16}>
+          <Col span={16}>
+            <Form.Item
+              name="title"
+              label="Quiz title"
+              rules={[
+                { required: true, message: "Vui lòng nhập tiêu đề quiz." },
+              ]}
+            >
+              <Input placeholder="Ví dụ: Quiz sau bài 1" />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item
+              name="timeLimit"
+              label="Time limit (minutes)"
+              tooltip="Để 0 hoặc bỏ trống = không giới hạn"
+            >
+              <InputNumber min={0} style={{ width: "100%" }} placeholder="30" />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Row gutter={16}>
+          <Col span={16}>
+            <Form.Item name="description" label="Description">
+              <Input.TextArea rows={2} placeholder="Mô tả ngắn về quiz này" />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item
+              name="passingScore"
+              label="Passing score (%)"
+              tooltip="Điểm tối thiểu để qua (0–100)"
+              rules={[
+                {
+                  type: "number",
+                  min: 0,
+                  max: 100,
+                  message: "0–100",
+                },
+              ]}
+            >
+              <InputNumber
+                min={0}
+                max={100}
+                style={{ width: "100%" }}
+                placeholder="60"
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Row gutter={16}>
+          <Col span={6}>
+            <Form.Item
+              name="shuffleQuestions"
+              label="Shuffle questions"
+              valuePropName="checked"
+            >
+              <Switch />
+            </Form.Item>
+          </Col>
+          <Col span={6}>
+            <Form.Item
+              name="shuffleOptions"
+              label="Shuffle options"
+              valuePropName="checked"
+            >
+              <Switch />
+            </Form.Item>
+          </Col>
+          <Col span={6}>
+            <Form.Item
+              name="showExplanation"
+              label="Show explanation"
+              valuePropName="checked"
+            >
+              <Switch />
+            </Form.Item>
+          </Col>
+          <Col span={6}>
+            <Form.Item
+              name="isRequired"
+              label="Required"
+              valuePropName="checked"
+            >
+              <Switch />
+            </Form.Item>
+          </Col>
+        </Row>
       </Form>
 
       <Divider style={{ margin: "12px 0" }} />
+
+      {/* ===== Question list ===== */}
       <Text type="secondary" style={{ display: "block", marginBottom: 8 }}>
         Questions
       </Text>
@@ -259,7 +401,12 @@ export default function QuizBuilderModal({
       {quiz.questions.length === 0 ? (
         <Empty description="Chưa có câu hỏi. Bấm Add để thêm." />
       ) : (
-        <Space direction="vertical" className={styles.block} size="large">
+        <Space
+          direction="vertical"
+          className={styles.block}
+          size="large"
+          style={{ width: "100%" }}
+        >
           {quiz.questions.map((q, idx) => (
             <QuestionCard
               key={q.id}

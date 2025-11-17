@@ -66,32 +66,6 @@ export const sidebarMenusByRole = {
       <BookOutlined />,
       "/teacher/manage-courses"
     ),
-    mk(
-      "manage-documents",
-      "Quản lý tài liệu",
-      <BookOutlined />,
-      "/teacher/manage-documents"
-      // [
-      //   mk(
-      //     "videos",
-      //     "Video",
-      //     <VideoCameraOutlined />,
-      //     "/teacher/manage-documents/videos"
-      //   ),
-      //   mk(
-      //     "lessons",
-      //     "Bài học",
-      //     <ReadOutlined />,
-      //     "/teacher/manage-documents/lessons"
-      //   ),
-      //   mk(
-      //     "quiz",
-      //     "Bài kiểm tra",
-      //     <ProfileOutlined />,
-      //     "/teacher/manage-documents/quiz"
-      //   ),
-      // ]
-    ),
     mk("revenue", "Doanh thu", <DollarOutlined />, "/teacher/revenue"),
     mk("profile", "Hồ sơ cá nhân", <UserOutlined />, "/teacher/profile"),
   ],

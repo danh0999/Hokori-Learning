@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { addToCart } from "../../../../redux/features/cartSlice"; //import addItem
 import { FaShoppingCart } from "react-icons/fa";
-import { addToCart } from "../../../../redux/features/cartSlice";
+// import { addToCart } from "../../../../redux/features/cartSlice";
 import { setCurrentCourse } from "../../../../redux/features/courseSlice";
 
 const FALLBACK_THUMB = "https://placehold.co/600x400?text=Course+Image";

@@ -1,91 +1,129 @@
-import React, { useState } from "react";
-import { Card, Row, Col, Table, Button, Modal, Statistic, Tag } from "antd";
+// src/pages/Teacher/Revenue/TeacherRevenue.jsx
+import React, { useEffect, useState, useMemo } from "react";
+import { Card, Row, Col, Table, Button, Statistic, Tag, message } from "antd";
 import {
   DollarOutlined,
   ArrowDownOutlined,
   ArrowUpOutlined,
 } from "@ant-design/icons";
+import { useDispatch, useSelector } from "react-redux";
 import WithdrawModal from "./WithdrawModal";
 import styles from "./TeacherRevenue.module.scss";
 
+import {
+  fetchMyWallet,
+  fetchMyWalletTransactions,
+  selectWalletInfo,
+  selectWalletTransactionsPage,
+  selectWalletStatus,
+  selectWalletTransactionsStatus,
+} from "../../../redux/features/walletSlice.js"; // ⚠️ chỉnh lại path cho đúng
+
 export default function TeacherRevenue() {
-  // mock data (sẽ thay bằng API sau)
-  const [balance] = useState(1200000);
-  const [totalEarned] = useState(5000000);
-  const [pendingWithdraw] = useState(300000);
-  const [transactions] = useState([
-    {
-      id: 1,
-      date: "2025-11-01",
-      type: "EARNING",
-      description: "Khóa JLPT N3 Listening",
-      amount: 500000,
-      status: "COMPLETED",
-    },
-    {
-      id: 2,
-      date: "2025-11-03",
-      type: "WITHDRAW",
-      description: "Rút tiền về ngân hàng",
-      amount: -300000,
-      status: "PENDING",
-    },
-  ]);
+  const dispatch = useDispatch();
+
+  // ====== Redux state ======
+  const wallet = useSelector(selectWalletInfo);
+  const walletStatus = useSelector(selectWalletStatus);
+  const txPage = useSelector(selectWalletTransactionsPage);
+  const txStatus = useSelector(selectWalletTransactionsStatus);
 
   const [openWithdraw, setOpenWithdraw] = useState(false);
+  const [page, setPage] = useState(1); // Antd index 1, BE index 0
+
+  // load ví + transactions lần đầu
+  useEffect(() => {
+    dispatch(fetchMyWallet());
+    dispatch(
+      fetchMyWalletTransactions({
+        page: 0,
+        size: 10,
+        sort: ["createdAt,desc"],
+      })
+    );
+  }, [dispatch]);
+
+  const loading = walletStatus === "loading" || txStatus === "loading";
+
+  const balanceCents = wallet?.walletBalance ?? 0;
+  const balanceVnd = balanceCents / 100;
+
+  const totalEarned = 0; // nếu BE có field này trong /wallet/me thì map thêm ở walletSlice
+  const pendingWithdraw = 0; // sau này BE làm withdraw thì thêm
+
+  const transactions = useMemo(() => txPage?.content || [], [txPage]);
 
   const columns = [
     {
       title: "Ngày",
-      dataIndex: "date",
-      key: "date",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      render: (val) => new Date(val).toLocaleString("vi-VN"),
     },
     {
       title: "Loại giao dịch",
-      dataIndex: "type",
-      key: "type",
-      render: (t) =>
-        t === "EARNING" ? (
-          <Tag color="green">Thu nhập</Tag>
-        ) : (
-          <Tag color="volcano">Rút tiền</Tag>
-        ),
-    },
-    {
-      title: "Mô tả",
-      dataIndex: "description",
-      key: "description",
+      dataIndex: "source",
+      key: "source",
+      render: (s) => {
+        if (s === "COURSE_SALE")
+          return <Tag color="green">Tiền bán khóa học</Tag>;
+        if (s === "TEACHER_PAYOUT") return <Tag color="volcano">Payout</Tag>;
+        if (s === "ADMIN_ADJUST") return <Tag color="blue">Điều chỉnh</Tag>;
+        return <Tag>{s}</Tag>;
+      },
     },
     {
       title: "Số tiền (VNĐ)",
-      dataIndex: "amount",
-      key: "amount",
-      render: (val) => (
-        <span style={{ color: val > 0 ? "green" : "red", fontWeight: 500 }}>
-          {val > 0 ? "+" : ""}
-          {val.toLocaleString("vi-VN")}
-        </span>
-      ),
+      dataIndex: "amountCents",
+      key: "amountCents",
+      render: (val) => {
+        const amount = (val ?? 0) / 100;
+        return (
+          <span
+            style={{
+              color: amount > 0 ? "green" : "red",
+              fontWeight: 500,
+            }}
+          >
+            {amount > 0 ? "+" : ""}
+            {amount.toLocaleString("vi-VN")}
+          </span>
+        );
+      },
     },
     {
-      title: "Trạng thái",
-      dataIndex: "status",
-      key: "status",
-      render: (st) => (
-        <Tag
-          color={
-            st === "COMPLETED" ? "green" : st === "PENDING" ? "orange" : "red"
-          }
-        >
-          {st === "COMPLETED"
-            ? "Hoàn tất"
-            : st === "PENDING"
-            ? "Đang xử lý"
-            : "Từ chối"}
-        </Tag>
-      ),
+      title: "Số dư sau giao dịch",
+      dataIndex: "balanceAfterCents",
+      key: "balanceAfterCents",
+      render: (val) => ((val ?? 0) / 100).toLocaleString("vi-VN"),
     },
   ];
+
+  // change page trong table -> gọi lại API
+  const handleChangePage = (newPage) => {
+    setPage(newPage);
+    dispatch(
+      fetchMyWalletTransactions({
+        page: newPage - 1, // BE zero-based
+        size: 10,
+        sort: ["createdAt,desc"],
+      })
+    );
+  };
+
+  // tạm thời: khi teacher bấm rút tiền, chỉ validate + show message
+  // vì BE chưa có API withdraw request
+  const handleSubmitWithdraw = async (amount) => {
+    if (amount > balanceVnd) {
+      message.warning("Số tiền rút vượt quá số dư hiện tại");
+      return;
+    }
+
+    // TODO: khi BE có API withdraw request, gọi ở đây
+    console.log("Withdraw request amount =", amount);
+    message.info("Chức năng rút tiền sẽ được kích hoạt khi BE hoàn thành API.");
+    setOpenWithdraw(false);
+  };
 
   return (
     <div className={styles.container}>
@@ -94,10 +132,10 @@ export default function TeacherRevenue() {
       {/* --- Summary Cards --- */}
       <Row gutter={16} className={styles.summaryRow}>
         <Col xs={24} sm={12} md={8}>
-          <Card>
+          <Card loading={loading}>
             <Statistic
               title="Số dư hiện tại"
-              value={balance}
+              value={balanceVnd}
               valueStyle={{ color: "#3f8600" }}
               prefix={<DollarOutlined />}
               suffix="VNĐ"
@@ -105,10 +143,10 @@ export default function TeacherRevenue() {
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card>
+          <Card loading={loading}>
             <Statistic
-              title="Tổng thu nhập"
-              value={totalEarned}
+              title="Tổng thu nhập (tạm tính)"
+              value={totalEarned / 100}
               valueStyle={{ color: "#1677ff" }}
               prefix={<ArrowUpOutlined />}
               suffix="VNĐ"
@@ -116,10 +154,10 @@ export default function TeacherRevenue() {
           </Card>
         </Col>
         <Col xs={24} sm={12} md={8}>
-          <Card>
+          <Card loading={loading}>
             <Statistic
               title="Đang chờ rút"
-              value={pendingWithdraw}
+              value={pendingWithdraw / 100}
               valueStyle={{ color: "#fa8c16" }}
               prefix={<ArrowDownOutlined />}
               suffix="VNĐ"
@@ -141,23 +179,30 @@ export default function TeacherRevenue() {
       </div>
 
       {/* --- Transactions Table --- */}
-      <Card className={styles.tableCard} title="Lịch sử giao dịch">
+      <Card
+        className={styles.tableCard}
+        title="Lịch sử giao dịch"
+        loading={loading}
+      >
         <Table
           columns={columns}
           dataSource={transactions}
-          rowKey="id"
-          pagination={{ pageSize: 5 }}
+          rowKey={(r) => r.id || r.transactionId}
+          pagination={{
+            current: page,
+            pageSize: txPage?.size || 10,
+            total: txPage?.totalElements,
+            onChange: handleChangePage,
+          }}
         />
       </Card>
 
       {/* --- Withdraw Modal --- */}
       <WithdrawModal
         open={openWithdraw}
+        maxAmount={balanceVnd}
         onCancel={() => setOpenWithdraw(false)}
-        onSubmit={(amount) => {
-          console.log("Withdraw:", amount);
-          setOpenWithdraw(false);
-        }}
+        onSubmit={handleSubmitWithdraw}
       />
     </div>
   );

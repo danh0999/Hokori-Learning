@@ -13,8 +13,8 @@ import SidebarWizardNav from "./components/SideWizardNav/SidebarWizardNav.jsx";
 
 import {
   createCourseThunk,
-  fetchCourseMeta,
   fetchCourseTree,
+  clearCourseTree,
 } from "../../../../redux/features/teacherCourseSlice.js";
 
 import styles from "./styles.module.scss";
@@ -35,10 +35,13 @@ export default function CreateCoursePage() {
   // flag chống double-create trong StrictMode
   const createdRef = useRef(false);
 
-  // 1. Nếu có courseId trên URL ⇒ load meta + tree
+  // 1. Khi đổi courseId trên URL ⇒ clear tree cũ + load meta + detail mới
   useEffect(() => {
+    // luôn clear tree để tránh recycle curriculum của course trước
+    dispatch(clearCourseTree());
+
     if (!courseId) return;
-    dispatch(fetchCourseMeta(courseId));
+
     dispatch(fetchCourseTree(courseId));
   }, [courseId, dispatch]);
 
@@ -63,7 +66,6 @@ export default function CreateCoursePage() {
     dispatch(createCourseThunk(payload))
       .unwrap()
       .then((course) => {
-        // chuyển sang URL có id → component mount lại với courseIdParam mới
         navigate(`/teacher/create-course/${course.id}`, { replace: true });
       })
       .catch((err) => {
