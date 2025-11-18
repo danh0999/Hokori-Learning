@@ -76,7 +76,7 @@ const routes = [
     children: [
       { index: true, element: <Home /> },
       { path: "marketplace", element: <Marketplace /> },
-      { path: "course/:courseId", element: <CourseDetail /> },
+      { path: "course/:id", element: <CourseDetail /> },
       { path: "about", element: <AboutPage /> },
       { path: "contact", element: <Contact /> },
       { path: "information", element: <Information /> },

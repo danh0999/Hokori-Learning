@@ -8,7 +8,7 @@ export const fetchCourses = createAsyncThunk(
   "courses/fetchAll",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await api.get("/courses");
+      const res = await api.get("courses");
 
       if (!res.data || !Array.isArray(res.data.content)) {
         console.warn(" API /courses không trả về content hợp lệ:", res.data);
@@ -32,7 +32,7 @@ export const fetchCourseTree = createAsyncThunk(
   "courses/fetchCourseTree",
   async (id, { rejectWithValue }) => {
     try {
-      const res = await api.get(`/courses/${id}/tree`);
+      const res = await api.get(`courses/${id}/tree`);
       return res.data;
     } catch (err) {
       console.error("❌ Error fetching course tree:", err);

@@ -1,16 +1,13 @@
+// src/pages/CourseDetail/components/CourseFeedback.jsx
 import React from "react";
 
 const CourseFeedback = ({ course }) => {
   //  Đảm bảo luôn là mảng, kể cả khi backend / mock không trả về
   const reviews = Array.isArray(course?.reviews) ? course.reviews : [];
-  const relatedCourses = Array.isArray(course?.relatedCourses)
-    ? course.relatedCourses
-    : [];
 
   return (
     <section className="feedback-section">
       <div className="container">
-        {/* ====== Đánh giá ====== */}
         <h2>Đánh giá từ học viên</h2>
         <div className="reviews">
           {reviews.length === 0 ? (
@@ -34,9 +31,6 @@ const CourseFeedback = ({ course }) => {
             ))
           )}
         </div>
-
-        
-      
       </div>
     </section>
   );

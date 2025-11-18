@@ -1,33 +1,76 @@
+// src/pages/CourseDetail/components/CourseHero.jsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { addItem } from "../../../redux/features/cartSlice";
 import { message } from "antd";
+import { buildFileUrl } from "../../../utils/fileUrl";
+
+const formatMoney = (value) => (Number(value) || 0).toLocaleString("vi-VN");
 
 const CourseHero = ({ course }) => {
-  
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
   if (!course) return <div>Loading...</div>;
 
+  // ====== MAP TỪ TREE SANG CÁC FIELD DÙNG CHO UI ======
   const {
     title,
-    shortDesc,
-    rating,
-    students,
-    tags,
-    price,
-    oldPrice,
-    discount,
+    subtitle,
+    description,
+    level,
+    priceInCents,
+    discountedPriceCents,
+    currency,
   } = course;
 
+  // Giá hiện tại & giá gốc
+  const currentPrice = (discountedPriceCents ?? priceInCents ?? 0) / 100;
+  const originalPrice =
+    discountedPriceCents != null ? (priceInCents ?? 0) / 100 : null;
+
+  const discountPercent =
+    discountedPriceCents != null && priceInCents
+      ? Math.round((1 - discountedPriceCents / priceInCents) * 100)
+      : null;
+
+  // Mock dữ liệu rating / students nếu BE chưa có
+  const rating = Number(course.rating) || 4.8;
+  const students = Number(course.studentCount) || 1200;
+
+  // Tags: nếu có tags từ BE thì dùng, không thì để mảng rỗng
+  const tags = Array.isArray(course.tags) ? course.tags : [];
+
+  // Video preview: tạm dùng coverImagePath / null
+  // const videoUrl = course.previewVideoUrl || null;
+
+  // Thông tin giảng viên: BE /tree chưa có nên dùng placeholder
+  const teacherName = course.teacherName || "Giảng viên Hokori";
+  const teacherAvatar =
+    course.teacherAvatar ||
+    "https://cdn-icons-png.flaticon.com/512/4140/4140048.png";
+
+  // Object sẽ đưa vào cart (tạm thời)
+  const courseForCart = {
+    id: course.id,
+    title: course.title,
+    shortDesc: subtitle || description || "",
+    price: currentPrice,
+    oldPrice: originalPrice,
+    discount: discountPercent,
+    teacher: teacherName,
+    teacherAvatar,
+    level,
+  };
+
   const handleBuyNow = () => {
-    dispatch(addItem(course));
+    dispatch(addItem(courseForCart));
     navigate("/cart");
   };
 
   const handleAddToCart = () => {
-    dispatch(addItem(course));
+    dispatch(addItem(courseForCart));
     message.success("Đã thêm khóa học vào giỏ hàng!");
   };
 
@@ -37,14 +80,17 @@ const CourseHero = ({ course }) => {
         {/* Video preview */}
         <div className="video-preview">
           {course.videoUrl ? (
-            <iframe
-              className="video-frame"
-              src={course.videoUrl}
-              title={course.title}
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-              allowFullScreen
-            ></iframe>
+            <iframe /* ... */ />
+          ) : course.coverImagePath ? (
+            <img
+              src={buildFileUrl(course.coverImagePath)}
+              alt={course.title}
+              className="cover-image"
+              onError={(e) => {
+                e.target.src =
+                  "https://cdn-icons-png.flaticon.com/512/4140/4140048.png";
+              }}
+            />
           ) : (
             <div className="overlay">
               <i className="fa-solid fa-play play-icon"></i>
@@ -56,13 +102,16 @@ const CourseHero = ({ course }) => {
         {/* Info */}
         <div className="info">
           <div className="tags">
-            {tags?.map((tag, idx) => (
+            {level && <span>{level}</span>}
+            {tags.map((tag, idx) => (
               <span key={idx}>{tag}</span>
             ))}
           </div>
 
           <h1>{title}</h1>
-          <p className="desc">{shortDesc}</p>
+          <p className="desc">
+            {subtitle || description || "Mô tả khóa học đang cập nhật."}
+          </p>
 
           <div className="rating">
             <div className="stars">
@@ -73,40 +122,39 @@ const CourseHero = ({ course }) => {
                 ))}
             </div>
             <span>
-              {rating} ({students} học viên)
+              {rating.toFixed(1)} ({students.toLocaleString("vi-VN")} học viên)
             </span>
           </div>
 
           <div className="teacher">
             <img
-              src={
-                course.teacherAvatar ||
-                "https://cdn-icons-png.flaticon.com/512/4140/4140048.png"
-              }
-              alt={course.teacher || "Giảng viên"}
-              onError={(e) =>
-                (e.target.src =
-                  "https://cdn-icons-png.flaticon.com/512/4140/4140048.png")
-              }
+              src={teacherAvatar}
+              alt={teacherName}
+              onError={(e) => {
+                e.target.src =
+                  "https://cdn-icons-png.flaticon.com/512/4140/4140048.png";
+              }}
             />
             <div>
-              <p>{course.teacher}</p>
+              <p>{teacherName}</p>
               <span>Giảng viên</span>
             </div>
           </div>
 
-          {/* SAFE PRICE */}
+          {/* PRICE */}
           <div className="price">
             <span className="current">
-              {(Number(price) || 0).toLocaleString()} VNĐ
+              {formatMoney(currentPrice)} {currency || "VNĐ"}
             </span>
 
-            {oldPrice && (
+            {originalPrice != null && (
               <>
                 <span className="old">
-                  {(Number(oldPrice) || 0).toLocaleString()} VNĐ
+                  {formatMoney(originalPrice)} {currency || "VNĐ"}
                 </span>
-                <span className="discount">-{discount || 0}%</span>
+                {discountPercent != null && (
+                  <span className="discount">-{discountPercent}%</span>
+                )}
               </>
             )}
           </div>
