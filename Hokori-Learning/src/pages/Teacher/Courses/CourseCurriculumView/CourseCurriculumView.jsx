@@ -15,7 +15,6 @@ import {
   FileImageOutlined,
   FileOutlined,
   ReadOutlined,
-  QuestionCircleOutlined,
   BookOutlined,
   EditOutlined,
 } from "@ant-design/icons";
@@ -64,8 +63,6 @@ export default function CourseCurriculumView({
       }
       case "RICH_TEXT":
         return <ReadOutlined />;
-      case "QUIZ_REF":
-        return <QuestionCircleOutlined />;
       case "FLASHCARD_SET":
         return <BookOutlined />;
       default:
@@ -118,25 +115,6 @@ export default function CourseCurriculumView({
           <div className={styles.previewRich}>
             {c.richText || <Text type="secondary">(Empty)</Text>}
           </div>
-        </div>
-      );
-    }
-
-    if (c.contentFormat === "QUIZ_REF") {
-      return (
-        <div className={styles.previewBody}>
-          <Text strong className={styles.previewTitle}>
-            Quiz reference
-          </Text>
-          <p>
-            Quiz ID: <code>{c.quizId}</code>
-          </p>
-          {typeof c.quizTotalQuestions === "number" && (
-            <p>{c.quizTotalQuestions} questions</p>
-          )}
-          <Text type="secondary">
-            Muốn xem chi tiết quiz, bấm Edit lesson &gt; tab Quiz & Flashcards.
-          </Text>
         </div>
       );
     }

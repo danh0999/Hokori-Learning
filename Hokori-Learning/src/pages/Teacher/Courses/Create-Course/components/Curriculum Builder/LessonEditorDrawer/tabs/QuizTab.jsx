@@ -1,5 +1,5 @@
 // LessonEditorDrawer/tabs/QuizTab.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Button, Space, Typography, message, Spin } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
@@ -27,14 +27,14 @@ export default function QuizTab({ lesson }) {
   const [openBulk, setOpenBulk] = useState(false);
   const [draftQuiz, setDraftQuiz] = useState(null);
 
-  // load quiz khi chọn lesson
+  // load quiz khi mở/chọn lesson
   useEffect(() => {
     if (!lesson?.id) return;
     dispatch(fetchLessonQuizThunk(lesson.id));
   }, [lesson?.id, dispatch]);
 
-  // Helper: map currentQuiz (BE) -> format cho builder
-  const mapCurrentQuizToDraft = (q) => {
+  // map QuizDto từ BE -> Quiz builder format
+  const mapQuizFromBE = useCallback((q) => {
     if (!q) return null;
     return {
       id: q.id,
@@ -54,10 +54,9 @@ export default function QuizTab({ lesson }) {
         typeof q.showExplanation === "boolean" ? q.showExplanation : true,
       isRequired: !!q.isRequired,
       tags: q.tags || [],
-      // để QuizBuilderModal tự fetch câu hỏi từ BE
-      questions: [],
+      questions: [], // câu hỏi sẽ được QuizBuilderModal tự fetch nếu cần
     };
-  };
+  }, []);
 
   // Mở tạo quiz mới
   const handleCreate = () => {
@@ -67,30 +66,25 @@ export default function QuizTab({ lesson }) {
 
   // Edit quiz hiện tại
   const handleEdit = () => {
-    if (currentQuiz) {
-      setDraftQuiz(mapCurrentQuizToDraft(currentQuiz));
-    } else {
+    if (!currentQuiz) {
       setDraftQuiz(null);
+    } else {
+      setDraftQuiz(mapQuizFromBE(currentQuiz));
     }
     setOpenBuilder(true);
   };
 
-  // Bulk import: gộp thêm questions vào draft/current
+  // Bulk import
   const handleBulkDone = (questions) => {
     setOpenBulk(false);
     if (!questions?.length) return;
 
     const base = draftQuiz ||
-      mapCurrentQuizToDraft(currentQuiz) || {
+      mapQuizFromBE(currentQuiz) || {
         title: lesson?.title || "Quiz",
         description: "",
         timeLimit: 30,
         passingScore: 60,
-        shuffleQuestions: false,
-        shuffleOptions: true,
-        showExplanation: true,
-        isRequired: false,
-        tags: [],
         questions: [],
       };
 
@@ -101,7 +95,7 @@ export default function QuizTab({ lesson }) {
     setOpenBuilder(true);
   };
 
-  // Lưu quiz xuống BE (dùng quizSlice)
+  // Lưu quiz
   const handleSaveQuiz = async (builderQuiz) => {
     if (!lesson?.id) {
       message.error("Thiếu lessonId.");
@@ -124,8 +118,8 @@ export default function QuizTab({ lesson }) {
   };
 
   const handleRemove = async () => {
-    // TODO: thêm deleteQuizThunk nếu BE có API xoá quiz
-    message.error("Chưa implement delete quiz thunk 😅");
+    // TODO: nếu sau này BE hỗ trợ xoá quiz thì mình thêm thunk deleteQuizThunk ở đây
+    message.error("Chưa implement delete quiz 😅");
   };
 
   return (

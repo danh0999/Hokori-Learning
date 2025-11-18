@@ -1,59 +1,75 @@
-import React from "react";
+import React, { useEffect } from "react";
 import styles from "./CartPage.module.scss";
 import CartItem from "./components/CartItem";
 import OrderSummary from "./components/OrderSummary";
 import RecommendedCourses from "./components/RecommendedCourses";
 import { useSelector, useDispatch } from "react-redux";
 import {
-  removeItem,
-  clearCart /* , fetchCart */,
+  fetchCart,
+  removeFromCart,
+  clearCartOnServer,
 } from "../../redux/features/cartSlice";
-//           ↑↑↑ fetchCart để dành cho API thật, hiện tại tạm comment lại
 
 const CartPage = () => {
   const dispatch = useDispatch();
-
-  //  DEMO: lấy giỏ hàng trực tiếp từ Redux (đã persist bằng redux-persist)
-  const items = useSelector((state) => state.cart.items);
-
-  //  SAU NÀY KHI CÓ API GIỎ HÀNG (backend) THÌ DÙNG ĐOẠN NÀY:
-  /*
-  const { items, status } = useSelector((state) => state.cart);
+  const { items, status, error } = useSelector((state) => state.cart);
 
   useEffect(() => {
     if (status === "idle") {
-      dispatch(fetchCart()); // gọi API /api/cart để lấy giỏ hàng từ server
+      dispatch(fetchCart());
     }
   }, [status, dispatch]);
-  */
 
-  const handleRemove = (id) => {
-    dispatch(removeItem(id));
+  const handleRemove = (cartItemId) => {
+    dispatch(removeFromCart(cartItemId));
   };
 
   const handleClearCart = () => {
-    dispatch(clearCart());
+    dispatch(clearCartOnServer());
   };
+
+  // Chuẩn hóa data: cart item -> course
+  const normalizedItems = (items || []).map((item) => {
+    return {
+      cartItemId: item.itemId,
+      id: item.courseId,
+      title: "Khóa học #" + item.courseId, // tạm placeholder
+      price: item.totalPrice / item.quantity,
+      quantity: item.quantity,
+      selected: item.selected,
+    };
+  });
 
   return (
     <main className={styles.main}>
       <div className={styles.container}>
         <div className={styles.header}>
           <h1>Giỏ hàng của bạn</h1>
-          <p>{items.length} khóa học trong giỏ hàng</p>
+          <p>{normalizedItems.length} khóa học trong giỏ hàng</p>
         </div>
 
-        {items.length === 0 ? (
+        {status === "loading" && (
+          <p className={styles.loading}>Đang tải giỏ hàng...</p>
+        )}
+
+        {status === "failed" && (
+          <p className={styles.error}>
+            Không thể tải giỏ hàng: {String(error || "Unknown error")}
+          </p>
+        )}
+
+        {status !== "loading" && normalizedItems.length === 0 && (
           <p className={styles.empty}>Giỏ hàng trống, hãy thêm khóa học!</p>
-        ) : (
+        )}
+
+        {normalizedItems.length > 0 && (
           <div className={styles.grid}>
             <div className={styles.courseList}>
-              {items.map((course) => (
+              {normalizedItems.map((course) => (
                 <CartItem
-                  key={course.id}
+                  key={course.cartItemId}
                   course={course}
-                  onRemove={handleRemove}
-                  // onSave / onFavorite nếu cần sau này
+                  onRemove={() => handleRemove(course.cartItemId)}
                 />
               ))}
 
@@ -62,7 +78,7 @@ const CartPage = () => {
               </button>
             </div>
 
-            <OrderSummary courses={items} />
+            <OrderSummary courses={normalizedItems} />
           </div>
         )}
 

@@ -8,7 +8,7 @@ import { FaShoppingCart } from "react-icons/fa";
 
 const FALLBACK_THUMB = "https://placehold.co/600x400?text=Course+Image";
 const FALLBACK_AVATAR =
-  "https://thumbs.dreamstime.com/b/teacher-icon-vector-male-pe…hing-school-college-university-education-glyph-113755262.jpg";
+  "https://thumbs.dreamstime.com/b/teacher-icon-vector-male-person-profile-avatar-book-teaching-school-college-university-education-glyph-113755262.jpg";
 
 export default function CourseCard({ course }) {
   const navigate = useNavigate();

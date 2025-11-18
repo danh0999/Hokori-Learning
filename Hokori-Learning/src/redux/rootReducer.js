@@ -11,6 +11,7 @@ import flashcardReducer from "./features/flashcardSlice.js";
 import flashcardLearnerReducer from "./features/flashcardLearnerSlice.js";
 import progressSlice from "./features/progressSlice.js";
 import walletReducer from "./features/walletSlice.js";
+import jlptModeratorReducer from "./features/jlptModeratorSlice.js";
 
 const rootReducer = combineReducers({
   user: userReducer,
@@ -28,6 +29,7 @@ const rootReducer = combineReducers({
 
   progress: progressSlice,
   wallet: walletReducer,
+  jlptModerator: jlptModeratorReducer,
 });
 
 export default rootReducer;
