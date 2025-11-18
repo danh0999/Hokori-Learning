@@ -2,7 +2,7 @@ import React from "react";
 import styles from "./CartItem.module.scss";
 import { FaTrashAlt, FaHeart } from "react-icons/fa";
 
-const CartItem = ({ course, onRemove, onSave, onFavorite }) => {
+const CartItem = ({ course, cartItemId, onRemove }) => {
   if (!course) return null; // bảo vệ tránh lỗi nếu course undefined
 
   return (
@@ -16,7 +16,7 @@ const CartItem = ({ course, onRemove, onSave, onFavorite }) => {
           <h3>{course.title}</h3>
           <button
             className={styles.delete}
-            onClick={() => onRemove(course.id)}
+            onClick={() => onRemove(cartItemId)}
             title="Xóa khỏi giỏ hàng"
           >
             <FaTrashAlt />
@@ -39,9 +39,7 @@ const CartItem = ({ course, onRemove, onSave, onFavorite }) => {
               Bởi {course.teacher?.name || "Giảng viên"}
             </p>
             {course.teacher?.role && (
-              <span className={styles.teacherRole}>
-                {course.teacher.role}
-              </span>
+              <span className={styles.teacherRole}>{course.teacher.role}</span>
             )}
           </div>
         </div>
@@ -66,20 +64,18 @@ const CartItem = ({ course, onRemove, onSave, onFavorite }) => {
                   ₫{course.oldPrice.toLocaleString("vi-VN")}
                 </span>
                 {course.discount && (
-                  <span className={styles.discount}>
-                    {course.discount}
-                  </span>
+                  <span className={styles.discount}>{course.discount}</span>
                 )}
               </>
             )}
           </div>
 
-          <div className={styles.actions}>
+          {/* <div className={styles.actions}>
             <button onClick={() => onSave(course.id)}>Lưu để sau</button>
             <button onClick={() => onFavorite(course.id)}>
               <FaHeart /> Yêu thích
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

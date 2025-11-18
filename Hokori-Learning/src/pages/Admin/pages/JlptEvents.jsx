@@ -1,59 +1,20 @@
-import React, { useState } from "react";
+// src/pages/Admin/JlptEvents/JlptEvents.jsx
+import React, { useEffect, useState } from "react";
 import s from "./JlptEvents.module.scss";
 import { toast } from "react-toastify";
-
-// MOCK STORAGE
-const JLPT_STORAGE = [
-  { id: 101, level: "N3", title: "N3 - Đề 01 (2025)" },
-  { id: 102, level: "N3", title: "N3 - Đề 02 (2025)" },
-  { id: 201, level: "N2", title: "N2 - Đề 01 (2025)" },
-  { id: 202, level: "N2", title: "N2 - Đề 02 (2025)" },
-  { id: 301, level: "N1", title: "N1 - Đề luyện cao cấp" },
-];
-
-const MOCK_EVENTS = [
-  {
-    id: 1,
-    name: "JLPT N3 kỳ tháng 12",
-    level: "N3",
-    openAt: "2025-10-01T07:00",
-    closeAt: "2025-12-01T23:59",
-    type: "ONLINE",
-    testId: 101,
-    participants: 42,
-    status: "OPEN",
-  },
-  {
-    id: 2,
-    name: "JLPT N2 kỳ tháng 7",
-    level: "N2",
-    openAt: "2025-05-01T08:00",
-    closeAt: "2025-06-30T23:59",
-    type: "OFFLINE",
-    testId: 201,
-    participants: 122,
-    status: "CLOSED",
-  },
-];
+import api from "../../../configs/axios"; // chỉnh path cho đúng dự án của bạn
 
 // =====================
 // MODAL TẠO SỰ KIỆN
 // =====================
 const CreateEventModal = ({ open, onClose, onSubmit }) => {
-  const [search, setSearch] = useState("");
-
   const [form, setForm] = useState({
-    name: "",
+    title: "",
     level: "N3",
-    openAt: "",
-    closeAt: "",
-    testId: "",
-    type: "ONLINE", // mặc định online
+    description: "",
+    startAt: "",
+    endAt: "",
   });
-
-  const filteredTests = JLPT_STORAGE.filter((t) =>
-    t.title.toLowerCase().includes(search.toLowerCase())
-  );
 
   const change = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -62,15 +23,26 @@ const CreateEventModal = ({ open, onClose, onSubmit }) => {
   const submit = (e) => {
     e.preventDefault();
 
-    if (!form.name.trim()) return toast.error("Tên sự kiện là bắt buộc");
-    if (!form.openAt) return toast.error("Thời gian mở đăng ký bắt buộc");
-    if (!form.closeAt) return toast.error("Thời gian đóng đăng ký bắt buộc");
-    if (new Date(form.openAt) >= new Date(form.closeAt))
-      return toast.error("Thời gian mở phải trước thời gian đóng");
-    if (!form.testId) return toast.error("Bạn phải chọn một đề thi");
+    if (!form.title.trim()) return toast.error("Tiêu đề sự kiện là bắt buộc");
+    if (!form.startAt) return toast.error("Thời gian bắt đầu là bắt buộc");
+    if (!form.endAt) return toast.error("Thời gian kết thúc là bắt buộc");
+    if (new Date(form.startAt) >= new Date(form.endAt))
+      return toast.error("Thời gian bắt đầu phải trước thời gian kết thúc");
 
     onSubmit(form);
   };
+
+  React.useEffect(() => {
+    if (!open) {
+      setForm({
+        title: "",
+        level: "N3",
+        description: "",
+        startAt: "",
+        endAt: "",
+      });
+    }
+  }, [open]);
 
   if (!open) return null;
 
@@ -80,19 +52,18 @@ const CreateEventModal = ({ open, onClose, onSubmit }) => {
         <h2 className={s.modalTitle}>Tạo sự kiện JLPT</h2>
 
         <form className={s.formGrid} onSubmit={submit}>
-          {/* LEFT */}
           <div className={s.col}>
             <label className={s.label}>
-              Tên sự kiện
+              Tiêu đề (title)
               <input
                 className={s.input}
-                value={form.name}
-                onChange={change("name")}
+                value={form.title}
+                onChange={change("title")}
               />
             </label>
 
             <label className={s.label}>
-              Cấp độ
+              Cấp độ (level)
               <select
                 className={s.select}
                 value={form.level}
@@ -105,61 +76,35 @@ const CreateEventModal = ({ open, onClose, onSubmit }) => {
             </label>
 
             <label className={s.label}>
-              Mở đăng ký
+              Bắt đầu (startAt)
               <input
                 type="datetime-local"
                 className={s.input}
-                value={form.openAt}
-                onChange={change("openAt")}
+                value={form.startAt}
+                onChange={change("startAt")}
               />
             </label>
           </div>
 
-          {/* RIGHT */}
           <div className={s.col}>
             <label className={s.label}>
-              Đóng đăng ký
+              Kết thúc (endAt)
               <input
                 type="datetime-local"
                 className={s.input}
-                value={form.closeAt}
-                onChange={change("closeAt")}
+                value={form.endAt}
+                onChange={change("endAt")}
               />
             </label>
 
-            {/* ——— Sửa yêu cầu: Hình thức thi là Online mặc định, readonly ——— */}
             <label className={s.label}>
-              Hình thức thi
-              <input className={s.input} value="Online" readOnly />
-            </label>
-
-            {/* ——— KHO ĐỀ ——— */}
-            <label className={s.label}>
-              Chọn đề thi (Có thể tìm kiếm)
-              <input
-                className={s.input}
-                placeholder="Tìm kiếm đề..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+              Mô tả (description)
+              <textarea
+                className={s.textarea}
+                rows={3}
+                value={form.description}
+                onChange={change("description")}
               />
-              {/* LIST đẹp thay vì select[size=5] */}
-              <div className={s.testList}>
-                {filteredTests.length === 0 ? (
-                  <p className={s.empty}>Không có đề phù hợp</p>
-                ) : (
-                  filteredTests.map((t) => (
-                    <div
-                      key={t.id}
-                      className={`${s.testItem} ${
-                        form.testId == t.id ? s.selected : ""
-                      }`}
-                      onClick={() => setForm((p) => ({ ...p, testId: t.id }))}
-                    >
-                      <span className={s.testTitle}>{t.title}</span>
-                    </div>
-                  ))
-                )}
-              </div>
             </label>
           </div>
 
@@ -202,10 +147,12 @@ const ConfirmModal = ({ open, title, desc, onConfirm, onCancel }) => {
 };
 
 // =====================
-// MAIN PAGE
+// MAIN PAGE – ADMIN
 // =====================
 export default function JlptEvents() {
-  const [events, setEvents] = useState(MOCK_EVENTS);
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(false);
+
   const [modalOpen, setModalOpen] = useState(false);
 
   const [confirmCfg, setConfirmCfg] = useState({
@@ -214,92 +161,156 @@ export default function JlptEvents() {
     next: null,
   });
 
-  const openCreate = () => {
-    setModalOpen(true);
+  // ------ GET /api/jlpt/events ------
+  const fetchEvents = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("jlpt/events"); // có thể thêm ?status=... ?level=...
+      setEvents(res.data || []);
+    } catch (err) {
+      console.error(err);
+      toast.error("Không tải được danh sách sự kiện JLPT");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const createEvent = (form) => {
-    const newEvent = {
-      id: Date.now(),
-      ...form,
-      participants: Math.floor(Math.random() * 100),
-      status: "OPEN",
-    };
-    setEvents((p) => [newEvent, ...p]);
-    toast.success("Tạo sự kiện thành công!");
-    setModalOpen(false);
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+
+  const openCreate = () => setModalOpen(true);
+
+  // ------ POST /api/jlpt/events ------
+  const createEvent = async (form) => {
+    try {
+      const payload = {
+        title: form.title,
+        level: form.level,
+        description: form.description,
+        startAt: new Date(form.startAt).toISOString(),
+        endAt: new Date(form.endAt).toISOString(),
+        status: "DRAFT", // đúng theo swagger
+      };
+
+      await api.post("jlpt/events", payload);
+      toast.success("Tạo sự kiện thành công!");
+      setModalOpen(false);
+      fetchEvents(); // reload để moderator thấy event mới
+    } catch (err) {
+      console.error(err);
+      toast.error("Tạo sự kiện thất bại");
+    }
   };
 
   const askToggle = (ev) => {
+    let nextStatus = "OPEN";
+    if (ev.status === "OPEN") nextStatus = "CLOSED";
+    if (ev.status === "CLOSED") nextStatus = "OPEN"; // tuỳ rule của bạn
+
     setConfirmCfg({
       open: true,
       target: ev,
-      next: ev.status === "OPEN" ? "CLOSED" : "OPEN",
+      next: nextStatus,
     });
   };
 
-  const toggleEvent = () => {
+  // ------ PATCH /api/jlpt/events/{eventId}/status ------
+  const toggleEvent = async () => {
     const { target, next } = confirmCfg;
-    setEvents((prev) =>
-      prev.map((e) => (e.id === target.id ? { ...e, status: next } : e))
-    );
+    if (!target) return;
 
-    toast.success("Cập nhật trạng thái thành công!");
-    setConfirmCfg({ open: false, target: null, next: null });
+    try {
+      await api.patch(`jlpt/events/${target.id}/status`, {
+        status: next,
+      });
+
+      toast.success("Cập nhật trạng thái thành công!");
+      setConfirmCfg({ open: false, target: null, next: null });
+      fetchEvents();
+    } catch (err) {
+      console.error(err);
+      toast.error("Cập nhật trạng thái thất bại");
+      setConfirmCfg({ open: false, target: null, next: null });
+    }
   };
 
   return (
     <div className={s.page}>
       <div className={s.header}>
-        <h1 className={s.title}>Sự kiện JLPT</h1>
+        <h1 className={s.title}>Sự kiện JLPT (Admin)</h1>
         <button className={s.btnPrimary} onClick={openCreate}>
           + Tạo sự kiện
         </button>
       </div>
 
       <div className={s.tableWrap}>
-        <table className={s.table}>
-          <thead>
-            <tr>
-              <th>Tên sự kiện</th>
-              <th>Cấp độ</th>
-              <th>Thời gian mở</th>
-              <th>Thời gian đóng</th>
-              <th>Hình thức</th>
-              <th>Người tham gia</th>
-              <th>Trạng thái</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {events.map((ev) => (
-              <tr key={ev.id}>
-                <td>{ev.name}</td>
-                <td>{ev.level}</td>
-                <td>{new Date(ev.openAt).toLocaleString("vi-VN")}</td>
-                <td>{new Date(ev.closeAt).toLocaleString("vi-VN")}</td>
-                <td>{ev.type === "ONLINE" ? "Online" : "Offline"}</td>
-                <td>{ev.participants}</td>
-                <td>
-                  <span
-                    className={`${s.badge} ${
-                      ev.status === "OPEN" ? s.open : s.closed
-                    }`}
-                  >
-                    {ev.status === "OPEN" ? "Đang mở" : "Đã đóng"}
-                  </span>
-                </td>
-
-                <td className={s.actions}>
-                  <button className={s.btnSmall} onClick={() => askToggle(ev)}>
-                    {ev.status === "OPEN" ? "Khóa" : "Mở lại"}
-                  </button>
-                </td>
+        {loading ? (
+          <p>Đang tải dữ liệu...</p>
+        ) : (
+          <table className={s.table}>
+            <thead>
+              <tr>
+                <th>Tiêu đề</th>
+                <th>Cấp độ</th>
+                <th>Mô tả</th>
+                <th>Bắt đầu</th>
+                <th>Kết thúc</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+
+            <tbody>
+              {events.length === 0 && (
+                <tr>
+                  <td colSpan={7} style={{ textAlign: "center", padding: 16 }}>
+                    Chưa có sự kiện JLPT nào
+                  </td>
+                </tr>
+              )}
+
+              {events.map((ev) => (
+                <tr key={ev.id}>
+                  <td>{ev.title}</td>
+                  <td>{ev.level}</td>
+                  <td>{ev.description}</td>
+                  <td>
+                    {ev.startAt
+                      ? new Date(ev.startAt).toLocaleString("vi-VN")
+                      : "-"}
+                  </td>
+                  <td>
+                    {ev.endAt
+                      ? new Date(ev.endAt).toLocaleString("vi-VN")
+                      : "-"}
+                  </td>
+                  <td>
+                    <span
+                      className={`${s.badge} ${
+                        ev.status === "OPEN"
+                          ? s.open
+                          : ev.status === "DRAFT"
+                          ? s.draft
+                          : s.closed
+                      }`}
+                    >
+                      {ev.status}
+                    </span>
+                  </td>
+                  <td className={s.actions}>
+                    <button
+                      className={s.btnSmall}
+                      onClick={() => askToggle(ev)}
+                    >
+                      {ev.status === "OPEN" ? "Đóng (CLOSED)" : "Mở (OPEN)"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       <CreateEventModal

@@ -17,14 +17,8 @@ export default function CourseCard({ course }) {
   // ============================================
   //  CHUẨN FIELD TRẢ VỀ TỪ BACKEND
   // ============================================
-  const {
-    id,
-    title,
-    subtitle,
-    thumbnailUrl,
-    teacherName,
-    teacherAvatar,
-  } = course;
+  const { id, title, subtitle, thumbnailUrl, teacherName, teacherAvatar } =
+    course;
 
   // ============================================
   //  UI FALLBACKS

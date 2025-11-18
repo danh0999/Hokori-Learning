@@ -79,7 +79,7 @@ export const sidebarMenusByRole = {
       <ProfileOutlined />,
       "/admin/teacher-certificates"
     ),
-    mk("jlpt", "Sự kiện JLPT", <ReadOutlined />, "/admin/jlpt"),
+    mk("events", "Sự kiện JLPT", <ReadOutlined />, "/admin/events"),
     mk("ai-packages", "Gói AI", <ExperimentOutlined />, "/admin/ai-packages"),
     mk("revenue", "Tài chính", <DollarOutlined />, "/admin/revenue"),
     mk(
@@ -100,7 +100,7 @@ export const sidebarMenusByRole = {
   moderator: [
     mk("dashboard", "Tổng quan", <DashboardOutlined />, "/moderator"),
     mk("queues", "Hàng đợi duyệt", <ClusterOutlined />, "/moderator/queues"),
-    mk("content", "Nội dung", <BookOutlined />, "/moderator/content"),
+    mk("jlptevents", "Sự kiện JLPT", <BookOutlined />, "/moderator/jlptevents"),
     mk(
       "flags",
       "Cờ vi phạm",

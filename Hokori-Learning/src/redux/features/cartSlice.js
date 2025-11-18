@@ -326,12 +326,18 @@ const cartSlice = createSlice({
   extraReducers: (builder) => {
     const setItemsFromPayload = (state, action) => {
       state.status = "succeeded";
-      const data = action.payload;
 
-      if (Array.isArray(data)) {
-        state.items = data;
-      } else if (data?.items && Array.isArray(data.items)) {
-        state.items = data.items;
+      const res = action.payload;
+
+      if (!res || !res.data) {
+        state.items = [];
+        return;
+      }
+
+      const items = res.data.items;
+
+      if (Array.isArray(items)) {
+        state.items = items;
       } else {
         state.items = [];
       }

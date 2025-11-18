@@ -40,6 +40,7 @@ import TeacherRevenue from "../pages/Teacher/Revenue/TeacherRevenue";
 // ===== Moderator =====
 import JLPTList from "../pages/JLPT/JLPTList";
 import ManageQueues from "../pages/Moderator/Queues/ManageQueues";
+import JlptEventsPage from "../pages/Moderator/JlptEventsPage/JlptEventsPage";
 
 // ===== Admin =====
 import Dashboard from "../pages/Admin/pages/Dashboard";
@@ -162,6 +163,7 @@ const routes = [
           { index: true, element: <Stub title="Moderator Dashboard" /> },
           { path: "reviews", element: <Stub title="Reviews" /> },
           { path: "queues", element: <ManageQueues /> },
+          { path: "jlptevents", element: <JlptEventsPage /> },
           { path: "ai-check", element: <Stub title="AI Check" /> },
           { path: "messages", element: <Stub title="Messages" /> },
           { path: "settings", element: <Stub title="Settings" /> },
@@ -185,7 +187,7 @@ const routes = [
           { index: true, element: <Dashboard /> },
           { path: "users", element: <Users /> },
           { path: "teacher-certificates", element: <TeacherCertificates /> },
-          { path: "jlpt", element: <JlptEvents /> },
+          { path: "events", element: <JlptEvents /> },
           { path: "ai-packages", element: <AiPackages /> },
           { path: "revenue", element: <Revenue /> },
           { path: "withdrawals", element: <Withdrawals /> },
