@@ -1,43 +1,54 @@
 import React from "react";
 import styles from "./AISidebar.module.scss";
-import {
-  FaRobot,
-  FaChartLine,
-  FaLightbulb,
-  FaSpellCheck,
-  FaMicrophone,
-  FaVolumeHigh,
-} from "react-icons/fa6";
+import { FaRobot, FaChartLine, FaLightbulb } from "react-icons/fa6";
 import { Button } from "../../../components/Button/Button";
+import { useDispatch } from "react-redux";
+import { checkAIPermission } from "../../../redux/features/aiPackageSlice.js";
+
 const AISidebar = () => {
+  const dispatch = useDispatch();
+
+  // Handler chính để kiểm tra quyền sử dụng AI
+  const handleClick = (serviceCode) => {
+    dispatch(checkAIPermission(serviceCode));
+  };
+
   return (
     <aside className={styles.sidebar}>
+      {/* =============== Công cụ AI =============== */}
       <section>
         <h3>
           <FaRobot /> Công cụ AI
         </h3>
+
         <div className={styles.buttons}>
+          {/* KIỂM TRA CHÍNH TẢ */}
           <Button
-            to ="/ai-analyse"
             content="Kiểm tra chính tả"
+            onClick={() => handleClick("GRAMMAR")}
             className={styles.aiButton}
             containerClassName={styles.aiButtonContainer}
           />
+
+          {/* LUYỆN NÓI (KAIWA) */}
           <Button
-            to="/ai-kaiwa"
             content="Luyện nói"
+            onClick={() => handleClick("KAIWA")}
             className={styles.aiButton}
             containerClassName={styles.aiButtonContainer}
           />
+
+          {/* KIỂM TRA PHÁT ÂM */}
           <Button
-   
             content="Kiểm tra phát âm"
+            onClick={() => handleClick("PRONUN")}
             className={styles.aiButton}
             containerClassName={styles.aiButtonContainer}
           />
         </div>
       </section>
 
+      {/* =============== Thống kê học tập =============== */}
       <section>
         <h3>
           <FaChartLine /> Thống kê học tập
@@ -62,6 +73,7 @@ const AISidebar = () => {
         </ul>
       </section>
 
+      {/* =============== Gợi ý ôn tập =============== */}
       <section>
         <h3>
           <FaLightbulb /> Gợi ý ôn tập

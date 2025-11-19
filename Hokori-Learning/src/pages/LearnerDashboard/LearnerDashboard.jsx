@@ -1,7 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./LearnerDashboard.module.scss";
-import api from "../../configs/axios"; // ✅ axios instance Hokori
+import api from "../../configs/axios";
+
+// === Redux for AI Modal ===
+import { useSelector, useDispatch } from "react-redux";
+import AiPackageModal from "./components/AiPackageModal.jsx";
+import { closeModal, purchaseAiPackage } from "../../redux/features/aiPackageSlice";
 
 // === Components ===
 import UserProfile from "./components/UserProfile";
@@ -13,6 +18,8 @@ import AISidebar from "./components/AISidebar";
 
 const LearnerDashboard = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const aiPackage = useSelector((state) => state.aiPackage);
 
   // ====== STATE ======
   const [user, setUser] = useState(null);
@@ -25,15 +32,12 @@ const LearnerDashboard = () => {
       try {
         setLoading(true);
 
-        // Lấy thông tin cá nhân
         const userRes = await api.get("/profile/me");
         const userData = userRes.data?.data;
 
-        // Lấy danh sách khóa học đã ghi danh
         const courseRes = await api.get("/learner/courses");
         const courseList = courseRes.data?.data || [];
 
-        // Tính toán tiến độ tổng thể
         if (courseList.length > 0) {
           const byLevel = {};
           courseList.forEach((c) => {
@@ -43,8 +47,7 @@ const LearnerDashboard = () => {
           });
 
           const jlptLevels = Object.entries(byLevel).map(([level, list]) => {
-            const avg =
-              list.reduce((sum, v) => sum + v, 0) / (list.length || 1);
+            const avg = list.reduce((sum, v) => sum + v, 0) / (list.length || 1);
             return {
               level: `JLPT ${level}`,
               progress: Math.round(avg),
@@ -78,12 +81,7 @@ const LearnerDashboard = () => {
             "https://cdn-icons-png.flaticon.com/512/9131/9131529.png",
         });
       } catch (err) {
-        console.error(
-          "🚨 Dashboard API error:",
-          err.response?.data || err.message
-        );
-
-        // Nếu backend lỗi 500 => hiển thị mặc định rỗng
+        console.error("Dashboard API error:", err.response?.data || err.message);
         setProgress({ overall: 0, jlptLevels: [] });
         setUser({
           name: "Người học Hokori",
@@ -101,7 +99,6 @@ const LearnerDashboard = () => {
     fetchDashboardData();
   }, []);
 
-  // ====== RENDER ======
   if (loading) {
     return (
       <main className={styles.dashboard}>
@@ -123,18 +120,15 @@ const LearnerDashboard = () => {
   return (
     <main className={styles.dashboard}>
       <div className={styles.container}>
-        {/* Hồ sơ người dùng */}
         <UserProfile {...user} />
 
         <div className={styles.grid}>
-          {/* Cột trái */}
           <div className={styles.left}>
             {progress && <ProgressTracker {...progress} />}
             <CompletedLessons onViewAll={() => navigate("/my-courses")} />
             <QuizResults />
           </div>
 
-          {/* Cột phải */}
           <div className={styles.right}>
             <div className={styles.flashcardBox}>
               <h3>Flashcard của bạn</h3>
@@ -151,6 +145,14 @@ const LearnerDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* AI PACKAGE MODAL*/}
+      {aiPackage.showModal && (
+        <AiPackageModal
+          onClose={() => dispatch(closeModal())}
+          onSelect={(pkgId) => dispatch(purchaseAiPackage(pkgId))}
+        />
+      )}
     </main>
   );
 };
