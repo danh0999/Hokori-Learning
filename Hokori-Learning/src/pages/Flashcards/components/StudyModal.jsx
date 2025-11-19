@@ -2,17 +2,20 @@ import React, { useEffect, useState } from "react";
 import styles from "./StudyModal.module.scss";
 import { toast } from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchCardsBySet } from "../../../redux/features/flashcardLearnerSlice";
+import {
+  fetchCardsBySet,
+  updateFlashcardProgress,
+  setDeckProgress,
+} from "../../../redux/features/flashcardLearnerSlice";
 
 const StudyModal = ({ deck, onClose }) => {
   const dispatch = useDispatch();
-  const { cardsBySet, loadingCards } = useSelector(
-    (state) => state.flashcards
-  );
+  const { cardsBySet, loadingCards } = useSelector((state) => state.flashcards);
 
   const [current, setCurrent] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [finished, setFinished] = useState(false);
+  const [masteredCount, setMasteredCount] = useState(0); // số thẻ "Nhớ tốt" trong buổi này
 
   const rawCards = cardsBySet[deck.id] || [];
   const loading = loadingCards[deck.id];
@@ -26,7 +29,7 @@ const StudyModal = ({ deck, onClose }) => {
       (c.exampleSentence ? `\nVí dụ: ${c.exampleSentence}` : ""),
   }));
 
-  // Fetch cards nếu chưa có
+  // Lấy thẻ cho bộ hiện tại nếu chưa có
   useEffect(() => {
     if (!deck?.id) return;
     if (!cardsBySet[deck.id] || cardsBySet[deck.id].length === 0) {
@@ -36,27 +39,58 @@ const StudyModal = ({ deck, onClose }) => {
           toast.error("Không tải được thẻ trong bộ này.");
         });
     }
-  }, [deck, dispatch, cardsBySet]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deck.id, dispatch]);
 
+  // Reset state mỗi khi đổi deck hoặc số thẻ
   useEffect(() => {
-    // reset state khi deck/cards change
     setCurrent(0);
     setIsFlipped(false);
     setFinished(cards.length === 0);
-  }, [deck.id, cards.length]);
+    setMasteredCount(0);
+  }, [deck.id, rawCards.length]);
 
   const handleFlip = () => {
     if (!cards.length) return;
     setIsFlipped((f) => !f);
   };
 
-  const handleResult = () => {
-    // chưa có SRS backend → chỉ next card
+  // rating: "again" | "medium" | "easy"
+  const handleResult = (rating) => {
+    if (!cards.length) return;
+
+    const card = cards[current];
+    const status = rating === "easy" ? "MASTERED" : "LEARNING";
+
+    // Gọi API progress (không block UI)
+    dispatch(updateFlashcardProgress({ cardId: card.id, status })).catch(() => {
+      // im lặng, tránh làm user khó chịu
+    });
+
+    // Tăng số thẻ mastered trong buổi này nếu chọn "Nhớ tốt"
+    const newMasteredCount =
+      rating === "easy" ? masteredCount + 1 : masteredCount;
+    if (rating === "easy") {
+      setMasteredCount((c) => c + 1);
+    }
+
+    // Chuyển thẻ tiếp theo hoặc kết thúc buổi học
     if (current < cards.length - 1) {
       setCurrent((i) => i + 1);
       setIsFlipped(false);
     } else {
       setFinished(true);
+
+      // Tính % tiến độ đơn giản: số thẻ "Nhớ tốt" / tổng số thẻ
+      const percent = cards.length
+        ? Math.round((newMasteredCount / cards.length) * 100)
+        : 0;
+
+      dispatch(setDeckProgress({ setId: deck.id, percent }));
+
+      toast.success(
+        `Hoàn thành buổi ôn tập! Tiến độ bộ "${deck.title}" hiện tại ~${percent}%`
+      );
     }
   };
 
@@ -103,13 +137,22 @@ const StudyModal = ({ deck, onClose }) => {
             </div>
 
             <div className={styles.actions}>
-              <button className={styles.again} onClick={handleResult}>
+              <button
+                className={styles.again}
+                onClick={() => handleResult("again")}
+              >
                 Chưa nhớ
               </button>
-              <button className={styles.medium} onClick={handleResult}>
+              <button
+                className={styles.medium}
+                onClick={() => handleResult("medium")}
+              >
                 Tạm ổn
               </button>
-              <button className={styles.easy} onClick={handleResult}>
+              <button
+                className={styles.easy}
+                onClick={() => handleResult("easy")}
+              >
                 Nhớ tốt
               </button>
             </div>
