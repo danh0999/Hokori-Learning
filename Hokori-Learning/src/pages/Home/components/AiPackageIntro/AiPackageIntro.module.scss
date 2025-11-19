@@ -1,0 +1,92 @@
+.section {
+  width: 100%;
+  padding: 3rem 0;
+  background: #f8fafc;
+  text-align: center;
+  font-family: "Inter", sans-serif;
+}
+
+.title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 0.4rem;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: #64748b;
+  margin-bottom: 2rem;
+}
+
+/* NEW: đồng bộ chiều cao card & tránh lệch */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.3rem;
+  max-width: 1050px;
+  margin: 0 auto;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.9rem;
+  padding: 1.4rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  transition: 0.2s ease;
+  height: 180px; /* 👈 CỐ ĐỊNH CHIỀU CAO ĐỂ CÁC CARD ĐỀU NHAU */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center; /* 👈 căn giữa tuyệt đối */
+}
+
+/* Icon circle vẫn rất đẹp */
+.iconCircle {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 0.5rem;
+  background: #eef4ff;
+  color: #2563eb;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* NEW: giảm độ đậm title + tránh xuống dòng */
+.cardTitle {
+  font-size: 1.05rem;
+  font-weight: 500; /* nhẹ hơn 600 → thanh thoát */
+  margin-bottom: 0.2rem;
+  color: #0f172a;
+  white-space: nowrap; /*  tránh xuống dòng */
+}
+
+/* Text đẹp hơn + đều */
+.desc {
+  color: #64748b;
+  font-size: 0.9rem;
+  line-height: 1.35rem;
+  text-align: center;
+  max-width: 200px;
+}
+
+/* Button */
+.btn {
+  margin-top: 2rem;
+  padding: 0.75rem 1.8rem;
+  background: #2563eb;
+  color: white;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 0.55rem;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn:hover {
+  background: #1e4fcc;
+}

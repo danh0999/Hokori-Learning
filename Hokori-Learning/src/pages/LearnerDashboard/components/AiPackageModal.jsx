@@ -6,7 +6,7 @@ export default function AiPackageModal({ onClose, onSelect }) {
   return (
     <div className={styles.overlay}>
       <div className={styles.modal}>
-        <h2>Nâng cấp để sử dụng tính năng AI</h2>
+        <h2>Mua gói để sử dụng tính năng AI</h2>
         <p>Chọn gói phù hợp để tiếp tục sử dụng dịch vụ AI.</p>
 
         <div className={styles.packageList}>
