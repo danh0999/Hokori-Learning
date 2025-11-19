@@ -1,37 +1,40 @@
 import axios from "axios";
 
 /* ===========================================================
-    Hokori Backend Auto-Selector v4 (MOST OPTIMIZED VERSION)
-    Priority:
-    (1) Railway (prod)
-    (2) FE ngrok → origin/api
-    (3) Internal ngrok backend
-    (4) Localhost
-    + Heartbeat check
-    + Smart Failover
-    + 24h Backend Cache
+
 =========================================================== */
 
-const PRIMARY = "https://hokoribe-production.up.railway.app/api";
+/* -----------------------------
+   BACKEND CANDIDATES
+----------------------------- */
+const PRIMARY = "https://hokoribe-production.up.railway.app/api"; // PROD
+
+// FE đang chạy ngrok → backend = FE_origin/api
 const NGROK_FE_FALLBACK = () => `${window.location.origin}/api`;
-const NGROK_BACKENDS = ["https://saner-eden-placably.ngrok-free.dev/api"];
+
+// Tất cả backend ngrok nội bộ (Phú, Khoa,...)
+const NGROK_BACKENDS = [
+  "https://saner-eden-placably.ngrok-free.dev/api",        // Backend 1
+  "https://celsa-plumbaginaceous-unabjectly.ngrok-free.dev/api" // Backend 2 (CELSA)
+];
+
 const LOCAL = "http://localhost:8080/api";
 
+/* -----------------------------
+   CACHE KEY
+----------------------------- */
 const CACHE_KEY = "hokori_backend_url";
 const CACHE_EXP_KEY = "hokori_backend_exp";
 
 /* ===========================================================
-    HEARTBEAT CHECK (FAST — NO UI BLOCK)
+    1. HEARTBEAT CHECK (FAST)
 =========================================================== */
 async function isAlive(url) {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 250);
 
-    await fetch(url + "/health", {
-      method: "GET",
-      signal: controller.signal,
-    });
+    await fetch(url + "/health", { signal: controller.signal });
 
     clearTimeout(timeout);
     return true;
@@ -41,7 +44,7 @@ async function isAlive(url) {
 }
 
 /* ===========================================================
-    GET BACKEND WITH SMART CACHE (24 HOURS)
+    2. SMART CACHE (24 HOURS)
 =========================================================== */
 function getCachedBackend() {
   const saved = localStorage.getItem(CACHE_KEY);
@@ -63,33 +66,35 @@ function saveBackend(url) {
 }
 
 /* ===========================================================
-    MAIN AUTO SELECTOR
+    3. MAIN AUTO DETECTOR
 =========================================================== */
 async function autoBackend() {
-  // 1) Return cached URL if still valid
+  // 1) Dùng cached nếu còn hạn
   const cached = getCachedBackend();
   if (cached) {
     console.log(" Using cached backend:", cached);
     return cached;
   }
 
-  // PRIORITY LIST
+  /* -----------------------------
+      PRIORITY BACKEND LIST
+  ----------------------------- */
   const candidates = [PRIMARY];
 
-  // 2) FE running via NGROK → add origin/api
+  // 2) FE đang chạy trên ngrok
   if (window.location.host.includes("ngrok")) {
     candidates.push(NGROK_FE_FALLBACK());
   }
 
-  // 3) Add internal ngrok backends
+  // 3) Tất cả backend ngrok nội bộ
   candidates.push(...NGROK_BACKENDS);
 
-  // 4) Localhost (last)
+  // 4) Cuối cùng: Localhost
   candidates.push(LOCAL);
 
   console.log(" Checking backends:", candidates);
 
-  // HEARTBEAT CHECK IN PRIORITY ORDER
+  // HEARTBEAT CHECK
   for (const url of candidates) {
     const alive = await isAlive(url);
     if (alive) {
@@ -99,27 +104,28 @@ async function autoBackend() {
     }
   }
 
-  // If all failed → fallback to production
+  // fallback cứng
   console.warn(" All backends failed — fallback to Railway");
   saveBackend(PRIMARY);
   return PRIMARY;
 }
+
 /* ===========================================================
-    INIT AXIOS WITH DYNAMIC BASE URL
+    4. INIT AXIOS (temporary baseURL)
 =========================================================== */
 const api = axios.create({
-  baseURL: PRIMARY, // temporary, updated below
+  baseURL: PRIMARY,
   withCredentials: false,
 });
 
-// Set actual backend asynchronously without blocking UI
+// Update baseURL async
 autoBackend().then((realURL) => {
   api.defaults.baseURL = realURL;
   console.log(" Axios backend active:", realURL);
 });
 
 /* ===========================================================
-    REQUEST INTERCEPTOR
+    5. REQUEST INTERCEPTOR
 =========================================================== */
 api.interceptors.request.use(
   (config) => {
@@ -144,7 +150,7 @@ api.interceptors.request.use(
 );
 
 /* ===========================================================
-    RESPONSE INTERCEPTOR
+    6. RESPONSE INTERCEPTOR
 =========================================================== */
 api.interceptors.response.use(
   (res) => {
