@@ -1,4 +1,4 @@
-// utils/parseQuizText.js — v2.2 (TF robust + ưu tiên Q-start)
+// utils/parseQuizText.js — v2.3 (TF + Audio + ưu tiên Q-start)
 
 const isBlank = (s) => !s || !String(s).trim();
 
@@ -23,6 +23,9 @@ const bulletRe = /^[ \- \* \u2022 \u30FB]\s*(\[[xX ]\])?\s*(.+)$/;
 const ansLineRe = /^ans(?:wer)?\s*:\s*(.+)$/i;
 // Q1) | Q1. | 1) | 1.
 const qStartRe = /^(?:Q\s*\d+[:.)]|\d+[:.)])/i;
+
+// Audio: path/to/file.mp3  (hoặc audio - xxx)
+const audioRe = /^audio\s*[:\-]\s*(.+)$/i;
 
 // Nhận T/F rất rộng: True/False, T/F, Đúng/Sai, True - False, True / False...
 const tfInlineRe =
@@ -148,6 +151,11 @@ function flushBlock(block, out) {
     explanation: "",
   };
 
+  // gắn audio nếu có (dùng cho JLPT Listening)
+  if (block.audioPath) {
+    q.audioPath = block.audioPath.trim();
+  }
+
   // safety: nếu chưa tìm được đáp án
   if (type !== "truefalse" && q.options.length && correctIdx.length === 0) {
     q.options[0].correct = true;
@@ -170,7 +178,12 @@ export function parseQuizFromText(input) {
     ) {
       flushBlock(block, out);
     }
-    block = { qText: (firstLine || "").trim(), optLines: [], answerRaw: "" };
+    block = {
+      qText: (firstLine || "").trim(),
+      optLines: [],
+      answerRaw: "",
+      audioPath: "",
+    };
   };
 
   for (const raw of lines) {
@@ -185,14 +198,22 @@ export function parseQuizFromText(input) {
       continue;
     }
 
-    // 2) BẮT ĐẦU CÂU HỎI MỚI? (ưu tiên trước option)
+    // 2) Audio line
+    const au = line.match(audioRe);
+    if (au) {
+      if (!block) startNew("");
+      block.audioPath = au[1].replace(/\s*\/\s*/g, "/").trim();
+      continue;
+    }
+
+    // 3) BẮT ĐẦU CÂU HỎI MỚI? (ưu tiên trước option)
     if (qStartRe.test(line)) {
       const cleaned = line.replace(/^Q?\s*\d+[:.)]\s*/i, "");
       startNew(cleaned);
       continue;
     }
 
-    // 3) OPTION line?
+    // 4) OPTION line?
     if (
       optLetterRe.test(line) ||
       bulletRe.test(line) ||
@@ -203,7 +224,7 @@ export function parseQuizFromText(input) {
       continue;
     }
 
-    // 4) Văn bản thường
+    // 5) Văn bản thường
     if (!block) startNew(line);
     else if (isBlank(block.qText)) block.qText = line;
     else block.qText += " " + line;

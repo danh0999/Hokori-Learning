@@ -28,7 +28,7 @@ import {
 } from "../../../redux/features/teacherCourseSlice";
 import styles from "./styles.module.scss";
 
-const { confirm } = Modal;
+// const { confirm } = Modal;
 
 // helper: render Tag status
 const statusTag = (s) => {
@@ -139,40 +139,23 @@ export default function ManageCourses() {
     message.success("Submitted for review (frontend only).");
   };
 
-  const onDuplicate = (row) => {
-    const copy = {
-      ...row,
-      id: Date.now(),
-      code: row.code + "-COPY",
-      status: "Draft",
-      updatedAt: new Date().toISOString().slice(0, 10),
-    };
-    setData((prev) => [copy, ...prev]);
-    message.success("Duplicated (frontend only).");
-  };
+  const onDelete = async (id) => {
+    console.log("[ManageCourses] onDelete DIRECT CALL with id =", id);
 
-  const onDelete = (id) => {
-    confirm({
-      title: "Delete this course?",
-      icon: <ExclamationCircleFilled />,
-      content: "This action cannot be undone.",
-      okType: "danger",
-      centered: true,
-      onOk() {
-        console.log("CONFIRM OK CLICKED", id);
-        // 💥 QUAN TRỌNG: return Promise để AntD hiểu là async
-        return dispatch(deleteCourseThunk(id))
-          .unwrap()
-          .then(() => {
-            message.success("Deleted course.");
-            return dispatch(fetchTeacherCourses());
-          })
-          .catch((err) => {
-            console.error(err);
-            message.error("Delete failed. Please try again.");
-          });
-      },
-    });
+    try {
+      const result = await dispatch(deleteCourseThunk(id)).unwrap();
+      console.log("[ManageCourses] deleteCourseThunk SUCCESS:", result);
+
+      // Xoá luôn ở UI cho chắc
+      setData((prev) => prev.filter((c) => String(c.id) !== String(id)));
+
+      message.success("Deleted course.");
+      // Nếu muốn sync lại từ BE:
+      // await dispatch(fetchTeacherCourses());
+    } catch (err) {
+      console.error("[ManageCourses] deleteCourseThunk ERROR:", err);
+      message.error(err || "Delete failed. Please try again.");
+    }
   };
 
   const columns = [
@@ -230,11 +213,7 @@ export default function ManageCourses() {
                 },
               ]
             : []),
-          {
-            key: "dup",
-            label: "Duplicate",
-          },
-          { type: "divider" },
+
           {
             key: "del",
             danger: true,
@@ -248,15 +227,19 @@ export default function ManageCourses() {
             menu={{
               items,
               onClick: ({ key }) => {
-                // 👇 TẤT CẢ action xử lý tập trung ở đây
+                console.log(
+                  "[ManageCourses] Dropdown clicked:",
+                  key,
+                  "courseId =",
+                  row.id
+                );
+
                 if (key === "manage") {
                   navigate(`/teacher/courseinfo/${row.id}`);
                 } else if (key === "submit") {
                   onSubmitForReview(row.id);
-                } else if (key === "dup") {
-                  onDuplicate(row);
                 } else if (key === "del") {
-                  onDelete(row.id); // ✅ sẽ gọi confirm
+                  onDelete(row.id);
                 }
               },
             }}

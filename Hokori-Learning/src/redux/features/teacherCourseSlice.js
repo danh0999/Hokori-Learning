@@ -92,20 +92,29 @@ export const deleteCourseThunk = createAsyncThunk(
   "teacherCourse/deleteCourse",
   async (courseId, { rejectWithValue }) => {
     try {
-      await api.delete(`teacher/courses/${courseId}`);
-      return courseId;
+      console.log(
+        "[deleteCourseThunk] calling DELETE teacher/courses/",
+        courseId
+      );
+      const res = await api.delete(`teacher/courses/${courseId}`);
+      console.log("[deleteCourseThunk] response status:", res.status);
+      // BE có thể trả 200/204, body có hoặc không, kệ – mình chỉ cần biết xoá thành công
+      return courseId; // vẫn return id
     } catch (err) {
+      console.error("[deleteCourseThunk] error:", err);
       return rejectWithValue(getError(err));
     }
   }
 );
 
 // PUT teacher/courses/{id}/publish
-export const publishCourseThunk = createAsyncThunk(
+export const submitforapprovalCourseThunk = createAsyncThunk(
   "teacherCourse/publishCourse",
   async (courseId, { rejectWithValue }) => {
     try {
-      const res = await api.put(`teacher/courses/${courseId}/publish`);
+      const res = await api.put(
+        `teacher/courses/${courseId}/submit-for-approval`
+      );
       return res.data;
     } catch (err) {
       return rejectWithValue(getError(err));
@@ -534,9 +543,17 @@ const teacherCourseSlice = createSlice({
       })
       .addCase(deleteCourseThunk.fulfilled, (state, action) => {
         state.saving = false;
-        const id = action.payload;
-        state.list = state.list.filter((c) => c.id !== id);
-        if (state.currentCourseMeta?.id === id) {
+
+        // dùng chính id truyền vào thunk (meta.arg) chứ không phụ thuộc payload
+        const id = action.meta.arg;
+
+        // Ép kiểu để tránh trường hợp "9" với 9 khác type
+        state.list = state.list.filter((c) => String(c.id) !== String(id));
+
+        if (
+          state.currentCourseMeta?.id &&
+          String(state.currentCourseMeta.id) === String(id)
+        ) {
           state.currentCourseMeta = null;
           state.currentCourseTree = null;
         }
@@ -547,7 +564,7 @@ const teacherCourseSlice = createSlice({
       });
 
     builder
-      .addCase(publishCourseThunk.fulfilled, (state, action) => {
+      .addCase(submitforapprovalCourseThunk.fulfilled, (state, action) => {
         const updated = action.payload;
         state.currentCourseMeta = updated;
         const idx = state.list.findIndex((c) => c.id === updated.id);

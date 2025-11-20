@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import s from "./JlptEvents.module.scss";
 import { toast } from "react-toastify";
-import api from "../../../configs/axios"; // chỉnh path cho đúng dự án của bạn
+import api from "../../../configs/axios";
 
 // =====================
 // MODAL TẠO SỰ KIỆN
@@ -32,7 +32,7 @@ const CreateEventModal = ({ open, onClose, onSubmit }) => {
     onSubmit(form);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!open) {
       setForm({
         title: "",
@@ -155,6 +155,9 @@ export default function JlptEvents() {
 
   const [modalOpen, setModalOpen] = useState(false);
 
+  // Thêm: test status cho từng event
+  const [testStatus, setTestStatus] = useState({});
+
   const [confirmCfg, setConfirmCfg] = useState({
     open: false,
     target: null,
@@ -165,8 +168,25 @@ export default function JlptEvents() {
   const fetchEvents = async () => {
     setLoading(true);
     try {
-      const res = await api.get("jlpt/events"); // có thể thêm ?status=... ?level=...
-      setEvents(res.data || []);
+      const res = await api.get("jlpt/events");
+      const list = res.data || [];
+      setEvents(list);
+
+      // === NEW: kiểm tra test của từng event ===
+      const results = await Promise.all(
+        list.map((ev) =>
+          api
+            .get(`jlpt/events/${ev.id}/tests`)
+            .then((r) => ({ id: ev.id, count: r.data?.length || 0 }))
+            .catch(() => ({ id: ev.id, count: 0 }))
+        )
+      );
+
+      const map = {};
+      results.forEach((item) => {
+        map[item.id] = item.count > 0;
+      });
+      setTestStatus(map);
     } catch (err) {
       console.error(err);
       toast.error("Không tải được danh sách sự kiện JLPT");
@@ -190,13 +210,13 @@ export default function JlptEvents() {
         description: form.description,
         startAt: new Date(form.startAt).toISOString(),
         endAt: new Date(form.endAt).toISOString(),
-        status: "DRAFT", // đúng theo swagger
+        status: "DRAFT",
       };
 
       await api.post("jlpt/events", payload);
       toast.success("Tạo sự kiện thành công!");
       setModalOpen(false);
-      fetchEvents(); // reload để moderator thấy event mới
+      fetchEvents();
     } catch (err) {
       console.error(err);
       toast.error("Tạo sự kiện thất bại");
@@ -206,7 +226,12 @@ export default function JlptEvents() {
   const askToggle = (ev) => {
     let nextStatus = "OPEN";
     if (ev.status === "OPEN") nextStatus = "CLOSED";
-    if (ev.status === "CLOSED") nextStatus = "OPEN"; // tuỳ rule của bạn
+    if (ev.status === "CLOSED") nextStatus = "OPEN";
+
+    // Nếu chưa có test thì không được OPEN
+    if (nextStatus === "OPEN" && !testStatus[ev.id]) {
+      return toast.error("Sự kiện chưa có đề thi – không thể OPEN");
+    }
 
     setConfirmCfg({
       open: true,
@@ -256,6 +281,7 @@ export default function JlptEvents() {
                 <th>Mô tả</th>
                 <th>Bắt đầu</th>
                 <th>Kết thúc</th>
+                <th>Đề thi</th>
                 <th>Trạng thái</th>
                 <th>Thao tác</th>
               </tr>
@@ -264,7 +290,7 @@ export default function JlptEvents() {
             <tbody>
               {events.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: 16 }}>
+                  <td colSpan={8} style={{ textAlign: "center", padding: 16 }}>
                     Chưa có sự kiện JLPT nào
                   </td>
                 </tr>
@@ -285,6 +311,16 @@ export default function JlptEvents() {
                       ? new Date(ev.endAt).toLocaleString("vi-VN")
                       : "-"}
                   </td>
+
+                  {/* NEW: Test Ready column */}
+                  <td>
+                    {testStatus[ev.id] ? (
+                      <span className={s.ready}>READY</span>
+                    ) : (
+                      <span className={s.notReady}>No test</span>
+                    )}
+                  </td>
+
                   <td>
                     <span
                       className={`${s.badge} ${
@@ -298,6 +334,7 @@ export default function JlptEvents() {
                       {ev.status}
                     </span>
                   </td>
+
                   <td className={s.actions}>
                     <button
                       className={s.btnSmall}

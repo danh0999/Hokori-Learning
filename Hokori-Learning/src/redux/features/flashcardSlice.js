@@ -2,7 +2,9 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../configs/axios";
 
-// 1) Lấy set gắn với 1 sectionContentId (COURSE_VOCAB)
+const unwrapData = (res) =>
+  res.data && res.data.data !== undefined ? res.data.data : res.data;
+// 1) (giữ) Lấy set gắn với 1 sectionContentId (COURSE_VOCAB) – dùng cho learner hoặc chỗ khác
 export const fetchSetBySectionContent = createAsyncThunk(
   "flashcard/fetchSetBySectionContent",
   async (sectionContentId, { rejectWithValue }) => {
@@ -12,7 +14,6 @@ export const fetchSetBySectionContent = createAsyncThunk(
       );
       return res.data; // FlashcardSet | null
     } catch (err) {
-      // nếu BE trả 404 khi chưa có set
       if (err.response && err.response.status === 404) {
         return null;
       }
@@ -21,19 +22,42 @@ export const fetchSetBySectionContent = createAsyncThunk(
   }
 );
 
-// 2) Teacher tạo set COURSE_VOCAB mới gắn với sectionContentId
+// 2) ✅ Teacher tạo set COURSE_VOCAB mới cho 1 lesson
+//    BE mới bảo: bấm nút là tạo set trước -> cần lessonId
 export const createCourseVocabSet = createAsyncThunk(
-  "flashcard/createCourseVocabSet",
+  "flashcards/createCourseVocabSet",
   async (
     { title, description, level, sectionContentId },
     { rejectWithValue }
   ) => {
     try {
-      const body = { title, description, level, sectionContentId };
+      if (!sectionContentId) {
+        throw new Error(
+          "Missing sectionContentId when creating COURSE_VOCAB set"
+        );
+      }
+
+      const body = {
+        title: title || "Từ vựng",
+        description: description || "",
+        level: level || null,
+        sectionContentId: Number(sectionContentId),
+      };
+
+      console.log("[createCourseVocabSet] body gửi lên:", body);
+
       const res = await api.post("flashcards/sets/course-vocab", body);
-      return res.data; // FlashcardSet
+      const data = unwrapData(res);
+
+      console.log("[createCourseVocabSet] response:", data);
+      return data;
     } catch (err) {
-      return rejectWithValue(err.response?.data || err.message);
+      console.error("[createCourseVocabSet] error:", err?.response || err);
+      const msg =
+        err?.response?.data?.message ||
+        err.message ||
+        "Failed to create vocab flashcard set";
+      return rejectWithValue(msg);
     }
   }
 );
@@ -44,7 +68,7 @@ export const fetchCardsBySetId = createAsyncThunk(
   async (setId, { rejectWithValue }) => {
     try {
       const res = await api.get(`flashcards/sets/${setId}/cards`);
-      return res.data; // array card
+      return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }
@@ -55,17 +79,16 @@ export const fetchCardsBySetId = createAsyncThunk(
 export const addFlashcardToSet = createAsyncThunk(
   "flashcard/addFlashcardToSet",
   async ({ setId, card }, { rejectWithValue }) => {
-    // card = { frontText, backText, reading, exampleSentence, orderIndex }
     try {
       const res = await api.post(`flashcards/sets/${setId}/cards`, card);
-      return res.data; // card mới
+      return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }
   }
 );
 
-// (option) Lấy tất cả set của current user (nếu bạn cần list)
+// 5) (tuỳ chọn) Lấy tất cả set của current user
 export const fetchMyFlashcardSets = createAsyncThunk(
   "flashcard/fetchMyFlashcardSets",
   async ({ type }, { rejectWithValue }) => {
@@ -73,7 +96,7 @@ export const fetchMyFlashcardSets = createAsyncThunk(
       const res = await api.get("flashcards/sets/me", {
         params: type ? { type } : {},
       });
-      return res.data; // array set
+      return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }
@@ -106,28 +129,28 @@ const flashcardSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // get set by sectionContent
+      // get set by sectionContent (giữ nguyên)
       .addCase(fetchSetBySectionContent.pending, (state) => {
         state.loadingSet = true;
         state.error = null;
       })
       .addCase(fetchSetBySectionContent.fulfilled, (state, action) => {
         state.loadingSet = false;
-        state.currentSet = action.payload; // có thể là null
+        state.currentSet = action.payload;
       })
       .addCase(fetchSetBySectionContent.rejected, (state, action) => {
         state.loadingSet = false;
         state.error = action.payload || action.error.message;
       })
 
-      // create course vocab set
+      // ✅ create course vocab set
       .addCase(createCourseVocabSet.pending, (state) => {
         state.saving = true;
         state.error = null;
       })
       .addCase(createCourseVocabSet.fulfilled, (state, action) => {
         state.saving = false;
-        state.currentSet = action.payload;
+        state.currentSet = action.payload; // set vừa tạo
       })
       .addCase(createCourseVocabSet.rejected, (state, action) => {
         state.saving = false;

@@ -1,3 +1,4 @@
+// src/pages/Moderator/Queues/CourseReviewModal.jsx
 import React from "react";
 import {
   Modal,
@@ -10,20 +11,72 @@ import {
 } from "antd";
 import styles from "./styles.module.scss";
 
-const { Text } = Typography;
+const { Text, Paragraph } = Typography;
+
+// format price từ priceCents / discountedPriceCents + currency
+function formatPriceFromCourse(course) {
+  if (!course) return "—";
+
+  const { discountedPriceCents, priceCents, currency } = course || {};
+
+  let cents = null;
+  if (typeof discountedPriceCents === "number" && discountedPriceCents > 0) {
+    cents = discountedPriceCents;
+  } else if (typeof priceCents === "number") {
+    cents = priceCents;
+  }
+
+  if (typeof cents !== "number") return "—";
+
+  const amount = cents / 100;
+
+  try {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: currency || "VND",
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch (e) {
+    console.log(e);
+
+    // phòng trường hợp currency không hợp lệ
+    return `${amount.toLocaleString("vi-VN")} ${currency || ""}`.trim();
+  }
+}
 
 export default function CourseReviewModal({
   open,
-  course,
+  course, // <- object detail trả về: id, title, level, priceCents, discountedPriceCents, currency, subtitle, description, slug, status, userId, ...
   currentModerator,
   onClose,
   onApprove,
   onReject,
-  onRequestRevisionClick, // <- mới
+  onRequestRevisionClick,
 }) {
   if (!course) return null;
 
   const isMine = !course.assignee || course.assignee === currentModerator;
+
+  const status = course.status || "PENDING_APPROVAL";
+  const statusColor =
+    status === "PENDING_APPROVAL"
+      ? "gold"
+      : status === "PUBLISHED"
+      ? "green"
+      : status === "DRAFT"
+      ? "default"
+      : "default";
+
+  const statusLabel =
+    status === "PENDING_APPROVAL"
+      ? "Pending approval"
+      : status === "PUBLISHED"
+      ? "Published"
+      : status === "DRAFT"
+      ? "Draft"
+      : status;
+
+  const priceLabel = formatPriceFromCourse(course);
 
   return (
     <Modal
@@ -32,23 +85,48 @@ export default function CourseReviewModal({
       width={800}
       footer={null}
       destroyOnClose
-      title={<div style={{ fontWeight: 600 }}>Review: {course.title}</div>}
+      title={<div style={{ fontWeight: 600 }}>Review course</div>}
     >
       <Descriptions
         bordered
-        column={1}
+        column={2}
         size="small"
         labelStyle={{ width: 160, fontWeight: 500 }}
       >
-        <Descriptions.Item label="Code">{course.code}</Descriptions.Item>
-        <Descriptions.Item label="Teacher">{course.teacher}</Descriptions.Item>
-        <Descriptions.Item label="Submitted on">
-          {course.submittedAt}
+        <Descriptions.Item label="Course ID">#{course.id}</Descriptions.Item>
+        <Descriptions.Item label="Teacher">
+          {course.teacherName || `User #${course.userId}` || "—"}
         </Descriptions.Item>
+
+        <Descriptions.Item label="Title" span={2}>
+          <Text strong>{course.title}</Text>
+        </Descriptions.Item>
+
         <Descriptions.Item label="Status">
-          <Tag color="gold">Review</Tag>
+          <Tag color={statusColor}>{statusLabel}</Tag>
         </Descriptions.Item>
-        <Descriptions.Item label="Assignee">
+        <Descriptions.Item label="Submitted at">
+          {course.submittedAt || "—"}
+        </Descriptions.Item>
+
+        <Descriptions.Item label="Level">
+          {course.level || "—"}
+        </Descriptions.Item>
+        <Descriptions.Item label="Currency">
+          {course.currency || "VND"}
+        </Descriptions.Item>
+
+        <Descriptions.Item label="Price">{priceLabel}</Descriptions.Item>
+        <Descriptions.Item label="Original price (cents)">
+          {course.priceCents ?? "—"}
+        </Descriptions.Item>
+
+        <Descriptions.Item label="Discounted (cents)">
+          {course.discountedPriceCents ?? "—"}
+        </Descriptions.Item>
+        <Descriptions.Item label="Slug">{course.slug || "—"}</Descriptions.Item>
+
+        <Descriptions.Item label="Assignee" span={2}>
           {course.assignee ? (
             course.assignee === currentModerator ? (
               <Tag color="blue">You</Tag>
@@ -62,12 +140,12 @@ export default function CourseReviewModal({
       </Descriptions>
 
       <div className={styles.detailBox}>
-        <h3>Course Overview</h3>
-        <p>
-          Đây là mô tả tổng quan khóa học (demo). Sau này bạn có thể fetch chi
-          tiết từ API /teacher/course/:id để hiển thị toàn bộ chương, bài học,
-          quiz, media…
-        </p>
+        <h3>Course overview</h3>
+
+        <Paragraph type="secondary" style={{ marginBottom: 4 }}>
+          Mô tả ngắn:
+        </Paragraph>
+        <Paragraph>{course.subtitle || course.description || "—"}</Paragraph>
       </div>
 
       {/* nếu không phải assignee -> cảnh báo */}
@@ -78,28 +156,43 @@ export default function CourseReviewModal({
             border: "1px solid #fdba74",
             color: "#9a3412",
             borderRadius: 8,
+            padding: "10px 12px",
             fontSize: 13,
-            padding: "12px 14px",
-            lineHeight: 1.4,
             marginTop: 16,
-            marginBottom: 16,
+            marginBottom: 8,
           }}
         >
-          <b>Khóa học này đang do {course.assignee} xử lý.</b>
-          <div>
-            Bạn chỉ có thể xem nội dung, không thể gửi yêu cầu chỉnh sửa hoặc
-            phê duyệt.
-          </div>
+          Bạn không phải người được giao xử lý khoá học này. Chỉ người được
+          assign mới được approve / reject.
         </div>
       )}
 
-      <div style={{ textAlign: "right", marginTop: 16 }}>
+      <div className={styles.detailBox}>
+        <h3>Notes for moderator</h3>
+        <ul className={styles.moderatorChecklist}>
+          <li>✔ Kiểm tra nội dung có vi phạm chính sách / bản quyền không.</li>
+          <li>✔ Xem sơ bộ cấu trúc chương – bài học, quiz, media (nếu có).</li>
+          <li>✔ Kiểm tra tiêu đề, thumbnail, mô tả có rõ ràng & phù hợp.</li>
+        </ul>
+      </div>
+
+      <div
+        style={{
+          marginTop: 16,
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 8,
+          flexWrap: "wrap",
+        }}
+      >
+        <Button onClick={onClose}>Close</Button>
+
         <Space wrap>
-          {/* Request Revision */}
+          {/* Request revision */}
           <Tooltip
             title={
               isMine
-                ? "Yêu cầu giáo viên chỉnh sửa nội dung"
+                ? "Gửi yêu cầu chỉnh sửa cho giáo viên"
                 : "Bạn không phải người xử lý khóa học này"
             }
           >
@@ -109,7 +202,7 @@ export default function CourseReviewModal({
               }}
               disabled={!isMine}
             >
-              Request Revision
+              Request revision
             </Button>
           </Tooltip>
 
@@ -117,7 +210,7 @@ export default function CourseReviewModal({
           <Tooltip
             title={
               isMine
-                ? "Phê duyệt và đăng khóa học"
+                ? "Duyệt và publish khóa học này"
                 : "Bạn không phải người xử lý khóa học này"
             }
           >
@@ -128,7 +221,7 @@ export default function CourseReviewModal({
               }}
               disabled={!isMine}
             >
-              Approve
+              Approve & publish
             </Button>
           </Tooltip>
 

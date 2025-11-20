@@ -9,7 +9,7 @@ export const fetchJlptEventsThunk = createAsyncThunk(
   "jlptModerator/fetchEvents",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await api.get("/api/jlpt/events");
+      const res = await api.get("jlpt/events");
       return res.data; // array event
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
@@ -22,7 +22,7 @@ export const fetchTestsByEventThunk = createAsyncThunk(
   "jlptModerator/fetchTestsByEvent",
   async (eventId, { rejectWithValue }) => {
     try {
-      const res = await api.get(`/api/jlpt/events/${eventId}/tests`);
+      const res = await api.get(`jlpt/events/${eventId}/tests`);
       return { eventId, tests: res.data }; // thường 1 test / event
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
@@ -35,7 +35,7 @@ export const createJlptTestForEventThunk = createAsyncThunk(
   "jlptModerator/createTestForEvent",
   async ({ eventId, payload }, { rejectWithValue }) => {
     try {
-      const res = await api.post(`/api/jlpt/events/${eventId}/tests`, payload);
+      const res = await api.post(`jlpt/events/${eventId}/tests`, payload);
       return { eventId, test: res.data };
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
@@ -48,7 +48,7 @@ export const fetchJlptTestQuestionsThunk = createAsyncThunk(
   "jlptModerator/fetchTestQuestions",
   async (testId, { rejectWithValue }) => {
     try {
-      const res = await api.get(`/api/jlpt/tests/${testId}/questions`);
+      const res = await api.get(`jlpt/tests/${testId}/questions`);
       return { testId, questions: res.data };
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
@@ -61,10 +61,7 @@ export const createJlptQuestionThunk = createAsyncThunk(
   "jlptModerator/createQuestion",
   async ({ testId, payload }, { rejectWithValue }) => {
     try {
-      const res = await api.post(
-        `/api/jlpt/tests/${testId}/questions`,
-        payload
-      );
+      const res = await api.post(`jlpt/tests/${testId}/questions`, payload);
       return { testId, question: res.data };
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
@@ -78,7 +75,7 @@ export const createJlptOptionThunk = createAsyncThunk(
   async ({ questionId, payload }, { rejectWithValue }) => {
     try {
       const res = await api.post(
-        `/api/jlpt/questions/${questionId}/options`,
+        `jlpt/questions/${questionId}/options`,
         payload
       );
       return { questionId, option: res.data };

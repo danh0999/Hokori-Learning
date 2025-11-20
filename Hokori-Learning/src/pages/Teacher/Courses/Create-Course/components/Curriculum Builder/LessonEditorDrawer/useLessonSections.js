@@ -38,7 +38,8 @@ export default function useLessonSections(lessonFromTree) {
   const kanjiInfo = extractContent(sectionsByType.KANJI);
   const vocabInfo = extractContent(sectionsByType.VOCABULARY);
 
-  const ensureSection = async (type) => {
+  // 👇 thêm extraData, bỏ flashcardSetId: null
+  const ensureSection = async (type, extraData = {}) => {
     if (!lessonFromTree?.id) throw new Error("Missing lessonId");
 
     if (sectionsByType[type]) return sectionsByType[type];
@@ -55,12 +56,11 @@ export default function useLessonSections(lessonFromTree) {
               : "Vocabulary",
           orderIndex: (lessonFromTree.sections?.length || 0) + 1,
           studyType: type,
-          flashcardSetId: null,
+          ...extraData, // nếu sau này cần truyền thêm gì thì truyền ở đây
         },
       })
     ).unwrap();
 
-    // “búng” flag để useMemo tính lại sectionsByType
     setRefreshFlag((f) => f + 1);
     return created.section || created;
   };

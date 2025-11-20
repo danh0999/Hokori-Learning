@@ -1,24 +1,15 @@
-import React, { useMemo, useState } from "react";
-import {
-  Table,
-  Tag,
-  Input,
-  Select,
-  Space,
-  Button,
-  Dropdown,
-  Modal,
-  message,
-} from "antd";
+// src/pages/Moderator/ManageQueues.jsx
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { Table, Tag, Input, Space, Button, message, Spin, Empty } from "antd";
 import {
   SearchOutlined,
-  MoreOutlined,
-  ExclamationCircleFilled,
   EyeOutlined,
   CheckOutlined,
   CloseOutlined,
-  UserAddOutlined,
+  ReloadOutlined,
 } from "@ant-design/icons";
+
+import api from "../../../configs/axios.js"; // <--- CHỈNH lại path nếu khác
 
 import CourseReviewModal from "../Queues/CourseReviewModal";
 import RequestRevisionModal from "../Queues/components/RequestRevisionModal";
@@ -26,52 +17,13 @@ import ApprovePublishModal from "../Queues/components/ApprovePublishModal";
 import RejectModal from "../Queues/components/RejectModal";
 
 import styles from "./styles.module.scss";
-//eslint-disable-next-line
-const { confirm } = Modal;
-
-const CURRENT_MOD = "Moderator A";
-
-const initialCourses = [
-  {
-    id: 1,
-    title: "JLPT N5 Grammar Basics",
-    code: "N5-GR-101",
-    teacher: "Nguyen Van A",
-    submittedAt: "2025-10-20",
-    status: "Review",
-    assignee: null,
-    price: "199,000 VND",
-    visibility: "Public",
-  },
-  {
-    id: 2,
-    title: "Kanji 200 – Intermediate",
-    code: "KJ-200",
-    teacher: "Tran Thi B",
-    submittedAt: "2025-10-22",
-    status: "Request Revision",
-    assignee: "Moderator A",
-    price: "249,000 VND",
-    visibility: "Public",
-  },
-  {
-    id: 3,
-    title: "N3 Listening Practice",
-    code: "N3-LS-501",
-    teacher: "Nguyen Van C",
-    submittedAt: "2025-10-18",
-    status: "Review",
-    assignee: "Moderator B",
-    price: "Free",
-    visibility: "Unlisted",
-  },
-];
 
 export default function ManageQueues() {
   const [q, setQ] = useState("");
-  const [status, setStatus] = useState("All");
-  const [assigneeFilter, setAssigneeFilter] = useState("All");
-  const [data, setData] = useState(initialCourses);
+  const [data, setData] = useState([]);
+
+  const [loading, setLoading] = useState(false);
+  const [approveLoadingId, setApproveLoadingId] = useState(null);
 
   // modal: course inspector
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -88,266 +40,255 @@ export default function ManageQueues() {
   const [openReject, setOpenReject] = useState(false);
   const [rejectTargetCourse, setRejectTargetCourse] = useState(null);
 
-  /** FILTER LOGIC */
-  const filtered = useMemo(() => {
-    return data.filter((c) => {
-      const okQuery =
-        !q ||
-        c.title.toLowerCase().includes(q.toLowerCase()) ||
-        c.code.toLowerCase().includes(q.toLowerCase());
+  /** FETCH PENDING QUEUE */
+  const fetchPendingCourses = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("/moderator/courses/pending");
+      // BE trả { status, message, data: [ {id, title, status, userId, ...} ] }
+      const list = res.data?.data || [];
+      setData(list);
+    } catch (err) {
+      console.error(err);
+      message.error(
+        err.response?.data?.message ||
+          "Không tải được danh sách khoá học đang chờ duyệt."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-      const okStatus = status === "All" || c.status === status;
+  useEffect(() => {
+    fetchPendingCourses();
+  }, [fetchPendingCourses]);
 
-      let okAssignee = true;
-      if (assigneeFilter === "Unassigned") okAssignee = !c.assignee;
-      else if (assigneeFilter === "Mine")
-        okAssignee = c.assignee === CURRENT_MOD;
-      else if (assigneeFilter === "Assigned")
-        okAssignee = !!c.assignee && c.assignee !== CURRENT_MOD;
-
-      return okQuery && okStatus && okAssignee;
-    });
-  }, [q, status, assigneeFilter, data]);
-
-  /** TAKE OWNERSHIP */
-  const takeOwnership = (id) => {
-    setData((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, assignee: CURRENT_MOD } : c))
-    );
-    message.success("Bạn đã nhận xử lý khóa học này");
+  /** CALL API APPROVE */
+  const approveCourse = async (courseId) => {
+    setApproveLoadingId(courseId);
+    try {
+      await api.put(`/moderator/courses/${courseId}/approve`);
+      // xoá course khỏi queue (đã publish rồi)
+      setData((prev) => prev.filter((c) => c.id !== courseId));
+      message.success("Khoá học đã được phê duyệt và publish.");
+      return true;
+    } catch (err) {
+      console.error(err);
+      message.error(
+        err.response?.data?.message || "Duyệt khoá học thất bại, thử lại sau."
+      );
+      return false;
+    } finally {
+      setApproveLoadingId(null);
+    }
   };
 
-  /** AFTER REQUEST CHANGES */
-  //eslint-disable-next-line
-  const handleSubmitRequestRevision = async (feedbackText) => {
-    // Gửi feedbackText -> API (notify teacher)
-    setData(
-      (prev) =>
-        prev.map((c) =>
-          c.id === requestTargetCourse.id
-            ? {
-                ...c,
-                status: "Request Revision",
-                assignee: CURRENT_MOD,
-              }
-            : c
-        )
-      // vẫn giữ course trong queue vì nó chưa được giáo viên sửa xong
-    );
+  /** CALL API REJECT */
+  const rejectCourseApi = async (courseId, reason) => {
+    try {
+      await api.put(`/moderator/courses/${courseId}/reject`, null, {
+        params: { reason },
+      });
+      setData((prev) => prev.filter((c) => c.id !== courseId));
+      message.success("Khoá học đã bị từ chối.");
+      return true;
+    } catch (err) {
+      console.error(err);
+      message.error(
+        err.response?.data?.message || "Từ chối khoá học thất bại, thử lại sau."
+      );
+      return false;
+    }
+  };
 
-    message.success("Đã gửi yêu cầu chỉnh sửa cho giáo viên.");
+  /** AFTER REQUEST REVISION (tạm thời chỉ log + giữ nguyên queue) */
+  const handleSubmitRequestRevision = async (feedbackText) => {
+    // TODO: gọi API gửi feedback cho teacher nếu BE có endpoint
+    console.log("Revision feedback:", feedbackText);
+    message.success("Đã gửi yêu cầu chỉnh sửa cho giáo viên (demo).");
     setOpenRequestRevision(false);
     setRequestTargetCourse(null);
     setSelectedCourse(null);
   };
 
-  /** APPROVE & PUBLISH confirm */
+  /** APPROVE & PUBLISH confirm trong modal */
   const handleConfirmApprovePublish = async () => {
-    // Audit log + publish -> API ở đây sau này
-    const approvedId = approveTargetCourse.id;
-
-    // Xoá course khỏi queue vì nó đã publish
-    setData((prev) => prev.filter((c) => c.id !== approvedId));
-
-    message.success("Khóa học đã được phê duyệt và công khai.");
-    setOpenApprovePublish(false);
-    setApproveTargetCourse(null);
-    setSelectedCourse(null);
+    if (!approveTargetCourse) return;
+    const ok = await approveCourse(approveTargetCourse.id);
+    if (ok) {
+      setOpenApprovePublish(false);
+      setApproveTargetCourse(null);
+      setSelectedCourse(null);
+    }
   };
 
-  /** REJECT confirm */
-  //eslint-disable-next-line
+  /** REJECT confirm trong modal */
   const handleSubmitReject = async (reasonText) => {
-    // Gửi reasonText -> API (notify teacher + audit log)
-    const rejectedId = rejectTargetCourse.id;
-
-    // Xoá course khỏi queue vì submission này đóng lại
-    setData((prev) => prev.filter((c) => c.id !== rejectedId));
-
-    message.success("Khóa học đã bị từ chối. Giáo viên sẽ được thông báo.");
-    setOpenReject(false);
-    setRejectTargetCourse(null);
-    setSelectedCourse(null);
+    if (!rejectTargetCourse) return;
+    const ok = await rejectCourseApi(rejectTargetCourse.id, reasonText);
+    if (ok) {
+      setOpenReject(false);
+      setRejectTargetCourse(null);
+      setSelectedCourse(null);
+    }
   };
 
-  /** TABLE ACTION MENU */
-  const buildActionsMenu = (row) => {
-    const mine = row.assignee === CURRENT_MOD;
-    const unassigned = !row.assignee;
+  /** FILTER theo search query */
+  const filtered = useMemo(() => {
+    if (!q) return data;
+    return data.filter((c) => {
+      const query = q.toLowerCase();
+      return (
+        c.title?.toLowerCase().includes(query) || String(c.id).includes(query)
+      );
+    });
+  }, [q, data]);
 
-    const items = [
-      {
-        key: "review",
-        label: "Review Submission",
-        icon: <EyeOutlined />,
-        onClick: () => setSelectedCourse(row),
-      },
-    ];
-
-    if (unassigned) {
-      items.push({
-        key: "take",
-        label: "Take ownership",
-        icon: <UserAddOutlined />,
-        onClick: () => takeOwnership(row.id),
-      });
-    }
-
-    if (mine || unassigned) {
-      items.push({ type: "divider" });
-      items.push({
-        key: "approve",
-        label: "Approve & Publish",
-        icon: <CheckOutlined />,
-        onClick: () => {
-          setApproveTargetCourse(row);
-          setOpenApprovePublish(true);
-        },
-      });
-      items.push({
-        key: "reject",
-        label: "Reject",
-        icon: <CloseOutlined />,
-        danger: true,
-        onClick: () => {
-          setRejectTargetCourse(row);
-          setOpenReject(true);
-        },
-      });
-    }
-
-    return items;
-  };
-
-  /** COLUMNS (unchanged except we don't call onApprove/onReject directly anymore) */
+  /** COLUMNS */
   const columns = [
     {
-      title: "Course Title",
+      title: "Course",
       dataIndex: "title",
       key: "title",
       render: (v, r) => (
         <div>
           <div className={styles.courseTitle}>{v}</div>
-          <div className={styles.courseCode}>{r.code}</div>
+          <div className={styles.courseCode}>ID: {r.id}</div>
         </div>
       ),
     },
-    { title: "Teacher", dataIndex: "teacher", width: 180 },
-    { title: "Submitted", dataIndex: "submittedAt", width: 140 },
+    {
+      title: "Teacher",
+      dataIndex: "teacherName",
+      width: 180,
+      render: (_, r) => r.teacherName || `User #${r.userId}` || "—",
+    },
     {
       title: "Status",
       dataIndex: "status",
-      width: 160,
-      render: (s) => (
-        <Tag
-          color={
-            s === "Review"
-              ? "gold"
-              : s === "Request Revision"
-              ? "orange"
-              : s === "Approved" || s === "Published"
-              ? "green"
-              : s === "Rejected"
-              ? "red"
-              : "default"
-          }
-          className={styles.statusTag}
-        >
-          {s}
-        </Tag>
-      ),
-    },
-    {
-      title: "Assignee",
-      dataIndex: "assignee",
-      width: 160,
-      render: (a) => {
-        if (!a) return <span className={styles.unassigned}>Unassigned</span>;
+      width: 150,
+      render: (s) => {
+        const readable =
+          s === "PENDING_APPROVAL"
+            ? "Pending approval"
+            : s === "PUBLISHED"
+            ? "Published"
+            : s === "DRAFT"
+            ? "Draft"
+            : s || "Unknown";
+        const color =
+          s === "PENDING_APPROVAL"
+            ? "gold"
+            : s === "PUBLISHED"
+            ? "green"
+            : s === "DRAFT"
+            ? "default"
+            : "default";
         return (
-          <span
-            className={
-              a === CURRENT_MOD ? styles.meAssignee : styles.otherAssignee
-            }
-          >
-            {a === CURRENT_MOD ? "You" : a}
-          </span>
+          <Tag color={color} className={styles.statusTag}>
+            {readable}
+          </Tag>
         );
       },
     },
     {
       title: "Actions",
       key: "actions",
-      width: 80,
-      align: "right",
+      width: 260,
       render: (_, row) => (
-        <Dropdown
-          trigger={["click"]}
-          menu={{
-            items: buildActionsMenu(row).map((i) =>
-              i.type ? { type: i.type } : i
-            ),
-          }}
-        >
-          <Button type="text" icon={<MoreOutlined />} />
-        </Dropdown>
+        <Space>
+          <Button
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => setSelectedCourse(row)}
+          >
+            Review
+          </Button>
+          <Button
+            size="small"
+            type="primary"
+            icon={<CheckOutlined />}
+            onClick={() => {
+              setApproveTargetCourse(row);
+              setOpenApprovePublish(true);
+            }}
+            loading={approveLoadingId === row.id}
+          >
+            Approve
+          </Button>
+          <Button
+            size="small"
+            danger
+            icon={<CloseOutlined />}
+            onClick={() => {
+              setRejectTargetCourse(row);
+              setOpenReject(true);
+            }}
+          >
+            Reject
+          </Button>
+        </Space>
       ),
     },
   ];
 
-  /** FILTER ROW / TABLE RENDER (giống bản trước, chỉ thêm assigneeFilter dropdown) */
   return (
     <div className={styles.page}>
-      {/* header */}
-      {/* ... giữ nguyên headerBlock từ bản trước ... */}
+      {/* Header */}
+      <div className={styles.headerBlock}>
+        <div>
+          <h2 className={styles.pageTitle}>Course Approval Queue</h2>
+          <p className={styles.pageSubtitle}>
+            Danh sách các khoá học đang có status{" "}
+            <strong>PENDING_APPROVAL</strong> cần Moderator duyệt để publish.
+          </p>
+        </div>
 
-      {/* filter bar */}
+        <Space>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={fetchPendingCourses}
+            loading={loading}
+          >
+            Reload
+          </Button>
+        </Space>
+      </div>
+
+      {/* Filter row */}
       <div className={styles.filterRow}>
         <Space wrap size={12}>
           <Input
             allowClear
             prefix={<SearchOutlined />}
-            placeholder="Tìm theo tiêu đề hoặc mã khóa học"
+            placeholder="Tìm theo tiêu đề hoặc ID khoá học"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className={styles.searchInput}
           />
-
-          <Select
-            className={styles.statusSelect}
-            value={status}
-            onChange={setStatus}
-            options={[
-              "All",
-              "Review",
-              "Request Revision",
-              "Approved",
-              "Rejected",
-            ].map((v) => ({ label: v, value: v }))}
-          />
-
-          <Select
-            className={styles.statusSelect}
-            value={assigneeFilter}
-            onChange={setAssigneeFilter}
-            options={[
-              { label: "Assignee: All", value: "All" },
-              { label: "Unassigned", value: "Unassigned" },
-              { label: "Mine", value: "Mine" },
-              { label: "Assigned (others)", value: "Assigned" },
-            ]}
-          />
         </Space>
       </div>
 
-      {/* table */}
+      {/* Table */}
       <div className={styles.tableCard}>
-        <Table
-          rowKey="id"
-          size="middle"
-          columns={columns}
-          dataSource={filtered}
-          pagination={{ defaultPageSize: 8, position: ["bottomRight"] }}
-        />
+        {loading ? (
+          <div style={{ padding: "40px 0", textAlign: "center" }}>
+            <Spin />
+          </div>
+        ) : (
+          <Table
+            rowKey="id"
+            size="middle"
+            columns={columns}
+            dataSource={filtered}
+            locale={{
+              emptyText: (
+                <Empty description="Hiện không có khoá học nào đang chờ duyệt." />
+              ),
+            }}
+            pagination={{ defaultPageSize: 8, position: ["bottomRight"] }}
+          />
+        )}
       </div>
 
       {/* inspector modal */}
@@ -355,18 +296,17 @@ export default function ManageQueues() {
         <CourseReviewModal
           open
           course={selectedCourse}
-          currentModerator={CURRENT_MOD}
           onClose={() => setSelectedCourse(null)}
           onRequestRevisionClick={(course) => {
             setRequestTargetCourse(course);
             setOpenRequestRevision(true);
           }}
-          onApprove={() => {
-            setApproveTargetCourse(selectedCourse);
+          onApproveClick={(course) => {
+            setApproveTargetCourse(course);
             setOpenApprovePublish(true);
           }}
-          onReject={() => {
-            setRejectTargetCourse(selectedCourse);
+          onRejectClick={(course) => {
+            setRejectTargetCourse(course);
             setOpenReject(true);
           }}
         />
@@ -394,11 +334,8 @@ export default function ManageQueues() {
             setApproveTargetCourse(null);
           }}
           onConfirm={handleConfirmApprovePublish}
-          courseSummary={{
-            title: approveTargetCourse?.title,
-            price: approveTargetCourse?.price,
-            visibility: approveTargetCourse?.visibility ?? "Public",
-          }}
+          confirmLoading={approveLoadingId === approveTargetCourse?.id}
+          courseSummary={approveTargetCourse}
         />
       )}
 

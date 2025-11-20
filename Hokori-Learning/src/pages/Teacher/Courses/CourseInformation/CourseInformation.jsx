@@ -12,7 +12,7 @@ import LessonEditorDrawer from "../Create-Course/components/Curriculum Builder/L
 import {
   fetchCourseTree,
   updateCourseThunk,
-  publishCourseThunk,
+  submitforapprovalCourseThunk,
   unpublishCourseThunk,
 } from "../../../../redux/features/teacherCourseSlice.js";
 
@@ -84,9 +84,9 @@ export default function CourseInformation() {
   const handleSubmitForReview = async () => {
     if (!courseId) return;
 
-    const action = await dispatch(publishCourseThunk(courseId));
+    const action = await dispatch(submitforapprovalCourseThunk(courseId));
 
-    if (publishCourseThunk.fulfilled.match(action)) {
+    if (submitforapprovalCourseThunk.fulfilled.match(action)) {
       message.success("Submitted for review / published");
     } else {
       message.error("Submit failed, please try again");
