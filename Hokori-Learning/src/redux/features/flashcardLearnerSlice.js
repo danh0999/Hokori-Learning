@@ -1,10 +1,10 @@
-// src/redux/features/flashcardLearnerSlice.js
+// ======================================================
+// FLASHCARD LEARNER SLICE — VERSION 3.0 (CỰC CHUẨN)
+// ======================================================
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../configs/axios";
 
-// ========================================
-// Helper
-// ========================================
+// Color mapping theo level
 const levelColorMap = {
   N5: "xanh",
   N4: "xanhLa",
@@ -13,6 +13,7 @@ const levelColorMap = {
   N1: "do",
 };
 
+// Format time UI
 const formatTime = (iso) => {
   if (!iso) return "Chưa có";
   try {
@@ -27,30 +28,27 @@ const formatTime = (iso) => {
   }
 };
 
+// Decorate set cho UI
 const decorateSet = (set, totalCards = 0) => ({
   ...set,
   totalCards,
-  lastReviewText: formatTime(set.updatedAt || set.createdAt),
   colorClass: levelColorMap[set.level] || "xanh",
-  progressPercent: 0, // FE sẽ update sau khi học
+  lastReviewText: formatTime(set.updatedAt || set.createdAt),
+  progressPercent: set.progressPercent || 0,
 });
 
-// ========================================
-// THUNKS — Learner Flashcards
-// ========================================
-
-// 1) Lấy tất cả set PERSONAL của user + đếm số thẻ
+// ======================================================
+// 1) FETCH ALL PERSONAL SETS
+// ======================================================
 export const fetchPersonalSetsWithCounts = createAsyncThunk(
   "flashcards/fetchPersonalSetsWithCounts",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await api.get("/flashcards/sets/me", {
-        params: { type: "PERSONAL" },
-      });
+      const res = await api.get("/flashcards/sets/me");
 
       const sets = Array.isArray(res.data) ? res.data : [];
 
-      // Lấy số thẻ cho từng set
+      // Count cards cho từng set
       const counts = await Promise.all(
         sets.map((s) =>
           api
@@ -67,39 +65,50 @@ export const fetchPersonalSetsWithCounts = createAsyncThunk(
       counts.forEach((c) => (map[c.id] = c.count));
 
       return sets.map((set) => decorateSet(set, map[set.id] || 0));
-    } catch (err) {
-      return rejectWithValue(err.response?.data || "ERROR_FETCH_SETS");
+    } catch {
+      return rejectWithValue("ERROR_FETCH_SETS");
     }
   }
 );
 
-// 2) Lấy danh sách thẻ của 1 set
+// ======================================================
+// 2) FETCH CARDS BY SET
+// ======================================================
 export const fetchCardsBySet = createAsyncThunk(
   "flashcards/fetchCardsBySet",
   async (setId, { rejectWithValue }) => {
     try {
       const res = await api.get(`/flashcards/sets/${setId}/cards`);
-      return { setId, cards: Array.isArray(res.data) ? res.data : [] };
-    } catch (err) {
-      return rejectWithValue(err.response?.data || "ERROR_FETCH_CARDS");
+      return {
+        setId,
+        cards: Array.isArray(res.data) ? res.data : [],
+      };
+    } catch {
+      return rejectWithValue("ERROR_FETCH_CARDS");
     }
   }
 );
 
-// 3) Tạo 1 PERSONAL set
+// ======================================================
+// 3) CREATE PERSONAL SET (CHUẨN REST)
+// ======================================================
+// --> FE chỉ gửi: { title, description, level }
 export const createPersonalSet = createAsyncThunk(
   "flashcards/createPersonalSet",
   async (payload, { rejectWithValue }) => {
     try {
       const res = await api.post("/flashcards/sets/personal", payload);
+
       return decorateSet(res.data, 0);
-    } catch (err) {
-      return rejectWithValue(err.response?.data || "ERROR_CREATE_SET");
+    } catch {
+      return rejectWithValue("ERROR_CREATE_SET");
     }
   }
 );
 
-// 4) Thêm nhiều thẻ 1 lúc vào set
+// ======================================================
+// 4) ADD MULTIPLE CARDS TO SET
+// ======================================================
 export const addCardsBatchToSet = createAsyncThunk(
   "flashcards/addCardsBatchToSet",
   async ({ setId, cards }, { rejectWithValue }) => {
@@ -108,10 +117,11 @@ export const addCardsBatchToSet = createAsyncThunk(
 
       for (let i = 0; i < cards.length; i++) {
         const c = cards[i];
+
         const payload = {
           frontText: c.term,
           backText: c.meaning,
-          reading: "",
+          reading: c.reading || "",
           exampleSentence: c.example || "",
           orderIndex: i,
         };
@@ -121,49 +131,73 @@ export const addCardsBatchToSet = createAsyncThunk(
       }
 
       return { setId, created };
-    } catch (err) {
-      return rejectWithValue(err.response?.data || "ERROR_ADD_CARDS");
+    } catch {
+      return rejectWithValue("ERROR_ADD_CARDS");
     }
   }
 );
 
-// 5) Cập nhật trạng thái học 1 flashcard (NEW / LEARNING / MASTERED)
+// ======================================================
+// 5) UPDATE FLASHCARD PROGRESS (again | medium | easy)
+// ======================================================
 export const updateFlashcardProgress = createAsyncThunk(
   "flashcards/updateFlashcardProgress",
   async ({ cardId, status }, { rejectWithValue }) => {
     try {
-      // POST /api/flashcards/progress/{flashcardId}
       const res = await api.post(`/flashcards/progress/${cardId}`, { status });
-      return res.data; // progress object
-    } catch (err) {
-      return rejectWithValue(err.response?.data || "ERROR_UPDATE_PROGRESS");
+      return res.data;
+    } catch {
+      return rejectWithValue("ERROR_UPDATE_PROGRESS");
     }
   }
 );
 
-// ========================================
-// SLICE
-// ========================================
+// ======================================================
+// 6) DELETE SET
+// ======================================================
+export const deleteSet = createAsyncThunk(
+  "flashcards/deleteSet",
+  async (setId, { rejectWithValue }) => {
+    try {
+      await api.delete(`/flashcards/sets/${setId}`);
+      return setId;
+    } catch {
+      return rejectWithValue("ERROR_DELETE_SET");
+    }
+  }
+);
+
+// ======================================================
+// 7) DELETE CARD
+// ======================================================
+export const deleteCardInSet = createAsyncThunk(
+  "flashcards/deleteCardInSet",
+  async ({ setId, cardId }, { rejectWithValue }) => {
+    try {
+      await api.delete(`/flashcards/sets/${setId}/cards/${cardId}`);
+      return { setId, cardId };
+    } catch {
+      return rejectWithValue("ERROR_DELETE_CARD");
+    }
+  }
+);
+
+// ======================================================
+// REDUX SLICE
+// ======================================================
 const flashcardSlice = createSlice({
   name: "flashcards",
   initialState: {
-    sets: [], // danh sách PERSONAL sets
-    cardsBySet: {}, // cardsBySet[setId] = array cards
+    sets: [],
+    cardsBySet: {},
     loadingSets: false,
-    loadingCards: {}, // loadingCards[setId] = boolean
+    loadingCards: {},
     saving: false,
     error: null,
-    progressByCard: {}, // progressByCard[cardId] = status ("NEW"/"LEARNING"/"MASTERED")
+    progressByCard: {},
   },
 
   reducers: {
-    removeDeckLocally(state, action) {
-      const id = action.payload;
-      state.sets = state.sets.filter((s) => s.id !== id);
-      delete state.cardsBySet[id];
-    },
-
-    // FE cập nhật % tiến độ cho 1 deck sau khi học xong
     setDeckProgress(state, action) {
       const { setId, percent } = action.payload;
       const deck = state.sets.find((d) => d.id === setId);
@@ -176,7 +210,7 @@ const flashcardSlice = createSlice({
 
   extraReducers: (builder) => {
     builder
-      // ===== Fetch sets =====
+      // FETCH SETS
       .addCase(fetchPersonalSetsWithCounts.pending, (state) => {
         state.loadingSets = true;
       })
@@ -189,7 +223,7 @@ const flashcardSlice = createSlice({
         state.error = action.payload;
       })
 
-      // ===== Fetch cards of a set =====
+      // FETCH CARDS
       .addCase(fetchCardsBySet.pending, (state, action) => {
         const setId = action.meta.arg;
         state.loadingCards[setId] = true;
@@ -205,7 +239,7 @@ const flashcardSlice = createSlice({
         state.error = action.payload;
       })
 
-      // ===== Create set =====
+      // CREATE SET
       .addCase(createPersonalSet.pending, (state) => {
         state.saving = true;
       })
@@ -218,18 +252,19 @@ const flashcardSlice = createSlice({
         state.error = action.payload;
       })
 
-      // ===== Add cards batch =====
+      // ADD CARDS
       .addCase(addCardsBatchToSet.pending, (state) => {
         state.saving = true;
       })
       .addCase(addCardsBatchToSet.fulfilled, (state, action) => {
         state.saving = false;
-        const { setId, created } = action.payload;
 
+        const { setId, created } = action.payload;
         if (!state.cardsBySet[setId]) state.cardsBySet[setId] = [];
+
         state.cardsBySet[setId] = [...state.cardsBySet[setId], ...created];
 
-        const deck = state.sets.find((s) => s.id === setId);
+        const deck = state.sets.find((d) => d.id === setId);
         if (deck) deck.totalCards += created.length;
       })
       .addCase(addCardsBatchToSet.rejected, (state, action) => {
@@ -237,17 +272,32 @@ const flashcardSlice = createSlice({
         state.error = action.payload;
       })
 
-      // ===== Update progress of 1 card =====
+      // UPDATE PROGRESS
       .addCase(updateFlashcardProgress.fulfilled, (state, action) => {
-        const progress = action.payload;
-        if (progress && progress.flashcardId) {
-          state.progressByCard[progress.flashcardId] = progress.status;
+        const p = action.payload;
+        if (p && p.flashcardId) {
+          state.progressByCard[p.flashcardId] = p.status;
+        }
+      })
+
+      // DELETE SET
+      .addCase(deleteSet.fulfilled, (state, action) => {
+        const id = action.payload;
+        state.sets = state.sets.filter((s) => s.id !== id);
+        delete state.cardsBySet[id];
+      })
+
+      // DELETE CARD
+      .addCase(deleteCardInSet.fulfilled, (state, action) => {
+        const { setId, cardId } = action.payload;
+        if (state.cardsBySet[setId]) {
+          state.cardsBySet[setId] = state.cardsBySet[setId].filter(
+            (c) => c.id !== cardId
+          );
         }
       });
   },
 });
 
-export const { removeDeckLocally, setDeckProgress } = flashcardSlice.actions;
-
-
+export const { setDeckProgress } = flashcardSlice.actions;
 export default flashcardSlice.reducer;

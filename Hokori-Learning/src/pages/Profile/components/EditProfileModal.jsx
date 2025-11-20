@@ -44,7 +44,7 @@ const EditProfileModal = ({ user, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) {
-      toast.warn("⚠️ Vui lòng kiểm tra lại thông tin!");
+      toast.warn(" Vui lòng kiểm tra lại thông tin!");
       return;
     }
 
@@ -56,7 +56,7 @@ const EditProfileModal = ({ user, onClose }) => {
     };
 
     await dispatch(updateMe(payload));
-    toast.success("✅ Cập nhật hồ sơ thành công!");
+    // toast.success(" Cập nhật hồ sơ thành công!");
     onClose();
   };
 

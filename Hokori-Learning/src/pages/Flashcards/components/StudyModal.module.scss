@@ -1,5 +1,3 @@
-/* src/pages/Flashcards/StudyModal.module.scss */
-
 /* ============================================================
    OVERLAY
 ============================================================ */
@@ -10,7 +8,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 100;
+  z-index: 50;
   padding: 16px;
 }
 
@@ -22,9 +20,9 @@
   border-radius: 1rem;
   padding: 2rem;
   width: 100%;
-  max-width: 480px;
+  max-width: 500px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
   animation: fadeIn 0.25s ease;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
 }
 
 /* ============================================================
@@ -37,7 +35,7 @@
   margin-bottom: 1rem;
 
   h2 {
-    font-size: 1.25rem;
+    font-size: 1.3rem;
     font-weight: 700;
     color: #111827;
   }
@@ -45,94 +43,189 @@
   button {
     border: none;
     background: transparent;
-    font-size: 1.25rem;
-    color: #6b7280;
+    font-size: 1.3rem;
     cursor: pointer;
+    color: #555;
     padding: 4px 8px;
-    border-radius: 6px;
-    transition: 0.2s;
+    transition: 0.25s;
 
     &:hover {
-      background: #f3f4f6;
-      color: #111827;
+      color: #000;
+      background: #f0f0f0;
+      border-radius: 6px;
     }
   }
 }
 
 /* ============================================================
-   FLASHCARD FLIP CARD
+   FLASHCARD
 ============================================================ */
-.flashcard {
+/* ===================== OVERLAY ===================== */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+/* ===================== MODAL ===================== */
+.modal {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 2rem;
+  width: 100%;
+  max-width: 540px;
+  animation: fadeIn 0.25s ease;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+}
+
+/* ===================== HEADER ===================== */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+
+  h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+  }
+
+  button {
+    border: none;
+    background: transparent;
+    font-size: 1.4rem;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    transition: 0.2s;
+
+    &:hover {
+      background: #f3f4f6;
+    }
+  }
+}
+
+/* ==================================================
+   FLASHCARD — 3D Flip Card High-End Version
+================================================== */
+.cardWrapper {
+  width: 100%;
+  height: 260px;
+  perspective: 1200px;
+  cursor: pointer;
+  margin-bottom: 1rem;
+}
+
+.cardInner {
   position: relative;
   width: 100%;
-  height: 200px;
-  perspective: 1000px;
-  margin-bottom: 1rem;
-  cursor: pointer;
+  height: 100%;
   transform-style: preserve-3d;
-  transition: transform 0.6s ease;
+  transition: transform 0.75s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-.front,
-.back {
+.flipped .cardInner {
+  transform: rotateY(180deg);
+}
+
+.cardFront,
+.cardBack {
   position: absolute;
   inset: 0;
-  border-radius: 0.75rem;
+  background: #ffffff;
+  border-radius: 1rem;
+  border: 1px solid #e5e7eb;
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.05),
+    0 8px 25px rgba(0, 0, 0, 0.07);
+  padding: 1.4rem;
   backface-visibility: hidden;
   display: flex;
-  align-items: center;
   justify-content: center;
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  padding: 0 1rem;
+  align-items: center;
 }
 
-.front {
-  font-size: 2.2rem;
+.cardFront {
+  font-size: 2.4rem;
   font-weight: 700;
-  color: #111827;
 }
 
-.back {
+.cardBack {
   transform: rotateY(180deg);
-  font-size: 1.15rem;
-  color: #374151;
-  line-height: 1.4;
+}
+
+.frontContent {
+  font-size: 2.3rem;
+  font-weight: 700;
+  color: #111;
   text-align: center;
-  white-space: pre-line;
 }
 
-.flipped {
-  transform: rotateY(180deg);
+/* ===================== BACK CONTENT ===================== */
+.backContent {
+  text-align: left;
+  width: 100%;
 }
 
-/* ============================================================
-   PROGRESS TEXT
-============================================================ */
+.meaning {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.reading {
+  font-size: 1.1rem;
+  opacity: 0.7;
+  margin-bottom: 14px;
+}
+
+/* ===================== EXAMPLE BOX ===================== */
+.exampleBox {
+  background: #f6f7fa;
+ margin-top: 32px;
+  padding: 12px 16px;
+  border-radius: 8px;
+}
+
+.exampleLabel {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #374151;
+}
+
+.exampleText {
+  margin-top: 4px;
+  font-size: 1rem;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+/* ===================== PROGRESS ===================== */
 .progressText {
   text-align: center;
-  font-size: 0.9rem;
   color: #6b7280;
   margin-bottom: 1rem;
+  font-size: 0.95rem;
 }
 
-/* ============================================================
-   ACTION BUTTONS
-============================================================ */
+/* ===================== ACTION BUTTONS ===================== */
 .actions {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.8rem;
 
   button {
     flex: 1;
-    border: none;
-    border-radius: 0.75rem;
-    padding: 0.75rem 1rem;
+    padding: 0.8rem;
+    border-radius: 10px;
     font-weight: 600;
+    border: none;
     cursor: pointer;
+    font-size: 1rem;
     transition: 0.2s;
-    font-size: 0.95rem;
   }
 }
 
@@ -147,7 +240,7 @@
 
 .medium {
   background: #fef3c7;
-  color: #d97706;
+  color: #b45309;
 
   &:hover {
     background: #fde68a;
@@ -163,45 +256,11 @@
   }
 }
 
-/* ============================================================
-   DONE BOX (khi học xong)
-============================================================ */
-.doneBox {
-  text-align: center;
-
-  h3 {
-    font-size: 1.5rem;
-    margin-bottom: 0.5rem;
-    color: #111827;
-  }
-
-  p {
-    color: #6b7280;
-    margin-bottom: 1.25rem;
-  }
-}
-
-.closeBtn {
-  background: #2563eb;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.25rem;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: 0.2s;
-
-  &:hover {
-    background: #1e50c5;
-  }
-}
-
-/* ============================================================
-   ANIMATIONS
-============================================================ */
+/* ===================== FADE ANIMATION ===================== */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -209,15 +268,100 @@
   }
 }
 
+
 /* ============================================================
-   RESPONSIVE
+   PROGRESS TEXT
 ============================================================ */
-@media (max-width: 480px) {
-  .modal {
-    padding: 1.5rem;
+.progressText {
+  text-align: center;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+  color: #6b7280;
+}
+
+/* ============================================================
+   BUTTONS
+============================================================ */
+.actions {
+  display: flex;
+  gap: 0.75rem;
+
+  button {
+    flex: 1;
+    border: none;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+}
+
+.again {
+  background: #fee2e2;
+  color: #dc2626;
+
+  &:hover {
+    background: #fecaca;
+  }
+}
+
+.medium {
+  background: #fef3c7;
+  color: #b45309;
+
+  &:hover {
+    background: #fde68a;
+  }
+}
+
+.easy {
+  background: #dcfce7;
+  color: #16a34a;
+
+  &:hover {
+    background: #bbf7d0;
+  }
+}
+
+/* DONE STATE */
+.doneBox {
+  text-align: center;
+
+  h3 {
+    font-size: 1.5rem;
+    color: #111827;
+    margin-bottom: 0.5rem;
   }
 
-  .flashcard {
-    height: 180px;
+  p {
+    color: #6b7280;
+    margin-bottom: 1rem;
+  }
+}
+
+.closeBtn {
+  background: #2563eb;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.6rem;
+  cursor: pointer;
+  border: none;
+
+  &:hover {
+    background: #1e50c5;
+  }
+}
+
+/* Fade animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0px);
   }
 }
