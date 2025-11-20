@@ -1,38 +1,62 @@
 import axios from "axios";
 
-/* ===========================================================
-
-=========================================================== */
-
 /* -----------------------------
-   BACKEND CANDIDATES
+  BACKEND URLS
 ----------------------------- */
-const PRIMARY = "https://hokoribe-production.up.railway.app/api"; // PROD
 
-// FE đang chạy ngrok → backend = FE_origin/api
+// 1) Production
+const RAILWAY = "https://hokoribe-production.up.railway.app/api";
+
+// 2) FE-ngrok (khi FE ở domain ngrok → dùng origin/api)
 const NGROK_FE_FALLBACK = () => `${window.location.origin}/api`;
 
-// Tất cả backend ngrok nội bộ (Phú, Khoa,...)
-const NGROK_BACKENDS = [
-  "https://saner-eden-placably.ngrok-free.dev/api",        // Backend 1
-  "https://celsa-plumbaginaceous-unabjectly.ngrok-free.dev/api" // Backend 2 (CELSA)
+// 3–4) Backend DEV nội bộ
+const DEV_BACKENDS = [
+  {
+    url: "https://celsa-plumbaginaceous-unabjectly.ngrok-free.dev/api",
+    priority: 3,
+  },
+  {
+    url: "https://saner-eden-placably.ngrok-free.dev/api",
+    priority: 4,
+  },
 ];
 
+// 5) Localhost
 const LOCAL = "http://localhost:8080/api";
 
 /* -----------------------------
-   CACHE KEY
+   CACHE
 ----------------------------- */
 const CACHE_KEY = "hokori_backend_url";
 const CACHE_EXP_KEY = "hokori_backend_exp";
 
-/* ===========================================================
-    1. HEARTBEAT CHECK (FAST)
-=========================================================== */
-async function isAlive(url) {
+function getCached() {
+  const url = localStorage.getItem(CACHE_KEY);
+  const exp = localStorage.getItem(CACHE_EXP_KEY);
+
+  if (!url || !exp) return null;
+
+  if (Date.now() > Number(exp)) {
+    localStorage.removeItem(CACHE_KEY);
+    localStorage.removeItem(CACHE_EXP_KEY);
+    return null;
+  }
+  return url;
+}
+
+function setCached(url) {
+  localStorage.setItem(CACHE_KEY, url);
+  localStorage.setItem(CACHE_EXP_KEY, Date.now() + 24 * 60 * 60 * 1000);
+}
+
+/* -----------------------------
+   HEARTBEAT CHECK
+----------------------------- */
+async function fastPing(url) {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 250);
+    const timeout = setTimeout(() => controller.abort(), 200);
 
     await fetch(url + "/health", { signal: controller.signal });
 
@@ -43,102 +67,80 @@ async function isAlive(url) {
   }
 }
 
-/* ===========================================================
-    2. SMART CACHE (24 HOURS)
-=========================================================== */
-function getCachedBackend() {
-  const saved = localStorage.getItem(CACHE_KEY);
-  const exp = localStorage.getItem(CACHE_EXP_KEY);
-
-  if (!saved || !exp) return null;
-
-  if (Date.now() > Number(exp)) {
-    localStorage.removeItem(CACHE_KEY);
-    localStorage.removeItem(CACHE_EXP_KEY);
-    return null;
-  }
-  return saved;
-}
-
-function saveBackend(url) {
-  localStorage.setItem(CACHE_KEY, url);
-  localStorage.setItem(CACHE_EXP_KEY, Date.now() + 24 * 60 * 60 * 1000);
-}
-
-/* ===========================================================
-    3. MAIN AUTO DETECTOR
-=========================================================== */
+/* -----------------------------
+   AUTO-DETECTOR (PARALLEL RACE)
+----------------------------- */
 async function autoBackend() {
-  // 1) Dùng cached nếu còn hạn
-  const cached = getCachedBackend();
-  if (cached) {
-    console.log(" Using cached backend:", cached);
-    return cached;
-  }
+  // 1) use cached if available
+  const cached = getCached();
+  if (cached) return cached;
 
-  /* -----------------------------
-      PRIORITY BACKEND LIST
-  ----------------------------- */
-  const candidates = [PRIMARY];
+  const candidates = [];
 
-  // 2) FE đang chạy trên ngrok
+  // FE-ngrok chạy → ưu tiên sau railway
   if (window.location.host.includes("ngrok")) {
-    candidates.push(NGROK_FE_FALLBACK());
+    candidates.push({ url: NGROK_FE_FALLBACK(), priority: 2 });
   }
 
-  // 3) Tất cả backend ngrok nội bộ
-  candidates.push(...NGROK_BACKENDS);
+  // priority order:
+  candidates.push({ url: RAILWAY, priority: 1 });
+  candidates.push(...DEV_BACKENDS);
+  candidates.push({ url: LOCAL, priority: 10 }); // low priority
 
-  // 4) Cuối cùng: Localhost
-  candidates.push(LOCAL);
+  // ping song song tất cả
+  const results = await Promise.all(
+    candidates.map(async (c) => ({
+      ...c,
+      alive: await fastPing(c.url),
+    }))
+  );
 
-  console.log(" Checking backends:", candidates);
+  const aliveList = results.filter((r) => r.alive);
 
-  // HEARTBEAT CHECK
-  for (const url of candidates) {
-    const alive = await isAlive(url);
-    if (alive) {
-      console.log(" Backend selected:", url);
-      saveBackend(url);
-      return url;
-    }
+  // nếu không backend nào sống → fallback Railway
+  if (aliveList.length === 0) {
+    setCached(RAILWAY);
+    return RAILWAY;
   }
 
-  // fallback cứng
-  console.warn(" All backends failed — fallback to Railway");
-  saveBackend(PRIMARY);
-  return PRIMARY;
+  // sort theo priority
+  aliveList.sort((a, b) => a.priority - b.priority);
+
+  const best = aliveList[0].url;
+  setCached(best);
+
+  return best;
 }
 
-/* ===========================================================
-    4. INIT AXIOS (temporary baseURL)
-=========================================================== */
+/* -----------------------------
+   INIT AXIOS
+----------------------------- */
 const api = axios.create({
-  baseURL: PRIMARY,
+  baseURL: RAILWAY, // tạm thời
   withCredentials: false,
 });
 
-// Update baseURL async
+// cập nhật baseURL sau khi detect
 autoBackend().then((realURL) => {
   api.defaults.baseURL = realURL;
-  console.log(" Axios backend active:", realURL);
+  console.log("🚀 Hokori Backend Active:", realURL);
 });
 
-/* ===========================================================
-    5. REQUEST INTERCEPTOR
-=========================================================== */
+/* -----------------------------
+   REQUEST INTERCEPTOR
+----------------------------- */
 api.interceptors.request.use(
   (config) => {
     config.headers["ngrok-skip-browser-warning"] = "any";
-    config.headers["Accept"] = "application/json";
+    config.headers.Accept = "application/json";
 
     const token =
       localStorage.getItem("token") || sessionStorage.getItem("token");
 
     const isAuth =
-      !config.url?.includes("login") &&
-      !config.url?.includes("register") &&
-      !config.url?.includes("firebase");
+      !config.url.includes("login") &&
+      !config.url.includes("register") &&
+      !config.url.includes("firebase");
 
     if (token && isAuth) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -146,44 +148,24 @@ api.interceptors.request.use(
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (err) => Promise.reject(err)
 );
 
-/* ===========================================================
-    6. RESPONSE INTERCEPTOR
-=========================================================== */
+/* -----------------------------
+   RESPONSE INTERCEPTOR
+----------------------------- */
 api.interceptors.response.use(
-  (res) => {
-    const body = res?.data;
-
-    if (
-      body &&
-      typeof body === "object" &&
-      Object.prototype.hasOwnProperty.call(body, "success") &&
-      body.success === false
-    ) {
-      const err = new Error(body.message || "Request failed");
-      err.isBusinessError = true;
-      err.response = res;
-      err.normalizedMessage = body.message || "Request failed";
-      return Promise.reject(err);
-    }
-
-    return res;
-  },
+  (res) => res,
   (error) => {
     let msg = "Request failed";
 
-    if (error?.response) {
+    if (error.response) {
       msg =
         error.response.data?.message ||
         error.response.data?.error ||
-        error.message ||
-        msg;
-    } else if (error?.request) {
-      msg = "Network error. Please check your connection.";
-    } else {
-      msg = error.message || msg;
+        error.message;
+    } else if (error.request) {
+      msg = "Network error";
     }
 
     error.normalizedMessage = msg;

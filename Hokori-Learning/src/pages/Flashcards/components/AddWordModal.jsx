@@ -2,8 +2,13 @@ import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import styles from "./AddWordModal.module.scss";
 import toast from "react-hot-toast";
+import { useDispatch } from "react-redux";
+
+import { deleteCardInSet } from "../../../redux/features/flashcardLearnerSlice";
 
 const AddWordModal = ({ deck, onClose, onSave }) => {
+  const dispatch = useDispatch();
+
   const [word, setWord] = useState({ term: "", meaning: "", example: "" });
   const [cards, setCards] = useState([]);
 
@@ -29,14 +34,47 @@ const AddWordModal = ({ deck, onClose, onSave }) => {
 
   const handleAdd = (e) => {
     e.preventDefault();
+
     if (!word.term.trim() || !word.meaning.trim()) {
       toast.error("Vui lòng nhập ít nhất Từ vựng và Nghĩa!");
       return;
     }
-    const newCard = { id: Date.now(), ...word };
+
+    const newCard = {
+      id: Date.now(), // local only
+      term: word.term,
+      meaning: word.meaning,
+      example: word.example,
+      isLocal: true,     // thêm flag để phân biệt
+    };
+
     setCards((prev) => [...prev, newCard]);
     setWord({ term: "", meaning: "", example: "" });
     toast.success("Đã thêm 1 thẻ mới!");
+  };
+
+  // ===============================================
+  // XÓA 1 THẺ — TỰ ĐỘNG PHÂN BIỆT LOCAL vs BACKEND
+  // ===============================================
+  const handleDeleteCard = async (card) => {
+    // TH1 – Thẻ LOCAL chưa lưu lên BE
+    if (card.isLocal) {
+      setCards((prev) => prev.filter((x) => x.id !== card.id));
+      toast.success("Đã xoá thẻ (local)!");
+      return;
+    }
+
+    // TH2 – Thẻ TỒN TẠI TRÊN BACKEND → gọi API DELETE
+    const action = await dispatch(
+      deleteCardInSet({ setId: deck.id, cardId: card.id })
+    );
+
+    if (deleteCardInSet.fulfilled.match(action)) {
+      setCards((prev) => prev.filter((x) => x.id !== card.id));
+      toast.success("Đã xoá thẻ!");
+    } else {
+      toast.error("Không thể xoá thẻ. Vui lòng thử lại.");
+    }
   };
 
   const handleSaveDeck = () => {
@@ -44,9 +82,12 @@ const AddWordModal = ({ deck, onClose, onSave }) => {
       toast.error("Bạn chưa thêm thẻ nào!");
       return;
     }
-    onSave?.(cards); // MyFlashcards sẽ dispatch thunk
+    onSave?.(cards); // MyFlashcards sẽ dispatch addCardsBatchToSet
   };
 
+  // ===============================================
+  // UI MODAL
+  // ===============================================
   const modalUi = (
     <div className={styles.overlay} onClick={handleOverlayClick}>
       <div className={styles.modal} role="dialog" aria-modal="true">
@@ -107,7 +148,7 @@ const AddWordModal = ({ deck, onClose, onSave }) => {
             </button>
           </form>
 
-          {/* Danh sách thẻ đã thêm */}
+          {/* Danh sách thẻ thêm */}
           <div className={styles.cardList}>
             {cards.length > 0 ? (
               cards.map((c) => (
@@ -121,9 +162,7 @@ const AddWordModal = ({ deck, onClose, onSave }) => {
                   <button
                     type="button"
                     className={styles.deleteBtn}
-                    onClick={() =>
-                      setCards((prev) => prev.filter((x) => x.id !== c.id))
-                    }
+                    onClick={() => handleDeleteCard(c)}
                     aria-label="Xoá thẻ"
                   >
                     <i className="fa-solid fa-trash" />

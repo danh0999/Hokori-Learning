@@ -1,5 +1,3 @@
-/* src/pages/Flashcards/MyFlashcards.module.scss */
-
 /* ===================================================================
    WRAPPER
 =================================================================== */
@@ -34,9 +32,8 @@
   }
 }
 
-/* Nút tạo bộ mới */
 .addBtn {
-  background-color: #2563eb;
+  background: #2563eb;
   color: #fff;
   border: none;
   padding: 0.75rem 1.25rem;
@@ -49,16 +46,12 @@
   transition: 0.2s;
 
   &:hover {
-    background-color: #1e50c5;
-  }
-
-  i {
-    font-size: 0.9rem;
+    background: #1e50c5;
   }
 }
 
 /* ===================================================================
-   STATS (Thống kê)
+   STATS
 =================================================================== */
 .stats {
   display: grid;
@@ -87,7 +80,7 @@
 }
 
 /* ===================================================================
-   FILTERS (Ô tìm kiếm + filter level)
+   FILTERS
 =================================================================== */
 .filters {
   display: flex;
@@ -117,12 +110,97 @@
 }
 
 /* ===================================================================
-   GRID (Danh sách bộ thẻ)
+   DECK GRID
 =================================================================== */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.5rem;
+}
+
+/* ===================================================================
+   DELETE CONFIRM MODAL
+=================================================================== */
+.deleteModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.deleteModal {
+  background: white;
+  width: 380px;
+  padding: 1.75rem;
+  border-radius: 14px;
+  position: relative;
+  animation: popup 0.2s ease;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+@keyframes popup {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.deleteClose {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+  color: #6b7280;
+
+  &:hover {
+    color: #111827;
+  }
+}
+
+.deleteText {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.deleteActions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.deleteConfirm {
+  flex: 1;
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.7rem 0;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: #dc2626;
+  }
+}
+
+.deleteCancel {
+  flex: 1;
+  background: #e5e7eb;
+  color: #111827;
+  border: none;
+  padding: 0.7rem 0;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: #d1d5db;
+  }
 }
 
 /* ===================================================================
@@ -135,10 +213,5 @@
 
   .filters {
     flex-direction: column;
-
-    input,
-    select {
-      width: 100%;
-    }
   }
 }

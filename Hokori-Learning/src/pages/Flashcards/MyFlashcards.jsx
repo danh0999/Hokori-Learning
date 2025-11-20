@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styles from "./MyFlashcards.module.scss";
-import { toast } from "react-hot-toast";
+import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 
 import DeckCard from "./components/DeckCard";
@@ -12,7 +12,7 @@ import {
   fetchPersonalSetsWithCounts,
   createPersonalSet,
   addCardsBatchToSet,
-  removeDeckLocally,
+  deleteSet,
 } from "../../redux/features/flashcardLearnerSlice";
 
 const MyFlashcards = () => {
@@ -22,24 +22,25 @@ const MyFlashcards = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [levelFilter, setLevelFilter] = useState("Tất cả");
 
-  const [selectedDeck, setSelectedDeck] = useState(null); // học
-  const [editingDeck, setEditingDeck] = useState(null); // thêm thẻ
+  const [selectedDeck, setSelectedDeck] = useState(null);
+  const [editingDeck, setEditingDeck] = useState(null);
 
   const [showCreate, setShowCreate] = useState(false);
   const [showAddWord, setShowAddWord] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
-  // ============ Fetch sets lần đầu ============
+  // FETCH SETS WHEN LOAD PAGE
   useEffect(() => {
     dispatch(fetchPersonalSetsWithCounts());
   }, [dispatch]);
 
-  // ============ Filter ============
+  // FILTER DECKS
   const filteredDecks = useMemo(() => {
-    const lowerSearch = searchTerm.toLowerCase();
-    return (sets || []).filter((deck) => {
-      const matchSearch = deck.title.toLowerCase().includes(lowerSearch);
-      const matchLevel = levelFilter === "Tất cả" || deck.level === levelFilter;
-      return matchSearch && matchLevel;
+    const lower = searchTerm.toLowerCase();
+    return sets.filter((d) => {
+      const matchText = d.title.toLowerCase().includes(lower);
+      const matchLevel = levelFilter === "Tất cả" || d.level === levelFilter;
+      return matchText && matchLevel;
     });
   }, [sets, searchTerm, levelFilter]);
 
@@ -48,7 +49,7 @@ const MyFlashcards = () => {
     [filteredDecks]
   );
 
-  // ============ Tạo set ============
+  // CREATE FLASHCARD SET
   const handleCreateDeck = async (formData) => {
     try {
       const payload = {
@@ -58,55 +59,44 @@ const MyFlashcards = () => {
       };
 
       const action = await dispatch(createPersonalSet(payload));
-      if (createPersonalSet.fulfilled.match(action)) {
-        const newDeck = action.payload;
-        toast.success("Tạo bộ thẻ thành công!");
 
-        setEditingDeck(newDeck);
+      if (createPersonalSet.fulfilled.match(action)) {
+        toast.success("Tạo bộ thẻ thành công!");
         setShowCreate(false);
-        setShowAddWord(true);
+        setEditingDeck(null);
       } else {
         toast.error("Không tạo được bộ thẻ.");
       }
-    } catch (err) {
-      console.error(err);
+    } catch  {
       toast.error("Có lỗi xảy ra, vui lòng thử lại.");
     }
   };
 
-  // ============ Lưu các thẻ từ AddWordModal ============
+  // SAVE ADDED CARDS
   const handleSaveWords = async (cards) => {
     if (!editingDeck) return;
-    try {
-      const action = await dispatch(
-        addCardsBatchToSet({ setId: editingDeck.id, cards })
-      );
-      if (addCardsBatchToSet.fulfilled.match(action)) {
-        toast.success(
-          `Đã lưu ${cards.length} thẻ vào bộ "${editingDeck.title}"!`
-        );
-        setShowAddWord(false);
-        setEditingDeck(null);
-      } else {
-        toast.error("Lưu thẻ thất bại. Vui lòng thử lại.");
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error("Có lỗi xảy ra khi lưu thẻ.");
+
+    const action = await dispatch(
+      addCardsBatchToSet({ setId: editingDeck.id, cards })
+    );
+
+    if (addCardsBatchToSet.fulfilled.match(action)) {
+      toast.success(`Đã lưu ${cards.length} thẻ vào bộ "${editingDeck.title}"!`);
+      setShowAddWord(false);
+      setEditingDeck(null);
+    } else {
+      toast.error("Lưu thẻ thất bại.");
     }
   };
 
-  // ============ Xoá deck (FE-only) ============
+  // OPEN DELETE MODAL
   const handleDeleteDeck = (deck) => {
-    if (!window.confirm(`Bạn có chắc muốn xóa bộ "${deck.title}"?`)) return;
-    dispatch(removeDeckLocally(deck.id));
-    toast.success("Đã xóa bộ thẻ khỏi danh sách hiển thị (FE-only).");
+    setDeleteTarget(deck);
   };
 
-  // ============ Render ============
   return (
     <div className={styles.wrapper}>
-      {/* Header */}
+      {/* HEADER */}
       <div className={styles.header}>
         <div>
           <h1>Bộ thẻ ghi nhớ của tôi</h1>
@@ -114,37 +104,21 @@ const MyFlashcards = () => {
             Ôn tập từ vựng, kanji và cụm câu tiếng Nhật do chính bạn tạo ra.
           </p>
         </div>
-        <button
-          className={styles.addBtn}
-          onClick={() => {
-            setShowCreate(true);
-          }}
-        >
+
+        <button className={styles.addBtn} onClick={() => setShowCreate(true)}>
           <i className="fa-solid fa-plus"></i> Tạo bộ mới
         </button>
       </div>
 
-      {/* Stats */}
+      {/* STATS */}
       <div className={styles.stats}>
-        <div>
-          <span>{filteredDecks.length}</span>
-          <p>Bộ thẻ</p>
-        </div>
-        <div>
-          <span>{totalCards}</span>
-          <p>Tổng số thẻ</p>
-        </div>
-        <div>
-          <span>0</span>
-          <p>Đã ôn hôm nay</p>
-        </div>
-        <div>
-          <span>0</span>
-          <p>Chuỗi ngày học</p>
-        </div>
+        <div><span>{filteredDecks.length}</span><p>Bộ thẻ</p></div>
+        <div><span>{totalCards}</span><p>Tổng số thẻ</p></div>
+        <div><span>0</span><p>Đã ôn hôm nay</p></div>
+        <div><span>0</span><p>Chuỗi ngày học</p></div>
       </div>
 
-      {/* Filters */}
+      {/* FILTERS */}
       <div className={styles.filters}>
         <input
           placeholder="Tìm kiếm bộ thẻ..."
@@ -165,7 +139,7 @@ const MyFlashcards = () => {
         </select>
       </div>
 
-      {/* Deck list */}
+      {/* DECK LIST */}
       <div className={styles.grid}>
         {loadingSets && sets.length === 0 ? (
           <p>Đang tải bộ thẻ...</p>
@@ -187,12 +161,56 @@ const MyFlashcards = () => {
         )}
       </div>
 
-      {/* Study modal */}
+      {/* DELETE CONFIRM MODAL */}
+      {deleteTarget && (
+        <div className={styles.deleteModalOverlay}>
+          <div className={styles.deleteModal}>
+            <button
+              className={styles.deleteClose}
+              onClick={() => setDeleteTarget(null)}
+            >
+              <i className="fa-solid fa-xmark"></i>
+            </button>
+
+            <h3>Xoá bộ thẻ “{deleteTarget.title}”?</h3>
+            <p className={styles.deleteText}>
+              Hành động này không thể hoàn tác.
+            </p>
+
+            <div className={styles.deleteActions}>
+              <button
+                className={styles.deleteConfirm}
+                onClick={async () => {
+                  const action = await dispatch(deleteSet(deleteTarget.id));
+
+                  if (deleteSet.fulfilled.match(action)) {
+                    toast.success("Đã xoá bộ thẻ!");
+                  } else {
+                    toast.error("Không xoá được bộ thẻ!");
+                  }
+
+                  setDeleteTarget(null);
+                }}
+              >
+                Xoá
+              </button>
+
+              <button
+                className={styles.deleteCancel}
+                onClick={() => setDeleteTarget(null)}
+              >
+                Huỷ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* OTHER MODALS */}
       {selectedDeck && (
         <StudyModal deck={selectedDeck} onClose={() => setSelectedDeck(null)} />
       )}
 
-      {/* Create deck modal */}
       {showCreate && (
         <CreateDeckModal
           onClose={() => setShowCreate(false)}
@@ -200,7 +218,6 @@ const MyFlashcards = () => {
         />
       )}
 
-      {/* Add word modal */}
       {showAddWord && editingDeck && (
         <AddWordModal
           deck={editingDeck}
