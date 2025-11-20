@@ -1,46 +1,106 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../configs/axios";
 
-// ==== FETCH PROFILE ====
+/* ================== Helpers ================== */
+const extractUserPart = (rawUser = {}) => ({
+  id: rawUser.id,
+  email: rawUser.email,
+  username: rawUser.username,
+  displayName: rawUser.displayName,
+  avatarUrl: rawUser.avatarUrl,
+  phoneNumber: rawUser.phoneNumber,
+  country: rawUser.country,
+  role: rawUser.role,
+  isVerified: rawUser.isVerified,
+  lastLoginAt: rawUser.lastLoginAt,
+  createdAt: rawUser.createdAt,
+});
+
+const extractTeacherPart = (teacher = {}) => ({
+  approvalStatus: teacher.approvalStatus,
+  approvedAt: teacher.approvedAt,
+  currentApproveRequestId: teacher.currentApproveRequestId,
+  yearsOfExperience: teacher.yearsOfExperience,
+  headline: teacher.headline,
+  bio: teacher.bio,
+  websiteUrl: teacher.websiteUrl,
+  linkedin: teacher.linkedin,
+  bankAccountNumber: teacher.bankAccountNumber,
+  bankAccountName: teacher.bankAccountName,
+  bankName: teacher.bankName,
+  bankBranchName: teacher.bankBranchName,
+  lastPayoutDate: teacher.lastPayoutDate,
+});
+
+/* ================== FETCH PROFILE (user + teacher) ================== */
 export const fetchTeacherProfile = createAsyncThunk(
   "teacherProfile/fetchTeacherProfile",
   async (_, { rejectWithValue }) => {
     try {
-      // nếu bạn đang dùng /profile/me thì để như vầy:
-      const res = await api.get("profile/me");
-      // nếu bạn dùng /teachers/me thì đổi lại:
-      // const res = await api.get("teachers/me");
+      // /api/profile/me -> trả về object user
+      const [userRes, teacherRes] = await Promise.all([
+        api.get("profile/me"),
+        api.get("profile/me/teacher"),
+      ]);
 
-      const raw = res?.data?.data || {};
-      const teacher = raw.teacher || {};
+      const rawUser = userRes?.data || {};
+      // /api/profile/me/teacher -> { success, message, data: { teacher: {...} } }
+      const teacherWrapper = teacherRes?.data?.data || {};
+      const teacherRaw = teacherWrapper.teacher || teacherWrapper || {};
 
-      // Gộp user info + teacher info thành 1 object
-      const mapped = {
-        // user-level
-        id: raw.id,
-        email: raw.email,
-        username: raw.username,
-        displayName: raw.displayName,
-        avatarUrl: raw.avatarUrl,
-        country: raw.country,
-        phoneNumber: raw.phoneNumber,
-        role: raw.role,
+      const userPart = extractUserPart(rawUser);
+      const teacherPart = extractTeacherPart(teacherRaw);
 
-        // teacher-level (approvalStatus, headline, bio, yearsOfExperience, ...)
-        ...teacher,
+      // flatten để code cũ vẫn dùng profile.displayName, profile.headline...
+      return {
+        ...userPart,
+        ...teacherPart,
+        user: userPart,
+        teacher: teacherPart,
       };
-
-      return mapped;
     } catch (err) {
       return rejectWithValue(
-        err?.response?.data || { message: "Fetch failed" }
+        err?.response?.data || { message: "Fetch profile failed" }
       );
     }
   }
 );
 
-/** ===================== CERTIFICATES (Approval) ===================== */
-// GET all my certificates
+/* ================== UPDATE user profile (/profile/me) ================== */
+export const updateUserProfile = createAsyncThunk(
+  "teacherProfile/updateUserProfile",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const res = await api.put("profile/me", payload);
+      const rawUser = res?.data || {};
+      return extractUserPart(rawUser);
+    } catch (err) {
+      return rejectWithValue(
+        err?.response?.data || { message: "Update user profile failed" }
+      );
+    }
+  }
+);
+
+/* ========== UPDATE teacher section (/profile/me/teacher) ========== */
+export const updateTeacherSection = createAsyncThunk(
+  "teacherProfile/updateTeacherSection",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const res = await api.put("profile/me/teacher", payload);
+      const wrapper = res?.data?.data || {};
+      const teacherRaw = wrapper.teacher || wrapper || {};
+      return extractTeacherPart(teacherRaw);
+    } catch (err) {
+      return rejectWithValue(
+        err?.response?.data || { message: "Update teacher section failed" }
+      );
+    }
+  }
+);
+
+/* ================== CERTIFICATES (Approval) ================== */
+
 export const fetchTeacherCertificates = createAsyncThunk(
   "teacherProfile/fetchTeacherCertificates",
   async (_, { rejectWithValue }) => {
@@ -55,17 +115,13 @@ export const fetchTeacherCertificates = createAsyncThunk(
   }
 );
 
-// CREATE or UPDATE a certificate (upsert)
 export const upsertTeacherCertificate = createAsyncThunk(
   "teacherProfile/upsertTeacherCertificate",
   async (payload, { rejectWithValue }) => {
     try {
-      // nếu có id -> PUT /{id}, ngược lại POST /
       if (payload?.id) {
-        const res = await api.put(
-          `teacher/approval/certificates/${payload.id}`,
-          payload
-        );
+        const { id, ...body } = payload;
+        const res = await api.put(`teacher/approval/certificates/${id}`, body);
         return res?.data?.data;
       }
       const res = await api.post("teacher/approval/certificates", payload);
@@ -78,7 +134,6 @@ export const upsertTeacherCertificate = createAsyncThunk(
   }
 );
 
-// DELETE a certificate
 export const deleteTeacherCertificate = createAsyncThunk(
   "teacherProfile/deleteTeacherCertificate",
   async (id, { rejectWithValue }) => {
@@ -93,7 +148,6 @@ export const deleteTeacherCertificate = createAsyncThunk(
   }
 );
 
-// (optional) GET latest approval request
 export const fetchLatestApproval = createAsyncThunk(
   "teacherProfile/fetchLatestApproval",
   async (_, { rejectWithValue }) => {
@@ -108,14 +162,13 @@ export const fetchLatestApproval = createAsyncThunk(
   }
 );
 
-/** ===================== SUBMIT APPROVAL ===================== */
+/* ================== SUBMIT APPROVAL ================== */
 export const submitTeacherProfile = createAsyncThunk(
   "teacherProfile/submitTeacherProfile",
   async ({ message } = { message: "" }, { rejectWithValue }) => {
     try {
-      // Swagger: POST /teacher/approval/submit
       const res = await api.post("teacher/approval/submit", { message });
-      return res?.data?.data; // profile sau khi chuyển PENDING (tuỳ BE trả)
+      return res?.data?.data;
     } catch (err) {
       return rejectWithValue(
         err?.response?.data || {
@@ -126,13 +179,14 @@ export const submitTeacherProfile = createAsyncThunk(
   }
 );
 
-/** ===================== SLICE ===================== */
+/* ================== SLICE ================== */
+
 const initialState = {
-  data: null, // teacher profile
+  data: null,
   status: "idle",
   error: null,
 
-  certificates: [], // approval certificates
+  certificates: [],
   certStatus: "idle",
   certError: null,
   savingCert: false,
@@ -144,6 +198,11 @@ const initialState = {
 
   submitting: false,
   submitError: null,
+
+  updatingUser: false,
+  updatingTeacher: false,
+  updateUserError: null,
+  updateTeacherError: null,
 };
 
 const teacherprofileSlice = createSlice({
@@ -156,7 +215,7 @@ const teacherprofileSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // ===== PROFILE =====
+      // ==== fetch profile ====
       .addCase(fetchTeacherProfile.pending, (state) => {
         state.status = "loading";
         state.error = null;
@@ -170,7 +229,63 @@ const teacherprofileSlice = createSlice({
         state.error = action.payload || action.error;
       })
 
-      // ===== CERTIFICATES: list =====
+      // ==== update user profile ====
+      .addCase(updateUserProfile.pending, (state) => {
+        state.updatingUser = true;
+        state.updateUserError = null;
+      })
+      .addCase(updateUserProfile.fulfilled, (state, action) => {
+        state.updatingUser = false;
+        const userPart = action.payload || {};
+        if (!state.data) {
+          state.data = {
+            ...userPart,
+            user: userPart,
+            teacher: {},
+          };
+        } else {
+          state.data = {
+            ...state.data,
+            ...userPart,
+            user: userPart,
+            teacher: state.data.teacher || {},
+          };
+        }
+      })
+      .addCase(updateUserProfile.rejected, (state, action) => {
+        state.updatingUser = false;
+        state.updateUserError = action.payload || action.error;
+      })
+
+      // ==== update teacher section ====
+      .addCase(updateTeacherSection.pending, (state) => {
+        state.updatingTeacher = true;
+        state.updateTeacherError = null;
+      })
+      .addCase(updateTeacherSection.fulfilled, (state, action) => {
+        state.updatingTeacher = false;
+        const teacherPart = action.payload || {};
+        if (!state.data) {
+          state.data = {
+            ...teacherPart,
+            user: {},
+            teacher: teacherPart,
+          };
+        } else {
+          state.data = {
+            ...state.data,
+            ...teacherPart,
+            user: state.data.user || {},
+            teacher: teacherPart,
+          };
+        }
+      })
+      .addCase(updateTeacherSection.rejected, (state, action) => {
+        state.updatingTeacher = false;
+        state.updateTeacherError = action.payload || action.error;
+      })
+
+      // ==== certificates list ====
       .addCase(fetchTeacherCertificates.pending, (state) => {
         state.certStatus = "loading";
         state.certError = null;
@@ -186,7 +301,7 @@ const teacherprofileSlice = createSlice({
         state.certError = action.payload || action.error;
       })
 
-      // ===== CERTIFICATES: upsert =====
+      // ==== certificates upsert ====
       .addCase(upsertTeacherCertificate.pending, (state) => {
         state.savingCert = true;
         state.certError = null;
@@ -195,7 +310,6 @@ const teacherprofileSlice = createSlice({
         state.savingCert = false;
         const cert = action.payload;
         if (!cert) return;
-
         const idx = state.certificates.findIndex((c) => c.id === cert.id);
         if (idx >= 0) state.certificates[idx] = cert;
         else state.certificates.unshift(cert);
@@ -205,7 +319,7 @@ const teacherprofileSlice = createSlice({
         state.certError = action.payload || action.error;
       })
 
-      // ===== CERTIFICATES: delete =====
+      // ==== certificates delete ====
       .addCase(deleteTeacherCertificate.pending, (state) => {
         state.deletingCert = true;
         state.certError = null;
@@ -220,7 +334,7 @@ const teacherprofileSlice = createSlice({
         state.certError = action.payload || action.error;
       })
 
-      // ===== LATEST APPROVAL =====
+      // ==== latest approval ====
       .addCase(fetchLatestApproval.pending, (state) => {
         state.latestStatus = "loading";
         state.latestError = null;
@@ -234,14 +348,27 @@ const teacherprofileSlice = createSlice({
         state.latestError = action.payload || action.error;
       })
 
-      // ===== SUBMIT =====
+      // ==== submit approval ====
       .addCase(submitTeacherProfile.pending, (state) => {
         state.submitting = true;
         state.submitError = null;
       })
       .addCase(submitTeacherProfile.fulfilled, (state, action) => {
         state.submitting = false;
-        if (action.payload) state.data = action.payload;
+        // nếu BE trả phần teacher mới thì update lại
+        if (action.payload) {
+          const teacherPart = extractTeacherPart(
+            action.payload.teacher || action.payload
+          );
+          if (state.data) {
+            state.data = {
+              ...state.data,
+              ...teacherPart,
+              teacher: teacherPart,
+              user: state.data.user || {},
+            };
+          }
+        }
       })
       .addCase(submitTeacherProfile.rejected, (state, action) => {
         state.submitting = false;
@@ -252,7 +379,8 @@ const teacherprofileSlice = createSlice({
 
 export const { resetTeacherProfile } = teacherprofileSlice.actions;
 
-/** ===================== SELECTORS ===================== */
+/* ================== SELECTORS ================== */
+
 export const selectTeacherProfile = (state) => state.teacherProfile?.data;
 export const selectTeacherProfileStatus = (state) =>
   state.teacherProfile?.status;
@@ -262,8 +390,6 @@ export const selectTeacherCertificates = (state) =>
   state.teacherProfile?.certificates || [];
 export const selectTeacherCertificatesStatus = (state) =>
   state.teacherProfile?.certStatus;
-export const selectTeacherCertificatesError = (state) =>
-  state.teacherProfile?.certError;
 export const selectSavingCertificate = (state) =>
   state.teacherProfile?.savingCert;
 export const selectDeletingCertificate = (state) =>
@@ -271,15 +397,15 @@ export const selectDeletingCertificate = (state) =>
 
 export const selectLatestApproval = (state) =>
   state.teacherProfile?.latestApproval;
-export const selectLatestApprovalStatus = (state) =>
-  state.teacherProfile?.latestStatus;
 
 export const selectTeacherApproved = (state) =>
   (state.teacherProfile?.data?.approvalStatus || "") === "APPROVED";
 
 export const selectTeacherProfileSubmitting = (state) =>
   state.teacherProfile?.submitting;
-export const selectTeacherProfileSubmitError = (state) =>
-  state.teacherProfile?.submitError;
+
+export const selectUpdatingUser = (state) => state.teacherProfile?.updatingUser;
+export const selectUpdatingTeacher = (state) =>
+  state.teacherProfile?.updatingTeacher;
 
 export default teacherprofileSlice.reducer;

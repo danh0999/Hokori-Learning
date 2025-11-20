@@ -1,24 +1,60 @@
+// src/pages/Moderator/Queues/components/ApprovePublishModal.jsx
 import React from "react";
 import { Modal, Descriptions } from "antd";
+
+// dùng lại logic format giá
+function formatPriceFromSummary(courseSummary) {
+  if (!courseSummary) return "—";
+
+  // nếu FE đã truyền sẵn price (string) thì ưu tiên
+  if (courseSummary.price != null && courseSummary.price !== "") {
+    return courseSummary.price;
+  }
+
+  const { discountedPriceCents, priceCents, currency } = courseSummary;
+
+  let cents = null;
+  if (typeof discountedPriceCents === "number" && discountedPriceCents > 0) {
+    cents = discountedPriceCents;
+  } else if (typeof priceCents === "number") {
+    cents = priceCents;
+  }
+
+  if (typeof cents !== "number") return "—";
+
+  const amount = cents / 100;
+
+  try {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: currency || "VND",
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch (e) {
+    console.log(e);
+    return `${amount.toLocaleString("vi-VN")} ${currency || ""}`.trim();
+  }
+}
 
 /**
  * Props:
  *  - open
  *  - onCancel()
  *  - onConfirm()
- *  - courseSummary: {
- *      title,
- *      price,
- *      visibility, // e.g. "Public", "Unlisted", "Private"
- *    }
+ *  - confirmLoading (optional)
+ *  - courseSummary: object detail / summary của course
  */
 export default function ApprovePublishModal({
   open,
   onCancel,
   onConfirm,
+  confirmLoading,
   courseSummary,
 }) {
   if (!courseSummary) return null;
+
+  const priceLabel = formatPriceFromSummary(courseSummary);
+  const visibilityLabel = courseSummary.visibility || "Public";
 
   return (
     <Modal
@@ -27,6 +63,7 @@ export default function ApprovePublishModal({
       onOk={onConfirm}
       okText="Approve & Publish"
       cancelText="Cancel"
+      confirmLoading={confirmLoading}
       width={520}
       title={<div style={{ fontWeight: 600 }}>Approve & Publish</div>}
       destroyOnClose
@@ -46,11 +83,9 @@ export default function ApprovePublishModal({
         <Descriptions.Item label="Course Title">
           {courseSummary.title}
         </Descriptions.Item>
-        <Descriptions.Item label="Price">
-          {courseSummary.price ?? "—"}
-        </Descriptions.Item>
+        <Descriptions.Item label="Price">{priceLabel}</Descriptions.Item>
         <Descriptions.Item label="Visibility">
-          {courseSummary.visibility || "Public"}
+          {visibilityLabel}
         </Descriptions.Item>
       </Descriptions>
 

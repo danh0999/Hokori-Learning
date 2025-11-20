@@ -55,6 +55,7 @@ import AiPackages from "../pages/Admin/pages/AiPackages";
 
 // ===== Guards =====
 import ProtectedRoute from "./ProtectedRoute";
+import JlptTestBuilderPage from "../pages/Moderator/JlptEventsPage/JlptTestBuilderPage/JlptTestBuilderPage";
 
 // ===== Stub for unfinished pages =====
 const Stub = ({ title }) => <div style={{ padding: 12 }}>{title}</div>;
@@ -170,6 +171,10 @@ const routes = [
 
           { path: "*", element: <ErrorPage /> },
         ],
+      },
+      {
+        path: "jlptevents/:eventId/tests",
+        element: <JlptTestBuilderPage />,
       },
     ],
   },

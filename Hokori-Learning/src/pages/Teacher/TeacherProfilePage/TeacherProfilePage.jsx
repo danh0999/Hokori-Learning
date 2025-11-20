@@ -23,9 +23,10 @@ import {
   message,
   List,
 } from "antd";
-import { EditOutlined, IdcardOutlined } from "@ant-design/icons";
+import { IdcardOutlined, EditOutlined } from "@ant-design/icons";
 import styles from "./styles.module.scss";
 import ModalCertificates from "./components/ModalQualifications.jsx";
+import ProfileEditModal from "./components/ProfileEditModal.jsx";
 
 const statusMap = {
   DRAFT: { color: "default", text: "Draft" },
@@ -44,21 +45,26 @@ export default function TeacherProfilePage() {
   const certificates = useSelector(selectTeacherCertificates);
   const certStatus = useSelector(selectTeacherCertificatesStatus);
 
-  const [openModal, setOpenModal] = useState(false);
+  const [openCertModal, setOpenCertModal] = useState(false);
+  const [openEditModal, setOpenEditModal] = useState(false);
 
   useEffect(() => {
     dispatch(fetchTeacherProfile());
     dispatch(fetchTeacherCertificates());
   }, [dispatch]);
 
+  const user = profile?.user || {};
+  const teacher = profile?.teacher || {};
+
   const canSubmit =
-    !!profile?.headline &&
-    profile.bio?.trim()?.length >= 50 &&
-    certificates?.length > 0;
+    !!teacher?.headline &&
+    (teacher?.bio || "").trim().length >= 50 &&
+    (certificates?.length || 0) > 0;
 
   const showSubmit =
-    profile?.approvalStatus === "DRAFT" ||
-    profile?.approvalStatus === "REJECTED";
+    teacher?.approvalStatus === "DRAFT" ||
+    teacher?.approvalStatus === "REJECTED" ||
+    !teacher?.approvalStatus;
 
   const onSubmitApproval = async () => {
     const res = await dispatch(
@@ -72,10 +78,10 @@ export default function TeacherProfilePage() {
   };
 
   const statusTag = useMemo(() => {
-    const s = profile?.approvalStatus || "DRAFT";
+    const s = teacher?.approvalStatus || "DRAFT";
     const m = statusMap[s] || statusMap.DRAFT;
     return <Tag color={m.color}>{m.text}</Tag>;
-  }, [profile?.approvalStatus]);
+  }, [teacher?.approvalStatus]);
 
   const showGateBanner = !isApproved;
 
@@ -99,14 +105,21 @@ export default function TeacherProfilePage() {
               </Button>
             </Popconfirm>
           )}
+
           <Button
             type="default"
             icon={<IdcardOutlined />}
-            onClick={() => setOpenModal(true)}
+            onClick={() => setOpenCertModal(true)}
           >
             Cung cấp chứng chỉ
           </Button>
-          <Button icon={<EditOutlined />}>Chỉnh sửa hồ sơ</Button>
+
+          <Button
+            icon={<EditOutlined />}
+            onClick={() => setOpenEditModal(true)}
+          >
+            Cập nhật thông tin
+          </Button>
         </Space>
       </div>
 
@@ -138,33 +151,90 @@ export default function TeacherProfilePage() {
           />
         ) : (
           <>
+            {/* Header hiển thị tên & headline + status */}
             <div className={styles.topInfo}>
               <div>
                 <div className={styles.displayName}>
-                  {profile?.displayName || "—"}
+                  {user.displayName || "—"}
                 </div>
-                <div className={styles.headline}>
-                  {profile?.headline || "—"}
-                </div>
+                <div className={styles.headline}>{teacher.headline || "—"}</div>
               </div>
               <div className={styles.status}>{statusTag}</div>
             </div>
 
+            {/* Thông tin tài khoản */}
+            <h3 style={{ marginTop: 16 }}>Thông tin tài khoản (profile/me)</h3>
             <div className={styles.grid}>
               <div className={styles.field}>
-                <label>Họ</label>
-                <div>{profile?.firstName || "—"}</div>
+                <label>Email</label>
+                <div>{user.email || "—"}</div>
               </div>
               <div className={styles.field}>
-                <label>Tên</label>
-                <div>{profile?.lastName || "—"}</div>
+                <label>Username</label>
+                <div>{user.username || "—"}</div>
               </div>
-              <div className={styles.fieldFull}>
-                <label>Giới thiệu</label>
-                <div>{profile?.bio || "—"}</div>
+              <div className={styles.field}>
+                <label>Số điện thoại</label>
+                <div>{user.phoneNumber || "—"}</div>
+              </div>
+              <div className={styles.field}>
+                <label>Quốc gia</label>
+                <div>{user.country || "—"}</div>
+              </div>
+              <div className={styles.field}>
+                <label>Role</label>
+                <div>{user.role || "—"}</div>
+              </div>
+              <div className={styles.field}>
+                <label>Email verified</label>
+                <div>{user.isVerified ? "Yes" : "No"}</div>
               </div>
             </div>
 
+            {/* Thông tin giảng viên */}
+            <h3 style={{ marginTop: 24 }}>
+              Thông tin giảng viên (profile/me/teacher)
+            </h3>
+            <div className={styles.grid}>
+              <div className={styles.field}>
+                <label>Headline</label>
+                <div>{teacher.headline || "—"}</div>
+              </div>
+              <div className={styles.field}>
+                <label>Số năm kinh nghiệm</label>
+                <div>{teacher.yearsOfExperience ?? "—"}</div>
+              </div>
+              <div className={styles.field}>
+                <label>Website</label>
+                <div>{teacher.websiteUrl || "—"}</div>
+              </div>
+              <div className={styles.field}>
+                <label>LinkedIn</label>
+                <div>{teacher.linkedin || "—"}</div>
+              </div>
+              <div className={styles.fieldFull}>
+                <label>Giới thiệu</label>
+                <div>{teacher.bio || "—"}</div>
+              </div>
+              <div className={styles.field}>
+                <label>Số tài khoản ngân hàng</label>
+                <div>{teacher.bankAccountNumber || "—"}</div>
+              </div>
+              <div className={styles.field}>
+                <label>Tên chủ tài khoản</label>
+                <div>{teacher.bankAccountName || "—"}</div>
+              </div>
+              <div className={styles.field}>
+                <label>Ngân hàng</label>
+                <div>{teacher.bankName || "—"}</div>
+              </div>
+              <div className={styles.field}>
+                <label>Chi nhánh</label>
+                <div>{teacher.bankBranchName || "—"}</div>
+              </div>
+            </div>
+
+            {/* Certificates summary */}
             <div style={{ marginTop: 24 }}>
               <h3>Chứng chỉ ({certificates?.length || 0})</h3>
               {certStatus === "loading" ? (
@@ -172,13 +242,24 @@ export default function TeacherProfilePage() {
               ) : (
                 <List
                   dataSource={certificates}
+                  locale={{ emptyText: "Chưa có chứng chỉ nào" }}
                   renderItem={(item) => (
                     <List.Item>
                       <List.Item.Meta
                         title={item.title}
-                        description={`${item.issuer || ""} - ${
-                          item.year || ""
-                        }`}
+                        description={
+                          <>
+                            {item.credentialId && (
+                              <div>Mã: {item.credentialId}</div>
+                            )}
+                            {item.issueDate && (
+                              <div>Ngày cấp: {item.issueDate}</div>
+                            )}
+                            {item.expiryDate && (
+                              <div>Hết hạn: {item.expiryDate}</div>
+                            )}
+                          </>
+                        }
                       />
                     </List.Item>
                   )}
@@ -189,10 +270,17 @@ export default function TeacherProfilePage() {
         )}
       </Card>
 
-      {openModal && (
+      {openCertModal && (
         <ModalCertificates
-          open={openModal}
-          onClose={() => setOpenModal(false)}
+          open={openCertModal}
+          onClose={() => setOpenCertModal(false)}
+        />
+      )}
+
+      {openEditModal && (
+        <ProfileEditModal
+          open={openEditModal}
+          onClose={() => setOpenEditModal(false)}
         />
       )}
     </div>

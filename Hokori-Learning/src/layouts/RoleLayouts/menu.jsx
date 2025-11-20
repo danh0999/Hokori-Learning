@@ -115,6 +115,5 @@ export const sidebarMenusByRole = {
 export const userDropdownMenu = [
   { key: "profile", label: "Profile" },
   { key: "settings", label: "Settings" },
-  { type: "divider" },
   { key: "logout", label: "Log out" },
 ];

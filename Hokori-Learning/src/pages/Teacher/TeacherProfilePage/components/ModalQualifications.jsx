@@ -1,15 +1,16 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Modal,
   Form,
   Input,
-  InputNumber,
+  DatePicker,
   Button,
   Space,
   message,
   List,
   Popconfirm,
 } from "antd";
+import dayjs from "dayjs";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchTeacherCertificates,
@@ -27,20 +28,45 @@ export default function ModalCertificates({ open, onClose }) {
   const saving = useSelector(selectSavingCertificate);
   const deleting = useSelector(selectDeletingCertificate);
 
+  const [editingId, setEditingId] = useState(null);
+
   useEffect(() => {
-    if (open) dispatch(fetchTeacherCertificates());
-  }, [dispatch, open]);
+    if (open) {
+      dispatch(fetchTeacherCertificates());
+      setEditingId(null);
+      form.resetFields();
+    }
+  }, [dispatch, open, form]);
+
+  const normalizePayload = (values) => {
+    return {
+      id: editingId || undefined,
+      title: values.title,
+      credentialId: values.credentialId,
+      issueDate: values.issueDate
+        ? values.issueDate.format("YYYY-MM-DD")
+        : null,
+      expiryDate: values.expiryDate
+        ? values.expiryDate.format("YYYY-MM-DD")
+        : null,
+      note: values.note || null,
+    };
+  };
 
   const onSubmit = async () => {
     try {
       const values = await form.validateFields();
-      const res = await dispatch(upsertTeacherCertificate(values));
+      const payload = normalizePayload(values);
+      const res = await dispatch(upsertTeacherCertificate(payload));
       if (res.meta.requestStatus === "fulfilled") {
-        message.success("Đã lưu chứng chỉ");
+        message.success(
+          editingId ? "Đã cập nhật chứng chỉ" : "Đã thêm chứng chỉ"
+        );
+        setEditingId(null);
         form.resetFields();
         dispatch(fetchTeacherCertificates());
       } else {
-        message.error(res?.payload?.message || "Thêm chứng chỉ thất bại");
+        message.error(res?.payload?.message || "Lưu chứng chỉ thất bại");
       }
     } catch (e) {
       console.log(e);
@@ -56,11 +82,28 @@ export default function ModalCertificates({ open, onClose }) {
     }
   };
 
+  const onEdit = (item) => {
+    setEditingId(item.id);
+    form.setFieldsValue({
+      title: item.title,
+      credentialId: item.credentialId,
+      issueDate: item.issueDate ? dayjs(item.issueDate) : null,
+      expiryDate: item.expiryDate ? dayjs(item.expiryDate) : null,
+      note: item.note,
+    });
+  };
+
+  const handleCancel = () => {
+    setEditingId(null);
+    form.resetFields();
+    onClose?.();
+  };
+
   return (
     <Modal
       title="Quản lý chứng chỉ"
       open={open}
-      onCancel={() => onClose?.()}
+      onCancel={handleCancel}
       footer={null}
       destroyOnClose
     >
@@ -72,19 +115,29 @@ export default function ModalCertificates({ open, onClose }) {
         >
           <Input placeholder="VD: TESOL / JLPT N1 / TOEFL 100" />
         </Form.Item>
-        <Form.Item name="issuer" label="Tổ chức cấp">
-          <Input placeholder="VD: Cambridge, JF Foundation..." />
+        <Form.Item name="credentialId" label="Mã chứng chỉ / Credential ID">
+          <Input placeholder="VD: TESOL-2021-XYZ" />
         </Form.Item>
-        <Form.Item name="year" label="Năm cấp">
-          <InputNumber min={1900} max={2100} style={{ width: "100%" }} />
+        <Form.Item name="issueDate" label="Ngày cấp">
+          <DatePicker style={{ width: "100%" }} format="YYYY-MM-DD" />
         </Form.Item>
-        <Form.Item name="url" label="Link chứng chỉ (nếu có)">
-          <Input placeholder="https://..." />
+        <Form.Item name="expiryDate" label="Ngày hết hạn">
+          <DatePicker style={{ width: "100%" }} format="YYYY-MM-DD" />
+        </Form.Item>
+        <Form.Item name="note" label="Ghi chú">
+          <Input.TextArea rows={3} />
         </Form.Item>
         <Space>
-          <Button onClick={() => form.resetFields()}>Reset</Button>
+          <Button
+            onClick={() => {
+              setEditingId(null);
+              form.resetFields();
+            }}
+          >
+            Reset
+          </Button>
           <Button type="primary" htmlType="submit" loading={saving}>
-            Lưu
+            {editingId ? "Cập nhật" : "Lưu"}
           </Button>
         </Space>
       </Form>
@@ -93,14 +146,19 @@ export default function ModalCertificates({ open, onClose }) {
         <h3>Danh sách chứng chỉ</h3>
         <List
           dataSource={certificates}
+          locale={{ emptyText: "Chưa có chứng chỉ nào" }}
           renderItem={(item) => (
             <List.Item
               actions={[
+                <Button type="link" onClick={() => onEdit(item)} key="edit">
+                  Sửa
+                </Button>,
                 <Popconfirm
                   title="Xoá chứng chỉ này?"
                   onConfirm={() => onDelete(item.id)}
                   okText="Xoá"
                   cancelText="Huỷ"
+                  key="delete"
                 >
                   <Button type="link" danger loading={deleting}>
                     Xoá
@@ -110,7 +168,13 @@ export default function ModalCertificates({ open, onClose }) {
             >
               <List.Item.Meta
                 title={item.title}
-                description={`${item.issuer || ""} - ${item.year || ""}`}
+                description={
+                  <>
+                    {item.credentialId && <div>Mã: {item.credentialId}</div>}
+                    {item.issueDate && <div>Ngày cấp: {item.issueDate}</div>}
+                    {item.expiryDate && <div>Hết hạn: {item.expiryDate}</div>}
+                  </>
+                }
               />
             </List.Item>
           )}

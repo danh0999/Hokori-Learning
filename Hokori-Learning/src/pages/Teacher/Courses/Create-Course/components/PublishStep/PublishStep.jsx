@@ -4,7 +4,7 @@ import { Card, Button, message } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 
 import {
-  publishCourseThunk,
+  submitforapprovalCourseThunk,
   unpublishCourseThunk,
 } from "../../../../../../redux/features/teacherCourseSlice.js";
 
@@ -25,15 +25,32 @@ export default function PublishStep({ courseId, statusFlags }) {
   const totalLessons =
     chapters.reduce((acc, ch) => acc + (ch.lessons?.length || 0), 0) || 0;
 
-  const handlePublish = async () => {
+  const status = currentCourseMeta?.status || "DRAFT";
+  const isDraft = status === "DRAFT";
+  const isPending = status === "PENDING_APPROVAL";
+  const isPublished = status === "PUBLISHED";
+  const isArchived = status === "ARCHIVED";
+
+  const handleSubmitForReview = async () => {
     if (!courseId) return;
+    // tránh gọi thừa khi đang pending/published
+    if (isPending) {
+      message.info("Khoá học đang chờ moderator duyệt.");
+      return;
+    }
+    if (isPublished) {
+      message.info("Khoá học đã được publish.");
+      return;
+    }
 
-    const action = await dispatch(publishCourseThunk(courseId));
+    const action = await dispatch(submitforapprovalCourseThunk(courseId));
 
-    if (publishCourseThunk.fulfilled.match(action)) {
-      message.success("Khoá học đã được submit / publish.");
+    if (submitforapprovalCourseThunk.fulfilled.match(action)) {
+      message.success(
+        "Khoá học đã được gửi cho moderator duyệt (trạng thái: PENDING_APPROVAL)."
+      );
     } else {
-      message.error("Không publish được, vui lòng thử lại.");
+      message.error("Không submit được khoá học, vui lòng thử lại.");
     }
   };
 
@@ -43,7 +60,7 @@ export default function PublishStep({ courseId, statusFlags }) {
     const action = await dispatch(unpublishCourseThunk(courseId));
 
     if (unpublishCourseThunk.fulfilled.match(action)) {
-      message.success("Khoá học đã được unpublish.");
+      message.success("Khoá học đã được unpublish / ngừng bán.");
     } else {
       message.error("Không unpublish được, vui lòng thử lại.");
     }
@@ -53,6 +70,13 @@ export default function PublishStep({ courseId, statusFlags }) {
     ? `${currentCourseMeta?.priceCents?.toLocaleString("vi-VN")} VND`
     : "Not set";
 
+  // text cho nút submit
+  let submitBtnText = "Submit for review";
+  if (isPending) submitBtnText = "Waiting for moderator approval";
+  if (isPublished) submitBtnText = "Already published";
+
+  const submitDisabled = !readyToPublish || isPending || isPublished || saving;
+
   return (
     <Card className={styles.cardBig}>
       {/* Header + status pill */}
@@ -60,13 +84,13 @@ export default function PublishStep({ courseId, statusFlags }) {
         <div className={styles.stepHeader}>
           <div className={styles.stepTitle}>Review & Submit</div>
           <div className={styles.stepDesc}>
-            Kiểm tra lại khoá học trước khi gửi lên cho moderator / publish.
+            Kiểm tra lại khoá học trước khi gửi cho moderator duyệt. Sau khi
+            được approve, khoá học sẽ chuyển sang trạng thái PUBLISHED và
+            Learner mới nhìn thấy.
           </div>
         </div>
 
-        <div className={styles.statusPill}>
-          {currentCourseMeta?.status || "DRAFT"}
-        </div>
+        <div className={styles.statusPill}>{status}</div>
       </div>
 
       {/* Khối tóm tắt 3 mục chính */}
@@ -154,18 +178,25 @@ export default function PublishStep({ courseId, statusFlags }) {
         </div>
       )}
 
+      {isPending && (
+        <div className={styles.infoBox}>
+          Khoá học đang ở trạng thái <b>PENDING_APPROVAL</b>. Moderator sẽ kiểm
+          tra và nếu approve, trạng thái sẽ chuyển sang <b>PUBLISHED</b>.
+        </div>
+      )}
+
       {/* Action buttons */}
       <div className={styles.actionRow}>
         <Button
           type="primary"
-          disabled={!readyToPublish}
-          onClick={handlePublish}
+          disabled={submitDisabled}
+          onClick={handleSubmitForReview}
           loading={saving}
         >
-          Submit for review / Publish
+          {submitBtnText}
         </Button>
 
-        {currentCourseMeta?.status === "PUBLISHED" && (
+        {isPublished && (
           <Button danger onClick={handleUnpublish} loading={saving}>
             Unpublish
           </Button>
