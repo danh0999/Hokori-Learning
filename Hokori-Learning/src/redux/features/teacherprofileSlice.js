@@ -37,21 +37,20 @@ export const fetchTeacherProfile = createAsyncThunk(
   "teacherProfile/fetchTeacherProfile",
   async (_, { rejectWithValue }) => {
     try {
-      // /api/profile/me -> trả về object user
       const [userRes, teacherRes] = await Promise.all([
         api.get("profile/me"),
         api.get("profile/me/teacher"),
       ]);
 
-      const rawUser = userRes?.data || {};
-      // /api/profile/me/teacher -> { success, message, data: { teacher: {...} } }
+      // ---- SỬA TẠI ĐÂY ----
+      const rawUser = userRes?.data?.data || {};
+
       const teacherWrapper = teacherRes?.data?.data || {};
       const teacherRaw = teacherWrapper.teacher || teacherWrapper || {};
 
       const userPart = extractUserPart(rawUser);
       const teacherPart = extractTeacherPart(teacherRaw);
 
-      // flatten để code cũ vẫn dùng profile.displayName, profile.headline...
       return {
         ...userPart,
         ...teacherPart,

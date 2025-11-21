@@ -1,129 +1,33 @@
 import axios from "axios";
 
 /* -----------------------------
-  BACKEND URLS
+  BACKEND URLS (CHỌN 1 CÁI)
 ----------------------------- */
 
-// 1) Production
+// Production (Railway)
 const RAILWAY = "https://hokoribe-production.up.railway.app/api";
 
-// 2) FE-ngrok (khi FE ở domain ngrok → dùng origin/api)
-const NGROK_FE_FALLBACK = () => `${window.location.origin}/api`;
-
-// 3–4) Backend DEV nội bộ
-const DEV_BACKENDS = [
-  {
-    url: "https://celsa-plumbaginaceous-unabjectly.ngrok-free.dev/api",
-    priority: 3,
-  },
-  {
-    url: "https://saner-eden-placably.ngrok-free.dev/api",
-    priority: 4,
-  },
-];
-
-// 5) Localhost
+// Local dev
 const LOCAL = "http://localhost:8080/api";
 
-/* -----------------------------
-   CACHE
------------------------------ */
-const CACHE_KEY = "hokori_backend_url";
-const CACHE_EXP_KEY = "hokori_backend_exp";
+// FE-ngrok (khi FE chạy qua ngrok, backend map về /api trên cùng origin)
+// Ví dụ: https://xxx.ngrok-free.app/api
+const NGROK_FE = `${window.location.origin}/api`;
 
-function getCached() {
-  const url = localStorage.getItem(CACHE_KEY);
-  const exp = localStorage.getItem(CACHE_EXP_KEY);
+// 👉 Chọn 1 trong các dòng dưới, bỏ comment để dùng:
 
-  if (!url || !exp) return null;
-
-  if (Date.now() > Number(exp)) {
-    localStorage.removeItem(CACHE_KEY);
-    localStorage.removeItem(CACHE_EXP_KEY);
-    return null;
-  }
-  return url;
-}
-
-function setCached(url) {
-  localStorage.setItem(CACHE_KEY, url);
-  localStorage.setItem(CACHE_EXP_KEY, Date.now() + 24 * 60 * 60 * 1000);
-}
-
-/* -----------------------------
-   HEARTBEAT CHECK
------------------------------ */
-async function fastPing(url) {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 200);
-
-    await fetch(url + "/health", { signal: controller.signal });
-
-    clearTimeout(timeout);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/* -----------------------------
-   AUTO-DETECTOR (PARALLEL RACE)
------------------------------ */
-async function autoBackend() {
-  // 1) use cached if available
-  const cached = getCached();
-  if (cached) return cached;
-
-  const candidates = [];
-
-  // FE-ngrok chạy → ưu tiên sau railway
-  if (window.location.host.includes("ngrok")) {
-    candidates.push({ url: NGROK_FE_FALLBACK(), priority: 2 });
-  }
-
-  // priority order:
-  candidates.push({ url: RAILWAY, priority: 1 });
-  candidates.push(...DEV_BACKENDS);
-  candidates.push({ url: LOCAL, priority: 10 }); // low priority
-
-  // ping song song tất cả
-  const results = await Promise.all(
-    candidates.map(async (c) => ({
-      ...c,
-      alive: await fastPing(c.url),
-    }))
-  );
-
-  const aliveList = results.filter((r) => r.alive);
-
-  // nếu không backend nào sống → fallback Railway
-  if (aliveList.length === 0) {
-    setCached(RAILWAY);
-    return RAILWAY;
-  }
-
-  // sort theo priority
-  aliveList.sort((a, b) => a.priority - b.priority);
-
-  const best = aliveList[0].url;
-  setCached(best);
-
-  return best;
-}
+// const BASE_URL = RAILWAY;
+// const BASE_URL = LOCAL;
+const BASE_URL = RAILWAY; // muốn dùng link nào thì ghi tên biến đó vào
+// const BASE_URL = NGROK_FE;
 
 /* -----------------------------
    INIT AXIOS
 ----------------------------- */
-const api = axios.create({
-  baseURL: RAILWAY, // tạm thời
-  withCredentials: false,
-});
 
-// cập nhật baseURL sau khi detect
-autoBackend().then((realURL) => {
-  api.defaults.baseURL = realURL;
-  console.log("🚀 Hokori Backend Active:", realURL);
+const api = axios.create({
+  baseURL: BASE_URL,
+  withCredentials: false,
 });
 
 /* -----------------------------
@@ -131,12 +35,15 @@ autoBackend().then((realURL) => {
 ----------------------------- */
 api.interceptors.request.use(
   (config) => {
+    // header cho ngrok
     config.headers["ngrok-skip-browser-warning"] = "any";
     config.headers.Accept = "application/json";
 
+    // Lấy token từ localStorage hoặc sessionStorage
     const token =
       localStorage.getItem("token") || sessionStorage.getItem("token");
 
+    // Những URL không cần token (login / register / firebase)
     const isAuth =
       !config.url.includes("login") &&
       !config.url.includes("register") &&
