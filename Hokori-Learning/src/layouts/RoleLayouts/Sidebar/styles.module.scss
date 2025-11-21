@@ -1,62 +1,161 @@
-/* Sidebar */
-.sider {
-  background: #ffffff !important;
-  border-right: 1px solid #e5e7eb;
-  position: sticky;
-  top: 64px;
-  height: calc(100vh - 64px);
+.sidebar {
+  background: #1e1e2d;
+  color: #d1d1d1;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 10px 8px;
   display: flex;
   flex-direction: column;
-  transition: all 0.25s ease;
+
+  .ant-layout-sider-children {
+    height: 100%;
+  }
 }
 
-/* Menu */
-:global(.ant-menu) {
-  border-inline-end: none !important;
+.collapsed .label {
+  display: none;
 }
 
-:global(.ant-menu-item) {
-  height: 44px;
-  margin: 4px 12px;
-  border-radius: 10px;
-  font-size: 15px;
-  color: #333;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-:global(.ant-menu-item:hover) {
-  background: #f4f6f9 !important;
-  color: #111 !important;
-}
-
-:global(.ant-menu-item-selected) {
-  background: #f0f2f5 !important;
-  color: #000 !important;
-  font-weight: 600;
-}
-
-/* Footer – nút thu gọn */
-.siderFooter {
-  margin-top: auto;
-  padding: 12px;
+.sidebarInner {
   display: flex;
-  justify-content: center;
-  border-top: 1px solid #f0f2f5;
+  flex-direction: column;
+  height: 100%;
 }
 
-.collapseBtn {
-  width: 36px;
-  height: 36px;
-  background: #f1f1f1 !important;
-  color: #333 !important;
-  border: 1px solid #d1d5db !important;
-  border-radius: 8px;
-  transition: all 0.25s ease;
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: 8px;
+  margin-bottom: 12px;
+}
+
+.logo {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.collapseToggle {
+  border: none;
+  background: #2e2e3f;
+  color: #ccc;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
 
   &:hover {
-    background: #e5e7eb !important;
-    color: #111 !important;
-    border-color: #cbd5e1 !important;
+    background: #3c3c52;
   }
+}
+
+.menu {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.menu::-webkit-scrollbar {
+  width: 4px;
+}
+
+.menu::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+}
+
+.menuList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.menuItem {
+  margin: 4px 0;
+}
+
+.menuItemContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  background: transparent;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
+.active .menuItemContent {
+  background: #2d2d40 !important;
+  color: #fff;
+  font-weight: 600;
+
+  .label {
+    color: #fff;
+  }
+}
+
+.leftPart {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.iconWrapper {
+  width: 20px;
+  font-size: 18px;
+  color: #ffffff;
+}
+/* Vì Ant Design icon dùng class .anticon (global),
+   với CSS Modules phải :global mới ăn */
+.iconWrapper :global(.anticon) {
+  color: #ffffff !important;
+}
+
+/* Phòng trường hợp icon dùng fill */
+.iconWrapper :global(svg) {
+  fill: currentColor;
+}
+
+.label {
+  color: #d6d6d6;
+  font-size: 15px;
+}
+
+.arrowBtn {
+  border: none;
+  background: transparent;
+  color: #bfbfbf;
+  cursor: pointer;
+
+  &:hover {
+    color: #fff;
+  }
+}
+
+.arrow {
+  transition: transform 0.2s ease;
+}
+
+.arrowOpen {
+  transform: rotate(90deg);
+}
+
+.submenu {
+  list-style: none;
+  padding-left: 18px;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  margin: 4px 0;
+}
+
+.level1 .menuItemContent {
+  padding-left: 20px;
+}
+
+.level2 .menuItemContent {
+  padding-left: 30px;
 }

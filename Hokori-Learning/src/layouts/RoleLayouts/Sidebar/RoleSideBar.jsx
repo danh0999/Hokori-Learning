@@ -1,6 +1,6 @@
-// src/layouts/rolesidebar.jsx
+// src/layouts/RoleSidebar.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import { Layout, Menu } from "antd";
+import { Layout } from "antd";
 import { useLocation, useNavigate } from "react-router-dom";
 import { sidebarMenusByRole } from "../menu.jsx";
 import styles from "./styles.module.scss";
@@ -11,37 +11,25 @@ const norm = (p) =>
   p && p.endsWith("/") && p !== "/" ? p.slice(0, -1) : p || "/";
 
 // ---- helpers ----
-function convertToAntdItems(nodes) {
-  return (
-    nodes?.map(({ key, label, icon, children }) => ({
-      key,
-      label,
-      icon,
-      children: children?.length ? convertToAntdItems(children) : undefined,
-    })) || []
-  );
-}
-
 function buildIndex(nodes) {
   const keyToPath = new Map();
   const keyToParent = new Map();
-  const flat = [];
 
   const dfs = (arr, parent = null) => {
     arr?.forEach((n) => {
       if (n.path) keyToPath.set(n.key, n.path);
       if (parent) keyToParent.set(n.key, parent);
-      flat.push(n);
       if (n.children?.length) dfs(n.children, n.key);
     });
   };
   dfs(nodes);
-  return { keyToPath, keyToParent, flat };
+  return { keyToPath, keyToParent };
 }
 
 function bestMatchKeyByPath(nodes, pathname) {
   const cur = norm(pathname);
   let best = null;
+
   const walk = (arr) => {
     arr?.forEach((n) => {
       if (n.path && cur.startsWith(norm(n.path))) {
@@ -50,6 +38,7 @@ function bestMatchKeyByPath(nodes, pathname) {
       if (n.children?.length) walk(n.children);
     });
   };
+
   walk(nodes);
   return best?.key || null;
 }
@@ -76,13 +65,13 @@ export default function RoleSidebar({
   const navigate = useNavigate();
 
   const tree = sidebarMenusByRole[role] || [];
-  const antdItems = useMemo(() => convertToAntdItems(tree), [tree]);
   const { keyToPath, keyToParent } = useMemo(() => buildIndex(tree), [tree]);
 
   const selectedKey = useMemo(
     () => bestMatchKeyByPath(tree, pathname),
     [tree, pathname]
   );
+
   const [openKeys, setOpenKeys] = useState([]);
 
   useEffect(() => {
@@ -90,27 +79,100 @@ export default function RoleSidebar({
     setOpenKeys(collectParents(selectedKey, keyToParent));
   }, [selectedKey, keyToParent]);
 
-  const onClick = ({ key }) => {
+  const handleToggleCollapse = () => {
+    if (onCollapse) onCollapse(!collapsed);
+  };
+
+  const handleItemClick = (key) => {
     const path = keyToPath.get(key);
     if (path) navigate(path);
   };
+
+  const handleToggleSubmenu = (key, e) => {
+    // tránh trigger click item
+    e.stopPropagation();
+    setOpenKeys((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
+  };
+
+  const renderNodes = (nodes, level = 0) =>
+    nodes?.map((node) => {
+      const isSelected = node.key === selectedKey;
+      const isOpen = openKeys.includes(node.key);
+      const hasChildren = node.children && node.children.length > 0;
+
+      return (
+        <li
+          key={node.key}
+          className={[
+            styles.menuItem,
+            isSelected ? styles.active : "",
+            hasChildren ? styles.hasChildren : "",
+            styles[`level${level}`] || "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
+          <div
+            className={styles.menuItemContent}
+            onClick={() => handleItemClick(node.key)}
+          >
+            <div className={styles.leftPart}>
+              {node.icon && (
+                <span className={styles.iconWrapper}>{node.icon}</span>
+              )}
+              {!collapsed && <span className={styles.label}>{node.label}</span>}
+            </div>
+
+            {hasChildren && (
+              <button
+                className={styles.arrowBtn}
+                onClick={(e) => handleToggleSubmenu(node.key, e)}
+              >
+                <span
+                  className={`${styles.arrow} ${
+                    isOpen ? styles.arrowOpen : ""
+                  }`}
+                >
+                  ▶
+                </span>
+              </button>
+            )}
+          </div>
+
+          {hasChildren && isOpen && (
+            <ul className={styles.submenu}>
+              {renderNodes(node.children, level + 1)}
+            </ul>
+          )}
+        </li>
+      );
+    });
 
   return (
     <Sider
       collapsible
       collapsed={collapsed}
       onCollapse={onCollapse}
-      className={styles.sider}
       width={width}
+      trigger={null}
+      className={`${styles.sidebar} ${collapsed ? styles.collapsed : ""}`}
     >
-      <Menu
-        mode="inline"
-        items={antdItems} //  giữ children
-        selectedKeys={selectedKey ? [selectedKey] : []}
-        openKeys={openKeys} //  tự mở đúng parent
-        onOpenChange={setOpenKeys}
-        onClick={onClick} //  điều hướng cả item con
-      />
+      <div className={styles.sidebarInner}>
+        <div className={styles.header}>
+          <button
+            className={styles.collapseToggle}
+            onClick={handleToggleCollapse}
+          >
+            {collapsed ? "»" : "«"}
+          </button>
+        </div>
+
+        <nav className={styles.menu}>
+          <ul className={styles.menuList}>{renderNodes(tree)}</ul>
+        </nav>
+      </div>
     </Sider>
   );
 }

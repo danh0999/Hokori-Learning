@@ -49,13 +49,6 @@ export default function RoleHeader({ role = "teacher", user }) {
 
       {/* Right zone */}
       <Space size={16} className={styles.rightZone}>
-        <Badge dot>
-          <BellOutlined
-            className={styles.bellIcon}
-            onClick={() => navigate(`/${role}/notifications`)}
-          />
-        </Badge>
-
         <Dropdown
           menu={{ items: userDropdownMenu, onClick: onUserMenuClick }}
           trigger={["click"]}
