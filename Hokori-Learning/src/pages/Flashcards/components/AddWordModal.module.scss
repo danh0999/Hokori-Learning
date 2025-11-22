@@ -138,7 +138,7 @@
   }
 
   &:hover {
-    filter: brightness(0.95);
+    background-color: #6a82c5;
   }
 }
 
@@ -239,7 +239,7 @@
     transition: 0.15s ease-in-out;
 
     &:hover {
-      filter: brightness(0.95);
+      background-color: #679076;
     }
   }
 }
@@ -251,4 +251,186 @@
   .modal {
     border-radius: 12px;
   }
+}
+/* ===============================================================
+   EDIT CARD POPUP — NEW UI
+=============================================================== */
+
+.editPopup {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2147484000;
+  animation: fadeIn 0.25s ease;
+}
+
+/* POPUP BOX */
+.popupBox {
+  background: #ffffff;
+  width: min(500px, 92%);
+  border-radius: 14px;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.20);
+  font-family: "Inter", sans-serif;
+  animation: scaleIn 0.25s ease;
+}
+
+/* TITLE */
+.popupBox h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #111827;
+  text-align: center;
+}
+
+/* INPUT LABEL */
+.popupBox label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+  margin-top: 4px;
+}
+
+/* INPUT + TEXTAREA — STYLE ĐỒNG BỘ */
+.popupBox input,
+.popupBox textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  font-size: 0.95rem;
+  transition: 0.2s ease;
+}
+
+.popupBox input:focus,
+.popupBox textarea:focus {
+  background: #fff;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.22);
+}
+
+/* TEXTAREA HEIGHT */
+.popupBox textarea {
+  resize: vertical;
+  min-height: 70px;
+}
+
+/* FOOTER ACTION BUTTONS */
+.popupActions {
+  margin-top: 4px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.popupActions .cancelBtn {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.popupActions .cancelBtn:hover {
+  background: #e5e7eb;
+}
+
+.popupActions .saveBtn {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.popupActions .saveBtn:hover {
+  background: #1e3a8a;
+}
+
+/* ANIMATIONS */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity:0; transform: scale(0.92); }
+  to   { opacity:1; transform: scale(1); }
+}
+/* Nút chỉnh sửa */
+.editBtn {
+  background: transparent;
+  border: 1px solid #bfdbfe; /* xanh nhạt */
+  color: #2563eb; /* icon màu xanh */
+  cursor: pointer;
+  font-size: 0.95rem;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: #e0f2fe; /* xanh rất nhạt */
+    border-color: #93c5fd;
+  }
+
+  i {
+    font-size: 0.95rem;
+  }
+}
+
+/* Nút xóa (giữ nguyên chuẩn của bạn) */
+.deleteBtn {
+  background: transparent;
+  border: 1px solid #fee2e2;
+  color: #dc2626;
+  cursor: pointer;
+  font-size: 0.95rem;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: 0.15s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: #fee2e2;
+  }
+
+  i {
+    font-size: 0.95rem;
+  }
+}
+.rBtns {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px; /* khoảng cách giữa 2 nút */
+}
+/* ===============================================================
+   ERROR MESSAGE — FIELD VALIDATION
+=============================================================== */
+
+.error {
+  margin: 2px 0 0 2px;
+  color: #dc2626;            /* đỏ cảnh báo */
+  font-size: 0.82rem;        /* nhỏ gọn */
+  font-weight: 500;
+  line-height: 1.3;
 }

@@ -1,0 +1,371 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200000;
+  animation: fadeIn 0.25s ease;
+}
+
+.modal {
+  background: #ffffff;
+  width: min(520px, 92%);
+  border-radius: 14px;
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
+  font-family: "Inter", sans-serif;
+  animation: slideUp 0.25s ease;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+}
+
+.closeBtn {
+  border: none;
+  background: transparent;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 4px 6px;
+  border-radius: 8px;
+
+  &:hover {
+    background: #f3f4f6;
+    color: #111827;
+  }
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 330px;
+  overflow-y: auto;
+}
+
+.cardItem {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  padding: 12px 14px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+
+  strong {
+    color: #111827;
+  }
+}
+
+.example {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  button {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.editBtn {
+  background: #dbeafe;
+  color: #2563eb;
+
+  &:hover {
+    background: #bfdbfe;
+  }
+}
+
+.deleteBtn {
+  background: #fee2e2;
+  color: #dc2626;
+
+  &:hover {
+    background: #fca5a5;
+  }
+}
+
+.empty {
+  text-align: center;
+  color: #6b7280;
+  margin-top: 10px;
+}
+
+/* === EDIT POPUP === */
+.editPopup {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300000;
+  animation: fadeIn 0.25s ease;
+}
+
+/* === EDIT POPUP === */
+.editPopup {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300000;
+  animation: fadeIn 0.25s ease;
+}
+
+.popupBox {
+  background: #fff;
+  width: min(480px, 92%);
+  border-radius: 14px;
+  padding: 26px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
+  animation: scaleIn 0.25s ease;
+}
+
+/* TITLE */
+.popupBox h3 {
+  margin: 0 0 8px 0;
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* GROUP WRAPPER */
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* LABEL */
+.popupBox label {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* INPUT + TEXTAREA */
+.popupBox input,
+.popupBox textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  font-size: 0.95rem;
+  transition: 0.2s ease;
+  box-sizing: border-box;
+}
+
+.popupBox input:focus,
+.popupBox textarea:focus {
+  background: #fff;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
+/* TEXTAREA HEIGHT */
+.popupBox textarea {
+  min-height: 85px;
+  resize: vertical;
+}
+
+/* ERROR TEXT */
+.error {
+  margin: -4px 0 0 0;
+  font-size: 0.83rem;
+  color: #dc2626;
+}
+
+/* ACTIONS */
+.popupActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.cancelBtn {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: #e5e7eb;
+  }
+}
+
+.saveBtn {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: #1e40af;
+  }
+}
+
+
+.cancelBtn {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.saveBtn {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: #1e40af;
+  }
+}
+
+/* animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;   /*  Đẩy toàn bộ nội dung về bên phải */
+  padding: 12px 0 4px 0;
+}
+
+.doneBtn {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: 0.2s ease;
+  min-width: 90px;
+
+  &:hover {
+    background: #1e40af;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+.confirmOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 400000;
+}
+
+.confirmBox {
+  background: #fff;
+  padding: 22px;
+  width: 360px;
+  border-radius: 14px;
+  text-align: center;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
+  animation: scaleIn 0.25s ease;
+}
+
+.confirmActions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.deleteConfirmBtn {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+
+  &:hover {
+    background: #b91c1c;
+  }
+}

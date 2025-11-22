@@ -1,56 +1,59 @@
 import axios from "axios";
 
-/* -----------------------------
-  BACKEND URLS (CHỌN 1 CÁI)
------------------------------ */
+/* ===========================================================
+   BACKEND BASE URL — CHỌN TỰ ĐỘNG / HOẶC GẮN CỐ ĐỊNH
+=========================================================== */
 
-// Production (Railway)
-const RAILWAY = "https://hokoribe-production.up.railway.app/api";
+// Railway (production)
+const PROD = "https://hokoribe-production.up.railway.app/api";
 
 // Local dev
 const LOCAL = "http://localhost:8080/api";
 
-// FE-ngrok (khi FE chạy qua ngrok, backend map về /api trên cùng origin)
-// Ví dụ: https://xxx.ngrok-free.app/api
-const NGROK_FE = `${window.location.origin}/api`;
+// FE Ngrok (nếu FE chạy qua ngrok → backend = FE_origin/api)
+const FE_NGROK = `${window.location.origin}/api`;
 
-// 👉 Chọn 1 trong các dòng dưới, bỏ comment để dùng:
-
-// const BASE_URL = RAILWAY;
+// ---- CHỌN MÔI TRƯỜNG Ở ĐÂY ----
+const BASE_URL = PROD;
 // const BASE_URL = LOCAL;
-const BASE_URL = RAILWAY; // muốn dùng link nào thì ghi tên biến đó vào
-// const BASE_URL = NGROK_FE;
+// const BASE_URL = FE_NGROK;
 
-/* -----------------------------
-   INIT AXIOS
------------------------------ */
 
+/* ===========================================================
+   INIT AXIOS INSTANCE
+=========================================================== */
 const api = axios.create({
   baseURL: BASE_URL,
   withCredentials: false,
 });
 
-/* -----------------------------
+
+/* ===========================================================
    REQUEST INTERCEPTOR
------------------------------ */
+=========================================================== */
 api.interceptors.request.use(
   (config) => {
-    // header cho ngrok
-    config.headers["ngrok-skip-browser-warning"] = "any";
-    config.headers.Accept = "application/json";
+    // Bypass ngrok warning
+    config.headers["ngrok-skip-browser-warning"] = "true";
+    config.headers["Accept"] = "application/json";
 
-    // Lấy token từ localStorage hoặc sessionStorage
-    const token =
-      localStorage.getItem("token") || sessionStorage.getItem("token");
+    /* -----------------------------------------
+       LẤY TOKEN CHUẨN HOÁ
+    ------------------------------------------- */
+    const accessToken =
+      localStorage.getItem("accessToken") ||
+      sessionStorage.getItem("accessToken") ||
+      localStorage.getItem("token") ||
+      sessionStorage.getItem("token");
 
-    // Những URL không cần token (login / register / firebase)
-    const isAuth =
-      !config.url.includes("login") &&
-      !config.url.includes("register") &&
-      !config.url.includes("firebase");
+    // URL không cần token
+    const noAuthNeeded =
+      config.url.includes("login") ||
+      config.url.includes("register") ||
+      config.url.includes("firebase");
 
-    if (token && isAuth) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (!noAuthNeeded && accessToken) {
+      config.headers["Authorization"] = `Bearer ${accessToken}`;
     }
 
     return config;
@@ -58,9 +61,10 @@ api.interceptors.request.use(
   (err) => Promise.reject(err)
 );
 
-/* -----------------------------
+
+/* ===========================================================
    RESPONSE INTERCEPTOR
------------------------------ */
+=========================================================== */
 api.interceptors.response.use(
   (res) => res,
   (error) => {
@@ -71,7 +75,7 @@ api.interceptors.response.use(
         error.response.data?.message ||
         error.response.data?.error ||
         error.message;
-    } else if (error.request) {
+    } else {
       msg = "Network error";
     }
 

@@ -1,0 +1,189 @@
+/* ===========================
+   OVERLAY
+=========================== */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.25s ease;
+}
+
+/* ===========================
+   MODAL
+=========================== */
+.modal {
+  background: #ffffff;
+  width: 430px;
+  max-width: 92%;
+  border-radius: 14px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.16);
+  font-family: "Inter", sans-serif;
+  animation: slideUp 0.28s ease;
+
+  box-sizing: border-box;        /* 🔥 Không bị lệch */
+}
+
+/* ===========================
+   HEADER
+=========================== */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  h2 {
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+}
+
+.closeBtn {
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: #6b7280;
+
+  &:hover {
+    color: #111827;
+  }
+}
+
+/* ===========================
+   BODY
+=========================== */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  width: 100%;                /* 🔥 Input không bị lệch */
+  box-sizing: border-box;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;                /* 🔥 Chiếm full modal */
+  box-sizing: border-box;
+
+  label {
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  input,
+  textarea,
+  select {
+    width: 100%;              /* 🔥 Input 100% width chính xác */
+    box-sizing: border-box;   /* 🔥 Không bị lệch padding */
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+    background: #f9fafb;
+    font-size: 0.95rem;
+    transition: 0.25s ease;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    border-color: #2563eb;
+    background: #fff;
+    outline: none;
+  }
+
+  textarea {
+    resize: none;
+    min-height: 70px;
+  }
+}
+
+/* ===========================
+   FOOTER
+=========================== */
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+.cancelBtn {
+  padding: 9px 14px;
+  border-radius: 10px;
+  background: #fee2e2;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #dc2626;
+  &:hover {
+    background: #e5e7eb;
+  }
+}
+
+.saveBtn {
+  padding: 9px 16px;
+  border-radius: 10px;
+  background: #2563eb;
+  border: none;
+  cursor: pointer;
+  color: white;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  &:hover {
+    background: #1e40af;
+  }
+}
+
+/* ===========================
+   ANIMATION
+=========================== */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.error {
+  font-size: 0.8rem;
+  color: #dc2626;     /* đỏ đẹp */
+  margin-top: -2px;
+}
+.viewBtn {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  padding: 10px 14px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  cursor: pointer;
+  transition: 0.2s ease;
+
+  i {
+    color: #2563eb;
+    font-size: 0.95rem;
+  }
+
+  &:hover {
+    background: #e5e7eb;
+    border-color: #cbd5e1;
+  }
+}

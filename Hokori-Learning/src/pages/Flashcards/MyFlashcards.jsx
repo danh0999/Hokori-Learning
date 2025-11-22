@@ -1,3 +1,4 @@
+// src/pages/Flashcards/MyFlashcards.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import styles from "./MyFlashcards.module.scss";
 import { toast } from "react-toastify";
@@ -7,6 +8,7 @@ import DeckCard from "./components/DeckCard";
 import StudyModal from "./components/StudyModal";
 import CreateDeckModal from "./components/CreateDeckModal";
 import AddWordModal from "./components/AddWordModal";
+import FlashcardEditModal from "./components/FlashcardEditModal";
 
 import {
   fetchPersonalSetsWithCounts,
@@ -19,37 +21,59 @@ const MyFlashcards = () => {
   const dispatch = useDispatch();
   const { sets, loadingSets } = useSelector((state) => state.flashcards);
 
+  // Filters
   const [searchTerm, setSearchTerm] = useState("");
   const [levelFilter, setLevelFilter] = useState("Tất cả");
 
+  // Modal states
   const [selectedDeck, setSelectedDeck] = useState(null);
-  const [editingDeck, setEditingDeck] = useState(null);
+  const [editingDeck, setEditingDeck] = useState(null); // For add card
+  const [editingMeta, setEditingMeta] = useState(null); // For edit deck
 
   const [showCreate, setShowCreate] = useState(false);
   const [showAddWord, setShowAddWord] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  // FETCH SETS WHEN LOAD PAGE
   useEffect(() => {
     dispatch(fetchPersonalSetsWithCounts());
   }, [dispatch]);
 
-  // FILTER DECKS
+  // ----------------------------------------------------------
+  // ⭐ NORMALIZE DATA – Fix lỗi mismatch từ backend
+  // ----------------------------------------------------------
+  const normalizedDecks = useMemo(() => {
+    return sets.map((d) => ({
+      id: d.id || d.setId,
+      title: d.title || d.name || d.setTitle || "Bộ thẻ",
+      description: d.description || "",
+      level: d.level || d.jlptLevel || "N5",
+      totalCards: d.totalCards || d.cardCount || 0,
+      progressPercent: d.progressPercent || d.progress || 0,
+      lastReviewText: d.lastReviewText || d.updatedAt || "",
+      colorClass: d.colorClass || "default",
+    }));
+  }, [sets]);
+
+  // ----------------------------------------------------------
+  // ⭐ APPLIED FILTERS
+  // ----------------------------------------------------------
   const filteredDecks = useMemo(() => {
     const lower = searchTerm.toLowerCase();
-    return sets.filter((d) => {
+    return normalizedDecks.filter((d) => {
       const matchText = d.title.toLowerCase().includes(lower);
       const matchLevel = levelFilter === "Tất cả" || d.level === levelFilter;
       return matchText && matchLevel;
     });
-  }, [sets, searchTerm, levelFilter]);
+  }, [normalizedDecks, searchTerm, levelFilter]);
 
   const totalCards = useMemo(
     () => filteredDecks.reduce((sum, d) => sum + (d.totalCards || 0), 0),
     [filteredDecks]
   );
 
-  // CREATE FLASHCARD SET
+  // ----------------------------------------------------------
+  // CREATE NEW DECK
+  // ----------------------------------------------------------
   const handleCreateDeck = async (formData) => {
     try {
       const payload = {
@@ -67,12 +91,14 @@ const MyFlashcards = () => {
       } else {
         toast.error("Không tạo được bộ thẻ.");
       }
-    } catch  {
+    } catch {
       toast.error("Có lỗi xảy ra, vui lòng thử lại.");
     }
   };
 
-  // SAVE ADDED CARDS
+  // ----------------------------------------------------------
+  // SAVE CARDS (AddWordModal)
+  // ----------------------------------------------------------
   const handleSaveWords = async (cards) => {
     if (!editingDeck) return;
 
@@ -81,7 +107,9 @@ const MyFlashcards = () => {
     );
 
     if (addCardsBatchToSet.fulfilled.match(action)) {
-      toast.success(`Đã lưu ${cards.length} thẻ vào bộ "${editingDeck.title}"!`);
+      toast.success(
+        `Đã lưu ${cards.length} thẻ vào bộ "${editingDeck.title}"!`
+      );
       setShowAddWord(false);
       setEditingDeck(null);
     } else {
@@ -89,7 +117,9 @@ const MyFlashcards = () => {
     }
   };
 
-  // OPEN DELETE MODAL
+  // ----------------------------------------------------------
+  // DELETE DECK
+  // ----------------------------------------------------------
   const handleDeleteDeck = (deck) => {
     setDeleteTarget(deck);
   };
@@ -101,7 +131,7 @@ const MyFlashcards = () => {
         <div>
           <h1>Bộ thẻ ghi nhớ của tôi</h1>
           <p className={styles.sub}>
-            Ôn tập từ vựng, kanji và cụm câu tiếng Nhật do chính bạn tạo ra.
+            Ôn tập từ vựng, kanji và cụm câu tiếng Nhật do bạn tự tạo.
           </p>
         </div>
 
@@ -112,10 +142,22 @@ const MyFlashcards = () => {
 
       {/* STATS */}
       <div className={styles.stats}>
-        <div><span>{filteredDecks.length}</span><p>Bộ thẻ</p></div>
-        <div><span>{totalCards}</span><p>Tổng số thẻ</p></div>
-        <div><span>0</span><p>Đã ôn hôm nay</p></div>
-        <div><span>0</span><p>Chuỗi ngày học</p></div>
+        <div>
+          <span>{filteredDecks.length}</span>
+          <p>Bộ thẻ</p>
+        </div>
+        <div>
+          <span>{totalCards}</span>
+          <p>Tổng số thẻ</p>
+        </div>
+        <div>
+          <span>0</span>
+          <p>Đã ôn hôm nay</p>
+        </div>
+        <div>
+          <span>0</span>
+          <p>Chuỗi ngày học</p>
+        </div>
       </div>
 
       {/* FILTERS */}
@@ -149,8 +191,9 @@ const MyFlashcards = () => {
               key={deck.id}
               deck={deck}
               onStudy={() => setSelectedDeck(deck)}
-              onEdit={(d) => {
-                setEditingDeck(d);
+              onEdit={() => setEditingMeta(deck)} // ✔ sửa bộ thẻ
+              onAddCard={() => {
+                setEditingDeck(deck);
                 setShowAddWord(true);
               }}
               onDelete={handleDeleteDeck}
@@ -161,7 +204,7 @@ const MyFlashcards = () => {
         )}
       </div>
 
-      {/* DELETE CONFIRM MODAL */}
+      {/* DELETE MODAL */}
       {deleteTarget && (
         <div className={styles.deleteModalOverlay}>
           <div className={styles.deleteModal}>
@@ -172,7 +215,7 @@ const MyFlashcards = () => {
               <i className="fa-solid fa-xmark"></i>
             </button>
 
-            <h3>Xoá bộ thẻ “{deleteTarget.title}”?</h3>
+            <h3>Xoá bộ thẻ {deleteTarget.title}?</h3>
             <p className={styles.deleteText}>
               Hành động này không thể hoàn tác.
             </p>
@@ -206,11 +249,12 @@ const MyFlashcards = () => {
         </div>
       )}
 
-      {/* OTHER MODALS */}
+      {/* STUDY MODAL */}
       {selectedDeck && (
         <StudyModal deck={selectedDeck} onClose={() => setSelectedDeck(null)} />
       )}
 
+      {/* CREATE NEW DECK */}
       {showCreate && (
         <CreateDeckModal
           onClose={() => setShowCreate(false)}
@@ -218,6 +262,7 @@ const MyFlashcards = () => {
         />
       )}
 
+      {/* ADD CARDS */}
       {showAddWord && editingDeck && (
         <AddWordModal
           deck={editingDeck}
@@ -228,6 +273,17 @@ const MyFlashcards = () => {
           onSave={handleSaveWords}
         />
       )}
+
+      {/* EDIT DECK – FIXED */}
+      {editingMeta && (
+        <FlashcardEditModal
+          deck={editingMeta}
+          onClose={() => setEditingMeta(null)}
+          
+        />
+        
+      )}
+      
     </div>
   );
 };
