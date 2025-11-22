@@ -488,4 +488,33 @@
     align-items: center;
     justify-content: center;
   }
+
+/* Button học thử miễn phí */
+/* === BUTTON HỌC THỬ === */
+.chapter {
+  position: relative; /* Để nút căn theo card */
+}
+
+.trial-btn {
+  position: absolute;
+  right: 18px;          /* căn phải đúng vị trí bạn khoanh */
+  top: 10px;            /* căn bằng với tiêu đề */
+  background: #2563eb;  /* màu xanh primary */
+  color: #fff;
+  font-weight: 600;
+  padding: 6px 18px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: 0.15s ease;
+  font-size: 14px;
+}
+
+.trial-btn:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+
+
 }
