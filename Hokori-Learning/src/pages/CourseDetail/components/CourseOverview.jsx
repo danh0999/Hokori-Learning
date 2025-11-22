@@ -1,6 +1,6 @@
-// src/pages/CourseDetail/components/CourseOverview.jsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../../../configs/axios"; // axios có token
 
 function formatDuration(seconds) {
   if (!seconds || isNaN(seconds)) return "Đang cập nhật";
@@ -18,16 +18,33 @@ const CourseOverview = ({ course }) => {
     ? course.chapters
     : [];
 
+  const handleTrial = async () => {
+    try {
+      await api.post(`/learner/courses/${course.id}/enroll`);
+      navigate(`/lesson/trial`);
+    } catch (err) {
+      const status = err?.response?.status;
+
+      // Đã enroll → học thử tiếp
+      if (status === 409) {
+        navigate(`/lesson/trial`);
+        return;
+      }
+
+      // Chưa login / không đủ quyền
+      if (status === 401 || status === 403) {
+        navigate("/login?redirect=" + window.location.pathname);
+        return;
+      }
+
+      alert("Không thể đăng ký học thử. Vui lòng thử lại sau.");
+      console.error(err);
+    }
+  };
+
   return (
     <section className="overview-section">
       <div className="container">
-        {/* Giới thiệu */}
-        <div className="intro">
-          <h2>GIỚI THIỆU KHÓA HỌC</h2>
-          <p>Thông tin giới thiệu khóa học đang được cập nhật.</p>
-        </div>
-
-        {/* Nội dung */}
         <div className="content-grid">
           <div className="lessons">
             <h2>NỘI DUNG KHÓA HỌC</h2>
@@ -47,17 +64,12 @@ const CourseOverview = ({ course }) => {
                   : 0);
 
               return (
-                <div key={ch.id ?? i} className="chapter chapter--with-trial">
+                <div key={ch.id ?? i} className="chapter">
                   <h3>{`Chương ${i + 1}: ${ch.title}`}</h3>
 
-                  {/* 🔥 Nút Học Thử – chỉ ở chương 1 */}
+                  {/* 🔥 Nút Học Thử — CHỈ CHƯƠNG 1 */}
                   {i === 0 && (
-                    <button
-                      className="trial-btn"
-                      onClick={() =>
-                        navigate(`/course/${course.id}/preview/first`)
-                      }
-                    >
+                    <button className="trial-btn" onClick={handleTrial}>
                       Học thử
                     </button>
                   )}
@@ -72,25 +84,6 @@ const CourseOverview = ({ course }) => {
                 </div>
               );
             })}
-          </div>
-
-          {/* Info */}
-          <div className="info">
-            <h3>Thông tin khóa học</h3>
-            <ul>
-              <li>
-                <span>Cấp độ:</span>
-                <span>{course?.level ?? "Đang cập nhật"}</span>
-              </li>
-              <li>
-                <span>Số chương:</span>
-                <span>{chaptersFromApi.length}</span>
-              </li>
-              <li>
-                <span>Tổng thời lượng:</span>
-                <span>Đang cập nhật</span>
-              </li>
-            </ul>
           </div>
         </div>
       </div>

@@ -9,30 +9,58 @@ import styles from "./LessonPlayer.module.scss";
 
 const LessonPlayer = () => {
 const { lessonId } = useParams();
+const isTrialMode = lessonId === "trial";
+
 
   const [lessonData, setLessonData] = useState(null);
 
   useEffect(() => {
-    // ⚙️ MOCK LESSON DATA – demo
-    const mockData = {
-      title: "Ngữ pháp cơ bản – Thể ます",
+  const isTrialMode = lessonId === "trial";
+
+  // 🔥 Nếu là bài học thử (Học thử)
+  if (isTrialMode) {
+    setLessonData({
+      title: "Bài học thử miễn phí",
       description:
-        "Giới thiệu tổng quan về thể ます, cách chia động từ và ứng dụng trong giao tiếp tiếng Nhật.",
+        "Bạn đang trải nghiệm bài học thử thuộc Chương 1. Nội dung bên dưới sẽ giúp bạn đánh giá khóa học trước khi mua.",
       sections: [
         {
-          title: "Tổng quan bài học",
+          title: "Nội dung demo",
           content:
-            "Trong video, giảng viên hướng dẫn cách chia động từ sang thể ます và cách sử dụng trong các câu ví dụ thực tế.",
+            "Đây là nội dung demo của bài học chương 1. Khi bạn mua khóa học, toàn bộ bài học sẽ được mở khóa đầy đủ.",
         },
         {
-          title: "Các điểm chính",
+          title: "Lợi ích khi tham gia khóa học",
           content:
-            "・Phân biệt nhóm động từ (I, II, III)\n・Mẫu khẳng định / phủ định / quá khứ\n・Lưu ý khi giao tiếp bằng thể ます",
+            "・Nội dung ngữ pháp đầy đủ\n・Bài tập có đáp án chi tiết\n・Video và PDF tải về\n・Theo dõi tiến độ học tập",
         },
       ],
-    };
-    setLessonData(mockData);
-  }, [lessonId]);
+    });
+    return; // ❗ Dừng ở đây — không load bài học thật
+  }
+
+  // ⚙️ MOCK LESSON DATA – demo cho bài học thật (giữ nguyên code cũ)
+  const mockData = {
+    title: "Ngữ pháp cơ bản – Thể ます",
+    description:
+      "Giới thiệu tổng quan về thể ます, cách chia động từ và ứng dụng trong giao tiếp tiếng Nhật.",
+    sections: [
+      {
+        title: "Tổng quan bài học",
+        content:
+          "Trong video, giảng viên hướng dẫn cách chia động từ sang thể ます và cách sử dụng trong các câu ví dụ thực tế.",
+      },
+      {
+        title: "Các điểm chính",
+        content:
+          "・Phân biệt nhóm động từ (I, II, III)\n・Mẫu khẳng định / phủ định / quá khứ\n・Lưu ý khi giao tiếp bằng thể ます",
+      },
+    ],
+  };
+
+  setLessonData(mockData);
+}, [lessonId]);
+
 
   return (
     <main className={styles.main}>
