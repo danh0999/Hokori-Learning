@@ -102,8 +102,9 @@ const routes = [
           { path: "jlpt", element: <JLPTList /> },
           { path: "jlpt/test/:testId", element: <JLPTTestPage /> },
 
-          { path: "lesson/:lessonId", element: <LessonPlayer /> },
-          { path: "lesson/:lessonId/quiz/:quizId", element: <QuizPage /> },
+          { path: "course/:courseId/lesson/:lessonId", element: <LessonPlayer /> },
+          { path: "course/:courseId/lesson/:lessonId/quiz/:quizId", element: <QuizPage /> },
+
         ],
       },
 

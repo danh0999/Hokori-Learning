@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../../configs/axios"; // axios có token
+import { toast } from "react-hot-toast";
 
 function formatDuration(seconds) {
   if (!seconds || isNaN(seconds)) return "Đang cập nhật";
@@ -19,28 +20,63 @@ const CourseOverview = ({ course }) => {
     : [];
 
   const handleTrial = async () => {
+  try {
+    // 1) Enroll nếu chưa enroll
     try {
       await api.post(`/learner/courses/${course.id}/enroll`);
-      navigate(`/lesson/trial`);
     } catch (err) {
       const status = err?.response?.status;
 
-      // Đã enroll → học thử tiếp
+      // 409 = đã enroll → bỏ qua
       if (status === 409) {
-        navigate(`/lesson/trial`);
-        return;
+        console.log("⚠ Khóa học đã enroll trước đó – bỏ qua 409.");
       }
-
-      // Chưa login / không đủ quyền
-      if (status === 401 || status === 403) {
-        navigate("/login?redirect=" + window.location.pathname);
-        return;
+      // 403 = không được phép học thử
+      else if (status === 403) {
+        toast.error("Khóa học này không hỗ trợ học thử.");
+        return; // ⛔ dừng tại đây, không điều hướng
       }
-
-      alert("Không thể đăng ký học thử. Vui lòng thử lại sau.");
-      console.error(err);
+      // Lỗi khác → ném ra ngoài
+      else {
+        throw err;
+      }
     }
-  };
+
+    // 2) Lấy danh sách chapters để xác định chương học thử
+    const chaptersRes = await api.get(`/learner/courses/${course.id}/chapters`);
+    const chapters = chaptersRes.data ?? [];
+    const trialChapter = chapters.find((c) => c.orderIndex === 0);
+
+    if (!trialChapter) {
+      return toast.error("Khóa học chưa hỗ trợ học thử.");
+    }
+
+    // 3) Lấy danh sách lessons
+    const lessonsRes = await api.get(`/learner/courses/${course.id}/lessons`);
+    const lessons = lessonsRes.data ?? [];
+
+    // 4) Lấy bài đầu tiên của khóa học làm bài trial
+    const firstTrialLesson = lessons.sort((a, b) => a.orderIndex - b.orderIndex)[0];
+
+    if (!firstTrialLesson) {
+      return toast.error("Khóa học chưa có bài học thử.");
+    }
+
+    const lessonId = firstTrialLesson.lessonId ?? firstTrialLesson.id;
+
+    // 5) Navigate
+    navigate(`/course/${course.id}/lesson/${lessonId}`, {
+      state: { trialMode: true }, // flag cho LessonPlayer khóa bài không miễn phí
+    });
+
+  } catch (err) {
+    console.error(err);
+    toast.error("Không thể kích hoạt học thử!");
+  }
+};
+
+
+
 
   return (
     <section className="overview-section">

@@ -1,36 +1,36 @@
 import React from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import styles from "./Sidebar.module.scss";
 
-const Sidebar = () => {
-  const mockOutline = [
-    {
-      title: "Chương 1: Ngữ pháp cơ bản",
-      lessons: ["Bài 1: Ôn tập Hiragana", "Bài 2: Trợ từ cơ bản"],
-    },
-    {
-      title: "Chương 2: Các dạng động từ",
-      lessons: ["Bài 12: Thể て (て-form)", "Bài 13: Thì quá khứ"],
-    },
-  ];
+const Sidebar = ({ lessons = [] }) => {
+  const navigate = useNavigate();
+  const { courseId, lessonId } = useParams();
+
+  const handleSelect = (id) => {
+    navigate(`/course/${courseId}/lesson/${id}`);
+  };
 
   return (
     <div className={styles.sidebar}>
-      <h3>Mục lục khóa học</h3>
-      {mockOutline.map((ch, i) => (
-        <div key={i} className={styles.section}>
-          <p className={styles.sectionTitle}>{ch.title}</p>
-          <div className={styles.lessons}>
-            {ch.lessons.map((l, j) => (
-              <div
-                key={j}
-                className={`${styles.lessonItem} ${
-                  l.includes("て") ? styles.active : ""
-                }`}
-              >
-                {l}
-              </div>
-            ))}
-          </div>
+      <h3 className={styles.heading}>Mục lục khóa học</h3>
+
+      {lessons.length === 0 && (
+        <p className={styles.placeholder}>Đang tải bài học...</p>
+      )}
+
+      {lessons.map((lesson) => (
+        <div
+          key={lesson.lessonId}
+          className={`${styles.lessonItem} ${
+            String(lesson.lessonId) === String(lessonId) ? styles.active : ""
+          }`}
+          onClick={() => handleSelect(lesson.lessonId)}
+        >
+          <span className={styles.lessonTitle}>{lesson.title}</span>
+
+          {lesson.isCompleted && (
+            <span className={styles.completed}>✔</span>
+          )}
         </div>
       ))}
     </div>
