@@ -1,43 +1,55 @@
-import React from "react";
+// src/pages/JLPT/components/JLPTCard.jsx
 import styles from "./JLPTCard.module.scss";
 import { MdPeople } from "react-icons/md";
 import { IoMdTime } from "react-icons/io";
 import { CiCircleCheck } from "react-icons/ci";
 import { useNavigate } from "react-router-dom";
+
 const JLPTCard = ({ test }) => {
-  // test = 1 item join giữa JLPT_Event và JLPT_Test
-  // event_id, title, level, status, description, duration_min, max_participants
   const navigate = useNavigate();
+
   const handleStartTest = () => {
-    // Điều hướng tới route con /jlpt/test/:testId
-    navigate(`/jlpt/test/${test.test_id}`);
+    navigate(`/jlpt/test/${test.id}`);
   };
+
+  // BE JlptTestResponse (ví dụ):
+  // { id, eventId, level, durationMin, totalScore, resultNote, ... }
+  const title = test.title || `JLPT ${test.level || ""} Mock Test`;
+  const description = test.description || test.resultNote || "";
+  const duration =
+    test.durationMin ?? test.duration_min ?? test.duration ?? 0;
+  const maxParticipants =
+    test.maxParticipants ?? test.max_participants ?? null;
+  const status = test.status || "ACTIVE";
+
   return (
     <div className={styles.card}>
-      {/* Header: tiêu đề đề thi + cấp độ N? */}
+      {/* Header */}
       <div className={styles.cardHeader}>
-        <h3>{test.title}</h3>
+        <h3>{title}</h3>
         <span className={styles.levelTag}>{test.level}</span>
       </div>
 
-      {/* Nội dung mô tả ngắn */}
-      {test.description && <p className={styles.desc}>{test.description}</p>}
+      {/* Mô tả */}
+      {description && <p className={styles.desc}>{description}</p>}
 
-      {/* Thông tin chi tiết */}
+      {/* Info */}
       <div className={styles.infoGroup}>
         <div className={styles.infoItem}>
           <IoMdTime />
-          <span>{test.duration_min} phút</span>
+          <span>{duration} phút</span>
         </div>
 
-        <div className={styles.infoItem}>
-          <MdPeople />
-          <span>Tối đa {test.max_participants} người</span>
-        </div>
+        {maxParticipants && (
+          <div className={styles.infoItem}>
+            <MdPeople />
+            <span>Tối đa {maxParticipants} người</span>
+          </div>
+        )}
 
         <div className={styles.infoItem}>
           <CiCircleCheck />
-          <span>Trạng thái: {test.status}</span>
+          <span>Trạng thái: {status}</span>
         </div>
       </div>
 
