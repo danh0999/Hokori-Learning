@@ -14,7 +14,7 @@ const FeedbackPanel = ({ loading, error, result }) => {
     return (
       <section className={styles.panel}>
         <h3 className={styles.heading}>Phản hồi AI</h3>
-        <p>⏳ AI đang phân tích giọng nói của bạn...</p>
+        <p> AI đang phân tích giọng nói của bạn...</p>
       </section>
     );
   }

@@ -15,11 +15,17 @@ import {
   createPersonalSet,
   addCardsBatchToSet,
   deleteSet,
+  fetchDashboardFlashcards,
 } from "../../redux/features/flashcardLearnerSlice";
 
 const MyFlashcards = () => {
   const dispatch = useDispatch();
-  const { sets, loadingSets } = useSelector((state) => state.flashcards);
+
+  const { sets, loadingSets, dashboard } = useSelector((state) => ({
+    sets: state.flashcards.sets,
+    loadingSets: state.flashcards.loadingSets,
+    dashboard: state.flashcards.dashboard,
+  }));
 
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
@@ -27,19 +33,27 @@ const MyFlashcards = () => {
 
   // Modal states
   const [selectedDeck, setSelectedDeck] = useState(null);
-  const [editingDeck, setEditingDeck] = useState(null); // For add card
-  const [editingMeta, setEditingMeta] = useState(null); // For edit deck
+  const [editingDeck, setEditingDeck] = useState(null);
+  const [editingMeta, setEditingMeta] = useState(null);
 
   const [showCreate, setShowCreate] = useState(false);
   const [showAddWord, setShowAddWord] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
+  // Load sets
   useEffect(() => {
     dispatch(fetchPersonalSetsWithCounts());
   }, [dispatch]);
 
+  //  Load Dashboard mỗi khi đổi level (hoặc khi load trang)
+  useEffect(() => {
+    dispatch(
+      fetchDashboardFlashcards(levelFilter === "Tất cả" ? "" : levelFilter)
+    );
+  }, [dispatch, levelFilter]);
+
   // ----------------------------------------------------------
-  // ⭐ NORMALIZE DATA – Fix lỗi mismatch từ backend
+  // NORMALIZE DATA
   // ----------------------------------------------------------
   const normalizedDecks = useMemo(() => {
     return sets.map((d) => ({
@@ -55,7 +69,7 @@ const MyFlashcards = () => {
   }, [sets]);
 
   // ----------------------------------------------------------
-  // ⭐ APPLIED FILTERS
+  //  FILTERED DATA
   // ----------------------------------------------------------
   const filteredDecks = useMemo(() => {
     const lower = searchTerm.toLowerCase();
@@ -75,29 +89,25 @@ const MyFlashcards = () => {
   // CREATE NEW DECK
   // ----------------------------------------------------------
   const handleCreateDeck = async (formData) => {
-    try {
-      const payload = {
-        title: formData.name,
-        description: formData.description,
-        level: formData.level,
-      };
+    const payload = {
+      title: formData.name,
+      description: formData.description,
+      level: formData.level,
+    };
 
-      const action = await dispatch(createPersonalSet(payload));
+    const action = await dispatch(createPersonalSet(payload));
 
-      if (createPersonalSet.fulfilled.match(action)) {
-        toast.success("Tạo bộ thẻ thành công!");
-        setShowCreate(false);
-        setEditingDeck(null);
-      } else {
-        toast.error("Không tạo được bộ thẻ.");
-      }
-    } catch {
-      toast.error("Có lỗi xảy ra, vui lòng thử lại.");
+    if (createPersonalSet.fulfilled.match(action)) {
+      toast.success("Tạo bộ thẻ thành công!");
+      setShowCreate(false);
+      setEditingDeck(null);
+    } else {
+      toast.error("Không tạo được bộ thẻ.");
     }
   };
 
   // ----------------------------------------------------------
-  // SAVE CARDS (AddWordModal)
+  // SAVE CARDS
   // ----------------------------------------------------------
   const handleSaveWords = async (cards) => {
     if (!editingDeck) return;
@@ -146,16 +156,20 @@ const MyFlashcards = () => {
           <span>{filteredDecks.length}</span>
           <p>Bộ thẻ</p>
         </div>
+
         <div>
           <span>{totalCards}</span>
           <p>Tổng số thẻ</p>
         </div>
+
+        {/* Replace hardcoded numbers with BE dashboard */}
         <div>
-          <span>0</span>
+          <span>{dashboard?.reviewedToday ?? 0}</span>
           <p>Đã ôn hôm nay</p>
         </div>
+
         <div>
-          <span>0</span>
+          <span>{dashboard?.streakDays ?? 0}</span>
           <p>Chuỗi ngày học</p>
         </div>
       </div>
@@ -191,7 +205,7 @@ const MyFlashcards = () => {
               key={deck.id}
               deck={deck}
               onStudy={() => setSelectedDeck(deck)}
-              onEdit={() => setEditingMeta(deck)} // ✔ sửa bộ thẻ
+              onEdit={() => setEditingMeta(deck)}
               onAddCard={() => {
                 setEditingDeck(deck);
                 setShowAddWord(true);
@@ -274,16 +288,13 @@ const MyFlashcards = () => {
         />
       )}
 
-      {/* EDIT DECK – FIXED */}
+      {/* EDIT DECK */}
       {editingMeta && (
         <FlashcardEditModal
           deck={editingMeta}
           onClose={() => setEditingMeta(null)}
-          
         />
-        
       )}
-      
     </div>
   );
 };
