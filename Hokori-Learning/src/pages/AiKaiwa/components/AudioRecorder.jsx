@@ -39,22 +39,24 @@ const AudioRecorder = ({ onAudioReady }) => {
         }`}
         onClick={handleClick}
       >
-        {isRecording ? "⏹ Dừng" : <FaMicrophoneAlt />}{" "}
-        <span>Bắt đầu nói</span>
+        {isRecording ? (
+          <>
+            ⏹ Dừng
+            <div className={styles.innerWave}>
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+          </>
+        ) : (
+          <>
+            <FaMicrophoneAlt />
+            <span>Bắt đầu nói</span>
+          </>
+        )}
       </button>
-
-      {/* Waveform khi ghi âm */}
-      <div
-        className={`${styles.waveform} ${
-          isRecording ? styles.activeWave : ""
-        }`}
-      >
-        <span />
-        <span />
-        <span />
-        <span />
-        <span />
-      </div>
 
       {/* Playback audio */}
       {audioUrl && !isRecording && (

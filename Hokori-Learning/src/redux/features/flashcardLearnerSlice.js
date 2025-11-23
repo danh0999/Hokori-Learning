@@ -50,7 +50,6 @@ export const fetchPersonalSetsWithCounts = createAsyncThunk(
 
       const sets = Array.isArray(res.data) ? res.data : [];
 
-      // gọi /cards chỉ để lấy count
       const counts = await Promise.all(
         sets.map((s) =>
           api
@@ -73,7 +72,7 @@ export const fetchPersonalSetsWithCounts = createAsyncThunk(
   }
 );
 
-/** 2) Lấy danh sách cards trong 1 set (dùng cho "Xem tất cả thẻ") */
+/** 2) Lấy danh sách cards trong 1 set */
 export const fetchCardsBySet = createAsyncThunk(
   "flashcards/fetchCardsBySet",
   async (setId, { rejectWithValue }) => {
@@ -100,7 +99,7 @@ export const createPersonalSet = createAsyncThunk(
   }
 );
 
-/** 4) Thêm nhiều cards vào set */
+/** 4) Thêm nhiều cards */
 export const addCardsBatchToSet = createAsyncThunk(
   "flashcards/addCardsBatchToSet",
   async ({ setId, cards }, { rejectWithValue }) => {
@@ -128,7 +127,7 @@ export const addCardsBatchToSet = createAsyncThunk(
   }
 );
 
-/** 5) Cập nhật trạng thái học 1 thẻ */
+/** 5) Cập nhật progress */
 export const updateFlashcardProgress = createAsyncThunk(
   "flashcards/updateFlashcardProgress",
   async ({ cardId, status }, { rejectWithValue }) => {
@@ -141,7 +140,7 @@ export const updateFlashcardProgress = createAsyncThunk(
   }
 );
 
-/** 6) Xoá toàn bộ set */
+/** 6) Xoá set */
 export const deleteSet = createAsyncThunk(
   "flashcards/deleteSet",
   async (setId, { rejectWithValue }) => {
@@ -154,7 +153,7 @@ export const deleteSet = createAsyncThunk(
   }
 );
 
-/** 7) Xoá 1 card trong set */
+/** 7) Xoá card */
 export const deleteCardInSet = createAsyncThunk(
   "flashcards/deleteCardInSet",
   async ({ setId, cardId }, { rejectWithValue }) => {
@@ -167,7 +166,7 @@ export const deleteCardInSet = createAsyncThunk(
   }
 );
 
-/** 8) Cập nhật metadata của set */
+/** 8) Update set metadata */
 export const updateSet = createAsyncThunk(
   "flashcards/updateSet",
   async ({ setId, data }, { rejectWithValue }) => {
@@ -180,7 +179,7 @@ export const updateSet = createAsyncThunk(
   }
 );
 
-/** 9) Cập nhật 1 card trong set */
+/** 9) Update card */
 export const updateCardInSet = createAsyncThunk(
   "flashcards/updateCardInSet",
   async ({ setId, cardId, data }, { rejectWithValue }) => {
@@ -196,6 +195,21 @@ export const updateCardInSet = createAsyncThunk(
   }
 );
 
+/** 10) ⭐ Dashboard Flashcards (API mới) */
+export const fetchDashboardFlashcards = createAsyncThunk(
+  "flashcards/fetchDashboardFlashcards",
+  async (level, { rejectWithValue }) => {
+    try {
+      const res = await api.get("/flashcards/sets/dashboard/me", {
+        params: { level: level || "" },
+      });
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || "ERROR_DASHBOARD");
+    }
+  }
+);
+
 /* ========================================
    SLICE
 ======================================== */
@@ -203,12 +217,20 @@ const flashcardSlice = createSlice({
   name: "flashcards",
   initialState: {
     sets: [],
-    cardsBySet: {},      // { [setId]: [cards] }
+    cardsBySet: {},
     loadingSets: false,
-    loadingCards: {},    // { [setId]: boolean }
+    loadingCards: {},
     saving: false,
     error: null,
     progressByCard: {},
+
+    // ⭐ NEW — Dashboard state
+    dashboard: {
+      totalSets: 0,
+      totalCards: 0,
+      reviewedToday: 0,
+      streakDays: 0,
+    },
   },
 
   reducers: {
@@ -241,7 +263,7 @@ const flashcardSlice = createSlice({
       })
       .addCase(fetchPersonalSetsWithCounts.rejected, (state, action) => {
         state.loadingSets = false;
-        state.error = action.payload || "ERROR_FETCH_SETS";
+        state.error = action.payload;
       })
 
       /* -------- Fetch Cards In Set -------- */
@@ -254,7 +276,6 @@ const flashcardSlice = createSlice({
         state.loadingCards[setId] = false;
         state.cardsBySet[setId] = cards;
 
-        // đồng bộ vào deck để những nơi dùng deck.cards vẫn chạy được
         const deck = state.sets.find((s) => s.id === setId);
         if (deck) {
           deck.cards = cards;
@@ -264,7 +285,7 @@ const flashcardSlice = createSlice({
       .addCase(fetchCardsBySet.rejected, (state, action) => {
         const setId = action.meta.arg;
         state.loadingCards[setId] = false;
-        state.error = action.payload || "ERROR_FETCH_CARDS";
+        state.error = action.payload;
       })
 
       /* -------- Create Set -------- */
@@ -310,10 +331,7 @@ const flashcardSlice = createSlice({
 
         const deck = state.sets.find((s) => s.id === setId);
         if (deck) {
-          deck.totalCards = Math.max(
-            0,
-            (deck.totalCards || 0) - 1
-          );
+          deck.totalCards = Math.max(0, (deck.totalCards || 0) - 1);
           deck.cards = state.cardsBySet[setId];
         }
       })
@@ -344,6 +362,28 @@ const flashcardSlice = createSlice({
         if (deck) {
           deck.cards = state.cardsBySet[setId];
         }
+      })
+
+      /* --------  Dashboard Flashcards -------- */
+      .addCase(fetchDashboardFlashcards.fulfilled, (state, action) => {
+        const d = action.payload || {};
+
+        state.dashboard = {
+          totalSets: d.totalSets ?? 0,
+          totalCards: d.totalCards ?? 0,
+          reviewedToday: d.reviewedToday ?? 0,
+          streakDays: d.streakDays ?? 0,
+        };
+      })
+      .addCase(fetchDashboardFlashcards.rejected, (state, action) => {
+        // Giữ dashboard mặc định, không làm FE crash
+        state.dashboard = {
+          totalSets: 0,
+          totalCards: 0,
+          reviewedToday: 0,
+          streakDays: 0,
+        };
+        state.error = action.payload;
       });
   },
 });
