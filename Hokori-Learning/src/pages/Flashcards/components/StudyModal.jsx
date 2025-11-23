@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import styles from "./StudyModal.module.scss";
 import { toast } from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
+
 import {
   fetchCardsBySet,
   updateFlashcardProgress,
@@ -10,74 +11,90 @@ import {
 
 const StudyModal = ({ deck, onClose }) => {
   const dispatch = useDispatch();
-  const { cardsBySet, loadingCards } = useSelector((state) => state.flashcards);
+  const { cardsBySet, loadingCards } = useSelector((s) => s.flashcards);
 
   const [current, setCurrent] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [finished, setFinished] = useState(false);
-  const [masteredCount, setMasteredCount] = useState(0);
+  const [mastered, setMastered] = useState(0);
 
   const rawCards = cardsBySet[deck.id] || [];
   const loading = loadingCards[deck.id];
 
-  // =====================
-  // Chuẩn hóa card
-  // =====================
-  const cards = rawCards.map((c) => ({
-    id: c.id,
-    front: c.frontText,
-    meaning: c.backText,
-    reading: c.reading,
-    example: c.exampleSentence,
-  }));
+  // Chuẩn hóa dữ liệu thẻ
+  const cards = useMemo(() => {
+    return rawCards.map((c) => ({
+      id: c.id,
+      front: c.frontText,
+      meaning: c.backText,
+      reading: c.reading,
+      example: c.exampleSentence,
+    }));
+  }, [rawCards]);
 
-  // Fetch thẻ khi chưa có
+  /* ===========================================================
+     FETCH CARDS
+  ============================================================ */
   useEffect(() => {
-    if (!deck?.id) return;
-    if (!cardsBySet[deck.id] || cardsBySet[deck.id].length === 0) {
-      dispatch(fetchCardsBySet(deck.id)).catch(() => {
-        toast.error("Không tải được thẻ.");
-      });
-    }
-  }, [deck.id, dispatch]);
+    if (!deck.id) return;
+    if (!rawCards.length) dispatch(fetchCardsBySet(deck.id));
+  }, [deck.id]);
 
-  // Reset khi đổi thẻ
+  /* ===========================================================
+     RESET STATE KHI MỞ MODAL
+  ============================================================ */
   useEffect(() => {
     setCurrent(0);
     setIsFlipped(false);
     setFinished(cards.length === 0);
-    setMasteredCount(0);
-  }, [deck.id, rawCards.length]);
+    setMastered(0);
+  }, [deck.id, cards.length]);
 
+  /* ===========================================================
+     HANDLERS
+  ============================================================ */
   const handleFlip = () => {
     if (!cards.length) return;
-    setIsFlipped((f) => !f);
+    setIsFlipped((v) => !v);
   };
 
-  const handleResult = (rating) => {
-    if (!cards.length) return;
-
-    const card = cards[current];
-    const status = rating === "easy" ? "MASTERED" : "LEARNING";
-
-    dispatch(updateFlashcardProgress({ cardId: card.id, status })).catch(
-      () => {}
-    );
-
-    if (rating === "easy") setMasteredCount((c) => c + 1);
-
+  const next = () => {
     if (current < cards.length - 1) {
       setCurrent((i) => i + 1);
       setIsFlipped(false);
-    } else {
-      setFinished(true);
+    }
+  };
 
+  const prev = () => {
+    if (current > 0) {
+      setCurrent((i) => i - 1);
+      setIsFlipped(false);
+    }
+  };
+
+  const handleResult = async (rating) => {
+    const card = cards[current];
+    if (!card) return;
+
+    const status = rating === "easy" ? "MASTERED" : "LEARNING";
+
+    dispatch(updateFlashcardProgress({ cardId: card.id, status }));
+
+    if (rating === "easy") setMastered((m) => m + 1);
+
+    // Chuyển thẻ tiếp theo
+    if (current < cards.length - 1) {
+      next();
+    } else {
+      // HOÀN THÀNH
       const percent = cards.length
-        ? Math.round(((masteredCount + 1) / cards.length) * 100)
+        ? Math.round(((mastered + 1) / cards.length) * 100)
         : 0;
 
       dispatch(setDeckProgress({ setId: deck.id, percent }));
-      toast.success(`Hoàn thành! Tiến độ hiện tại ~${percent}%`);
+      setFinished(true);
+
+      toast.success(`Hoàn thành! Tiến độ hiện tại: ${percent}%`);
     }
   };
 
@@ -94,19 +111,47 @@ const StudyModal = ({ deck, onClose }) => {
           </button>
         </div>
 
+        {/* LOADING */}
         {loading ? (
           <p className={styles.loading}>Đang tải thẻ...</p>
         ) : !cards.length ? (
           <div className={styles.doneBox}>
-            <h3>Chưa có thẻ nào</h3>
-            <p>Hãy thêm thẻ vào bộ trước khi học.</p>
+            <h3>Chưa có thẻ</h3>
             <button className={styles.closeBtn} onClick={onClose}>
               Đóng
             </button>
           </div>
-        ) : !finished ? (
+        ) : finished ? (
+          /* ====================================================
+             FINISHED STATE
+          ==================================================== */
+          <div className={styles.doneBox}>
+            <h3>Hoàn thành buổi học!</h3>
+            <p>Bạn đã học xong {cards.length} thẻ.</p>
+
+            <div className={styles.doneActions}>
+              <button
+                className={styles.restartBtn}
+                onClick={() => {
+                  setCurrent(0);
+                  setIsFlipped(false);
+                  setFinished(false);
+                  setMastered(0);
+                }}
+              >
+                Học lại
+              </button>
+
+              <button className={styles.closeBtn} onClick={onClose}>
+                Đóng
+              </button>
+            </div>
+          </div>
+        ) : (
           <>
-            {/* FLASHCARD */}
+            {/* ====================================================
+               FLASHCARD
+            ==================================================== */}
             <div
               className={`${styles.cardWrapper} ${
                 isFlipped ? styles.flipped : ""
@@ -114,12 +159,12 @@ const StudyModal = ({ deck, onClose }) => {
               onClick={handleFlip}
             >
               <div className={styles.cardInner}>
-                {/* MẶT TRƯỚC */}
+                {/* FRONT */}
                 <div className={styles.cardFront}>
                   <div className={styles.frontContent}>{card.front}</div>
                 </div>
 
-                {/* MẶT SAU */}
+                {/* BACK */}
                 <div className={styles.cardBack}>
                   <div className={styles.backContent}>
                     <div className={styles.meaning}>{card.meaning}</div>
@@ -139,12 +184,40 @@ const StudyModal = ({ deck, onClose }) => {
               </div>
             </div>
 
-            {/* Progress */}
-            <div className={styles.progressText}>
-              {current + 1} / {cards.length} thẻ
+            {/* ====================================================
+               NAVIGATION BAR
+            ==================================================== */}
+            <div className={styles.navBar}>
+              <button
+                className={styles.navBtn}
+                disabled={current === 0}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  prev();
+                }}
+              >
+                <i className="fa-solid fa-arrow-left"></i>
+              </button>
+
+              <span className={styles.counter}>
+                {current + 1} / {cards.length}
+              </span>
+
+              <button
+                className={styles.navBtn}
+                disabled={current === cards.length - 1}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  next();
+                }}
+              >
+                <i className="fa-solid fa-arrow-right"></i>
+              </button>
             </div>
 
-            {/* ACTION BUTTONS */}
+            {/* ====================================================
+               ACTION BUTTONS
+            ==================================================== */}
             <div className={styles.actions}>
               <button
                 className={styles.again}
@@ -168,14 +241,6 @@ const StudyModal = ({ deck, onClose }) => {
               </button>
             </div>
           </>
-        ) : (
-          <div className={styles.doneBox}>
-            <h3>Hoàn thành buổi học!</h3>
-            <p>Bạn đã học xong {cards.length} thẻ.</p>
-            <button className={styles.closeBtn} onClick={onClose}>
-              Đóng
-            </button>
-          </div>
         )}
       </div>
     </div>

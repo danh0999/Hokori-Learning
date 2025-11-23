@@ -153,24 +153,24 @@ const MyFlashcards = () => {
       {/* STATS */}
       <div className={styles.stats}>
         <div>
-          <span>{filteredDecks.length}</span>
           <p>Bộ thẻ</p>
+          <span>{filteredDecks.length}</span>
         </div>
 
         <div>
-          <span>{totalCards}</span>
           <p>Tổng số thẻ</p>
+          <span>{totalCards}</span>
         </div>
 
         {/* Replace hardcoded numbers with BE dashboard */}
         <div>
-          <span>{dashboard?.reviewedToday ?? 0}</span>
           <p>Đã ôn hôm nay</p>
+          <span>{dashboard?.reviewedToday ?? 0}</span>
         </div>
 
         <div>
-          <span>{dashboard?.streakDays ?? 0}</span>
           <p>Chuỗi ngày học</p>
+          <span>{dashboard?.streakDays ?? 0}</span>
         </div>
       </div>
 

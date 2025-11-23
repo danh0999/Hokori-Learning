@@ -24,7 +24,7 @@ const OrderSummary = ({ courses }) => {
       return;
     }
     console.log("Đặt hàng:", courses);
-    // 🔜 TODO: POST /api/orders
+    //  TODO: POST /api/orders
     alert("Thanh toán thành công (mock)");
   };
 

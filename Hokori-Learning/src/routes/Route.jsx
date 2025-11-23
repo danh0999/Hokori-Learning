@@ -134,7 +134,7 @@ const routes = [
         ],
       },
 
-      // ✅ Trang tách riêng, không dùng RoleLayout
+      //  Trang tách riêng, không dùng RoleLayout
       {
         path: "create-course",
         element: <CreateCoursePage />,
