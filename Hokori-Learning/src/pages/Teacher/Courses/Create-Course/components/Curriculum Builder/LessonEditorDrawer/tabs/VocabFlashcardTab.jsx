@@ -1,5 +1,5 @@
 // LessonEditorDrawer/tabs/VocabFlashcardTab.jsx
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { Button, Typography, message } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
@@ -13,21 +13,16 @@ import styles from "../styles.module.scss";
 
 const { Text } = Typography;
 
-/**
- * Bóc id content từ response createContentThunk
- * FE mình không chắc BE bọc data như nào nên xử lý đủ trường hợp.
- */
+// bóc id content từ response createContentThunk
 const extractContentId = (created) => {
   if (!created) return null;
 
-  // Nếu thunk trả về { content: {...} }
   if (created.content) {
     const c = created.content;
     if (c.id) return c.id;
     if (c.data && c.data.id) return c.data.id;
   }
 
-  // Nếu trả thẳng object content
   if (created.id) return created.id;
   if (created.data && created.data.id) return created.data.id;
 
@@ -37,48 +32,54 @@ const extractContentId = (created) => {
 export default function VocabFlashcardTab({ lesson, sectionsHook }) {
   const dispatch = useDispatch();
 
-  const [opening, setOpening] = useState(false); // loading local
+  const [opening, setOpening] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [currentSet, setCurrentSet] = useState(null);
   const [sectionContentId, setSectionContentId] = useState(null);
 
-  // Nếu bạn có truyền sectionsHook từ LessonEditorDrawer thì dùng, không thì fallback từ lesson
-  const vocabSectionFromHook = sectionsHook?.sectionsByType?.VOCABULARY || null;
+  // lấy section VOCABULARY từ hook hoặc từ lesson
+  const vocabSection = useMemo(() => {
+    return (
+      sectionsHook?.sectionsByType?.VOCABULARY ||
+      (lesson?.sections || []).find((s) => s.studyType === "VOCABULARY") ||
+      null
+    );
+  }, [sectionsHook?.sectionsByType?.VOCABULARY, lesson?.sections]);
 
-  const vocabSectionFromLesson =
-    (lesson?.sections || []).find((s) => s.studyType === "VOCABULARY") || null;
-
-  const vocabSection = vocabSectionFromHook || vocabSectionFromLesson;
-
-  // nếu hook có sẵn thông tin flashcard thì set lại
+  // mỗi khi vocabSection thay đổi, nếu đã có content FLASHCARD_SET thì lưu lại id
   useEffect(() => {
-    if (sectionsHook?.vocabInfo?.flashcardSet) {
-      setCurrentSet(sectionsHook.vocabInfo.flashcardSet);
-      setSectionContentId(sectionsHook.vocabInfo.flashcardContent?.id || null);
+    const flashContent =
+      (vocabSection?.contents || []).find(
+        (c) => c.contentFormat === "FLASHCARD_SET"
+      ) || null;
+    if (flashContent?.id) {
+      setSectionContentId(flashContent.id);
     }
-  }, [
-    sectionsHook?.vocabInfo?.flashcardSet,
-    sectionsHook?.vocabInfo?.flashcardContent?.id,
-  ]);
+  }, [vocabSection?.id, vocabSection?.contents]);
+
+  const hasFlashcards = !!sectionContentId;
 
   const handleOpen = useCallback(async () => {
     if (!lesson?.id) {
       message.error("Thiếu lessonId.");
       return;
     }
-    if (opening) return; // tránh double click
+    if (opening) return;
 
     setOpening(true);
     try {
       // 1. Đảm bảo có section VOCABULARY
       let section = vocabSection;
-
       if (!section) {
         if (!sectionsHook?.ensureSection) {
           message.error("Không tìm được hàm ensureSection cho Vocabulary.");
           return;
         }
-        section = await sectionsHook.ensureSection("VOCABULARY");
+
+        // tạo section VOCABULARY (BE cho phép flashcardSetId = null)
+        section = await sectionsHook.ensureSection("VOCABULARY", {
+          title: "Vocabulary",
+          studyType: "VOCABULARY",
+        });
       }
 
       if (!section?.id) {
@@ -86,95 +87,89 @@ export default function VocabFlashcardTab({ lesson, sectionsHook }) {
         return;
       }
 
-      // 2. Tìm content FLASHCARD_SET của section nếu đã có
-      let contentId = sectionContentId;
-      let flashcardSet = currentSet;
-
-      if (!contentId) {
-        const existingFlashContent =
-          (section.contents || []).find(
-            (c) => c.contentFormat === "FLASHCARD_SET"
-          ) || null;
-
-        if (existingFlashContent) {
-          contentId = existingFlashContent.id;
-          flashcardSet = existingFlashContent.flashcardSet || flashcardSet;
-        }
-      }
-
-      // 3. Nếu vẫn chưa có SectionContent => tạo mới
-      if (!contentId) {
-        const created = await dispatch(
-          createContentThunk({
-            lessonId: lesson.id,
-            sectionId: section.id,
-            data: {
-              contentFormat: "FLASHCARD_SET",
-              primaryContent: false,
-              filePath: null,
-              richText: null,
-              quizId: null,
-              flashcardSetId: null,
-            },
-          })
-        ).unwrap();
-
-        const newContentId = extractContentId(created);
-        if (!newContentId) {
-          console.error("[VocabTab] create content response:", created);
-          message.error("Không lấy được sectionContentId sau khi tạo content.");
-          return;
-        }
-
-        contentId = newContentId;
-      }
-
-      setSectionContentId(contentId);
-
-      // 4. Nếu đã có flashcardSet rồi thì mở modal luôn
-      if (flashcardSet || currentSet) {
-        setCurrentSet(flashcardSet || currentSet);
+      // 2. Nếu đã có contentId (FLASHCARD_SET) rồi -> chỉ mở modal,
+      // FlashcardBuilderModal sẽ tự gọi GET /flashcards/sets/by-section-content
+      if (sectionContentId) {
         setModalOpen(true);
         return;
       }
 
-      // 5. Chưa có set => gọi POST /api/flashcards/sets/course-vocab
-      const newSet = await dispatch(
-        createCourseVocabSet({
-          title: `Từ vựng – ${lesson.title || "Lesson"}`,
-          description: "",
-          level: null, // nếu cần map theo level của course thì truyền thêm
-          sectionContentId: contentId,
+      // 3. Nếu section chưa có content FLASHCARD_SET -> tạo placeholder content
+      const createdContent = await dispatch(
+        createContentThunk({
+          sectionId: section.id,
+          data: {
+            orderIndex: section.contents?.length || 0,
+            contentFormat: "FLASHCARD_SET",
+            primaryContent: false,
+            filePath: null,
+            richText: null,
+            quizId: null,
+            flashcardSetId: null,
+          },
         })
       ).unwrap();
 
-      setCurrentSet(newSet);
-      message.success("Đã tạo bộ flashcard cho Vocabulary.");
+      const newContentId = extractContentId(createdContent);
+      if (!newContentId) {
+        console.error("[VocabTab] createContent response:", createdContent);
+        message.error(
+          "Không lấy được sectionContentId sau khi tạo FLASHCARD_SET."
+        );
+        return;
+      }
+
+      // lưu lại id để dùng cho modal + API flashcard
+      setSectionContentId(newContentId);
+
+      // 4. Sau khi có sectionContentId -> gọi API /flashcards/sets/course-vocab
+      // BE sẽ tự gán flashcardSetId cho section + content
+      try {
+        const newSet = await dispatch(
+          createCourseVocabSet({
+            title: `Từ vựng – ${lesson.title || "Lesson"}`,
+            description: "",
+            level: lesson.level || null,
+            sectionContentId: newContentId,
+          })
+        ).unwrap();
+
+        if (!newSet || !newSet.id) {
+          message.warning(
+            "Tạo flashcard set không trả về id. Hãy kiểm tra lại API nếu flashcard không hoạt động."
+          );
+        } else {
+          message.success("Đã tạo bộ flashcard cho Vocabulary.");
+        }
+      } catch (err) {
+        console.error("[VocabTab] createCourseVocabSet error:", err);
+        message.error(
+          err?.message ||
+            "Không tạo được flashcard set. Vui lòng thử lại hoặc báo BE kiểm tra."
+        );
+      }
+
+      // mở modal để teacher thêm card
       setModalOpen(true);
     } catch (err) {
       console.error("[VocabFlashcardTab] handleOpen error:", err);
       message.error(
         err?.message ||
-          "Không tạo được bộ flashcard. Vui lòng thử lại hoặc nhờ BE kiểm tra API."
+          "Không mở được flashcard. Vui lòng thử lại hoặc nhờ BE kiểm tra API."
       );
     } finally {
-      setOpening(false); // đảm bảo luôn tắt loading
+      setOpening(false);
     }
   }, [
     lesson?.id,
     lesson?.title,
-    lesson?.sections,
-    opening,
+    lesson?.level,
     vocabSection,
     sectionsHook?.ensureSection,
     dispatch,
-    currentSet,
+    opening,
     sectionContentId,
   ]);
-
-  const handleSavedSet = (updatedSet) => {
-    if (updatedSet) setCurrentSet(updatedSet);
-  };
 
   return (
     <div className={styles.tabBody}>
@@ -190,16 +185,15 @@ export default function VocabFlashcardTab({ lesson, sectionsHook }) {
           onClick={handleOpen}
           loading={opening}
         >
-          {currentSet ? "Edit flashcards" : "Create flashcards"}
+          {hasFlashcards ? "Edit flashcards" : "Create flashcards"}
         </Button>
       </div>
 
       <FlashcardBuilderModal
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
-        flashcardSet={currentSet}
         sectionContentId={sectionContentId}
-        onSaved={handleSavedSet}
+        // không cần truyền flashcardSet, modal sẽ tự fetch theo sectionContentId
       />
     </div>
   );

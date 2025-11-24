@@ -8,10 +8,12 @@ import {
   CloseOutlined,
   ReloadOutlined,
 } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 
 import api from "../../../configs/axios.js"; // <--- CHỈNH lại path nếu khác
 
-import CourseReviewModal from "../Queues/CourseReviewModal";
+// KHÔNG dùng modal review nữa
+// import CourseReviewModal from "../Queues/CourseReviewModal";
 import RequestRevisionModal from "../Queues/components/RequestRevisionModal";
 import ApprovePublishModal from "../Queues/components/ApprovePublishModal";
 import RejectModal from "../Queues/components/RejectModal";
@@ -19,14 +21,13 @@ import RejectModal from "../Queues/components/RejectModal";
 import styles from "./styles.module.scss";
 
 export default function ManageQueues() {
+  const navigate = useNavigate();
+
   const [q, setQ] = useState("");
   const [data, setData] = useState([]);
 
   const [loading, setLoading] = useState(false);
   const [approveLoadingId, setApproveLoadingId] = useState(null);
-
-  // modal: course inspector
-  const [selectedCourse, setSelectedCourse] = useState(null);
 
   // modal: request changes
   const [openRequestRevision, setOpenRequestRevision] = useState(false);
@@ -108,7 +109,6 @@ export default function ManageQueues() {
     message.success("Đã gửi yêu cầu chỉnh sửa cho giáo viên (demo).");
     setOpenRequestRevision(false);
     setRequestTargetCourse(null);
-    setSelectedCourse(null);
   };
 
   /** APPROVE & PUBLISH confirm trong modal */
@@ -118,7 +118,6 @@ export default function ManageQueues() {
     if (ok) {
       setOpenApprovePublish(false);
       setApproveTargetCourse(null);
-      setSelectedCourse(null);
     }
   };
 
@@ -129,7 +128,6 @@ export default function ManageQueues() {
     if (ok) {
       setOpenReject(false);
       setRejectTargetCourse(null);
-      setSelectedCourse(null);
     }
   };
 
@@ -197,10 +195,15 @@ export default function ManageQueues() {
       width: 260,
       render: (_, row) => (
         <Space>
+          {/* chuyển sang trang review riêng */}
           <Button
             size="small"
             icon={<EyeOutlined />}
-            onClick={() => setSelectedCourse(row)}
+            onClick={() =>
+              navigate(`/moderator/courses/${row.id}/review`, {
+                state: { course: row },
+              })
+            }
           >
             Review
           </Button>
@@ -290,27 +293,6 @@ export default function ManageQueues() {
           />
         )}
       </div>
-
-      {/* inspector modal */}
-      {selectedCourse && (
-        <CourseReviewModal
-          open
-          course={selectedCourse}
-          onClose={() => setSelectedCourse(null)}
-          onRequestRevisionClick={(course) => {
-            setRequestTargetCourse(course);
-            setOpenRequestRevision(true);
-          }}
-          onApproveClick={(course) => {
-            setApproveTargetCourse(course);
-            setOpenApprovePublish(true);
-          }}
-          onRejectClick={(course) => {
-            setRejectTargetCourse(course);
-            setOpenReject(true);
-          }}
-        />
-      )}
 
       {/* Request Changes modal */}
       {openRequestRevision && (

@@ -20,7 +20,7 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
 
   const [activeTab, setActiveTab] = useState("grammar");
 
-  // lấy lesson mới nhất từ tree
+  // lấy lesson mới nhất từ tree (đề phòng bên ngoài đã reload)
   const lessonFromTree = useMemo(() => {
     if (!lesson?.id || !currentCourseTree?.chapters) return lesson;
     for (const ch of currentCourseTree.chapters) {
@@ -32,6 +32,20 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
 
   const sectionsHook = useLessonSections(lessonFromTree);
 
+  // 🔁 reload course tree sau khi 1 tab lưu xong
+  const handleChildSaved = async () => {
+    try {
+      if (currentCourseMeta?.id) {
+        await dispatch(fetchCourseTree(currentCourseMeta.id)).unwrap();
+      }
+      onSave?.();
+    } catch (err) {
+      console.error(err);
+      message.error("Có lỗi khi reload curriculum.");
+    }
+  };
+
+  // nút Save lesson ở góc phải
   const handleReloadTreeAndClose = async () => {
     try {
       if (currentCourseMeta?.id) {
@@ -55,6 +69,7 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
           type="GRAMMAR"
           lesson={lessonFromTree}
           sectionsHook={sectionsHook}
+          onSaved={handleChildSaved} // 👈 thêm callback
         />
       ),
     },
@@ -66,6 +81,7 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
           type="KANJI"
           lesson={lessonFromTree}
           sectionsHook={sectionsHook}
+          onSaved={handleChildSaved}
         />
       ),
     },
@@ -76,13 +92,19 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
         <VocabFlashcardTab
           lesson={lessonFromTree}
           sectionsHook={sectionsHook}
+          // sau này nếu cần cũng pass onSaved giống Grammar
         />
       ),
     },
     {
       key: "quiz",
       label: "Quiz",
-      children: <QuizTab lesson={lessonFromTree} />,
+      children: (
+        <QuizTab
+          lesson={lessonFromTree}
+          // nếu muốn reload tree sau khi save quiz thì thêm prop onSaved và gọi handleChildSaved
+        />
+      ),
     },
   ];
 

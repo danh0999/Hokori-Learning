@@ -1,26 +1,92 @@
-.card {
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.title {
+  margin-bottom: 4px;
+}
+
+.cardCount {
+  text-align: right;
+  min-width: 60px;
+}
+
+.addBox {
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+}
+
+.addLabel {
+  margin-bottom: 8px;
+  display: block;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+}
+
+.half {
+  flex: 1;
+}
+
+.addBtnRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.listHeader {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.empty {
+  padding: 16px 0;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.cardItem {
+  background: #ffffff;
+  color: #1e293b;
   border-radius: 12px;
-}
-.tabPane {
-  padding: 8px 0;
-}
-.manualForm {
-  width: 420px;
-  max-width: 100%;
-}
-.fcItem {
+  padding: 12px;
+  border: 1px solid #1e293b;
+  min-height: 90px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 8px 0;
+  justify-content: space-between;
 }
-.term {
-  font-weight: 600;
+
+.cardFrontRow {
+  margin-bottom: 4px;
+  flex-wrap: wrap;
 }
-.meaning {
-  color: #111827;
+
+.cardBack {
+  font-size: 13px;
+  margin-bottom: 4px;
 }
-.example {
-  color: #6b7280;
-  font-style: italic;
+
+.cardExample {
+  font-size: 12px;
+}
+
+.cardActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
 }

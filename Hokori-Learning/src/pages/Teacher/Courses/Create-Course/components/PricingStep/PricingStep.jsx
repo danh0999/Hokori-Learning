@@ -3,7 +3,10 @@ import React, { useEffect } from "react";
 import { Card, Form, InputNumber, Button, message } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 
-import { updateCourseThunk } from "../../../../../../redux/features/teacherCourseSlice.js";
+import {
+  fetchCourseTree,
+  updateCourseThunk,
+} from "../../../../../../redux/features/teacherCourseSlice.js";
 
 import styles from "./styles.module.scss";
 
@@ -15,12 +18,12 @@ export default function PricingStep({ courseId }) {
     (state) => state.teacherCourse
   );
 
+  // Khi load meta -> set lại giá
   useEffect(() => {
     if (!currentCourseMeta) return;
 
     form.setFieldsValue({
       price: currentCourseMeta.priceCents || 0,
-      discountedPrice: currentCourseMeta.discountedPriceCents || 0,
     });
   }, [currentCourseMeta, form]);
 
@@ -29,9 +32,9 @@ export default function PricingStep({ courseId }) {
 
     const payload = {
       ...currentCourseMeta,
+      // Lưu đúng số tiền VND (không nhân / chia gì nữa)
       priceCents: values.price || 0,
-      discountedPriceCents: values.discountedPrice || 0,
-      currency: currentCourseMeta?.currency || "VND",
+      currency: "VND",
     };
 
     const action = await dispatch(
@@ -40,6 +43,7 @@ export default function PricingStep({ courseId }) {
 
     if (updateCourseThunk.fulfilled.match(action)) {
       message.success("Đã lưu giá khoá học.");
+      dispatch(fetchCourseTree(courseId));
     } else {
       message.error("Không lưu được giá, vui lòng thử lại.");
     }
@@ -50,7 +54,8 @@ export default function PricingStep({ courseId }) {
       <div className={styles.stepHeader}>
         <div className={styles.stepTitle}>Pricing</div>
         <div className={styles.stepDesc}>
-          Set your base course price. You can run promotions later.
+          Set your course price in VND. Learners will see it with currency
+          formatting.
         </div>
       </div>
 
@@ -62,23 +67,27 @@ export default function PricingStep({ courseId }) {
       >
         <Form.Item
           name="price"
-          label="Base price (VND)"
+          label="Price (VND)"
           rules={[{ required: true, message: "Nhập giá khoá học." }]}
         >
           <InputNumber
             min={0}
             step={1000}
             style={{ width: "100%" }}
-            placeholder="Ví dụ: 499000"
-          />
-        </Form.Item>
-
-        <Form.Item name="discountedPrice" label="Discounted price (VND)">
-          <InputNumber
-            min={0}
-            step={1000}
-            style={{ width: "100%" }}
-            placeholder="Ví dụ: 399000 (optional)"
+            placeholder="Ví dụ: 200000"
+            // Hiển thị 200000 -> "200.000 ₫"
+            formatter={(value) => {
+              if (value == null || value === "") return "";
+              const str = String(value).replace(/\D/g, "");
+              return str.replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " ₫";
+            }}
+            // Người dùng sửa -> convert về number (bỏ . và ₫)
+            parser={(value) => {
+              if (!value) return 0;
+              return Number(
+                value.toString().replace(/\s?₫/g, "").replace(/\./g, "")
+              );
+            }}
           />
         </Form.Item>
 
@@ -89,7 +98,7 @@ export default function PricingStep({ courseId }) {
         </Form.Item>
 
         <div className={styles.hintText}>
-          Gợi ý: 199k–399k phù hợp cho khóa N5/N4 entry-level.
+          Ví dụ: gõ <b>200000</b> sẽ hiển thị là <b>200.000 ₫</b>.
         </div>
       </Form>
     </Card>

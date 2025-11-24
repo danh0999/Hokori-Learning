@@ -104,7 +104,6 @@ export const Header = () => {
       label: "Thống kê học tập",
       onClick: () => navigate("/learner-dashboard"),
     },
-    { type: "divider" },
     {
       key: "logout",
       label: "Đăng xuất",
@@ -125,7 +124,10 @@ export const Header = () => {
 
         {/* ===== NAVIGATION ===== */}
         <nav className={nav}>
-          <NavLink to="/" className={({ isActive }) => (isActive ? active : "")}>
+          <NavLink
+            to="/"
+            className={({ isActive }) => (isActive ? active : "")}
+          >
             Trang chủ
           </NavLink>
 
@@ -176,9 +178,7 @@ export const Header = () => {
             >
               Về Hokori{" "}
               <span
-                className={`${arrow} ${
-                  openDropdown === "about" ? rotate : ""
-                }`}
+                className={`${arrow} ${openDropdown === "about" ? rotate : ""}`}
               >
                 ▾
               </span>

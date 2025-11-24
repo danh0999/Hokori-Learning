@@ -26,7 +26,12 @@ const buildFileUrl = (filePath) => {
   return `${API_BASE_URL}/files/${filePath}`.replace(/([^:]\/)\/+/g, "$1");
 };
 
-export default function GrammarKanjiTab({ type, lesson, sectionsHook }) {
+export default function GrammarKanjiTab({
+  type,
+  lesson,
+  sectionsHook,
+  onSaved,
+}) {
   const dispatch = useDispatch();
   const [form] = Form.useForm();
 
@@ -96,7 +101,7 @@ export default function GrammarKanjiTab({ type, lesson, sectionsHook }) {
         section = await ensureSection(type);
       }
 
-      // 3. upload video nếu có
+      // 3. CHỈ xử lý video nếu user chọn file mới
       let filePath = info.assetContent?.filePath || null;
 
       if (videoState.file) {
@@ -112,42 +117,43 @@ export default function GrammarKanjiTab({ type, lesson, sectionsHook }) {
           uploadRes.path ||
           uploadRes.relativePath ||
           filePath;
-      }
 
-      // 4. create/update ASSET content
-      if (filePath) {
-        const baseData = {
-          contentFormat: "ASSET",
-          primaryContent: true,
-          filePath,
-          richText: null,
-          quizId: null,
-          flashcardSetId: null,
-        };
+        if (filePath) {
+          const baseData = {
+            contentFormat: "ASSET",
+            primaryContent: true,
+            filePath,
+            richText: null,
+            quizId: null,
+            flashcardSetId: null,
+          };
 
-        if (videoState.contentId) {
-          await dispatch(
-            updateContentThunk({
-              contentId: videoState.contentId,
-              data: baseData,
-            })
-          ).unwrap();
-        } else {
-          const created = await dispatch(
-            createContentThunk({
-              sectionId: section.id,
-              data: {
-                ...baseData,
-                orderIndex: (section.contents?.length || 0) + 1,
-              },
-            })
-          ).unwrap();
-          const c = created.content || created;
-          setVideoState((prev) => ({ ...prev, contentId: c.id }));
+          if (videoState.contentId) {
+            // update content hiện có
+            await dispatch(
+              updateContentThunk({
+                contentId: videoState.contentId,
+                data: baseData,
+              })
+            ).unwrap();
+          } else {
+            // tạo content mới nếu trước đó chưa có
+            const created = await dispatch(
+              createContentThunk({
+                sectionId: section.id,
+                data: {
+                  ...baseData,
+                  orderIndex: (section.contents?.length || 0) + 1,
+                },
+              })
+            ).unwrap();
+            const c = created.content || created;
+            setVideoState((prev) => ({ ...prev, contentId: c.id }));
+          }
         }
       }
 
-      // 5. description
+      // 4. description (logic cũ giữ nguyên)
       if (description.trim()) {
         const baseDesc = {
           contentFormat: "RICH_TEXT",
@@ -183,6 +189,7 @@ export default function GrammarKanjiTab({ type, lesson, sectionsHook }) {
       message.success(
         type === "GRAMMAR" ? "Đã lưu Grammar section." : "Đã lưu Kanji section."
       );
+      onSaved?.();
     } catch (err) {
       console.error(err);
       message.error("Lưu section thất bại.");

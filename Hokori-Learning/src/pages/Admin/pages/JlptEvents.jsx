@@ -155,7 +155,7 @@ export default function JlptEvents() {
 
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Thêm: test status cho từng event
+  // test status cho từng event
   const [testStatus, setTestStatus] = useState({});
 
   const [confirmCfg, setConfirmCfg] = useState({
@@ -169,10 +169,41 @@ export default function JlptEvents() {
     setLoading(true);
     try {
       const res = await api.get("jlpt/events");
-      const list = res.data || [];
+      let list = res.data || [];
+
+      const now = new Date();
+
+      // 1) TỰ ĐỘNG CLOSE CÁC EVENT ĐÃ HẾT HẠN
+      const needCloseIds = [];
+
+      list = list.map((ev) => {
+        const isExpired =
+          ev.endAt && new Date(ev.endAt) < now && ev.status !== "CLOSED";
+
+        if (isExpired) {
+          needCloseIds.push(ev.id);
+          // update luôn UI cho mượt
+          return { ...ev, status: "CLOSED" };
+        }
+        return ev;
+      });
+
       setEvents(list);
 
-      // === NEW: kiểm tra test của từng event ===
+      // Gửi PATCH để update status CLOSED trên BE
+      if (needCloseIds.length > 0) {
+        await Promise.all(
+          needCloseIds.map((id) =>
+            api
+              .patch(`jlpt/events/${id}/status`, { status: "CLOSED" })
+              .catch((err) => {
+                console.error("Auto close event failed: ", id, err);
+              })
+          )
+        );
+      }
+
+      // 2) Kiểm tra event đã có test chưa
       const results = await Promise.all(
         list.map((ev) =>
           api
@@ -312,7 +343,7 @@ export default function JlptEvents() {
                       : "-"}
                   </td>
 
-                  {/* NEW: Test Ready column */}
+                  {/* Test Ready column */}
                   <td>
                     {testStatus[ev.id] ? (
                       <span className={s.ready}>READY</span>

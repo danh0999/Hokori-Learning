@@ -1,31 +1,31 @@
-.layout {
+/* ===== Layout chung ===== */
+
+.layoutSingle {
   display: flex;
+  flex-direction: column;
   gap: 16px;
 }
 
-.treeCol {
-  flex: 2;
-  min-width: 0;
+.center {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 0;
 }
 
-.previewCol {
-  flex: 1.2;
-  min-width: 0;
-}
+/* ===== Course summary ===== */
 
 .courseSummary {
-  margin-bottom: 8px;
+  border-radius: 8px;
 }
 
 .thumbBox {
-  width: 80px;
-  height: 60px;
+  width: 72px;
+  height: 72px;
+  border-radius: 6px;
   overflow: hidden;
-  border-radius: 8px;
-  background: #f3f4f6;
+  flex-shrink: 0;
+  background: #f5f5f5;
 }
 
 .thumbImage {
@@ -34,84 +34,226 @@
   object-fit: cover;
 }
 
+/* ===== Chapter / lesson / section ===== */
+
 .chapterCollapse {
   background: #fff;
 }
 
+/* mỗi lesson là một block nhỏ */
 .lessonItem {
-  padding-left: 0;
+  padding: 8px 0;
+  border-bottom: 1px solid #f5f5f5;
+
+  &:last-child {
+    border-bottom: none;
+  }
 }
 
 .lessonMain {
   width: 100%;
 }
 
+/* header: title + meta + nút Edit / Quiz */
+.lessonHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.lessonHeaderLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .lessonTitle {
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .lessonMeta {
   font-size: 12px;
-  color: #6b7280;
-  margin-bottom: 4px;
+  color: #999;
 }
 
+/* group nút Edit + Quiz */
+.lessonHeaderActions {
+  display: flex;
+  gap: 8px;
+
+  :global(.ant-btn) {
+    border-radius: 999px;
+    padding-inline: 10px;
+    height: 26px;
+    font-size: 12px;
+  }
+}
+
+/* nút Quiz hơi nổi nhưng không chói */
+.quizButton {
+  :global(.ant-btn) {
+    border-color: #597ef7;
+    color: #597ef7;
+    background: #f0f5ff;
+
+    &:hover {
+      border-color: #2f54eb;
+      color: #2f54eb;
+      background: #d6e4ff;
+    }
+  }
+}
+
+/* section block */
 .sectionBlock {
-  margin-top: 8px;
-  padding-left: 8px;
-  border-left: 2px solid #e5e7eb;
+  margin-top: 4px;
+  margin-bottom: 4px;
 }
 
 .sectionHeader {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  margin: 6px 0;
   font-size: 13px;
-  margin-bottom: 4px;
+  font-weight: 500;
 }
+
+/* ===== Content list + dropdown preview ===== */
 
 .contentItem {
   cursor: pointer;
-  padding-inline: 4px !important;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: #fafafa;
+  }
 }
 
 .contentItemActive {
-  @extend .contentItem;
-  background: #e5f0ff;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #e6f7ff;
+  border-left: 3px solid #1890ff;
 }
 
-.previewEmpty {
-  text-align: center;
-  padding: 24px 8px;
+/* khung bao preview dropdown của content */
+.contentInlineWrapper {
+  padding: 6px 12px 10px 32px; /* thụt vào cho giống collapse con */
+  background: #fafafa;
+  border-left: 2px solid #f0f0f0;
+  margin-bottom: 4px;
 }
 
-.previewBody {
-  min-height: 120px;
+/* box preview chung (asset / richtext / flashcard / quiz) */
+.inlinePreviewBox {
+  padding: 8px 10px;
+  background: #ffffff;
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
 }
+
+/* ===== Preview heading ===== */
 
 .previewTitle {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
+  font-weight: 600;
 }
+
+.previewSub {
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: #888;
+}
+
+/* ===== Asset preview (video / image) ===== */
 
 .previewVideo {
   width: 100%;
+  max-height: 360px; /* giới hạn chiều cao video */
   border-radius: 8px;
+  background: #000;
+  object-fit: contain; /* không bị crop nội dung */
+  display: block;
 }
 
 .previewImage {
-  max-width: 100%;
+  width: 100%;
+  max-height: 320px;
   border-radius: 8px;
+  object-fit: cover;
+  display: block;
 }
 
+/* rich text */
 .previewRich {
-  max-height: 260px;
-  overflow: auto;
-  white-space: pre-wrap;
   font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
 }
 
-.center {
-  display: flex;
-  justify-content: center;
-  padding: 40px 0;
+/* ===== Flashcard preview ===== */
+
+.flashcardList {
+  margin-top: 4px;
+}
+
+.flashcardItem {
+  padding-inline: 0;
+}
+
+.flashcardFront {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.flashcardBack {
+  font-size: 12px;
+  color: #555;
+}
+
+/* ===== Quiz preview ===== */
+
+.quizQuestionList {
+  margin-top: 4px;
+}
+
+.quizQuestionItem {
+  padding-inline: 0;
+}
+
+.quizQuestionHeader {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.quizOptionList {
+  margin-top: 2px;
+}
+
+.quizOption {
+  padding-inline: 0;
+  font-size: 12px;
+}
+
+.quizOptionCorrect {
+  padding-inline: 0;
+  font-size: 12px;
+  background: #f6ffed;
+  border-radius: 4px;
+}
+
+/* ===== Misc ===== */
+
+.previewEmpty {
+  padding: 16px;
+  text-align: center;
+  color: #999;
 }

@@ -1,5 +1,5 @@
 // src/pages/Moderator/Queues/CourseReviewModal.jsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Modal,
   Descriptions,
@@ -7,47 +7,62 @@ import {
   Tag,
   Space,
   Typography,
-  Tooltip,
+  Spin,
+  Collapse,
+  Alert,
 } from "antd";
 import styles from "./styles.module.scss";
 
-const { Text, Paragraph } = Typography;
+import api from "../../../configs/axios.js";
 
-// format price từ priceCents / discountedPriceCents + currency
+const { Text, Paragraph } = Typography;
+const { Panel } = Collapse;
+
+// format price chỉ từ priceCents, currency = VND
 function formatPriceFromCourse(course) {
   if (!course) return "—";
 
-  const { discountedPriceCents, priceCents, currency } = course || {};
+  const { priceCents } = course || {};
+  if (typeof priceCents !== "number") return "—";
 
-  let cents = null;
-  if (typeof discountedPriceCents === "number" && discountedPriceCents > 0) {
-    cents = discountedPriceCents;
-  } else if (typeof priceCents === "number") {
-    cents = priceCents;
-  }
-
-  if (typeof cents !== "number") return "—";
-
-  const amount = cents / 100;
+  const amount = priceCents;
 
   try {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
-      currency: currency || "VND",
+      currency: "VND",
       maximumFractionDigits: 0,
     }).format(amount);
   } catch (e) {
     console.log(e);
-
-    // phòng trường hợp currency không hợp lệ
-    return `${amount.toLocaleString("vi-VN")} ${currency || ""}`.trim();
+    return `${amount.toLocaleString("vi-VN")} ₫`;
   }
+}
+
+// helper: lấy list section cho từng lesson trong 1 chapter
+function getLessonSections(chapter, lesson) {
+  const sections = chapter.sections || [];
+
+  // case 1: BE có field lessonId / lesson_id
+  let list = sections.filter(
+    (s) =>
+      s.lessonId === lesson.id ||
+      s.lesson_id === lesson.id ||
+      s.lessonID === lesson.id
+  );
+  if (list.length > 0) return list;
+
+  // case 2: chapter chỉ có 1 lesson → gán hết sections cho lesson đó
+  if ((chapter.lessons || []).length === 1) return sections;
+
+  // default
+  return [];
 }
 
 export default function CourseReviewModal({
   open,
-  course, // <- object detail trả về: id, title, level, priceCents, discountedPriceCents, currency, subtitle, description, slug, status, userId, ...
-  currentModerator,
+  course,
+
   onClose,
   onApprove,
   onReject,
@@ -55,7 +70,48 @@ export default function CourseReviewModal({
 }) {
   if (!course) return null;
 
-  const isMine = !course.assignee || course.assignee === currentModerator;
+  const [detail, setDetail] = useState(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [detailError, setDetailError] = useState(null);
+
+  // gọi GET /api/moderator/courses/{id}/detail khi mở modal
+  useEffect(() => {
+    if (!open || !course?.id) {
+      setDetail(null);
+      setDetailError(null);
+      return;
+    }
+
+    let isMounted = true;
+
+    const fetchDetail = async () => {
+      setLoadingDetail(true);
+      setDetailError(null);
+      try {
+        const res = await api.get(`/moderator/courses/${course.id}/detail`);
+        // swagger: { success, message, data: {...} }
+        const payload = res.data;
+        const detailData = payload?.data ?? payload;
+        if (!isMounted) return;
+        setDetail(detailData);
+      } catch (err) {
+        console.error("Failed to load moderator course detail:", err);
+        if (!isMounted) return;
+        setDetailError(
+          err?.response?.data?.message ||
+            "Không tải được nội dung chi tiết khoá học."
+        );
+      } finally {
+        if (isMounted) setLoadingDetail(false);
+      }
+    };
+
+    fetchDetail();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [open, course?.id]);
 
   const status = course.status || "PENDING_APPROVAL";
   const statusColor =
@@ -78,104 +134,232 @@ export default function CourseReviewModal({
 
   const priceLabel = formatPriceFromCourse(course);
 
+  const chapters = detail?.chapters || [];
+
   return (
     <Modal
       open={open}
       onCancel={onClose}
-      width={800}
+      width={900}
       footer={null}
       destroyOnClose
       title={<div style={{ fontWeight: 600 }}>Review course</div>}
     >
+      {/* Thông tin tổng quan */}
       <Descriptions
         bordered
         column={2}
         size="small"
         labelStyle={{ width: 160, fontWeight: 500 }}
       >
-        <Descriptions.Item label="Course ID">#{course.id}</Descriptions.Item>
-        <Descriptions.Item label="Teacher">
+        <Descriptions.Item label="Mã khoá học">#{course.id}</Descriptions.Item>
+
+        <Descriptions.Item label="Giáo viên">
           {course.teacherName || `User #${course.userId}` || "—"}
         </Descriptions.Item>
 
-        <Descriptions.Item label="Title" span={2}>
+        <Descriptions.Item label="Tiêu đề" span={2}>
           <Text strong>{course.title}</Text>
         </Descriptions.Item>
 
-        <Descriptions.Item label="Status">
+        <Descriptions.Item label="Tình trạng">
           <Tag color={statusColor}>{statusLabel}</Tag>
-        </Descriptions.Item>
-        <Descriptions.Item label="Submitted at">
-          {course.submittedAt || "—"}
         </Descriptions.Item>
 
         <Descriptions.Item label="Level">
           {course.level || "—"}
         </Descriptions.Item>
-        <Descriptions.Item label="Currency">
-          {course.currency || "VND"}
-        </Descriptions.Item>
 
-        <Descriptions.Item label="Price">{priceLabel}</Descriptions.Item>
-        <Descriptions.Item label="Original price (cents)">
-          {course.priceCents ?? "—"}
-        </Descriptions.Item>
-
-        <Descriptions.Item label="Discounted (cents)">
-          {course.discountedPriceCents ?? "—"}
-        </Descriptions.Item>
-        <Descriptions.Item label="Slug">{course.slug || "—"}</Descriptions.Item>
-
-        <Descriptions.Item label="Assignee" span={2}>
-          {course.assignee ? (
-            course.assignee === currentModerator ? (
-              <Tag color="blue">You</Tag>
-            ) : (
-              <Tag>{course.assignee}</Tag>
-            )
-          ) : (
-            <Tag color="default">Unassigned</Tag>
-          )}
-        </Descriptions.Item>
+        <Descriptions.Item label="Giá (VND)">{priceLabel}</Descriptions.Item>
       </Descriptions>
 
+      {/* Mô tả ngắn */}
       <div className={styles.detailBox}>
         <h3>Course overview</h3>
 
         <Paragraph type="secondary" style={{ marginBottom: 4 }}>
           Mô tả ngắn:
         </Paragraph>
-        <Paragraph>{course.subtitle || course.description || "—"}</Paragraph>
+        <Paragraph>{course.description || "—"}</Paragraph>
       </div>
 
-      {/* nếu không phải assignee -> cảnh báo */}
-      {!isMine && (
-        <div
-          style={{
-            background: "#fff7ed",
-            border: "1px solid #fdba74",
-            color: "#9a3412",
-            borderRadius: 8,
-            padding: "10px 12px",
-            fontSize: 13,
-            marginTop: 16,
-            marginBottom: 8,
-          }}
-        >
-          Bạn không phải người được giao xử lý khoá học này. Chỉ người được
-          assign mới được approve / reject.
-        </div>
-      )}
+      {/* FULL TREE: Chapter -> Lesson -> Section (Content) + Quiz thuộc Lesson */}
+      <div className={styles.detailBox}>
+        <h3>Course content (full tree)</h3>
 
+        {loadingDetail && (
+          <div style={{ textAlign: "center", padding: "12px 0" }}>
+            <Spin />
+          </div>
+        )}
+
+        {!loadingDetail && detailError && (
+          <Alert
+            type="error"
+            message="Không tải được cấu trúc khoá học"
+            description={detailError}
+            showIcon
+          />
+        )}
+
+        {!loadingDetail && !detailError && (
+          <>
+            {chapters.length === 0 ? (
+              <Text type="secondary">
+                Khoá học chưa có chương / bài học nào.
+              </Text>
+            ) : (
+              <Collapse accordion>
+                {chapters.map((chapter, cIdx) => {
+                  const lessons = chapter.lessons || [];
+
+                  return (
+                    <Panel
+                      key={chapter.id || cIdx}
+                      header={
+                        <div className={styles.sectionHeader}>
+                          <Text strong>
+                            Chương {chapter.orderIndex ?? cIdx}:{" "}
+                            {chapter.title || "Untitled chapter"}
+                          </Text>
+                        </div>
+                      }
+                    >
+                      {chapter.summary && (
+                        <Paragraph
+                          className={styles.lessonTextPreview}
+                          style={{ marginBottom: 8 }}
+                        >
+                          {chapter.summary}
+                        </Paragraph>
+                      )}
+
+                      {lessons.length === 0 ? (
+                        <Text type="secondary">
+                          Chương này chưa có lesson nào.
+                        </Text>
+                      ) : (
+                        <div className={styles.lessonList}>
+                          {lessons.map((lesson, lIdx) => {
+                            const lessonSections = getLessonSections(
+                              chapter,
+                              lesson
+                            );
+
+                            const hasQuiz =
+                              !!lesson.quiz ||
+                              !!lesson.quizId ||
+                              (Array.isArray(lesson.quizzes) &&
+                                lesson.quizzes.length > 0);
+
+                            const textPreview =
+                              lesson.summary || lesson.description || "";
+
+                            return (
+                              <div
+                                key={lesson.id || lIdx}
+                                className={styles.lessonItem}
+                              >
+                                {/* ===== Lesson header + quiz ===== */}
+                                <div className={styles.lessonMain}>
+                                  <Text strong>
+                                    {lIdx + 1}.{" "}
+                                    {lesson.title || "Untitled lesson"}
+                                  </Text>
+
+                                  <Space size={6}>
+                                    {hasQuiz && (
+                                      <Tag
+                                        color="purple"
+                                        style={{ marginLeft: 8 }}
+                                      >
+                                        Quiz attached
+                                      </Tag>
+                                    )}
+                                  </Space>
+                                </div>
+
+                                {/* Preview text của lesson nếu có */}
+                                {textPreview && (
+                                  <Paragraph
+                                    className={styles.lessonTextPreview}
+                                  >
+                                    {textPreview}
+                                  </Paragraph>
+                                )}
+
+                                {/* ===== Sections / Content của lesson ===== */}
+                                {lessonSections.length > 0 ? (
+                                  <div className={styles.chapterSectionList}>
+                                    {lessonSections.map((section, sIdx) => (
+                                      <div
+                                        key={section.id || sIdx}
+                                        className={styles.chapterSectionItem}
+                                      >
+                                        <div
+                                          className={
+                                            styles.chapterSectionHeader
+                                          }
+                                        >
+                                          <Text>
+                                            ▸{" "}
+                                            {section.title ||
+                                              "Untitled content"}
+                                          </Text>
+                                          {section.contentType && (
+                                            <Tag
+                                              size="small"
+                                              color="blue"
+                                              style={{ marginLeft: 8 }}
+                                            >
+                                              {section.contentType}
+                                            </Tag>
+                                          )}
+                                        </div>
+
+                                        {section.summary && (
+                                          <Paragraph
+                                            className={styles.lessonTextPreview}
+                                          >
+                                            {section.summary}
+                                          </Paragraph>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <Text
+                                    type="secondary"
+                                    style={{ fontSize: 12 }}
+                                  >
+                                    Lesson này chưa có content/section nào.
+                                  </Text>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </Panel>
+                  );
+                })}
+              </Collapse>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Checklist cho moderator */}
       <div className={styles.detailBox}>
         <h3>Notes for moderator</h3>
         <ul className={styles.moderatorChecklist}>
-          <li>✔ Kiểm tra nội dung có vi phạm chính sách / bản quyền không.</li>
-          <li>✔ Xem sơ bộ cấu trúc chương – bài học, quiz, media (nếu có).</li>
-          <li>✔ Kiểm tra tiêu đề, thumbnail, mô tả có rõ ràng & phù hợp.</li>
+          <li>Kiểm tra nội dung có vi phạm chính sách / bản quyền không.</li>
+          <li>Xem sơ bộ cấu trúc chương → lesson → content.</li>
+          <li>Kiểm tra tiêu đề, thumbnail, mô tả có rõ ràng &amp; phù hợp.</li>
         </ul>
       </div>
 
+      {/* Footer nút hành động */}
       <div
         style={{
           marginTop: 16,
@@ -188,61 +372,17 @@ export default function CourseReviewModal({
         <Button onClick={onClose}>Close</Button>
 
         <Space wrap>
-          {/* Request revision */}
-          <Tooltip
-            title={
-              isMine
-                ? "Gửi yêu cầu chỉnh sửa cho giáo viên"
-                : "Bạn không phải người xử lý khóa học này"
-            }
-          >
-            <Button
-              onClick={() => {
-                if (isMine) onRequestRevisionClick?.(course);
-              }}
-              disabled={!isMine}
-            >
-              Request revision
-            </Button>
-          </Tooltip>
+          <Button onClick={() => onRequestRevisionClick?.(course)}>
+            Request revision
+          </Button>
 
-          {/* Approve */}
-          <Tooltip
-            title={
-              isMine
-                ? "Duyệt và publish khóa học này"
-                : "Bạn không phải người xử lý khóa học này"
-            }
-          >
-            <Button
-              type="primary"
-              onClick={() => {
-                if (isMine) onApprove?.(course.id);
-              }}
-              disabled={!isMine}
-            >
-              Approve & publish
-            </Button>
-          </Tooltip>
+          <Button type="primary" onClick={() => onApprove?.(course.id)}>
+            Approve &amp; publish
+          </Button>
 
-          {/* Reject */}
-          <Tooltip
-            title={
-              isMine
-                ? "Từ chối khóa học này"
-                : "Bạn không phải người xử lý khóa học này"
-            }
-          >
-            <Button
-              danger
-              onClick={() => {
-                if (isMine) onReject?.(course.id);
-              }}
-              disabled={!isMine}
-            >
-              Reject
-            </Button>
-          </Tooltip>
+          <Button danger onClick={() => onReject?.(course.id)}>
+            Reject
+          </Button>
         </Space>
       </div>
     </Modal>

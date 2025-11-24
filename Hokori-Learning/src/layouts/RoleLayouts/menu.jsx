@@ -107,8 +107,6 @@ export const sidebarMenusByRole = {
       <SafetyCertificateOutlined />,
       "/moderator/flags"
     ),
-    mk("messages", "Tin nhắn", <MessageOutlined />, "/moderator/messages"),
-    mk("settings", "Cài đặt", <SettingOutlined />, "/moderator/settings"),
   ],
 };
 

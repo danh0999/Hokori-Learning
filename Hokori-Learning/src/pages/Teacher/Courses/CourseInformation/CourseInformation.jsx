@@ -8,6 +8,7 @@ import CourseOverview from "../Create-Course/components/CourseOverview/CourseOve
 import PricingStep from "../Create-Course/components/PricingStep/PricingStep.jsx";
 import CourseCurriculumView from "../CourseCurriculumView/CourseCurriculumView.jsx";
 import LessonEditorDrawer from "../Create-Course/components/Curriculum Builder/LessonEditorDrawer/LessonEditorDrawer.jsx";
+import CourseFeedbackTab from "./CourseFeedbackTab/CourseFeedbackTab.jsx";
 
 import {
   fetchCourseTree,
@@ -38,6 +39,7 @@ export default function CourseInformation() {
     loadingTree,
     saving,
   } = useSelector((state) => state.teacherCourse);
+  const [activeKey, setActiveKey] = useState("basic");
   // ====== LOCAL STATE: lesson editor drawer ======
   const [lessonDrawerOpen, setLessonDrawerOpen] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState(null);
@@ -47,13 +49,24 @@ export default function CourseInformation() {
     setLessonDrawerOpen(true);
   };
 
-  const handleCloseLessonDrawer = () => {
+  const handleCloseLessonDrawer = async () => {
     setLessonDrawerOpen(false);
+
+    if (courseId) {
+      try {
+        await dispatch(fetchCourseTree(courseId)).unwrap();
+      } catch (e) {
+        console.error("Reload course tree on close failed", e);
+      }
+    }
   };
 
   const handleLessonSaved = async () => {
-    if (courseId) {
-      await dispatch(fetchCourseTree(courseId));
+    if (!courseId) return;
+    try {
+      await dispatch(fetchCourseTree(courseId)).unwrap();
+    } catch (e) {
+      console.error("Reload course tree on save failed", e);
     }
   };
   // ====== LOAD COURSE DATA ======
@@ -75,7 +88,8 @@ export default function CourseInformation() {
     );
 
     if (updateCourseThunk.fulfilled.match(action)) {
-      message.success("Draft saved");
+      message.success("Saved");
+      dispatch(fetchCourseTree(courseId));
     } else {
       message.error("Save failed, please try again");
     }
@@ -88,6 +102,7 @@ export default function CourseInformation() {
 
     if (submitforapprovalCourseThunk.fulfilled.match(action)) {
       message.success("Submitted for review / published");
+      dispatch(fetchCourseTree(courseId));
     } else {
       message.error("Submit failed, please try again");
     }
@@ -138,6 +153,10 @@ export default function CourseInformation() {
     <div className={styles.wrap}>
       {/* HEADER */}
       <div className={styles.header}>
+        <Button onClick={() => navigate("/teacher/manage-courses")}>
+          ← Back
+        </Button>
+
         <div>
           <h1 className={styles.title}>
             {currentCourseMeta?.title || `Course #${courseId}`}
@@ -151,7 +170,7 @@ export default function CourseInformation() {
           <Tag color={statusColor[status] || "default"}>{status}</Tag>
 
           <Button onClick={handleSaveDraft} loading={saving || loadingMeta}>
-            Save draft
+            {status === "PUBLISHED" ? "Save changes" : "Save draft"}
           </Button>
 
           {status === "PUBLISHED" ? (
@@ -174,7 +193,8 @@ export default function CourseInformation() {
       {/* BODY TABS */}
       <Card>
         <Tabs
-          defaultActiveKey="basic"
+          activeKey={activeKey}
+          onChange={(key) => setActiveKey(key)}
           items={[
             {
               key: "basic",
@@ -192,6 +212,16 @@ export default function CourseInformation() {
                   courseTree={currentCourseTree}
                   loading={loadingTree}
                   onEditLesson={handleEditLesson}
+                />
+              ),
+            },
+            {
+              key: "feedback",
+              label: "Feedback",
+              children: (
+                <CourseFeedbackTab
+                  courseId={courseId}
+                  isActive={activeKey === "feedback"}
                 />
               ),
             },

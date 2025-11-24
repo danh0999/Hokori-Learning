@@ -7,20 +7,24 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   updateCourseThunk,
   uploadCourseCoverThunk,
+  fetchCourseTree,
 } from "../../../../../../redux/features/teacherCourseSlice.js";
 
 import styles from "./styles.module.scss";
+import api from "../../../../../../configs/axios.js";
 
 const { TextArea } = Input;
 
 // build URL từ coverImagePath (BE gợi ý: preview bằng "/files/" + path)
+const API_BASE_URL =
+  api.defaults.baseURL?.replace(/\/api\/?$/, "") ||
+  import.meta.env.VITE_API_BASE_URL?.replace(/\/api\/?$/, "") ||
+  "";
+
 const buildFileUrl = (filePath) => {
   if (!filePath) return null;
   if (/^https?:\/\//i.test(filePath)) return filePath;
-  return `${window.location.origin}/files/${filePath}`.replace(
-    /([^:]\/)\/+/g,
-    "$1"
-  );
+  return `${API_BASE_URL}/files/${filePath}`.replace(/([^:]\/)\/+/g, "$1");
 };
 
 const getFileNameFromPath = (p) => {
@@ -71,6 +75,7 @@ export default function CourseOverview({ courseId }) {
     );
     if (updateCourseThunk.fulfilled.match(action)) {
       message.success("Đã lưu thông tin khoá học.");
+      dispatch(fetchCourseTree(courseId));
     } else {
       message.error("Lưu thất bại, vui lòng thử lại.");
     }
@@ -92,6 +97,7 @@ export default function CourseOverview({ courseId }) {
       if (uploadCourseCoverThunk.fulfilled.match(action)) {
         message.success("Đã cập nhật thumbnail.");
         onSuccess?.("ok");
+        dispatch(fetchCourseTree(courseId));
       } else {
         message.error("Không lưu được thumbnail.");
         onError?.();
@@ -116,6 +122,7 @@ export default function CourseOverview({ courseId }) {
     );
     if (updateCourseThunk.fulfilled.match(action)) {
       message.success("Đã xoá thumbnail.");
+      dispatch(fetchCourseTree(courseId));
     } else {
       message.error("Xoá thumbnail thất bại.");
     }
