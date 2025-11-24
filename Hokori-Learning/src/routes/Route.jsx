@@ -57,6 +57,7 @@ import AiPackages from "../pages/Admin/pages/AiPackages";
 import ProtectedRoute from "./ProtectedRoute";
 import JlptTestBuilderPage from "../pages/Moderator/JlptEventsPage/JlptTestBuilderPage/JlptTestBuilderPage";
 import CourseReviewPage from "../pages/Moderator/Queues/CourseReviewPage/CourseReviewPage";
+import ModeratorDashboard from "../pages/Moderator/ModDashboard/ModeratorDashboard";
 
 const routes = [
   // ============================
@@ -100,9 +101,14 @@ const routes = [
           { path: "jlpt", element: <JLPTList /> },
           { path: "jlpt/test/:testId", element: <JLPTTestPage /> },
 
-          { path: "course/:courseId/lesson/:lessonId", element: <LessonPlayer /> },
-          { path: "course/:courseId/lesson/:lessonId/quiz/:quizId", element: <QuizPage /> },
-
+          {
+            path: "course/:courseId/lesson/:lessonId",
+            element: <LessonPlayer />,
+          },
+          {
+            path: "course/:courseId/lesson/:lessonId/quiz/:quizId",
+            element: <QuizPage />,
+          },
         ],
       },
 
@@ -160,18 +166,13 @@ const routes = [
         path: "",
         element: <RoleLayout role="moderator" />,
         children: [
-          { index: true, element: <Stub title="Moderator Dashboard" /> },
-          { path: "reviews", element: <Stub title="Reviews" /> },
+          { index: true, element: <ModeratorDashboard /> },
           { path: "queues", element: <ManageQueues /> },
           {
             path: "courses/:courseId/review",
             element: <CourseReviewPage />,
           },
           { path: "jlptevents", element: <JlptEventsPage /> },
-          { path: "ai-check", element: <Stub title="AI Check" /> },
-          { path: "messages", element: <Stub title="Messages" /> },
-          { path: "settings", element: <Stub title="Settings" /> },
-
           { path: "*", element: <ErrorPage /> },
         ],
       },

@@ -193,7 +193,8 @@ export default function CourseInformation() {
       {/* BODY TABS */}
       <Card>
         <Tabs
-          defaultActiveKey="basic"
+          activeKey={activeKey}
+          onChange={(key) => setActiveKey(key)}
           items={[
             {
               key: "basic",
@@ -220,7 +221,7 @@ export default function CourseInformation() {
               children: (
                 <CourseFeedbackTab
                   courseId={courseId}
-                  isActive={activeKey === "feedback"} // 👈 truyền trạng thái tab
+                  isActive={activeKey === "feedback"}
                 />
               ),
             },
