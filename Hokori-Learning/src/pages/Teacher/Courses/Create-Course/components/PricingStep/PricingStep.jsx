@@ -68,7 +68,14 @@ export default function PricingStep({ courseId }) {
         <Form.Item
           name="price"
           label="Price (VND)"
-          rules={[{ required: true, message: "Nhập giá khoá học." }]}
+          rules={[
+            {
+              validator(_, value) {
+                if (value === 0 || value > 0) return Promise.resolve();
+                return Promise.reject("Giá phải lớn hơn hoặc bằng 0.");
+              },
+            },
+          ]}
         >
           <InputNumber
             min={0}
