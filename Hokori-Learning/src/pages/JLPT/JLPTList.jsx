@@ -5,51 +5,38 @@ import FilterBar from "./components/FilterBar";
 import JLPTCard from "./components/JLPTCard";
 import Pagination from "./components/Pagination";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  fetchOpenEvents,
-  fetchTestsByEvent,
-} from "../../redux/features/jlptLearnerSlice";
+import { fetchOpenEvents } from "../../redux/features/jlptLearnerSlice";
 
 const JLPTList = () => {
   const dispatch = useDispatch();
+
   const {
     events,
-    selectedEventId,
-    testsByEvent,
     loadingEvents,
-    loadingTests,
     levelFilter,
   } = useSelector((state) => state.jlptLearner);
 
-  // 🟦 Thêm searchTerm local (FE filter tên đề)
+  // Search local FE
   const [searchTerm, setSearchTerm] = useState("");
 
-  // 🟦 Lần đầu vào trang: lấy event OPEN (không filter)
+  // Lần đầu load → lấy danh sách EVENT OPEN
   useEffect(() => {
     dispatch(fetchOpenEvents());
   }, [dispatch]);
 
-  // 🟦 Khi chọn event khác → load test của event đó (nếu chưa có cache)
-  useEffect(() => {
-    if (selectedEventId && !testsByEvent[selectedEventId]) {
-      dispatch(fetchTestsByEvent(selectedEventId));
-    }
-  }, [selectedEventId, testsByEvent, dispatch]);
-
-  // 🟦 Danh sách test theo sự kiện
-  let tests = testsByEvent[selectedEventId] || [];
-
-  // 🟦 Lọc tìm kiếm bằng FE (chỉ lọc tên)
+  // Lọc theo searchTerm
+  let filteredEvents = events || [];
   if (searchTerm.trim()) {
-    tests = tests.filter((t) =>
-      t.title?.toLowerCase().includes(searchTerm.toLowerCase())
+    filteredEvents = filteredEvents.filter((ev) =>
+      ev.title?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }
 
   return (
     <main id="main-content" className={styles.wrapper}>
       <div className={styles.container}>
-        {/* Filter level + search */}
+
+        {/* Filter + Search */}
         <FilterBar
           levelFilter={levelFilter}
           onChangeLevel={(level) => dispatch(fetchOpenEvents(level))}
@@ -57,24 +44,23 @@ const JLPTList = () => {
           setSearchTerm={setSearchTerm}
         />
 
-        {/* Danh sách đề thi */}
+        {/* EVENTS LIST */}
         <section className={styles.gridSection}>
-          {(loadingEvents || loadingTests) && (
+          {loadingEvents && (
             <p className={styles.loading}>Đang tải dữ liệu...</p>
           )}
 
           <div className={styles.grid}>
-            {tests.map((test) => (
-              <JLPTCard key={test.id} test={test} />
+            {filteredEvents.map((event) => (
+              <JLPTCard key={event.id} event={event} />   
             ))}
 
-            {!loadingTests && tests.length === 0 && (
-              <p className={styles.emptyState}>Không có đề thi phù hợp.</p>
+            {!loadingEvents && filteredEvents.length === 0 && (
+              <p className={styles.emptyState}>Không có đợt thi nào phù hợp.</p>
             )}
           </div>
         </section>
 
-        {/* Pagination (tạm thời static) */}
         <Pagination />
       </div>
     </main>

@@ -5,29 +5,31 @@ import { IoMdTime } from "react-icons/io";
 import { CiCircleCheck } from "react-icons/ci";
 import { useNavigate } from "react-router-dom";
 
-const JLPTCard = ({ test }) => {
+const JLPTCard = ({ event }) => {
   const navigate = useNavigate();
 
   const handleStartTest = () => {
-    navigate(`/jlpt/test/${test.id}`);
+    navigate(`/jlpt/test/${event.id}`); 
   };
 
-  // BE JlptTestResponse (ví dụ):
-  // { id, eventId, level, durationMin, totalScore, resultNote, ... }
-  const title = test.title || `JLPT ${test.level || ""} Mock Test`;
-  const description = test.description || test.resultNote || "";
-  const duration =
-    test.durationMin ?? test.duration_min ?? test.duration ?? 0;
-  const maxParticipants =
-    test.maxParticipants ?? test.max_participants ?? null;
-  const status = test.status || "ACTIVE";
+  // BE trả event: { id, title, level, description, status, ... }
+  const title = event.title || `JLPT ${event.level || ""} Mock Test`;
+  const description = event.description || "";
+  const level = event.level || "";
+  const status = event.status || "ACTIVE";
+
+  // Vì EVENT chưa có duration, đặt tạm nếu muốn giữ UI
+  const duration = event.durationMin || event.duration || 120;
+
+  // BE cũng chưa có maxParticipants → dùng fallback cho đẹp UI:
+
 
   return (
     <div className={styles.card}>
       {/* Header */}
       <div className={styles.cardHeader}>
         <h3>{title}</h3>
-        <span className={styles.levelTag}>{test.level}</span>
+        <span className={styles.levelTag}>{level}</span>
       </div>
 
       {/* Mô tả */}
@@ -40,13 +42,7 @@ const JLPTCard = ({ test }) => {
           <span>{duration} phút</span>
         </div>
 
-        {maxParticipants && (
-          <div className={styles.infoItem}>
-            <MdPeople />
-            <span>Tối đa {maxParticipants} người</span>
-          </div>
-        )}
-
+     
         <div className={styles.infoItem}>
           <CiCircleCheck />
           <span>Trạng thái: {status}</span>
