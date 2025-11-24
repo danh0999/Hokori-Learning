@@ -17,3 +17,100 @@
   color: #6b7280;
   margin-top: 4px;
 }
+.feedbackWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feedbackHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.feedbackTitle {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.feedbackSubtitle {
+  font-size: 12px;
+  color: #888;
+  margin: 0;
+}
+
+.feedbackCount {
+  font-size: 12px;
+  color: #888;
+}
+
+.feedbackNew {
+  padding: 8px 0;
+}
+
+.feedbackNewActions {
+  margin-top: 6px;
+  text-align: right;
+}
+
+.feedbackLoading {
+  padding: 24px 0;
+  text-align: center;
+}
+
+.feedbackList {
+  margin-top: 4px;
+}
+
+.feedbackItem {
+  padding-left: 0;
+}
+
+.feedbackItemMain {
+  width: 100%;
+}
+
+.feedbackItemHeader {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.feedbackAuthor {
+  font-weight: 500;
+}
+
+.feedbackMeta {
+  color: #999;
+}
+
+.feedbackContent {
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.feedbackActions {
+  margin-bottom: 4px;
+}
+
+.feedbackReplyBox {
+  margin-top: 4px;
+}
+
+.feedbackReplyActions {
+  margin-top: 4px;
+  display: flex;
+  gap: 8px;
+}
+
+.feedbackReplies {
+  margin-top: 6px;
+  padding-left: 12px;
+  border-left: 2px solid #f0f0f0;
+}
+
+.feedbackReplyItem {
+  margin-bottom: 4px;
+}

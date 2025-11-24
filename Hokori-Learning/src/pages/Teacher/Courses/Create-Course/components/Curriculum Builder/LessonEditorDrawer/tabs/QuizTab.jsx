@@ -7,6 +7,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   fetchLessonQuizThunk,
   saveLessonQuizThunk,
+  clearCurrentQuiz,
 } from "../../../../../../../../redux/features/quizSlice.js";
 
 import QuizList from "../../../../../../ManageDocument/Quiz/QuizList/QuizList.jsx";
@@ -29,6 +30,7 @@ export default function QuizTab({ lesson }) {
 
   // load quiz khi mở/chọn lesson
   useEffect(() => {
+    dispatch(clearCurrentQuiz());
     if (!lesson?.id) return;
     dispatch(fetchLessonQuizThunk(lesson.id));
   }, [lesson?.id, dispatch]);

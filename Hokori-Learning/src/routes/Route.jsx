@@ -56,9 +56,7 @@ import AiPackages from "../pages/Admin/pages/AiPackages";
 // ===== Guards =====
 import ProtectedRoute from "./ProtectedRoute";
 import JlptTestBuilderPage from "../pages/Moderator/JlptEventsPage/JlptTestBuilderPage/JlptTestBuilderPage";
-
-// ===== Stub for unfinished pages =====
-const Stub = ({ title }) => <div style={{ padding: 12 }}>{title}</div>;
+import CourseReviewPage from "../pages/Moderator/Queues/CourseReviewPage/CourseReviewPage";
 
 const routes = [
   // ============================
@@ -165,6 +163,10 @@ const routes = [
           { index: true, element: <Stub title="Moderator Dashboard" /> },
           { path: "reviews", element: <Stub title="Reviews" /> },
           { path: "queues", element: <ManageQueues /> },
+          {
+            path: "courses/:courseId/review",
+            element: <CourseReviewPage />,
+          },
           { path: "jlptevents", element: <JlptEventsPage /> },
           { path: "ai-check", element: <Stub title="AI Check" /> },
           { path: "messages", element: <Stub title="Messages" /> },

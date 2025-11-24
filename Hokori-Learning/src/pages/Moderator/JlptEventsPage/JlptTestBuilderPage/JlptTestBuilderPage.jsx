@@ -1,6 +1,6 @@
 // src/pages/Moderator/JlptTestBuilderPage.jsx
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchTestsByEventThunk,
@@ -8,6 +8,8 @@ import {
   fetchJlptTestQuestionsThunk,
   createJlptQuestionThunk,
   createJlptOptionThunk,
+  updateJlptQuestionThunk,
+  deleteJlptQuestionThunk,
 } from "../../../../redux/features/jlptModeratorSlice.js";
 import {
   Button,
@@ -24,9 +26,14 @@ import {
   Tabs,
   Tag,
   Typography,
+  message,
+  Popconfirm,
 } from "antd";
 import { ArrowLeftOutlined, PlusOutlined } from "@ant-design/icons";
 import { buildFileUrl } from "../../../../utils/fileUrl.js";
+
+// chỉnh path cho đúng vị trí BulkImportModal trong project của bạn
+import BulkImportModal from "../../../Teacher/ManageDocument/Quiz/BulkImportModal/BulkImportModal.jsx";
 
 const { Text, Title } = Typography;
 
@@ -35,10 +42,10 @@ const normalizeAudioPath = (p) => (p ? p.replace(/\s*\/\s*/g, "/").trim() : "");
 const QUESTION_TYPES = ["VOCAB", "GRAMMAR", "READING", "LISTENING"];
 
 const QUESTION_TYPE_LABEL = {
-  VOCAB: "Vocabulary",
-  GRAMMAR: "Grammar",
-  READING: "Reading (Đọc hiểu)",
-  LISTENING: "Listening (Nghe hiểu)",
+  VOCAB: "Từ Vựng",
+  GRAMMAR: "Ngữ Pháp",
+  READING: "Đọc hiểu",
+  LISTENING: "Nghe hiểu",
 };
 
 // style dùng lại cho các card chính
@@ -51,7 +58,11 @@ const cardStyle = {
 export default function JlptTestBuilderPage() {
   const { eventId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
+
+  // event mà Admin tạo, truyền từ JlptEventsPage
+  const eventFromState = location.state?.event || null;
 
   const { testsByEvent, questionsByTest, creatingTest } = useSelector(
     (state) => state.jlptModerator
@@ -59,9 +70,21 @@ export default function JlptTestBuilderPage() {
 
   const [selectedTestId, setSelectedTestId] = useState(null);
   const [addingOptionFor, setAddingOptionFor] = useState(null);
+  const [bulkOpen, setBulkOpen] = useState(false);
+
+  // tab đang active (để quyết định bulk import vào loại nào)
+  const [activeTab, setActiveTab] = useState("VOCAB");
+
+  // question đang edit inline
+  const [editingQuestion, setEditingQuestion] = useState(null);
 
   const tests = testsByEvent[eventId] || [];
   const questions = selectedTestId ? questionsByTest[selectedTestId] || [] : [];
+
+  // level hiển thị (ưu tiên test.level, nếu chưa có test thì lấy từ event)
+  const currentTest =
+    tests.find((t) => t.id === selectedTestId) || tests[0] || null;
+  const eventLevel = currentTest?.level || eventFromState?.level || "N5";
 
   /* ------------------ load tests & questions ------------------ */
 
@@ -84,10 +107,16 @@ export default function JlptTestBuilderPage() {
   /* ------------------ handlers ------------------ */
 
   const handleCreateTest = (values) => {
+    // luôn ưu tiên level từ event nếu có
+    const payload = {
+      ...values,
+      level: eventFromState?.level || values.level || "N5",
+    };
+
     dispatch(
       createJlptTestForEventThunk({
         eventId,
-        payload: values,
+        data: payload,
       })
     ).then((res) => {
       if (res.meta.requestStatus === "fulfilled") {
@@ -119,7 +148,7 @@ export default function JlptTestBuilderPage() {
     dispatch(
       createJlptQuestionThunk({
         testId: selectedTestId,
-        payload,
+        data: payload,
       })
     ).then((res) => {
       if (res.meta.requestStatus === "fulfilled") {
@@ -132,7 +161,7 @@ export default function JlptTestBuilderPage() {
     dispatch(
       createJlptOptionThunk({
         questionId,
-        payload: values,
+        data: values,
       })
     ).then((res) => {
       if (res.meta.requestStatus === "fulfilled" && selectedTestId) {
@@ -140,6 +169,135 @@ export default function JlptTestBuilderPage() {
         dispatch(fetchJlptTestQuestionsThunk(selectedTestId));
       }
     });
+  };
+
+  // UPDATE question
+  const handleUpdateQuestion = (q, values) => {
+    if (!selectedTestId) return;
+
+    const payload = {
+      content: values.content,
+      explanation: values.explanation,
+      questionType: q.questionType,
+      orderIndex:
+        typeof values.orderIndex === "number"
+          ? values.orderIndex
+          : q.orderIndex,
+      audioPath: normalizeAudioPath(values.audioPath || ""),
+      imagePath: values.imagePath || "",
+      imageAltText: values.imageAltText || "",
+    };
+
+    dispatch(
+      updateJlptQuestionThunk({
+        testId: selectedTestId,
+        questionId: q.id,
+        data: payload,
+      })
+    ).then((res) => {
+      if (res.meta.requestStatus === "fulfilled") {
+        message.success("Cập nhật câu hỏi thành công");
+        setEditingQuestion(null);
+        dispatch(fetchJlptTestQuestionsThunk(selectedTestId));
+      }
+    });
+  };
+
+  // DELETE question
+  const handleDeleteQuestion = (q) => {
+    if (!selectedTestId) return;
+
+    dispatch(
+      deleteJlptQuestionThunk({
+        testId: selectedTestId,
+        questionId: q.id,
+      })
+    ).then((res) => {
+      if (res.meta.requestStatus === "fulfilled") {
+        message.success("Đã xóa câu hỏi");
+      }
+    });
+  };
+
+  // Bulk import: nhận list câu hỏi từ BulkImportModal (parseQuizFromText)
+  const handleBulkDone = async (bulkQuestions = []) => {
+    if (!selectedTestId) {
+      message.error("Hãy tạo JLPT test trước rồi mới import câu hỏi");
+      return;
+    }
+    if (!bulkQuestions.length) {
+      message.warning("Không có câu hỏi nào được import");
+      return;
+    }
+
+    // dùng tab hiện tại để quyết định questionType
+    const bulkQuestionType = QUESTION_TYPES.includes(activeTab)
+      ? activeTab
+      : "VOCAB";
+
+    try {
+      // Lấy orderIndex bắt đầu từ max hiện tại
+      let baseOrder =
+        questions.length === 0
+          ? 0
+          : Math.max(
+              ...questions.map((q) =>
+                typeof q.orderIndex === "number" ? q.orderIndex : 0
+              )
+            ) + 1;
+
+      for (const [idx, q] of bulkQuestions.entries()) {
+        const createQRes = await dispatch(
+          createJlptQuestionThunk({
+            testId: selectedTestId,
+            data: {
+              content: q.text || q.content || "",
+              questionType: bulkQuestionType, // 👈 tất cả câu import sẽ mang type = tab hiện tại
+              explanation: q.explanation || "",
+              orderIndex: baseOrder + idx,
+              audioPath: q.audioPath || "",
+              imagePath: q.imagePath || "",
+              imageAltText: q.imageAltText || "",
+            },
+          })
+        );
+
+        if (createQRes.meta.requestStatus !== "fulfilled") continue;
+
+        const createdQuestionId =
+          createQRes.payload?.question?.id ||
+          createQRes.payload?.id ||
+          createQRes.payload?.questionId;
+
+        if (!createdQuestionId) continue;
+
+        const opts = q.options || [];
+        for (let oi = 0; oi < opts.length; oi++) {
+          const opt = opts[oi];
+          await dispatch(
+            createJlptOptionThunk({
+              questionId: createdQuestionId,
+              data: {
+                content: opt.text || opt.content || "",
+                correct: !!opt.correct,
+                orderIndex: oi,
+                imagePath: opt.imagePath || "",
+                imageAltText: opt.imageAltText || "",
+              },
+            })
+          );
+        }
+      }
+
+      message.success(
+        `Đã import ${bulkQuestions.length} câu hỏi vào nhóm ${QUESTION_TYPE_LABEL[bulkQuestionType]}`
+      );
+      setBulkOpen(false);
+      dispatch(fetchJlptTestQuestionsThunk(selectedTestId));
+    } catch (e) {
+      console.error(e);
+      message.error("Bulk import JLPT test thất bại");
+    }
   };
 
   /* ------------------ derived data ------------------ */
@@ -162,115 +320,242 @@ export default function JlptTestBuilderPage() {
         size="small"
         dataSource={byType[type] || []}
         rowKey={(q) => q.id ?? `${type}-${q.orderIndex}`}
-        renderItem={(q, idx) => (
-          <List.Item style={{ paddingLeft: 0, paddingRight: 0 }}>
-            <div style={{ width: "100%" }}>
-              <Text strong>
-                {idx + 1}. [{type}] {q.content}
-              </Text>
+        renderItem={(q, idx) => {
+          const isEditing = editingQuestion && editingQuestion.id === q.id;
 
-              {/* audio preview cho LISTENING */}
-              {type === "LISTENING" && q.audioPath && (
-                <div style={{ marginTop: 6 }}>
-                  <audio
-                    controls
-                    preload="none"
-                    style={{ width: 260 }}
-                    src={buildFileUrl(normalizeAudioPath(q.audioPath))}
-                  />
-                </div>
-              )}
-
-              {/* options */}
-              <div style={{ marginTop: 6 }}>
-                {(q.options || []).map((op) => (
-                  <div key={op.id} style={{ fontSize: 13 }}>
-                    <Tag color={op.correct ? "green" : "default"}>
-                      {op.orderIndex + 1}
-                      {op.correct}
-                    </Tag>
-                    <span>{op.content}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* inline add option */}
-              <div style={{ marginTop: 8 }}>
-                {addingOptionFor === q.id ? (
-                  <Form
-                    layout="inline"
-                    size="small"
-                    onFinish={(values) =>
-                      handleCreateOption(q.id, {
-                        ...values,
-                        // nếu không nhập orderIndex cho option thì tự lấy length
+          return (
+            <List.Item style={{ paddingLeft: 0, paddingRight: 0 }}>
+              <div style={{ width: "100%" }}>
+                {isEditing ? (
+                  <>
+                    <Text strong>
+                      {idx + 1}. [{type}] (Đang chỉnh sửa)
+                    </Text>
+                    <Form
+                      layout="vertical"
+                      size="small"
+                      style={{ marginTop: 8 }}
+                      initialValues={{
+                        content: q.content,
+                        explanation: q.explanation,
+                        audioPath: q.audioPath,
+                        imagePath: q.imagePath,
+                        imageAltText: q.imageAltText,
                         orderIndex:
-                          typeof values.orderIndex === "number"
-                            ? values.orderIndex
-                            : q.options
-                            ? q.options.length
-                            : 0,
-                      })
-                    }
-                  >
-                    <Form.Item
-                      name="content"
-                      rules={[{ required: true, message: "Option content" }]}
+                          typeof q.orderIndex === "number" ? q.orderIndex : idx,
+                      }}
+                      onFinish={(values) => handleUpdateQuestion(q, values)}
                     >
-                      <Input placeholder="Nội dung đáp án" />
-                    </Form.Item>
-                    <Form.Item name="correct" initialValue={false}>
-                      <Select
-                        style={{ width: 90 }}
-                        options={[
-                          { label: "Sai", value: false },
-                          { label: "Đúng", value: true },
-                        ]}
-                      />
-                    </Form.Item>
-                    <Form.Item name="orderIndex">
-                      <InputNumber
-                        min={0}
-                        placeholder={
-                          q.options ? q.options.length.toString() : "0"
-                        }
-                      />
-                    </Form.Item>
-                    <Form.Item name="imagePath">
-                      <Input placeholder="Image path (optional)" />
-                    </Form.Item>
-                    <Button type="primary" htmlType="submit">
-                      Lưu
-                    </Button>
-                    <Button
-                      type="text"
-                      onClick={() => setAddingOptionFor(null)}
-                    >
-                      Hủy
-                    </Button>
-                  </Form>
-                ) : (
-                  <Button
-                    size="small"
-                    type="link"
-                    icon={<PlusOutlined />}
-                    onClick={() => setAddingOptionFor(q.id)}
-                  >
-                    Thêm đáp án
-                  </Button>
-                )}
-              </div>
+                      <Form.Item
+                        name="content"
+                        label="Nội dung câu hỏi"
+                        rules={[{ required: true, message: "Nhập nội dung" }]}
+                      >
+                        <Input.TextArea rows={3} />
+                      </Form.Item>
 
-              <Divider style={{ margin: "10px 0" }} />
-            </div>
-          </List.Item>
-        )}
+                      <Form.Item name="explanation" label="Giải thích">
+                        <Input.TextArea rows={2} />
+                      </Form.Item>
+
+                      {type === "LISTENING" && (
+                        <Form.Item
+                          name="audioPath"
+                          label="Audio path (LISTENING)"
+                        >
+                          <Input placeholder="vd: jlpt-n4/listening/part1_01.mp3" />
+                        </Form.Item>
+                      )}
+
+                      <Form.Item name="imagePath" label="Image path">
+                        <Input />
+                      </Form.Item>
+
+                      <Form.Item name="imageAltText" label="Image alt text">
+                        <Input />
+                      </Form.Item>
+
+                      <Form.Item name="orderIndex" label="Thứ tự (orderIndex)">
+                        <InputNumber min={0} />
+                      </Form.Item>
+
+                      <Space>
+                        <Button type="primary" htmlType="submit" size="small">
+                          Lưu
+                        </Button>
+                        <Button
+                          size="small"
+                          onClick={() => setEditingQuestion(null)}
+                        >
+                          Hủy
+                        </Button>
+                      </Space>
+                    </Form>
+
+                    {/* preview audio + options vẫn giữ để mod dễ nhìn */}
+                    {type === "LISTENING" && q.audioPath && (
+                      <div style={{ marginTop: 8 }}>
+                        <audio
+                          controls
+                          preload="none"
+                          style={{ width: 260 }}
+                          src={buildFileUrl(
+                            normalizeAudioPath(q.audioPath || "")
+                          )}
+                        />
+                      </div>
+                    )}
+                    <div style={{ marginTop: 6 }}>
+                      {(q.options || []).map((op) => (
+                        <div key={op.id} style={{ fontSize: 13 }}>
+                          <Tag color={op.correct ? "green" : "default"}>
+                            {op.orderIndex + 1}
+                            {op.correct ? " ✔" : ""}
+                          </Tag>
+                          <span>{op.content}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Text strong>
+                      {idx + 1}. [{type}] {q.content}
+                    </Text>
+
+                    {/* audio preview cho LISTENING */}
+                    {type === "LISTENING" && q.audioPath && (
+                      <div style={{ marginTop: 6 }}>
+                        <audio
+                          controls
+                          preload="none"
+                          style={{ width: 260 }}
+                          src={buildFileUrl(
+                            normalizeAudioPath(q.audioPath || "")
+                          )}
+                        />
+                      </div>
+                    )}
+
+                    {/* options */}
+                    <div style={{ marginTop: 6 }}>
+                      {(q.options || []).map((op) => (
+                        <div key={op.id} style={{ fontSize: 13 }}>
+                          <Tag color={op.correct ? "green" : "default"}>
+                            {op.orderIndex + 1}
+                            {op.correct ? " ✔" : ""}
+                          </Tag>
+                          <span>{op.content}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* inline add option */}
+                    <div style={{ marginTop: 8 }}>
+                      {addingOptionFor === q.id ? (
+                        <Form
+                          layout="inline"
+                          size="small"
+                          onFinish={(values) =>
+                            handleCreateOption(q.id, {
+                              ...values,
+                              orderIndex:
+                                typeof values.orderIndex === "number"
+                                  ? values.orderIndex
+                                  : q.options
+                                  ? q.options.length
+                                  : 0,
+                            })
+                          }
+                        >
+                          <Form.Item
+                            name="content"
+                            rules={[
+                              { required: true, message: "Option content" },
+                            ]}
+                          >
+                            <Input placeholder="Nội dung đáp án" />
+                          </Form.Item>
+                          <Form.Item name="correct" initialValue={false}>
+                            <Select
+                              style={{ width: 90 }}
+                              options={[
+                                { label: "Sai", value: false },
+                                { label: "Đúng", value: true },
+                              ]}
+                            />
+                          </Form.Item>
+                          <Form.Item name="orderIndex">
+                            <InputNumber
+                              min={0}
+                              placeholder={
+                                q.options ? q.options.length.toString() : "0"
+                              }
+                            />
+                          </Form.Item>
+                          <Form.Item name="imagePath">
+                            <Input placeholder="Image path (optional)" />
+                          </Form.Item>
+                          <Button type="primary" htmlType="submit">
+                            Lưu
+                          </Button>
+                          <Button
+                            type="text"
+                            onClick={() => setAddingOptionFor(null)}
+                          >
+                            Hủy
+                          </Button>
+                        </Form>
+                      ) : (
+                        <Button
+                          size="small"
+                          type="link"
+                          icon={<PlusOutlined />}
+                          onClick={() => setAddingOptionFor(q.id)}
+                        >
+                          Thêm đáp án
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* actions: Edit + Delete */}
+                    <div
+                      style={{
+                        marginTop: 4,
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        gap: 8,
+                      }}
+                    >
+                      <Button
+                        size="small"
+                        type="default"
+                        onClick={() => setEditingQuestion(q)}
+                      >
+                        Edit
+                      </Button>
+                      <Popconfirm
+                        title="Xóa câu hỏi này?"
+                        okText="Xóa"
+                        cancelText="Hủy"
+                        onConfirm={() => handleDeleteQuestion(q)}
+                      >
+                        <Button size="small" danger>
+                          Delete
+                        </Button>
+                      </Popconfirm>
+                    </div>
+                  </>
+                )}
+
+                <Divider style={{ margin: "10px 0" }} />
+              </div>
+            </List.Item>
+          );
+        }}
       />
     ),
   }));
-
-  const currentTest =
-    tests.find((t) => t.id === selectedTestId) || tests[0] || null;
 
   /* ------------------ render ------------------ */
 
@@ -296,24 +581,33 @@ export default function JlptTestBuilderPage() {
             <Title level={3} style={{ margin: 0 }}>
               JLPT Test Builder – Event #{eventId}
             </Title>
-            {currentTest && (
-              <Space size="small" style={{ marginTop: 4 }}>
-                <Tag color="blue">Level {currentTest.level}</Tag>
-                <Tag color="purple">Duration {currentTest.durationMin} min</Tag>
-                <Tag color="green">Total score {currentTest.totalScore}</Tag>
-                <Tag>{totalQuestions} questions</Tag>
-              </Space>
-            )}
+            <Space size="small" style={{ marginTop: 4 }}>
+              <Tag color="blue">Level {eventLevel}</Tag>
+              {currentTest && (
+                <>
+                  <Tag color="purple">
+                    Duration {currentTest.durationMin} min
+                  </Tag>
+                  <Tag color="green">Total score {currentTest.totalScore}</Tag>
+                </>
+              )}
+              <Tag>{totalQuestions} questions</Tag>
+            </Space>
           </div>
         </Space>
 
-        {/* Nút Finish & Save */}
-        <Button
-          type="primary"
-          onClick={() => navigate("/moderator/jlptevents")}
-        >
-          Finish &amp; Save
-        </Button>
+        {/* Nút Bulk Import + Finish & Save */}
+        <Space>
+          {selectedTestId && (
+            <Button onClick={() => setBulkOpen(true)}>Bulk Import</Button>
+          )}
+          <Button
+            type="primary"
+            onClick={() => navigate("/moderator/jlptevents")}
+          >
+            Finish &amp; Save
+          </Button>
+        </Space>
       </div>
 
       <Row gutter={16}>
@@ -330,7 +624,7 @@ export default function JlptTestBuilderPage() {
                 layout="vertical"
                 onFinish={handleCreateTest}
                 initialValues={{
-                  level: "N5",
+                  level: eventLevel,
                   durationMin: 60,
                   totalScore: 60,
                   resultNote: "",
@@ -346,6 +640,7 @@ export default function JlptTestBuilderPage() {
                       label: lv,
                       value: lv,
                     }))}
+                    disabled={!!eventFromState} // nếu event đã có level thì không cho đổi
                   />
                 </Form.Item>
                 <Form.Item
@@ -390,7 +685,10 @@ export default function JlptTestBuilderPage() {
                       key={t.id}
                       size="small"
                       type={t.id === selectedTestId ? "primary" : "default"}
-                      onClick={() => setSelectedTestId(t.id)}
+                      onClick={() => {
+                        setSelectedTestId(t.id);
+                        setEditingQuestion(null);
+                      }}
                     >
                       #{t.id} – {t.level}
                     </Button>
@@ -432,7 +730,6 @@ export default function JlptTestBuilderPage() {
                     <Input.TextArea rows={2} />
                   </Form.Item>
 
-                  {/* Ẩn orderIndex – FE tự tính */}
                   {/* Audio / Image path để BE xử lý file sau này */}
                   <Form.Item
                     name="audioPath"
@@ -470,11 +767,27 @@ export default function JlptTestBuilderPage() {
                 ở panel bên trái.
               </Text>
             ) : (
-              <Tabs defaultActiveKey="LISTENING" items={tabItems} />
+              <Tabs
+                activeKey={activeTab}
+                onChange={(key) => {
+                  setActiveTab(key);
+                  setEditingQuestion(null);
+                }}
+                items={tabItems}
+              />
             )}
           </Card>
         </Col>
       </Row>
+
+      {/* Bulk Import Modal */}
+      {selectedTestId && (
+        <BulkImportModal
+          open={bulkOpen}
+          onCancel={() => setBulkOpen(false)}
+          onDone={handleBulkDone}
+        />
+      )}
     </div>
   );
 }
