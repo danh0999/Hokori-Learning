@@ -10,7 +10,13 @@ import {
 
 import styles from "./styles.module.scss";
 
-export default function PricingStep({ courseId }) {
+/**
+ * Props:
+ *  - courseId
+ *  - onNext?: () => void
+ *  - onBack?: () => void
+ */
+export default function PricingStep({ courseId, onNext, onBack }) {
   const [form] = Form.useForm();
   const dispatch = useDispatch();
 
@@ -23,7 +29,7 @@ export default function PricingStep({ courseId }) {
     if (!currentCourseMeta) return;
 
     form.setFieldsValue({
-      price: currentCourseMeta.priceCents || 0,
+      price: currentCourseMeta.priceCents ?? 0,
     });
   }, [currentCourseMeta, form]);
 
@@ -44,6 +50,11 @@ export default function PricingStep({ courseId }) {
     if (updateCourseThunk.fulfilled.match(action)) {
       message.success("Đã lưu giá khoá học.");
       dispatch(fetchCourseTree(courseId));
+
+      // Sau khi lưu thành công, chuyển step nếu onNext có truyền vào
+      if (typeof onNext === "function") {
+        onNext();
+      }
     } else {
       message.error("Không lưu được giá, vui lòng thử lại.");
     }
@@ -81,31 +92,40 @@ export default function PricingStep({ courseId }) {
             min={0}
             step={1000}
             style={{ width: "100%" }}
-            placeholder="Ví dụ: 200000"
-            // Hiển thị 200000 -> "200.000 ₫"
+            placeholder="Ví dụ: 200.000"
+            // Hiển thị 200000 -> "200.000"
             formatter={(value) => {
               if (value == null || value === "") return "";
-              const str = String(value).replace(/\D/g, "");
-              return str.replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " ₫";
+              // chỉ lấy phần số và format dấu chấm
+              const numeric = String(value).replace(/\D/g, "");
+              if (!numeric) return "";
+              return numeric.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
             }}
-            // Người dùng sửa -> convert về number (bỏ . và ₫)
+            // Người dùng sửa -> convert về number (bỏ .)
             parser={(value) => {
               if (!value) return 0;
-              return Number(
-                value.toString().replace(/\s?₫/g, "").replace(/\./g, "")
-              );
+              const numeric = value.toString().replace(/\./g, "");
+              const num = Number(numeric);
+              return Number.isNaN(num) ? 0 : num;
             }}
           />
         </Form.Item>
 
         <Form.Item>
-          <Button type="primary" htmlType="submit" loading={saving}>
-            Save pricing
-          </Button>
+          <div className={styles.stepFooter}>
+            {typeof onBack === "function" && (
+              <Button onClick={onBack}>Back</Button>
+            )}
+            <Button type="primary" htmlType="submit" loading={saving}>
+              {typeof onNext === "function"
+                ? "Save & continue"
+                : "Save pricing"}
+            </Button>
+          </div>
         </Form.Item>
 
         <div className={styles.hintText}>
-          Ví dụ: gõ <b>200000</b> sẽ hiển thị là <b>200.000 ₫</b>.
+          Ví dụ: gõ <b>200000</b> sẽ hiển thị là <b>200.000</b>.
         </div>
       </Form>
     </Card>

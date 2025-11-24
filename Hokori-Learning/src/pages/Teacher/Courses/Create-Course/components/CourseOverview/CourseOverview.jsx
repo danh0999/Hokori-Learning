@@ -33,7 +33,7 @@ const getFileNameFromPath = (p) => {
   return parts[parts.length - 1];
 };
 
-export default function CourseOverview({ courseId }) {
+export default function CourseOverview({ courseId, onNext }) {
   const [form] = Form.useForm();
   const dispatch = useDispatch();
 
@@ -76,6 +76,11 @@ export default function CourseOverview({ courseId }) {
     if (updateCourseThunk.fulfilled.match(action)) {
       message.success("Đã lưu thông tin khoá học.");
       dispatch(fetchCourseTree(courseId));
+
+      // 👉 Sau khi lưu thành công thì nhảy sang step tiếp theo (nếu có)
+      if (typeof onNext === "function") {
+        onNext();
+      }
     } else {
       message.error("Lưu thất bại, vui lòng thử lại.");
     }
@@ -254,7 +259,7 @@ export default function CourseOverview({ courseId }) {
             htmlType="submit"
             loading={saving || uploadingThumb}
           >
-            Save basics
+            {typeof onNext === "function" ? "Save & continue" : "Save basics"}
           </Button>
         </Form.Item>
       </Form>

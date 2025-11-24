@@ -1,165 +1,185 @@
 .cardBig {
   background: #ffffff;
   border: 1px solid #e5e7eb;
-  border-radius: 16px;
-
-  .ant-card-head {
-    display: none;
-  }
-
-  .ant-card-body {
-    padding: 24px 24px 28px;
-  }
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
 }
 
-/* header: title + status pill */
-.headerRow {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
+/* Header */
 .stepHeader {
-  margin-bottom: 4px;
+  margin-bottom: 24px;
 }
 
 .stepTitle {
   font-size: 20px;
   font-weight: 600;
-  color: #111827;
-  line-height: 1.2;
-  margin-bottom: 4px;
+  color: #0f172a;
 }
 
 .stepDesc {
   font-size: 14px;
-  color: #6b7280;
-  line-height: 1.4;
+  color: #64748b;
+  margin-top: 4px;
 }
 
-.statusPill {
-  padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid #d1d5db;
-  background: #f9fafb;
-  font-size: 12px;
-  font-weight: 500;
-  color: #374151;
-  text-transform: uppercase;
-}
-
-/* review summary block */
-.reviewBlock {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+/* Review box */
+.reviewBox {
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 14px 18px;
-  margin-bottom: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  background: #f8fafc;
+  padding: 16px 20px;
+  margin-bottom: 24px;
 }
 
 .row {
   display: flex;
-  flex-wrap: wrap;
   justify-content: space-between;
-  border-bottom: 1px solid #f3f4f6;
-  padding-bottom: 6px;
-  font-size: 14px;
-  line-height: 1.4;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px dashed #e2e8f0;
+}
 
-  &:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-  }
+.row:last-child {
+  border-bottom: none;
 }
 
 .label {
-  color: #4b5563;
-  font-weight: 500;
-  margin-right: 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
 }
 
 .value {
-  color: #111827;
-  font-weight: 600;
-  max-width: 60%;
-  text-align: right;
-  word-break: break-word;
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 8px;
 }
 
+/* Status colors */
 .valueOk {
+  background: #dcfce7;
   color: #166534;
+  border: 1px solid #bbf7d0;
 }
 
 .valuePending {
-  color: #b91c1c;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
 }
 
-/* curriculum overview */
-.curriculumPreview {
-  margin-top: 8px;
-  padding: 16px 20px;
-  border-radius: 12px;
-  background: #fafafa;
-}
-
-.previewTitle {
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-.previewChapterList {
-  margin: 0;
-  padding-left: 20px;
-}
-
-.previewChapterItem {
-  margin-bottom: 8px;
-}
-
-.previewChapterLine {
-  margin-bottom: 4px;
-}
-
-.previewLessonList {
-  margin: 0;
-  padding-left: 20px;
-  font-size: 13px;
-}
-
-.previewLessonItem {
-  line-height: 1.6;
-}
-
-.previewLessonEmpty {
-  font-style: italic;
-  color: #9ca3af;
-}
-
-.previewEmpty {
-  font-style: italic;
-  color: #9ca3af;
-}
-
-/* warning */
-.warningBox {
-  background: #fef2f2;
-  border: 1px solid #fee2e2;
-  color: #b91c1c;
-  font-size: 13px;
-  line-height: 1.5;
-  padding: 10px 12px;
-  border-radius: 8px;
-  margin-top: 16px;
-}
-
-/* action buttons */
-.actionRow {
-  margin-top: 20px;
+/* Actions row */
+.actionsRow {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.actionsRight {
+  display: flex;
+  align-items: center;
   gap: 12px;
+}
+
+/* Buttons */
+:global(.ant-btn-primary) {
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+:global(.ant-btn) {
+  border-radius: 8px;
+}
+.curriculumPreviewBox {
+  margin-bottom: 24px;
+  margin-top: 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  padding: 16px 20px;
+}
+
+.curriculumHeader {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 10px;
+}
+
+.curriculumEmpty {
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* Nội dung curriculum */
+.curriculumBody {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 260px; /* để nếu nhiều chapter thì có scroll */
+  overflow-y: auto;
+}
+
+.curriculumChapter {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.chapterLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.chapterIndex {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #0f766e;
+  background: #ccfbf1;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.chapterTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* Lessons */
+.lessonList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.lessonItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  padding: 2px 0;
+  color: #334155;
+}
+
+.lessonIndex {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+  min-width: 72px;
+}
+
+.lessonTitle {
+  font-size: 13px;
+}
+
+.lessonEmpty {
+  font-size: 12px;
+  color: #9ca3af;
 }

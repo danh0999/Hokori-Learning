@@ -37,11 +37,8 @@ export default function CreateCoursePage() {
 
   // 1. Khi đổi courseId trên URL ⇒ clear tree cũ + load meta + detail mới
   useEffect(() => {
-    // luôn clear tree để tránh recycle curriculum của course trước
     dispatch(clearCourseTree());
-
     if (!courseId) return;
-
     dispatch(fetchCourseTree(courseId));
   }, [courseId, dispatch]);
 
@@ -105,15 +102,38 @@ export default function CreateCoursePage() {
 
     switch (step) {
       case 0:
-        return <CourseOverview courseId={courseId} />;
+        return (
+          <CourseOverview
+            courseId={courseId}
+            onNext={() => setStep(1)}
+            // step 0 không cần onBack vì đã có "Back to Courses" phía trên
+          />
+        );
       case 1:
         return (
-          <CurriculumBuilder courseId={courseId} loadingTree={loadingTree} />
+          <CurriculumBuilder
+            courseId={courseId}
+            loadingTree={loadingTree}
+            onBack={() => setStep(0)}
+            onNext={() => setStep(2)}
+          />
         );
       case 2:
-        return <PricingStep courseId={courseId} />;
+        return (
+          <PricingStep
+            courseId={courseId}
+            onBack={() => setStep(1)}
+            onNext={() => setStep(3)}
+          />
+        );
       case 3:
-        return <PublishStep courseId={courseId} statusFlags={status} />;
+        return (
+          <PublishStep
+            courseId={courseId}
+            statusFlags={status}
+            onBack={() => setStep(2)}
+          />
+        );
       default:
         return null;
     }

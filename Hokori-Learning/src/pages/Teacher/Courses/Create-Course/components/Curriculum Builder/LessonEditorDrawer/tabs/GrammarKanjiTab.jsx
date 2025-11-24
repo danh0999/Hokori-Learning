@@ -3,13 +3,15 @@ import React, { useEffect, useState } from "react";
 import { Form, Input, Upload, Button, Typography, Space, message } from "antd";
 import { InboxOutlined } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
+
 import api from "../../../../../../../../configs/axios.js";
 import {
   uploadSectionFileThunk,
   updateLessonThunk,
   createContentThunk,
   updateContentThunk,
-} from "../../../../../../../../redux/features/teacherCourseSlice";
+  updateSectionThunk,
+} from "../../../../../../../../redux/features/teacherCourseSlice.js";
 
 import styles from "../styles.module.scss";
 
@@ -37,8 +39,8 @@ export default function GrammarKanjiTab({
 
   const { sectionsByType, grammarInfo, kanjiInfo, ensureSection } =
     sectionsHook;
-
   const info = type === "GRAMMAR" ? grammarInfo : kanjiInfo;
+  const sectionForType = sectionsByType?.[type] || null;
 
   const [videoState, setVideoState] = useState({
     file: null,
@@ -48,12 +50,19 @@ export default function GrammarKanjiTab({
   });
   const [saving, setSaving] = useState(false);
 
-  // init
+  // ============================
+  // INIT FORM + VIDEO PREVIEW
+  // ============================
   useEffect(() => {
     if (!lesson) return;
 
+    const defaultSectionTitle =
+      sectionForType?.title ||
+      (type === "GRAMMAR" ? "Grammar section" : "Kanji section");
+
     form.setFieldsValue({
       title: lesson.title,
+      sectionTitle: defaultSectionTitle,
       description: info.descContent?.richText || "",
     });
 
@@ -63,8 +72,18 @@ export default function GrammarKanjiTab({
       contentId: info.assetContent?.id || null,
       descId: info.descContent?.id || null,
     });
-  }, [lesson?.id, info.assetContent, info.descContent, form]);
+  }, [
+    lesson?.id,
+    sectionForType?.title,
+    info.assetContent,
+    info.descContent,
+    form,
+    type,
+  ]);
 
+  // ============================
+  // HANDLE chọn video
+  // ============================
   const handleSelectVideo = ({ file, onSuccess }) => {
     const url = URL.createObjectURL(file);
     setVideoState((prev) => {
@@ -76,32 +95,53 @@ export default function GrammarKanjiTab({
     onSuccess?.("ok");
   };
 
+  // ============================
+  // SAVE
+  // ============================
   const handleSave = async () => {
     if (!lesson?.id) return;
 
     const values = await form.validateFields();
+    const lessonTitle = values.title;
+    const sectionTitle = values.sectionTitle;
     const description = values.description || "";
 
     try {
       setSaving(true);
 
-      // 1. update lesson title nếu đổi
-      if (values.title && values.title !== lesson.title) {
+      // 1. Update LESSON title nếu đổi
+      if (lessonTitle && lessonTitle !== lesson.title) {
         await dispatch(
           updateLessonThunk({
             lessonId: lesson.id,
-            data: { title: values.title },
+            data: { title: lessonTitle },
           })
         ).unwrap();
       }
 
-      // 2. đảm bảo section
-      let section = sectionsByType[type];
+      // 2. Đảm bảo SECTION + update title section nếu cần
+      let section = sectionForType;
       if (!section) {
-        section = await ensureSection(type);
+        // tạo section mới với title custom
+        section = await ensureSection(type, {
+          title: sectionTitle || (type === "GRAMMAR" ? "Grammar" : "Kanji"),
+        });
+      } else if (sectionTitle && sectionTitle !== section.title) {
+        // update title section hiện có
+        await dispatch(
+          updateSectionThunk({
+            sectionId: section.id,
+            data: { title: sectionTitle },
+          })
+        ).unwrap();
       }
 
-      // 3. CHỈ xử lý video nếu user chọn file mới
+      if (!section?.id) {
+        message.error("Không tìm được section để lưu nội dung.");
+        return;
+      }
+
+      // 3. Xử lý VIDEO (ASSET content) — chỉ nếu user chọn file mới
       let filePath = info.assetContent?.filePath || null;
 
       if (videoState.file) {
@@ -153,7 +193,7 @@ export default function GrammarKanjiTab({
         }
       }
 
-      // 4. description (logic cũ giữ nguyên)
+      // 4. DESCRIPTION (RICH_TEXT)
       if (description.trim()) {
         const baseDesc = {
           contentFormat: "RICH_TEXT",
@@ -198,15 +238,38 @@ export default function GrammarKanjiTab({
     }
   };
 
+  // ============================
+  // RENDER
+  // ============================
   return (
     <div className={styles.tabBody}>
       <Form form={form} layout="vertical">
         <Form.Item
           name="title"
           label="Lesson title"
-          rules={[{ required: true, message: "Vui lòng nhập tiêu đề." }]}
+          rules={[
+            { required: true, message: "Vui lòng nhập tiêu đề bài học." },
+          ]}
         >
           <Input />
+        </Form.Item>
+
+        <Form.Item
+          name="sectionTitle"
+          label={
+            type === "GRAMMAR" ? "Grammar section title" : "Kanji section title"
+          }
+          rules={[
+            { required: true, message: "Vui lòng nhập tiêu đề section." },
+          ]}
+        >
+          <Input
+            placeholder={
+              type === "GRAMMAR"
+                ? "Ví dụ: Ngữ pháp – Thì hiện tại tiếp diễn"
+                : "Ví dụ: Kanji – Chủ đề Gia đình"
+            }
+          />
         </Form.Item>
 
         <Form.Item label={type === "GRAMMAR" ? "Grammar video" : "Kanji video"}>
@@ -263,7 +326,7 @@ export default function GrammarKanjiTab({
             type === "GRAMMAR" ? "Grammar description" : "Kanji description"
           }
         >
-          <TextArea rows={5} />
+          <TextArea rows={5} placeholder="Mô tả nội dung, ví dụ, ghi chú..." />
         </Form.Item>
 
         <Form.Item>
