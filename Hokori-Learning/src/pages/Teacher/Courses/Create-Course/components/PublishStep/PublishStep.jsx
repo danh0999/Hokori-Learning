@@ -2,6 +2,7 @@
 import React from "react";
 import { Card, Button, message } from "antd";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 
 import {
   submitforapprovalCourseThunk,
@@ -10,99 +11,105 @@ import {
 
 import styles from "./styles.module.scss";
 
-export default function PublishStep({ courseId, statusFlags }) {
+/**
+ * Props:
+ *  - courseId
+ *  - statusFlags: { basicsDone, curriculumDone, pricingDone, readyToPublish }
+ *  - onBack?: () => void   // để quay lại step Pricing nếu cần
+ */
+export default function PublishStep({ courseId, statusFlags, onBack }) {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const { currentCourseMeta, currentCourseTree, saving } = useSelector(
     (state) => state.teacherCourse
   );
 
-  const { basicsDone, curriculumDone, pricingDone, readyToPublish } =
-    statusFlags || {};
+  const basicsDone = statusFlags?.basicsDone;
+  const curriculumDone = statusFlags?.curriculumDone;
+  const pricingDone = statusFlags?.pricingDone;
+  const readyToPublish = statusFlags?.readyToPublish;
 
   const chapters = currentCourseTree?.chapters || [];
-
   const totalChapters = chapters.length;
   const totalLessons =
-    chapters.reduce((acc, ch) => acc + (ch.lessons?.length || 0), 0) || 0;
+    chapters.reduce((sum, ch) => sum + (ch.lessons?.length || 0), 0) || 0;
 
-  const status = currentCourseMeta?.status || "DRAFT";
-  const isDraft = status === "DRAFT";
-  const isPending = status === "PENDING_APPROVAL";
-  const isPublished = status === "PUBLISHED";
-  const isArchived = status === "ARCHIVED";
+  const isPublished = currentCourseMeta?.status === "PUBLISHED";
+  const isPending = currentCourseMeta?.status === "PENDING_APPROVAL";
+
+  const submitBtnText = isPending
+    ? "In review"
+    : isPublished
+    ? "Update course info"
+    : "Submit for review";
+
+  const canSubmit = readyToPublish && !isPending;
 
   const handleSubmitForReview = async () => {
     if (!courseId) return;
-    // tránh gọi thừa khi đang pending/published
-    if (isPending) {
-      message.info("Khoá học đang chờ moderator duyệt.");
-      return;
-    }
-    if (isPublished) {
-      message.info("Khoá học đã được publish.");
+    if (!readyToPublish) {
+      message.warning("Hãy hoàn thành các bước trước khi gửi xét duyệt.");
       return;
     }
 
-    const action = await dispatch(submitforapprovalCourseThunk(courseId));
+    try {
+      const action = await dispatch(submitforapprovalCourseThunk(courseId));
 
-    if (submitforapprovalCourseThunk.fulfilled.match(action)) {
-      message.success(
-        "Khoá học đã được gửi cho moderator duyệt (trạng thái: PENDING_APPROVAL)."
-      );
-    } else {
-      message.error("Không submit được khoá học, vui lòng thử lại.");
+      if (submitforapprovalCourseThunk.fulfilled.match(action)) {
+        message.success("Khoá học đã được gửi cho admin xét duyệt.");
+        // 👉 Sau khi submit thành công, quay về trang manage courses
+        navigate("/teacher/manage-courses");
+      } else {
+        message.error(
+          action.payload || "Gửi xét duyệt thất bại, vui lòng thử lại."
+        );
+      }
+    } catch (err) {
+      console.error(err);
+      message.error("Có lỗi khi gửi xét duyệt.");
     }
   };
 
   const handleUnpublish = async () => {
     if (!courseId) return;
-
-    const action = await dispatch(unpublishCourseThunk(courseId));
-
-    if (unpublishCourseThunk.fulfilled.match(action)) {
-      message.success("Khoá học đã được unpublish / ngừng bán.");
-    } else {
-      message.error("Không unpublish được, vui lòng thử lại.");
+    try {
+      const action = await dispatch(unpublishCourseThunk(courseId));
+      if (unpublishCourseThunk.fulfilled.match(action)) {
+        message.success("Khoá học đã được unpublish.");
+      } else {
+        message.error(
+          action.payload || "Unpublish thất bại, vui lòng thử lại."
+        );
+      }
+    } catch (err) {
+      console.error(err);
+      message.error("Có lỗi khi unpublish khoá học.");
     }
   };
 
-  const priceText = pricingDone
-    ? `${currentCourseMeta?.priceCents?.toLocaleString("vi-VN")} VND`
-    : "Not set";
-
-  // text cho nút submit
-  let submitBtnText = "Submit for review";
-  if (isPending) submitBtnText = "Waiting for moderator approval";
-  if (isPublished) submitBtnText = "Already published";
-
-  const submitDisabled = !readyToPublish || isPending || isPublished || saving;
-
   return (
     <Card className={styles.cardBig}>
-      {/* Header + status pill */}
-      <div className={styles.headerRow}>
-        <div className={styles.stepHeader}>
-          <div className={styles.stepTitle}>Review & Submit</div>
-          <div className={styles.stepDesc}>
-            Kiểm tra lại khoá học trước khi gửi cho moderator duyệt. Sau khi
-            được approve, khoá học sẽ chuyển sang trạng thái PUBLISHED và
-            Learner mới nhìn thấy.
-          </div>
+      {/* Header */}
+      <div className={styles.stepHeader}>
+        <div className={styles.stepTitle}>Review & publish</div>
+        <div className={styles.stepDesc}>
+          Kiểm tra lại thông tin khoá học trước khi gửi cho admin xét duyệt.
         </div>
-
-        <div className={styles.statusPill}>{status}</div>
       </div>
 
-      {/* Khối tóm tắt 3 mục chính */}
-      <div className={styles.reviewBlock}>
+      {/* Summary status */}
+      <div className={styles.reviewBox}>
         <div className={styles.row}>
-          <span className={styles.label}>Basics</span>
+          <span className={styles.label}>Title & description</span>
           <span
             className={`${styles.value} ${
               basicsDone ? styles.valueOk : styles.valuePending
             }`}
           >
-            {basicsDone ? "Completed" : "Missing info"}
+            {basicsDone
+              ? "Đã thiết lập"
+              : "Chưa đủ thông tin tiêu đề hoặc mô tả"}
           </span>
         </div>
 
@@ -126,81 +133,91 @@ export default function PublishStep({ courseId, statusFlags }) {
               pricingDone ? styles.valueOk : styles.valuePending
             }`}
           >
-            {priceText}
+            {pricingDone
+              ? `${(currentCourseMeta?.priceCents || 0).toLocaleString(
+                  "vi-VN"
+                )} VND`
+              : "Chưa đặt giá"}
+          </span>
+        </div>
+
+        <div className={styles.row}>
+          <span className={styles.label}>Status</span>
+          <span className={styles.value}>
+            {currentCourseMeta?.status || "DRAFT"}
           </span>
         </div>
       </div>
 
-      {/* Curriculum overview: Chapter / Lesson */}
-      <div className={styles.curriculumPreview}>
-        <div className={styles.previewTitle}>Curriculum overview</div>
+      {/* Curriculum preview */}
+      <div className={styles.curriculumPreviewBox}>
+        <div className={styles.curriculumHeader}>Curriculum preview</div>
 
         {chapters.length === 0 ? (
-          <div className={styles.previewEmpty}>
-            Chưa có chapter / lesson nào.
+          <div className={styles.curriculumEmpty}>
+            Chưa có chapter / lesson nào trong curriculum.
           </div>
         ) : (
-          <ol className={styles.previewChapterList}>
+          <div className={styles.curriculumBody}>
             {chapters.map((ch, chIndex) => (
-              <li key={ch.id || chIndex} className={styles.previewChapterItem}>
-                <div className={styles.previewChapterLine}>
-                  <strong>Chapter {chIndex + 1}:</strong>{" "}
-                  {ch.title || "(Untitled chapter)"}
+              <div key={ch.id || chIndex} className={styles.curriculumChapter}>
+                <div className={styles.chapterLine}>
+                  <span className={styles.chapterIndex}>
+                    Chapter {chIndex + 1}
+                  </span>
+                  <span className={styles.chapterTitle}>
+                    {ch.title || "Untitled chapter"}
+                  </span>
                 </div>
 
-                <ul className={styles.previewLessonList}>
+                <ul className={styles.lessonList}>
                   {(ch.lessons || []).length === 0 ? (
-                    <li className={styles.previewLessonEmpty}>
-                      (No lessons in this chapter)
+                    <li className={styles.lessonEmpty}>
+                      No lessons in this chapter
                     </li>
                   ) : (
-                    (ch.lessons || []).map((les, lesIndex) => (
-                      <li
-                        key={les.id || lesIndex}
-                        className={styles.previewLessonItem}
-                      >
-                        Lesson {lesIndex + 1}:{" "}
-                        {les.title || "(Untitled lesson)"}
+                    (ch.lessons || []).map((les, lIndex) => (
+                      <li key={les.id || lIndex} className={styles.lessonItem}>
+                        <span className={styles.lessonIndex}>
+                          Lesson {lIndex + 1}
+                        </span>
+                        <span className={styles.lessonTitle}>
+                          {les.title || "Untitled lesson"}
+                        </span>
                       </li>
                     ))
                   )}
                 </ul>
-              </li>
+              </div>
             ))}
-          </ol>
+          </div>
         )}
       </div>
 
-      {!readyToPublish && (
-        <div className={styles.warningBox}>
-          Cần hoàn thành: tiêu đề + mô tả, ít nhất 1 lesson, và giá khoá học
-          trước khi submit.
-        </div>
-      )}
-
-      {isPending && (
-        <div className={styles.infoBox}>
-          Khoá học đang ở trạng thái <b>PENDING_APPROVAL</b>. Moderator sẽ kiểm
-          tra và nếu approve, trạng thái sẽ chuyển sang <b>PUBLISHED</b>.
-        </div>
-      )}
-
-      {/* Action buttons */}
-      <div className={styles.actionRow}>
-        <Button
-          type="primary"
-          disabled={submitDisabled}
-          onClick={handleSubmitForReview}
-          loading={saving}
-        >
-          {submitBtnText}
-        </Button>
-
-        {isPublished && (
-          <Button danger onClick={handleUnpublish} loading={saving}>
-            Unpublish
+      {/* Actions */}
+      <div className={styles.actionsRow}>
+        {typeof onBack === "function" && (
+          <Button onClick={onBack} disabled={saving}>
+            Back
           </Button>
         )}
+
+        <div className={styles.actionsRight}>
+          <Button
+            type="primary"
+            onClick={handleSubmitForReview}
+            disabled={!canSubmit}
+            loading={saving}
+          >
+            {submitBtnText}
+          </Button>
+
+          {isPublished && (
+            <Button danger onClick={handleUnpublish} loading={saving}>
+              Unpublish
+            </Button>
+          )}
+        </div>
       </div>
     </Card>
   );

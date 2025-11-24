@@ -15,6 +15,7 @@ import {
   DatabaseOutlined,
   ExperimentOutlined,
   UserOutlined,
+  LogoutOutlined,
 } from "@ant-design/icons";
 
 // helper tạo item AntD
@@ -68,6 +69,7 @@ export const sidebarMenusByRole = {
     ),
     mk("revenue", "Doanh thu", <DollarOutlined />, "/teacher/revenue"),
     mk("profile", "Hồ sơ cá nhân", <UserOutlined />, "/teacher/profile"),
+    mk("logout", "Đăng xuất", <LogoutOutlined />, "logout-action"),
   ],
   admin: [
     mk("dashboard", "Tổng quan", <DashboardOutlined />, "/admin"),
@@ -96,6 +98,7 @@ export const sidebarMenusByRole = {
     //   "/admin/policies"
     // ),
     mk("system-logs", "System Log", <SettingOutlined />, "/admin/system-logs"),
+    mk("logout", "Đăng xuất", <LogoutOutlined />, "logout-action"),
   ],
   moderator: [
     mk("dashboard", "Tổng quan", <DashboardOutlined />, "/moderator"),
@@ -107,6 +110,7 @@ export const sidebarMenusByRole = {
       <SafetyCertificateOutlined />,
       "/moderator/flags"
     ),
+    mk("logout", "Đăng xuất", <LogoutOutlined />, "logout-action"),
   ],
 };
 

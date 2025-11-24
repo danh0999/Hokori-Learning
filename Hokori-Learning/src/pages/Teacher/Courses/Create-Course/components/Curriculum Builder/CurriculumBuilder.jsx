@@ -21,8 +21,15 @@ import styles from "./styles.module.scss";
  * Props:
  *  - courseId
  *  - loadingTree
+ *  - onNext?: () => void
+ *  - onBack?: () => void
  */
-export default function CurriculumBuilder({ courseId, loadingTree }) {
+export default function CurriculumBuilder({
+  courseId,
+  loadingTree,
+  onNext,
+  onBack,
+}) {
   const dispatch = useDispatch();
   const { currentCourseTree } = useSelector((state) => state.teacherCourse);
 
@@ -80,7 +87,6 @@ export default function CurriculumBuilder({ courseId, loadingTree }) {
     await dispatch(fetchCourseTree(courseId));
   };
 
-  // chỉ cập nhật draft trên FE, KHÔNG gọi API
   const handleChangeLessonTitle = (lessonId, value) => {
     setLessonTitleDrafts((prev) => ({
       ...prev,
@@ -88,10 +94,8 @@ export default function CurriculumBuilder({ courseId, loadingTree }) {
     }));
   };
 
-  // khi rời ô input mới gọi API update
   const handleBlurLessonTitle = async (lessonId, originalTitle) => {
     const draft = lessonTitleDrafts[lessonId];
-
     const trimmed = (draft ?? "").trim();
     if (!trimmed || trimmed === originalTitle) return;
 
@@ -113,7 +117,6 @@ export default function CurriculumBuilder({ courseId, loadingTree }) {
     }
   };
 
-  // Khi drawer lưu xong
   const handleLessonSaved = async () => {
     if (courseId) {
       await dispatch(fetchCourseTree(courseId));
@@ -136,6 +139,8 @@ export default function CurriculumBuilder({ courseId, loadingTree }) {
       </div>
     );
   }
+
+  const canGoNext = chapters.length > 0; // có ít nhất 1 chapter mới cho Next
 
   return (
     <div className={styles.curriculumWrap}>
@@ -237,6 +242,16 @@ export default function CurriculumBuilder({ courseId, loadingTree }) {
           </Card>
         ))
       )}
+
+      {/* Footer: Back / Next */}
+      <div className={styles.footerRow}>
+        {typeof onBack === "function" && <Button onClick={onBack}>Back</Button>}
+        {typeof onNext === "function" && (
+          <Button type="primary" onClick={onNext} disabled={!canGoNext}>
+            Next: Pricing
+          </Button>
+        )}
+      </div>
 
       {/* Drawer edit lesson */}
       {openLesson && (

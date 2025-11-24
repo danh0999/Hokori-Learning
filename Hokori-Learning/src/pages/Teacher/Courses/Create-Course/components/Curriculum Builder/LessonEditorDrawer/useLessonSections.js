@@ -1,4 +1,3 @@
-// LessonEditorDrawer/useLessonSections.js
 import { useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
 import { createSectionThunk } from "../../../../../../../redux/features/teacherCourseSlice.js";
@@ -38,25 +37,34 @@ export default function useLessonSections(lessonFromTree) {
   const kanjiInfo = extractContent(sectionsByType.KANJI);
   const vocabInfo = extractContent(sectionsByType.VOCABULARY);
 
-  // 👇 thêm extraData, bỏ flashcardSetId: null
+  /**
+   * ensureSection(type, extraData)
+   * - type: "GRAMMAR" | "KANJI" | "VOCABULARY"
+   * - extraData: có thể truyền { title: "Grammar - Bài 1" } nếu muốn
+   */
   const ensureSection = async (type, extraData = {}) => {
     if (!lessonFromTree?.id) throw new Error("Missing lessonId");
 
+    // Nếu section cho type đó đã tồn tại thì dùng luôn
     if (sectionsByType[type]) return sectionsByType[type];
+
+    const { title, ...rest } = extraData;
+
+    const defaultTitle =
+      type === "GRAMMAR"
+        ? "Grammar"
+        : type === "KANJI"
+        ? "Kanji"
+        : "Vocabulary";
 
     const created = await dispatch(
       createSectionThunk({
         lessonId: lessonFromTree.id,
         data: {
-          title:
-            type === "GRAMMAR"
-              ? "Grammar"
-              : type === "KANJI"
-              ? "Kanji"
-              : "Vocabulary",
+          title: title || defaultTitle, // 👈 luôn gửi title lên BE
           orderIndex: (lessonFromTree.sections?.length || 0) + 1,
           studyType: type,
-          ...extraData, // nếu sau này cần truyền thêm gì thì truyền ở đây
+          ...rest, // nếu sau này cần truyền thêm gì thì truyền ở đây
         },
       })
     ).unwrap();

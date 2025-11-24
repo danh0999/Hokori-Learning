@@ -1,7 +1,13 @@
 // LessonEditorDrawer/LessonEditorDrawer.jsx
 import React, { useMemo, useState } from "react";
-import { Drawer, Tabs, Button, Space, message } from "antd";
+import { Drawer, Tabs, Button, Space, message, Typography } from "antd";
 import { useDispatch, useSelector } from "react-redux";
+import {
+  BookOutlined,
+  FontSizeOutlined,
+  TranslationOutlined,
+  QuestionCircleOutlined,
+} from "@ant-design/icons";
 
 import { fetchCourseTree } from "../../../../../../../redux/features/teacherCourseSlice.js";
 import useLessonSections from "./useLessonSections.js";
@@ -11,6 +17,8 @@ import VocabFlashcardTab from "./tabs/VocabFlashcardTab.jsx";
 import QuizTab from "./tabs/QuizTab.jsx";
 
 import styles from "./styles.module.scss";
+
+const { Text } = Typography;
 
 export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
   const dispatch = useDispatch();
@@ -31,6 +39,17 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
   }, [lesson, currentCourseTree]);
 
   const sectionsHook = useLessonSections(lessonFromTree);
+
+  const renderLessonMetaShort = (les) => {
+    if (!les) return null;
+    const sectionCount = les.sections?.length || 0;
+    const contentCount = (les.sections || []).reduce(
+      (sum, s) => sum + (s.contents?.length || 0),
+      0
+    );
+    if (!sectionCount && !contentCount) return "Chưa có section / content";
+    return `${sectionCount} section · ${contentCount} content`;
+  };
 
   // 🔁 reload course tree sau khi 1 tab lưu xong
   const handleChildSaved = async () => {
@@ -63,19 +82,45 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
   const tabItems = [
     {
       key: "grammar",
-      label: "Grammar",
+      label: (
+        <div className={styles.lessonTabLabel}>
+          <div className={styles.lessonTabLabelTop}>
+            <span className={styles.lessonTabPill}>Section</span>
+            <span className={styles.lessonTabName}>
+              <BookOutlined className={styles.lessonTabIcon} />
+              Grammar
+            </span>
+          </div>
+          <div className={styles.lessonTabSub}>
+            Video + mô tả ngữ pháp cho lesson này.
+          </div>
+        </div>
+      ),
       children: (
         <GrammarKanjiTab
           type="GRAMMAR"
           lesson={lessonFromTree}
           sectionsHook={sectionsHook}
-          onSaved={handleChildSaved} // 👈 thêm callback
+          onSaved={handleChildSaved}
         />
       ),
     },
     {
       key: "kanji",
-      label: "Kanji",
+      label: (
+        <div className={styles.lessonTabLabel}>
+          <div className={styles.lessonTabLabelTop}>
+            <span className={styles.lessonTabPill}>Section</span>
+            <span className={styles.lessonTabName}>
+              <FontSizeOutlined className={styles.lessonTabIcon} />
+              Kanji
+            </span>
+          </div>
+          <div className={styles.lessonTabSub}>
+            Video + ghi chú Kanji, ví dụ minh hoạ.
+          </div>
+        </div>
+      ),
       children: (
         <GrammarKanjiTab
           type="KANJI"
@@ -87,34 +132,75 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
     },
     {
       key: "vocab",
-      label: "Vocabulary",
+      label: (
+        <div className={styles.lessonTabLabel}>
+          <div className={styles.lessonTabLabelTop}>
+            <span className={styles.lessonTabPill}>Section</span>
+            <span className={styles.lessonTabName}>
+              <TranslationOutlined className={styles.lessonTabIcon} />
+              Vocabulary
+            </span>
+          </div>
+          <div className={styles.lessonTabSub}>
+            Tạo bộ flashcard cho từ vựng của lesson.
+          </div>
+        </div>
+      ),
       children: (
         <VocabFlashcardTab
           lesson={lessonFromTree}
           sectionsHook={sectionsHook}
-          // sau này nếu cần cũng pass onSaved giống Grammar
         />
       ),
     },
     {
       key: "quiz",
-      label: "Quiz",
-      children: (
-        <QuizTab
-          lesson={lessonFromTree}
-          // nếu muốn reload tree sau khi save quiz thì thêm prop onSaved và gọi handleChildSaved
-        />
+      label: (
+        <div className={styles.lessonTabLabel}>
+          <div className={styles.lessonTabLabelTop}>
+            <span className={styles.lessonTabPill}>Content</span>
+            <span className={styles.lessonTabName}>
+              <QuestionCircleOutlined className={styles.lessonTabIcon} />
+              Quiz tổng hợp
+            </span>
+          </div>
+          <div className={styles.lessonTabSub}>
+            1 quiz tổng hợp sau khi học Grammar / Kanji / Vocab.
+          </div>
+        </div>
       ),
+      children: <QuizTab lesson={lessonFromTree} />,
     },
   ];
 
   return (
     <Drawer
       open={open}
-      width={800}
-      title={`Edit lesson: ${lessonFromTree?.title || ""}`}
+      width={860}
       onClose={onClose}
       destroyOnClose={false}
+      title={
+        <div className={styles.drawerTitle}>
+          <div className={styles.drawerTitleBreadcrumb}>
+            <span className={styles.crumbDim}>Course</span>
+            <span> / Lesson</span>
+          </div>
+          <div className={styles.drawerTitleMain}>
+            {lessonFromTree?.title || "Untitled lesson"}
+          </div>
+          <div className={styles.drawerTitleSub}>
+            {currentCourseMeta?.title && (
+              <>
+                <span className={styles.courseTitle}>
+                  {currentCourseMeta.title}
+                </span>
+                <span className={styles.dot}>&bull;</span>
+              </>
+            )}
+            <span>{renderLessonMetaShort(lessonFromTree)}</span>
+          </div>
+        </div>
+      }
       extra={
         <Button type="primary" onClick={handleReloadTreeAndClose}>
           Save lesson
@@ -126,29 +212,49 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
             <Button onClick={onClose}>Cancel</Button>
             {activeTab === "grammar" && (
               <span className={styles.footerHint}>
-                Nhấn &quot;Save&quot; trong tab Grammar để lưu nội dung.
+                Đây là <b>Grammar section</b> của lesson. Nhấn &quot;Save
+                Grammar&quot; để lưu video & mô tả.
               </span>
             )}
             {activeTab === "kanji" && (
               <span className={styles.footerHint}>
-                Nhấn &quot;Save&quot; trong tab Kanji để lưu nội dung.
+                Đây là <b>Kanji section</b>. Nhấn &quot;Save Kanji&quot; để lưu
+                nội dung.
               </span>
             )}
             {activeTab === "vocab" && (
               <span className={styles.footerHint}>
-                Flashcard được lưu trong modal flashcard.
+                Đây là <b>Vocabulary section</b>. Flashcard được lưu trong modal
+                flashcard.
               </span>
             )}
             {activeTab === "quiz" && (
               <span className={styles.footerHint}>
-                Quiz được lưu bằng nút <b>Save</b> trong cửa sổ Quiz.
+                Đây là <b>Quiz content</b>. Quiz được lưu trong cửa sổ Quiz
+                builder.
               </span>
             )}
           </Space>
         </div>
       }
+      className={styles.lessonDrawer}
     >
-      <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
+      <div className={styles.drawerInner}>
+        <div className={styles.drawerStructureHint}>
+          <Text type="secondary" className={styles.structureText}>
+            <span className={styles.structureLabel}>Structure&nbsp;</span>
+            Chapter &gt; Lesson &gt; Section (Grammar / Kanji / Vocab) &gt;
+            Content (Video / Flashcard / Quiz)
+          </Text>
+        </div>
+
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={tabItems}
+          className={styles.lessonTabs}
+        />
+      </div>
     </Drawer>
   );
 }

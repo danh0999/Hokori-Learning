@@ -1,19 +1,23 @@
-/* Header tổng */
+/* =============================
+   HEADER CONTAINER
+============================= */
 .headerBar {
-  width: 100%;
-  background: #fff;
-  border-bottom: 1px solid #e5e7eb;
+  height: 64px;
+  background: #0f172a; /* navy dark */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 22px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.4);
   position: sticky;
   top: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  height: 64px;
+  z-index: 50;
 }
 
-/* Logo */
+/* =============================
+   BRAND / LOGO
+============================= */
 .logo {
   display: flex;
   align-items: center;
@@ -22,96 +26,72 @@
 }
 
 .logoBox {
-  width: 36px;
-  height: 36px;
-  background: #111827;
-  border-radius: 6px;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #2563eb, #0ea5e9);
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
 }
 
 .logoText {
-  color: #fff;
-  font-size: 16px;
-  font-weight: bold;
-  line-height: 1; /* giữ chữ H canh giữa */
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
 }
 
 .brand {
-  font-size: 20px;
-  font-weight: 700;
-  color: #111;
-}
-
-/* Menu ngang */
-.headerMenu {
-  flex: 1;
-  margin-left: 24px;
-  border-bottom: none !important;
-  background: transparent !important;
-
-  :global(.ant-menu-item) {
-    font-size: 15px;
-    color: #333;
-    font-weight: 500;
-    padding: 0 14px !important;
-    transition: color 0.2s ease, border-color 0.2s ease;
-  }
-
-  :global(.ant-menu-item:hover) {
-    color: #e60012 !important;
-  }
-
-  :global(.ant-menu-item-selected) {
-    color: #e60012 !important;
-    border-bottom: 2px solid #e60012 !important;
-    background: transparent !important;
-  }
-}
-
-/* Actions bên phải */
-.rightZone {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.bellIcon {
   font-size: 18px;
-  color: #333;
-  cursor: pointer;
-  transition: color 0.2s ease;
+  font-weight: 600;
+  color: #e2e8f0;
+}
 
-  &:hover {
-    color: #e60012;
-  }
+/* =============================
+   RIGHT ZONE
+============================= */
+.rightZone {
+  display: flex !important;
+  align-items: center;
+  gap: 12px !important;
 }
 
 .avatarWrap {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   cursor: pointer;
-  color: #333;
-  font-size: 15px;
-  transition: color 0.2s ease;
+  border-radius: 6px;
 
-  &:hover {
-    color: #e60012;
-  }
+  background: #0f172a;
+  transition: 0.2s ease;
 }
 
-.displayName {
-  font-weight: 500;
+.avatarWrap:hover {
+  background: rgba(255, 255, 255, 0.16);
 }
 
-/* Dropdown chỉnh thêm nếu cần */
+:global(.ant-avatar) {
+  border-radius: 6px;
+}
+
+/* =============================
+   DROPDOWN
+============================= */
 :global(.ant-dropdown-menu) {
-  border-radius: 8px;
-  padding: 6px 0;
+  border-radius: 8px !important;
 }
-:global(.ant-dropdown-menu-item:hover) {
-  color: #e60012 !important;
-  background: #f9fafb !important;
+
+:global(.ant-dropdown-menu-item) {
+  font-size: 14px;
+}
+
+/* =============================
+   RESPONSIVE
+============================= */
+@media (max-width: 768px) {
+  .headerBar {
+    padding: 0 14px;
+  }
+
+  .brand {
+    display: none; /* hide long brand text on mobile */
+  }
 }

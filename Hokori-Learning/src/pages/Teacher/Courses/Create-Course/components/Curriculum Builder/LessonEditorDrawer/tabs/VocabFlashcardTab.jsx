@@ -1,10 +1,13 @@
 // LessonEditorDrawer/tabs/VocabFlashcardTab.jsx
 import React, { useCallback, useEffect, useState, useMemo } from "react";
-import { Button, Typography, message } from "antd";
+import { Button, Typography, message, Form, Input } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 
-import { createContentThunk } from "../../../../../../../../redux/features/teacherCourseSlice.js";
+import {
+  createContentThunk,
+  updateSectionThunk,
+} from "../../../../../../../../redux/features/teacherCourseSlice.js";
 import { createCourseVocabSet } from "../../../../../../../../redux/features/flashcardSlice.js";
 
 import FlashcardBuilderModal from "../../../../../../ManageDocument/Flashcard/FlashcardBuilderModal.jsx";
@@ -31,6 +34,7 @@ const extractContentId = (created) => {
 
 export default function VocabFlashcardTab({ lesson, sectionsHook }) {
   const dispatch = useDispatch();
+  const [form] = Form.useForm();
 
   const [opening, setOpening] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -44,6 +48,16 @@ export default function VocabFlashcardTab({ lesson, sectionsHook }) {
       null
     );
   }, [sectionsHook?.sectionsByType?.VOCABULARY, lesson?.sections]);
+
+  // init form section title
+  useEffect(() => {
+    const defaultTitle =
+      vocabSection?.title ||
+      (lesson?.title ? `Vocabulary – ${lesson.title}` : "Vocabulary section");
+    form.setFieldsValue({
+      sectionTitle: defaultTitle,
+    });
+  }, [vocabSection?.title, lesson?.title, form]);
 
   // mỗi khi vocabSection thay đổi, nếu đã có content FLASHCARD_SET thì lưu lại id
   useEffect(() => {
@@ -65,6 +79,16 @@ export default function VocabFlashcardTab({ lesson, sectionsHook }) {
     }
     if (opening) return;
 
+    // validate title section
+    let sectionTitle = "";
+    try {
+      const values = await form.validateFields();
+      sectionTitle = values.sectionTitle || "";
+    } catch {
+      // validate lỗi thì dừng luôn
+      return;
+    }
+
     setOpening(true);
     try {
       // 1. Đảm bảo có section VOCABULARY
@@ -77,9 +101,17 @@ export default function VocabFlashcardTab({ lesson, sectionsHook }) {
 
         // tạo section VOCABULARY (BE cho phép flashcardSetId = null)
         section = await sectionsHook.ensureSection("VOCABULARY", {
-          title: "Vocabulary",
+          title: sectionTitle || "Vocabulary",
           studyType: "VOCABULARY",
         });
+      } else if (sectionTitle && sectionTitle !== section.title) {
+        // nếu section đã có mà đổi title -> update
+        await dispatch(
+          updateSectionThunk({
+            sectionId: section.id,
+            data: { title: sectionTitle },
+          })
+        ).unwrap();
       }
 
       if (!section?.id) {
@@ -169,25 +201,47 @@ export default function VocabFlashcardTab({ lesson, sectionsHook }) {
     dispatch,
     opening,
     sectionContentId,
+    form,
   ]);
 
   return (
     <div className={styles.tabBody}>
-      <Text>
-        Đây là phần <b>Vocabulary</b> của lesson. Bạn có thể tạo bộ flashcard để
-        học từ vựng.
-      </Text>
-
-      <div style={{ marginTop: 16, marginBottom: 12 }}>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleOpen}
-          loading={opening}
+      <Form form={form} layout="vertical">
+        <Form.Item
+          name="sectionTitle"
+          label="Vocabulary section title"
+          rules={[
+            {
+              required: true,
+              message: "Vui lòng nhập tiêu đề section Vocabulary.",
+            },
+          ]}
         >
-          {hasFlashcards ? "Edit flashcards" : "Create flashcards"}
-        </Button>
-      </div>
+          <Input
+            placeholder={
+              lesson?.title
+                ? `Ví dụ: Từ vựng – ${lesson.title}`
+                : "Ví dụ: Vocabulary – Bài 1"
+            }
+          />
+        </Form.Item>
+
+        <Text>
+          Đây là phần <b>Vocabulary</b> của lesson. Bạn có thể tạo bộ flashcard
+          để học từ vựng.
+        </Text>
+
+        <div style={{ marginTop: 16, marginBottom: 12 }}>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleOpen}
+            loading={opening}
+          >
+            {hasFlashcards ? "Edit flashcards" : "Create flashcards"}
+          </Button>
+        </div>
+      </Form>
 
       <FlashcardBuilderModal
         open={modalOpen}
