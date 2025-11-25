@@ -155,7 +155,10 @@ export const Header = () => {
                   Tất cả khóa học
                 </NavLink>
                 <NavLink to="/my-courses" className={dropdownItem}>
-                  Khóa học của bạn
+                  Khóa học của tôi
+                </NavLink>
+                <NavLink to="/my-flashcards" className={dropdownItem}>
+                  Flashcard của tôi
                 </NavLink>
               </div>
             )}
