@@ -1,30 +1,8 @@
-import React, { useState } from "react";
+// TeacherCertificates.jsx
+import React, { useEffect, useState } from "react";
 import s from "./TeacherCertificates.module.scss";
 import { toast } from "react-toastify";
-
-// ===================== MOCK DATA =====================
-const MOCK_CERTS = [
-  {
-    id: 1,
-    teacherName: "Nguyễn Văn A",
-    email: "a@example.com",
-    level: "N2",
-    fileUrl: "/mock/n2-cert.jpg",
-    moderatorNote: "Hồ sơ hợp lệ.",
-    submittedAt: "2025-11-10T08:30",
-    status: "PENDING",
-  },
-  {
-    id: 2,
-    teacherName: "Trần Thị B",
-    email: "b@example.com",
-    level: "N3",
-    fileUrl: "/mock/n3-cert.png",
-    moderatorNote: "",
-    submittedAt: "2025-11-12T10:00",
-    status: "PENDING",
-  },
-];
+import api from "../../../configs/axios.js";
 
 // =====================================================
 // 📌 Modal xem chứng chỉ chi tiết
@@ -32,28 +10,84 @@ const MOCK_CERTS = [
 const ViewModal = ({ open, data, onClose }) => {
   if (!open || !data) return null;
 
+  const formatDate = (value) => {
+    if (!value) return "—";
+    try {
+      // BE đang trả "YYYY-MM-DD" → convert sang ngày VN
+      return new Date(value).toLocaleDateString("vi-VN");
+    } catch {
+      return value;
+    }
+  };
+
   return (
     <div className={s.modalOverlay}>
       <div className={s.modal}>
-        <h2 className={s.modalTitle}>Chi tiết chứng chỉ</h2>
+        <h2 className={s.modalTitle}>Chi tiết hồ sơ giáo viên</h2>
 
         <div className={s.modalContent}>
+          {/* Thông tin cơ bản của giáo viên / request */}
           <div className={s.infoBlock}>
-            <p><strong>Giáo viên:</strong> {data.teacherName}</p>
-            <p><strong>Email:</strong> {data.email}</p>
-            <p><strong>Trình độ:</strong> {data.level}</p>
-            <p><strong>Ghi chú moderator:</strong> {data.moderatorNote || "—"}</p>
-            <p><strong>Ngày gửi:</strong> {new Date(data.submittedAt).toLocaleString("vi-VN")}</p>
+            <p>
+              <strong>Giáo viên:</strong>{" "}
+              {data.teacherName || `User #${data.userId}`}
+            </p>
+            <p>
+              <strong>Email:</strong> {data.email || "—"}
+            </p>
+            <p>
+              <strong>Ngày gửi:</strong>{" "}
+              {data.submittedAt
+                ? new Date(data.submittedAt).toLocaleString("vi-VN")
+                : "—"}
+            </p>
           </div>
 
+          {/* Danh sách các chứng chỉ trong hồ sơ này */}
           <div className={s.previewBlock}>
-            <p><strong>Chứng chỉ:</strong></p>
-            <img src={data.fileUrl} alt="certificate" className={s.previewImage}/>
+            <p>
+              <strong>Danh sách chứng chỉ</strong>
+            </p>
+
+            {!data.items || data.items.length === 0 ? (
+              <p>Không có chứng chỉ nào trong hồ sơ này.</p>
+            ) : (
+              <div className={s.certList}>
+                {data.items.map((item) => (
+                  <div key={item.id} className={s.certItem}>
+                    <p className={s.certTitle}>{item.title || "Chứng chỉ"}</p>
+
+                    {item.credentialId && (
+                      <p>
+                        <strong>Credential ID:</strong> {item.credentialId}
+                      </p>
+                    )}
+
+                    <p>
+                      <strong>Ngày cấp:</strong> {formatDate(item.issueDate)}
+                    </p>
+
+                    <p>
+                      <strong>Ngày hết hạn:</strong>{" "}
+                      {formatDate(item.expiryDate)}
+                    </p>
+
+                    {item.note && (
+                      <p>
+                        <strong>Ghi chú:</strong> {item.note}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
         <div className={s.modalActions}>
-          <button onClick={onClose} className={s.btnGhost}>Đóng</button>
+          <button onClick={onClose} className={s.btnGhost}>
+            Đóng
+          </button>
         </div>
       </div>
     </div>
@@ -86,8 +120,12 @@ const RejectModal = ({ open, onClose, onConfirm }) => {
         />
 
         <div className={s.modalActions}>
-          <button className={s.btnGhost} onClick={onClose}>Hủy</button>
-          <button className={s.btnDanger} onClick={submit}>Từ chối</button>
+          <button className={s.btnGhost} onClick={onClose}>
+            Hủy
+          </button>
+          <button className={s.btnDanger} onClick={submit}>
+            Từ chối
+          </button>
         </div>
       </div>
     </div>
@@ -98,32 +136,98 @@ const RejectModal = ({ open, onClose, onConfirm }) => {
 // 📌 Main Page
 // =====================================================
 export default function TeacherCertificates() {
-  const [certs, setCerts] = useState(MOCK_CERTS);
+  const [certs, setCerts] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const [viewData, setViewData] = useState(null);
   const [rejectData, setRejectData] = useState(null);
 
-  const approve = (item) => {
-    setCerts((prev) =>
-      prev.map((c) =>
-        c.id === item.id ? { ...c, status: "APPROVED" } : c
-      )
-    );
-    toast.success("Duyệt chứng chỉ thành công!");
+  // ------------------ GET list hồ sơ PENDING ------------------
+  const fetchRequests = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get("/admin/teacher-approval/requests", {
+        params: { status: "PENDING" }, // lấy danh sách chờ duyệt
+      });
+
+      const list = res.data?.data || [];
+
+      const mapped = list.map((req) => {
+        const firstItem = (req.items && req.items[0]) || {};
+        return {
+          id: req.id,
+          userId: req.userId,
+          teacherName: req.teacherName || firstItem.teacherName,
+          email: req.email || firstItem.email,
+          level: firstItem.level || firstItem.title,
+          submittedAt: req.submittedAt,
+          status: req.status, // PENDING / APPROVED / REJECTED
+          moderatorNote: req.note,
+          note: req.message || null, // nếu BE có message
+          // ⭐ QUAN TRỌNG: giữ nguyên mảng items để modal dùng
+          items: req.items || [],
+        };
+      });
+
+      setCerts(mapped);
+    } catch (err) {
+      console.error(err);
+      toast.error("Không tải được danh sách hồ sơ giáo viên!");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const reject = (item, reason) => {
-    setCerts((prev) =>
-      prev.map((c) =>
-        c.id === item.id ? { ...c, status: "REJECTED", rejectReason: reason } : c
-      )
-    );
-    toast.success("Đã từ chối chứng chỉ!");
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
+  // ------------------ POST decision APPROVED ------------------
+  const approve = async (item) => {
+    try {
+      await api.post(`/admin/teacher-approval/requests/${item.id}/decision`, {
+        action: "APPROVED", // theo swagger: APPROVED hoặc REJECTED
+        note: "",
+      });
+
+      // update local state
+      setCerts((prev) =>
+        prev.map((c) => (c.id === item.id ? { ...c, status: "APPROVED" } : c))
+      );
+      toast.success("Duyệt chứng chỉ thành công!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Duyệt chứng chỉ thất bại!");
+    }
+  };
+
+  // ------------------ POST decision REJECTED ------------------
+  const reject = async (item, reason) => {
+    try {
+      await api.post(`/admin/teacher-approval/requests/${item.id}/decision`, {
+        action: "REJECTED",
+        note: reason,
+      });
+
+      setCerts((prev) =>
+        prev.map((c) =>
+          c.id === item.id
+            ? { ...c, status: "REJECTED", rejectReason: reason }
+            : c
+        )
+      );
+      toast.success("Đã từ chối chứng chỉ!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Từ chối chứng chỉ thất bại!");
+    }
   };
 
   return (
     <div className={s.page}>
       <h1 className={s.title}>Duyệt chứng chỉ giáo viên</h1>
+
+      {loading && <p>Đang tải danh sách hồ sơ...</p>}
 
       <div className={s.tableWrap}>
         <table className={s.table}>
@@ -131,7 +235,7 @@ export default function TeacherCertificates() {
             <tr>
               <th>Giáo viên</th>
               <th>Email</th>
-              <th>Cấp độ</th>
+              <th>Cấp độ / Title</th>
               <th>Ngày gửi</th>
               <th>Trạng thái</th>
               <th>Thao tác</th>
@@ -139,12 +243,24 @@ export default function TeacherCertificates() {
           </thead>
 
           <tbody>
+            {certs.length === 0 && !loading && (
+              <tr>
+                <td colSpan={6} style={{ textAlign: "center" }}>
+                  Không có hồ sơ nào đang chờ duyệt.
+                </td>
+              </tr>
+            )}
+
             {certs.map((c) => (
               <tr key={c.id}>
-                <td>{c.teacherName}</td>
-                <td>{c.email}</td>
-                <td>{c.level}</td>
-                <td>{new Date(c.submittedAt).toLocaleString("vi-VN")}</td>
+                <td>{c.teacherName || `User #${c.userId}`}</td>
+                <td>{c.email || "—"}</td>
+                <td>{c.level || "—"}</td>
+                <td>
+                  {c.submittedAt
+                    ? new Date(c.submittedAt).toLocaleString("vi-VN")
+                    : "—"}
+                </td>
                 <td>
                   <span
                     className={`${s.badge} ${
@@ -170,10 +286,16 @@ export default function TeacherCertificates() {
 
                   {c.status === "PENDING" && (
                     <>
-                      <button className={s.btnPrimary} onClick={() => approve(c)}>
+                      <button
+                        className={s.btnPrimary}
+                        onClick={() => approve(c)}
+                      >
                         Duyệt
                       </button>
-                      <button className={s.btnDanger} onClick={() => setRejectData(c)}>
+                      <button
+                        className={s.btnDanger}
+                        onClick={() => setRejectData(c)}
+                      >
                         Từ chối
                       </button>
                     </>
@@ -186,13 +308,18 @@ export default function TeacherCertificates() {
       </div>
 
       {/* Modals */}
-      <ViewModal open={!!viewData} data={viewData} onClose={() => setViewData(null)} />
+      <ViewModal
+        open={!!viewData}
+        data={viewData}
+        onClose={() => setViewData(null)}
+      />
 
       <RejectModal
         open={!!rejectData}
         onClose={() => setRejectData(null)}
-        onConfirm={(reason) => {
-          reject(rejectData, reason);
+        onConfirm={async (reason) => {
+          if (!rejectData) return;
+          await reject(rejectData, reason);
           setRejectData(null);
         }}
       />

@@ -26,9 +26,14 @@ import {
   fetchTeacherCourses,
   deleteCourseThunk,
 } from "../../../redux/features/teacherCourseSlice";
+import {
+  fetchTeacherProfile,
+  selectTeacherApproved,
+  selectTeacherProfileStatus,
+} from "../../../redux/features/teacherprofileSlice.js";
 import styles from "./styles.module.scss";
 
-// const { confirm } = Modal;
+const { warning } = Modal;
 
 // helper: render Tag status
 const statusTag = (s) => {
@@ -65,19 +70,21 @@ export default function ManageCourses() {
   const dispatch = useDispatch();
 
   const { list, listLoading } = useSelector((state) => state.teacherCourse);
+  const isApproved = useSelector(selectTeacherApproved);
+  const profileStatus = useSelector(selectTeacherProfileStatus);
 
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("All");
   const [data, setData] = useState([]); // rows đang hiển thị (sau khi map từ list)
 
-  // gọi API lấy danh sách course 1 lần
+  // gọi API lấy danh sách course & profile 1 lần
   useEffect(() => {
     dispatch(fetchTeacherCourses());
+    dispatch(fetchTeacherProfile());
   }, [dispatch]);
 
   // chuẩn hoá dữ liệu từ Redux → rows cho Table
   const tableData = useMemo(() => {
-    // list có thể là [], hoặc {content:[...]} hoặc object khác → ép về array an toàn
     let raw = list;
     if (Array.isArray(raw)) {
       // ok
@@ -105,7 +112,6 @@ export default function ManageCourses() {
     });
   }, [list]);
 
-  // mỗi khi data từ Redux đổi → sync vào local state để filter / duplicate...
   useEffect(() => {
     setData(tableData);
   }, [tableData]);
@@ -146,16 +152,38 @@ export default function ManageCourses() {
       const result = await dispatch(deleteCourseThunk(id)).unwrap();
       console.log("[ManageCourses] deleteCourseThunk SUCCESS:", result);
 
-      // Xoá luôn ở UI cho chắc
       setData((prev) => prev.filter((c) => String(c.id) !== String(id)));
 
       message.success("Deleted course.");
-      // Nếu muốn sync lại từ BE:
-      // await dispatch(fetchTeacherCourses());
     } catch (err) {
       console.error("[ManageCourses] deleteCourseThunk ERROR:", err);
       message.error(err || "Delete failed. Please try again.");
     }
+  };
+
+  // ✅ Validate trước khi cho tạo khoá mới
+  const handleCreateCourse = () => {
+    // nếu profile còn đang load thì nhắc nhẹ
+    if (profileStatus === "loading" || profileStatus === "idle") {
+      message.loading({
+        content: "Đang kiểm tra trạng thái hồ sơ giáo viên...",
+        key: "check-approval",
+        duration: 0.8,
+      });
+    }
+
+    if (!isApproved) {
+      warning({
+        title: "Hồ sơ giáo viên chưa được duyệt",
+        icon: <ExclamationCircleFilled />,
+        content:
+          "Bạn cần cập nhật Teacher Profile và được admin duyệt (trạng thái APPROVED) trước khi tạo và đăng bán khóa học.",
+        okText: "Đã hiểu",
+      });
+      return;
+    }
+
+    navigate("/teacher/create-course");
   };
 
   const columns = [
@@ -264,7 +292,7 @@ export default function ManageCourses() {
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => navigate("/teacher/create-course")}
+          onClick={handleCreateCourse}
         >
           New Course
         </Button>
