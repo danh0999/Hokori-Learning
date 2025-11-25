@@ -18,7 +18,7 @@ import styles from "../styles.module.scss";
 
 const { Text } = Typography;
 
-export default function QuizTab({ lesson }) {
+export default function QuizTab({ lesson, onDurationComputed }) {
   const dispatch = useDispatch();
   const { currentQuiz, loading, saving } = useSelector(
     (state) => state.quiz || {}
@@ -35,6 +35,19 @@ export default function QuizTab({ lesson }) {
     dispatch(fetchLessonQuizThunk(lesson.id));
   }, [lesson?.id, dispatch]);
 
+  // Nếu BE đã có quiz với timeLimitSec -> báo duration cho parent
+  useEffect(() => {
+    if (!currentQuiz || typeof onDurationComputed !== "function") return;
+
+    const sec =
+      typeof currentQuiz.timeLimitSec === "number" &&
+      currentQuiz.timeLimitSec > 0
+        ? currentQuiz.timeLimitSec
+        : 30 * 60; // default 30 phút
+
+    onDurationComputed(sec);
+  }, [currentQuiz, onDurationComputed]);
+
   // map QuizDto từ BE -> Quiz builder format
   const mapQuizFromBE = useCallback((q) => {
     if (!q) return null;
@@ -42,12 +55,10 @@ export default function QuizTab({ lesson }) {
       id: q.id,
       title: q.title,
       description: q.description,
-      // BE: timeLimitSec (giây) -> FE: timeLimit (phút)
       timeLimit:
         typeof q.timeLimitSec === "number" && q.timeLimitSec > 0
           ? Math.round(q.timeLimitSec / 60)
           : 30,
-      // BE: passScorePercent -> FE: passingScore
       passingScore:
         typeof q.passScorePercent === "number" ? q.passScorePercent : 60,
       shuffleQuestions: !!q.shuffleQuestions,
@@ -56,17 +67,15 @@ export default function QuizTab({ lesson }) {
         typeof q.showExplanation === "boolean" ? q.showExplanation : true,
       isRequired: !!q.isRequired,
       tags: q.tags || [],
-      questions: [], // câu hỏi sẽ được QuizBuilderModal tự fetch nếu cần
+      questions: [],
     };
   }, []);
 
-  // Mở tạo quiz mới
   const handleCreate = () => {
     setDraftQuiz(null);
     setOpenBuilder(true);
   };
 
-  // Edit quiz hiện tại
   const handleEdit = () => {
     if (!currentQuiz) {
       setDraftQuiz(null);
@@ -76,7 +85,6 @@ export default function QuizTab({ lesson }) {
     setOpenBuilder(true);
   };
 
-  // Bulk import
   const handleBulkDone = (questions) => {
     setOpenBulk(false);
     if (!questions?.length) return;
@@ -97,7 +105,6 @@ export default function QuizTab({ lesson }) {
     setOpenBuilder(true);
   };
 
-  // Lưu quiz
   const handleSaveQuiz = async (builderQuiz) => {
     if (!lesson?.id) {
       message.error("Thiếu lessonId.");
@@ -114,13 +121,21 @@ export default function QuizTab({ lesson }) {
     if (saveLessonQuizThunk.fulfilled.match(action)) {
       message.success("Đã lưu quiz.");
       setOpenBuilder(false);
+
+      // duration = timeLimit (phút) * 60
+      if (typeof onDurationComputed === "function") {
+        const minutes =
+          typeof builderQuiz.timeLimit === "number" && builderQuiz.timeLimit > 0
+            ? builderQuiz.timeLimit
+            : 30;
+        onDurationComputed(minutes * 60);
+      }
     } else {
       message.error(action.payload || "Lưu quiz thất bại.");
     }
   };
 
   const handleRemove = async () => {
-    // TODO: nếu sau này BE hỗ trợ xoá quiz thì mình thêm thunk deleteQuizThunk ở đây
     message.error("Chưa implement delete quiz 😅");
   };
 
@@ -148,14 +163,12 @@ export default function QuizTab({ lesson }) {
         />
       </Spin>
 
-      {/* Bulk import modal */}
       <BulkImportModal
         open={openBulk}
         onCancel={() => setOpenBulk(false)}
         onDone={handleBulkDone}
       />
 
-      {/* Builder modal */}
       <QuizBuilderModal
         open={openBuilder}
         lessonId={lesson?.id}

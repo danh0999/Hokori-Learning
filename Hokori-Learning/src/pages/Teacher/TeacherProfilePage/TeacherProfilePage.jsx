@@ -60,17 +60,28 @@ export default function TeacherProfilePage() {
 
   const canSubmit = hasCertificate && hasValidBio;
 
-  const showSubmit =
-    teacher?.approvalStatus === "DRAFT" ||
-    teacher?.approvalStatus === "REJECTED" ||
-    !teacher?.approvalStatus;
+  // Chỉ ẩn khi đã APPROVED, còn lại (DRAFT, REJECTED, PENDING, null) đều hiện nút
+  const showSubmit = teacher?.approvalStatus !== "APPROVED";
+
+  // Trạng thái đang chờ duyệt → khoá chức năng chỉnh sửa chứng chỉ
+  const isPendingApproval = teacher?.approvalStatus === "PENDING";
 
   const onSubmitApproval = async () => {
+    // ✅ Tự validate điều kiện trước khi gọi API
+    if (!canSubmit) {
+      message.error(
+        "Vui lòng cung cấp ít nhất 1 chứng chỉ và viết bio tối thiểu 50 ký tự trước khi gửi duyệt."
+      );
+      return;
+    }
+
     const res = await dispatch(
       submitTeacherProfile({ message: "Xin duyệt hồ sơ giáo viên." })
     );
     if (res.meta.requestStatus === "fulfilled") {
-      message.success("Đã gửi duyệt hồ sơ. Trạng thái: PENDING");
+      message.success(
+        "Đã gửi duyệt hồ sơ. Trạng thái chuyển sang PENDING, trong thời gian chờ duyệt bạn sẽ không thể chỉnh sửa chứng chỉ."
+      );
     } else {
       message.error(res?.payload?.message || "Gửi duyệt thất bại");
     }
@@ -92,14 +103,13 @@ export default function TeacherProfilePage() {
           {showSubmit && (
             <Popconfirm
               title="Gửi duyệt hồ sơ?"
-              description="Sau khi gửi, trạng thái chuyển sang PENDING để admin xem xét."
+              description="Sau khi gửi, trạng thái chuyển sang PENDING để admin xem xét. Trong thời gian PENDING, bạn sẽ không thể thêm/sửa/xoá chứng chỉ."
               onConfirm={onSubmitApproval}
               okText="Gửi duyệt"
               cancelText="Hủy"
-              okButtonProps={{ loading: submitting, disabled: !canSubmit }}
-              disabled={!canSubmit}
+              okButtonProps={{ loading: submitting }} // ❗ không disable theo canSubmit nữa
             >
-              <Button type="primary" loading={submitting} disabled={!canSubmit}>
+              <Button type="primary" loading={submitting}>
                 Gửi duyệt
               </Button>
             </Popconfirm>
@@ -109,6 +119,7 @@ export default function TeacherProfilePage() {
             type="default"
             icon={<IdcardOutlined />}
             onClick={() => setOpenCertModal(true)}
+            disabled={isPendingApproval}
           >
             Cung cấp chứng chỉ
           </Button>
@@ -279,6 +290,7 @@ export default function TeacherProfilePage() {
         <ModalCertificates
           open={openCertModal}
           onClose={() => setOpenCertModal(false)}
+          locked={isPendingApproval}
         />
       )}
 
