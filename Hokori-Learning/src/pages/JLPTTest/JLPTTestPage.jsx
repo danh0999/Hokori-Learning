@@ -11,10 +11,13 @@ import QuestionCard from "./components/QuestionCard";
 import JLPTModal from "./components/JLPTModal";
 
 import {
-  startJlptTest,
+  fetchTestQuestions,
   setLocalAnswer,
   submitJlptAnswer,
 } from "../../redux/features/jlptLearnerSlice";
+
+// BE hiện chưa trả duration → tạm 120 phút
+const DEFAULT_DURATION_MIN = 120;
 
 const JLPTTestPage = () => {
   const { testId } = useParams();
@@ -24,36 +27,50 @@ const JLPTTestPage = () => {
   const navigate = useNavigate();
 
   const {
-    currentTestMeta,
     questions,
     answers,
-    loadingStart,
     loadingQuestions,
     submittingAnswer,
   } = useSelector((state) => state.jlptLearner);
 
-  // index câu hiện tại
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [remainingSeconds, setRemainingSeconds] = useState(
+    DEFAULT_DURATION_MIN * 60
+  );
 
-  // timer
-  const [remainingSeconds, setRemainingSeconds] = useState(0);
-
-  // modal nộp bài
   const [submitModalOpen, setSubmitModalOpen] = useState(false);
 
-  // ----- gọi API start khi mở trang -----
+  /* ============================
+     LOAD QUESTIONS
+  ============================= */
   useEffect(() => {
     if (!numericTestId) return;
-    dispatch(startJlptTest(numericTestId));
+
+    dispatch(fetchTestQuestions(numericTestId));
+    setRemainingSeconds(DEFAULT_DURATION_MIN * 60);
   }, [dispatch, numericTestId]);
 
-  // ----- set timer từ durationMin -----
+  /* ============================
+     RESTORE CURRENT QUESTION BASED ON ANSWERS
+     (Fix F5 quay lại câu 1)
+  ============================= */
   useEffect(() => {
-    if (!currentTestMeta?.durationMin) return;
-    setRemainingSeconds(currentTestMeta.durationMin * 60);
-  }, [currentTestMeta]);
+    if (questions.length === 0) return;
 
-  // ----- đếm ngược -----
+    const answeredIds = Object.keys(answers).map(Number);
+
+    const firstUnansweredIndex = questions.findIndex(
+      (q) => !answeredIds.includes(q.id)
+    );
+
+    setCurrentIndex(
+      firstUnansweredIndex === -1 ? 0 : firstUnansweredIndex
+    );
+  }, [questions]);
+
+  /* ============================
+     TIMER COUNTDOWN
+  ============================= */
   useEffect(() => {
     if (remainingSeconds <= 0) return;
 
@@ -64,19 +81,20 @@ const JLPTTestPage = () => {
     return () => clearInterval(timer);
   }, [remainingSeconds]);
 
-  // Khi hết giờ → tự mở modal nộp bài
   useEffect(() => {
     if (remainingSeconds === 0 && questions.length > 0) {
       setSubmitModalOpen(true);
     }
   }, [remainingSeconds, questions.length]);
 
-  // ----- dữ liệu đã load xong chưa -----
-  const isLoading = loadingStart || loadingQuestions;
+  /* ============================
+     UI CALCULATIONS
+  ============================= */
+  const isLoading = loadingQuestions;
 
   const totalQuestions = questions.length;
   const answeredCount = useMemo(
-    () => Object.keys(answers || {}).length,
+    () => Object.keys(answers).length,
     [answers]
   );
 
@@ -94,29 +112,34 @@ const JLPTTestPage = () => {
     [questions]
   );
 
+  /* ============================
+     CURRENT QUESTION MAPPING (API → UI)
+  ============================= */
   const currentQuestionRaw =
     totalQuestions > 0 ? questions[currentIndex] : null;
 
   const uiQuestion = currentQuestionRaw
     ? {
         question_id: currentQuestionRaw.id,
-        order_index:
-          currentQuestionRaw.orderIndex ?? currentIndex + 1,
+        order_index: currentQuestionRaw.orderIndex ?? currentIndex + 1,
         content: currentQuestionRaw.content,
+        audio: currentQuestionRaw.audioUrl || null,
+        image: currentQuestionRaw.imagePath || null,
         options: (currentQuestionRaw.options || []).map((opt, idx) => ({
           option_id: opt.id,
-          label: String.fromCharCode(
-            65 + (opt.orderIndex ?? idx)
-          ), // A, B, C, D
+          label: String.fromCharCode(65 + idx), // A, B, C, D
           text: opt.content,
         })),
       }
     : null;
 
+  /* ============================
+     HANDLERS
+  ============================= */
+
   const handleSelectOption = (questionId, optionId) => {
-    // cập nhật local để UI phản hồi ngay
     dispatch(setLocalAnswer({ questionId, selectedOptionId: optionId }));
-    // gọi API lưu đáp án
+
     dispatch(
       submitJlptAnswer({
         testId: numericTestId,
@@ -146,26 +169,24 @@ const JLPTTestPage = () => {
 
   const handleConfirmSubmit = () => {
     setSubmitModalOpen(false);
-    // Không có API "submit test" riêng, chỉ cần chuyển qua trang kết quả
     navigate(`/jlpt/test/${numericTestId}/result`);
   };
 
-  const testTitle =
-    currentTestMeta?.title ||
-    `JLPT ${currentTestMeta?.level || ""} - Mock Test`;
+  const testTitle = `JLPT Test #${numericTestId}`;
+
+  /* ============================
+     RENDER
+  ============================= */
 
   return (
     <div className={styles.wrapper}>
-      {/* HEADER */}
       <HeaderBar
         title={testTitle}
         remainingSeconds={remainingSeconds}
         onSubmit={handleOpenSubmitModal}
       />
 
-      {/* MAIN */}
       <main className={styles.main}>
-        {/* SIDEBAR LIST QUESTION */}
         <aside className={styles.sidebar}>
           {isLoading && <p>Đang tải câu hỏi...</p>}
 
@@ -179,8 +200,8 @@ const JLPTTestPage = () => {
           )}
         </aside>
 
-        {/* QUESTION + PROGRESS */}
         <section className={styles.content}>
+          {/* PROGRESS CARD */}
           <div className={styles.progressCard}>
             <div className={styles.progressTopRow}>
               <span className={styles.progressLabel}>
@@ -201,28 +222,22 @@ const JLPTTestPage = () => {
           {uiQuestion && (
             <QuestionCard
               question={uiQuestion}
-              selectedOptionId={
-                answers[uiQuestion.question_id] ?? null
-              }
+              selectedOptionId={answers[uiQuestion.question_id] ?? null}
               onSelectOption={handleSelectOption}
               onPrev={handlePrev}
               onNext={handleNext}
-              lastSavedAt={
-                submittingAnswer ? "Đang lưu..." : "Tự động lưu"
-              }
+              lastSavedAt={submittingAnswer ? "Đang lưu..." : "Tự động lưu"}
             />
           )}
         </section>
       </main>
 
-      {/* FOOTER PROGRESS (hiển thị lại %) */}
       <FooterProgress
         currentIndex={currentIndex}
         totalQuestions={totalQuestions}
         progressPercent={progressPercent}
       />
 
-      {/* MODAL NỘP BÀI */}
       <JLPTModal
         open={submitModalOpen}
         title="Nộp bài JLPT Test?"

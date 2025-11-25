@@ -6,8 +6,10 @@ import {
   buildStyles,
 } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
+
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
+
 import { fetchMyJlptResult } from "../../redux/features/jlptLearnerSlice";
 
 export const Result = () => {
@@ -21,11 +23,13 @@ export const Result = () => {
     (state) => state.jlptLearner
   );
 
+  // Gọi API lấy kết quả
   useEffect(() => {
     if (!numericTestId) return;
     dispatch(fetchMyJlptResult(numericTestId));
   }, [dispatch, numericTestId]);
 
+  // Loading UI
   if (loadingResult || !result) {
     return (
       <div className={styles.resultWrapper}>
@@ -36,8 +40,14 @@ export const Result = () => {
     );
   }
 
-  const { totalQuestions, correctCount, score } = result;
-  const percent = Number.isFinite(score) ? score : 0;
+  // API mới: { totalQuestions, correctCount, score }
+  const totalQuestions = result.totalQuestions ?? 0;
+  const correctCount = result.correctCount ?? 0;
+
+  // BE score là điểm quy đổi 0–100
+  const percent = Number.isFinite(result.score)
+    ? Number(result.score)
+    : 0;
 
   return (
     <div className={styles.resultWrapper}>
@@ -59,11 +69,13 @@ export const Result = () => {
               })}
             />
           </div>
+
           <div className={styles.overallInfo}>
             <h2>Tổng điểm quy đổi</h2>
             <p>
               Bạn đạt <strong>{percent.toFixed(0)}</strong> / 100 điểm.
             </p>
+
             <p>
               Tổng số câu hỏi:{" "}
               <strong>{totalQuestions}</strong> – Số câu đúng:{" "}
@@ -79,6 +91,7 @@ export const Result = () => {
           >
             Làm lại bài thi
           </button>
+
           <button
             className={styles.backBtn}
             onClick={() => navigate("/jlpt")}
@@ -91,5 +104,4 @@ export const Result = () => {
   );
 };
 
-// Giữ default export để dễ dùng trong router
 export default Result;
