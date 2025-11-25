@@ -9,6 +9,8 @@ import VideoPanel from "./components/VideoPanel";
 import QuickActions from "./components/QuickActions";
 import LessonContent from "./components/LessonContent";
 import ActionBar from "./components/ActionBar";
+import { buildFileUrl } from "../../utils/fileUrl";
+
 
 const LessonPlayer = () => {
   const { courseId, lessonId } = useParams();
@@ -68,6 +70,18 @@ const LessonPlayer = () => {
     return <main className={styles.main}>Đang tải bài học...</main>;
   }
 
+  // === Lấy nội dung video (ASSET & primaryContent) từ lessonData ===
+  const primaryContent = lessonData?.sections
+    ?.flatMap(sec => sec.contents)
+    ?.find(c => c.primaryContent && c.contentFormat === "ASSET");
+
+  const videoUrl = primaryContent
+  ? buildFileUrl(primaryContent.filePath)
+  : null;
+
+
+
+
   return (
     <main className={styles.main}>
       {/* === SIDEBAR === */}
@@ -83,7 +97,11 @@ const LessonPlayer = () => {
       {/* === NỘI DUNG BÀI HỌC === */}
       <section className={styles.lesson}>
         <div className={styles.container}>
-          <VideoPanel title={lessonData?.title} />
+              <VideoPanel
+      videoUrl={videoUrl}
+      title={lessonData?.title}
+      duration={lessonData?.totalDurationSec}
+      />
 
           <div className={styles.header}>
             <h1>{lessonData?.title || "Tiêu đề bài học"}</h1>
