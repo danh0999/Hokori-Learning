@@ -25,12 +25,29 @@ export const fetchSetBySectionContent = createAsyncThunk(
       const res = await api.get(
         `flashcards/sets/by-section-content/${sectionContentId}`
       );
-      return unwrapData(res); // FlashcardSet | null
-    } catch (err) {
-      if (err.response && err.response.status === 404) {
+      const data = unwrapData(res);
+
+      // Nếu BE trả kiểu {status: "error", message: "...not found..."} thì coi như chưa có set
+      if (
+        data &&
+        typeof data === "object" &&
+        data.status === "error" &&
+        typeof data.message === "string" &&
+        data.message.includes("FlashcardSet not found")
+      ) {
         return null;
       }
-      return rejectWithValue(getError(err));
+
+      return data;
+    } catch (err) {
+      const msg = getError(err);
+      if (
+        err.response?.status === 404 ||
+        (typeof msg === "string" && msg.includes("FlashcardSet not found"))
+      ) {
+        return null; // chưa có set
+      }
+      return rejectWithValue(msg);
     }
   }
 );
@@ -129,6 +146,23 @@ export const deleteFlashcardCard = createAsyncThunk(
       return { cardId };
     } catch (err) {
       return rejectWithValue(getError(err));
+    }
+  }
+);
+
+export const deleteFlashcardSet = createAsyncThunk(
+  "flashcards/deleteSet",
+  async (setId, { rejectWithValue }) => {
+    try {
+      await api.delete(`flashcards/sets/${setId}`); // BE: DELETE /api/flashcards/sets/{setId}
+      return setId;
+    } catch (err) {
+      // tuỳ bạn đang handle error thế nào trong slice
+      const message =
+        err.response?.data?.message ||
+        err.message ||
+        "Xóa flashcard set thất bại";
+      return rejectWithValue(message);
     }
   }
 );
@@ -259,6 +293,23 @@ const flashcardSlice = createSlice({
       .addCase(deleteFlashcardCard.rejected, (state, action) => {
         state.saving = false;
         state.error = action.payload || action.error.message;
+      })
+      .addCase(deleteFlashcardSet.pending, (state) => {
+        state.saving = true;
+        state.error = null;
+      })
+      .addCase(deleteFlashcardSet.fulfilled, (state, action) => {
+        state.saving = false;
+
+        // nếu set hiện tại chính là set vừa xóa → clear khỏi store
+        if (state.currentSet && state.currentSet.id === action.payload) {
+          state.currentSet = null;
+          state.cards = [];
+        }
+      })
+      .addCase(deleteFlashcardSet.rejected, (state, action) => {
+        state.saving = false;
+        state.error = action.payload || "Xóa flashcard set thất bại";
       });
   },
 });
