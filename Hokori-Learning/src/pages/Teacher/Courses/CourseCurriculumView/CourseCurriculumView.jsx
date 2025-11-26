@@ -17,6 +17,8 @@ import {
   ReadOutlined,
   BookOutlined,
   EditOutlined,
+  RightOutlined,
+  DownOutlined,
 } from "@ant-design/icons";
 
 import styles from "./CourseCurriculumView.module.scss";
@@ -25,10 +27,14 @@ import api from "../../../../configs/axios";
 const { Panel } = Collapse;
 const { Text } = Typography;
 
+/* -----------------------------
+   Helper build file URL
+----------------------------- */
 const API_BASE_URL =
   api.defaults.baseURL?.replace(/\/api\/?$/, "") ||
   import.meta.env.VITE_API_BASE_URL?.replace(/\/api\/?$/, "") ||
   "";
+
 const buildFileUrl = (filePath) => {
   if (!filePath) return null;
   if (/^https?:\/\//i.test(filePath)) return filePath;
@@ -49,6 +55,7 @@ export default function CourseCurriculumView({
   onEditLesson,
 }) {
   const [selectedContent, setSelectedContent] = useState(null);
+  const [openSectionIds, setOpenSectionIds] = useState([]);
 
   const [quizPreview, setQuizPreview] = useState({
     quiz: null,
@@ -74,6 +81,9 @@ export default function CourseCurriculumView({
     courseMeta?.imageUrl ||
     null;
 
+  /* -----------------------------
+     Icon cho từng loại content
+  ----------------------------- */
   const renderContentIcon = (c) => {
     switch (c.contentFormat) {
       case "ASSET": {
@@ -93,8 +103,11 @@ export default function CourseCurriculumView({
     }
   };
 
+  /* -----------------------------
+     Chọn content (flashcard, ...)
+  ----------------------------- */
   const handleSelectContent = async (content) => {
-    // click lại cùng content → đóng dropdown
+    // click lại content đang chọn → đóng
     if (selectedContent?.id === content.id) {
       setSelectedContent(null);
       setFlashcardPreview({
@@ -108,7 +121,7 @@ export default function CourseCurriculumView({
 
     setSelectedContent(content);
 
-    // khi chọn content thì clear quiz preview (cho rõ ràng)
+    // clear quiz preview khi đang focus content
     setQuizPreview((prev) => ({
       ...prev,
       quiz: null,
@@ -126,7 +139,7 @@ export default function CourseCurriculumView({
       });
 
       try {
-        // 1) lấy set theo sectionContentId
+        // 1) lấy flashcard set theo sectionContentId
         const setRes = await api.get(
           `flashcards/sets/by-section-content/${content.id}`
         );
@@ -160,7 +173,7 @@ export default function CourseCurriculumView({
             set: null,
             cards: [],
             loading: false,
-            error: "Session chưa có flashcard set.",
+            error: "Section này chưa có flashcard set.",
           });
         } else {
           setFlashcardPreview({
@@ -173,6 +186,7 @@ export default function CourseCurriculumView({
         }
       }
     } else {
+      // không phải flashcard → clear preview
       setFlashcardPreview({
         set: null,
         cards: [],
@@ -182,8 +196,11 @@ export default function CourseCurriculumView({
     }
   };
 
+  /* -----------------------------
+     View quiz theo lesson
+  ----------------------------- */
   const handleViewQuiz = async (lesson) => {
-    // ấn lại nút quiz trên cùng lesson → toggle tắt preview quiz
+    // ấn lại quiz cùng lesson → đóng
     if (quizPreview.lessonId === lesson.id && quizPreview.quiz) {
       setQuizPreview({
         quiz: null,
@@ -196,7 +213,8 @@ export default function CourseCurriculumView({
       return;
     }
 
-    setSelectedContent(null); // đang xem quiz thì không highlight content
+    // đang xem quiz thì không highlight content
+    setSelectedContent(null);
 
     setQuizPreview({
       quiz: null,
@@ -271,6 +289,9 @@ export default function CourseCurriculumView({
     }
   };
 
+  /* -----------------------------
+     Flashcard inline preview
+  ----------------------------- */
   const renderFlashcardInline = () => {
     const set = flashcardPreview.set;
 
@@ -329,6 +350,9 @@ export default function CourseCurriculumView({
     );
   };
 
+  /* -----------------------------
+     Quiz inline preview theo lesson
+  ----------------------------- */
   const renderQuizInline = (lessonId) => {
     if (quizPreview.lessonId !== lessonId) return null;
 
@@ -407,6 +431,9 @@ export default function CourseCurriculumView({
     );
   };
 
+  /* -----------------------------
+     Preview cho content (dùng cho otherContents)
+  ----------------------------- */
   const renderContentInlinePreview = (content) => {
     if (!content) return null;
 
@@ -458,6 +485,9 @@ export default function CourseCurriculumView({
     );
   };
 
+  /* -----------------------------
+     Loading / Empty
+  ----------------------------- */
   if (loading) {
     return (
       <div className={styles.center}>
@@ -475,8 +505,12 @@ export default function CourseCurriculumView({
     );
   }
 
+  /* -----------------------------
+     Main render
+  ----------------------------- */
   return (
     <div className={styles.layoutSingle}>
+      {/* Summary course */}
       <Card className={styles.courseSummary} size="small">
         <Space align="start">
           {thumbUrl && (
@@ -500,6 +534,7 @@ export default function CourseCurriculumView({
         </Space>
       </Card>
 
+      {/* Chapter list */}
       <Collapse accordion className={styles.chapterCollapse}>
         {chapters.map((ch) => (
           <Panel
@@ -516,7 +551,7 @@ export default function CourseCurriculumView({
               renderItem={(lesson) => (
                 <List.Item key={lesson.id} className={styles.lessonItem}>
                   <div className={styles.lessonMain}>
-                    {/* lesson header: title + meta + actions */}
+                    {/* Header lesson */}
                     <div className={styles.lessonHeader}>
                       <div className={styles.lessonHeaderLeft}>
                         <div className={styles.lessonTitle}>{lesson.title}</div>
@@ -525,7 +560,6 @@ export default function CourseCurriculumView({
                         </div>
                       </div>
                       <Space className={styles.lessonHeaderActions}>
-                        {/* Chỉ hiện nút Edit khi có onEditLesson (Teacher view) */}
                         {onEditLesson && (
                           <Button
                             size="small"
@@ -536,7 +570,6 @@ export default function CourseCurriculumView({
                           </Button>
                         )}
 
-                        {/* Moderator & Teacher đều xem được quiz */}
                         <Button
                           size="small"
                           className={styles.quizButton}
@@ -547,49 +580,151 @@ export default function CourseCurriculumView({
                       </Space>
                     </div>
 
-                    {/* quiz preview inline cho lesson */}
+                    {/* Quiz preview inline */}
                     {renderQuizInline(lesson.id)}
 
-                    {/* sections */}
-                    {(lesson.sections || []).map((sec) => (
-                      <div key={sec.id} className={styles.sectionBlock}>
-                        <div className={styles.sectionHeader}>
-                          <span>{sec.title}</span>
-                          <Tag size="small">{sec.studyType}</Tag>
-                        </div>
+                    {/* Section list */}
+                    {(lesson.sections || []).map((sec) => {
+                      const contents = sec.contents || [];
+                      const assetContent = contents.find(
+                        (c) => c.contentFormat === "ASSET"
+                      );
+                      const richTextContent = contents.find(
+                        (c) => c.contentFormat === "RICH_TEXT"
+                      );
+                      const otherContents = contents.filter(
+                        (c) => !["ASSET", "RICH_TEXT"].includes(c.contentFormat)
+                      );
+                      const isOpen = openSectionIds.includes(sec.id);
 
-                        <List
-                          size="small"
-                          dataSource={sec.contents || []}
-                          renderItem={(c) => (
-                            <React.Fragment key={c.id}>
-                              <List.Item
-                                className={
-                                  selectedContent?.id === c.id
-                                    ? styles.contentItemActive
-                                    : styles.contentItem
-                                }
-                                onClick={() => handleSelectContent(c)}
-                              >
-                                <Space>
-                                  {renderContentIcon(c)}
-                                  <span>
-                                    {c.contentFormat}
-                                    {c.primaryContent ? " (primary)" : ""}
-                                  </span>
-                                </Space>
-                              </List.Item>
+                      const buildAssetPreview = () => {
+                        if (!assetContent) return null;
+                        const url = buildFileUrl(
+                          assetContent.filePath || assetContent.assetPath
+                        );
+                        if (!url) return null;
 
-                              {selectedContent?.id === c.id && (
-                                <div className={styles.contentInlineWrapper}>
-                                  {renderContentInlinePreview(selectedContent)}
+                        const isVideo = /\.(mp4|mov|webm|mkv)$/i.test(url);
+                        const isImage = /\.(jpe?g|png|gif|webp)$/i.test(url);
+
+                        return (
+                          <div className={styles.inlinePreviewBox}>
+                            <Text strong className={styles.previewTitle}>
+                              Nội dung chính
+                            </Text>
+                            {isVideo ? (
+                              <video
+                                src={url}
+                                controls
+                                className={styles.previewVideo}
+                              />
+                            ) : isImage ? (
+                              <img
+                                src={url}
+                                alt="Asset"
+                                className={styles.previewImage}
+                              />
+                            ) : (
+                              <a href={url} target="_blank" rel="noreferrer">
+                                <FileOutlined /> Open file
+                              </a>
+                            )}
+                          </div>
+                        );
+                      };
+
+                      const buildRichPreview = () => {
+                        if (!richTextContent) return null;
+                        return (
+                          <div className={styles.inlinePreviewBox}>
+                            <Text strong className={styles.previewTitle}>
+                              Description
+                            </Text>
+                            <div className={styles.previewRich}>
+                              {richTextContent.richText || (
+                                <Text type="secondary">(Empty)</Text>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      };
+
+                      return (
+                        <div key={sec.id} className={styles.sectionBlock}>
+                          {/* Section header → click để mở/đóng */}
+                          <div
+                            className={styles.sectionHeader}
+                            onClick={() =>
+                              setOpenSectionIds((prev) =>
+                                prev.includes(sec.id)
+                                  ? prev.filter((id) => id !== sec.id)
+                                  : [...prev, sec.id]
+                              )
+                            }
+                            style={{ cursor: "pointer" }}
+                          >
+                            <Space>
+                              {isOpen ? <DownOutlined /> : <RightOutlined />}
+                              <span>{sec.title}</span>
+                            </Space>
+                            <Tag size="small">{sec.studyType}</Tag>
+                          </div>
+
+                          {/* Chỉ render nội dung khi section mở */}
+                          {isOpen && (
+                            <>
+                              {(assetContent || richTextContent) && (
+                                <div className={styles.sectionContentGroup}>
+                                  {buildAssetPreview()}
+                                  {buildRichPreview()}
                                 </div>
                               )}
-                            </React.Fragment>
+
+                              {otherContents.length > 0 && (
+                                <List
+                                  size="small"
+                                  dataSource={otherContents}
+                                  renderItem={(c) => (
+                                    <React.Fragment key={c.id}>
+                                      <List.Item
+                                        className={
+                                          selectedContent?.id === c.id
+                                            ? styles.contentItemActive
+                                            : styles.contentItem
+                                        }
+                                        onClick={() => handleSelectContent(c)}
+                                      >
+                                        <Space>
+                                          {renderContentIcon(c)}
+                                          <span>
+                                            {c.contentFormat}
+                                            {c.primaryContent
+                                              ? " (primary)"
+                                              : ""}
+                                          </span>
+                                        </Space>
+                                      </List.Item>
+
+                                      {selectedContent?.id === c.id && (
+                                        <div
+                                          className={
+                                            styles.contentInlineWrapper
+                                          }
+                                        >
+                                          {renderContentInlinePreview(
+                                            selectedContent
+                                          )}
+                                        </div>
+                                      )}
+                                    </React.Fragment>
+                                  )}
+                                />
+                              )}
+                            </>
                           )}
-                        />
-                      </div>
-                    ))}
+                        </div>
+                      );
+                    })}
                   </div>
                 </List.Item>
               )}
