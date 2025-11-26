@@ -1,5 +1,5 @@
-// src/pages/Teacher/ManageDocument/Quiz/QuizBuilderModal/QuizBuilderModal.jsx
-import React, { useMemo, useState, useEffect } from "react";
+// QuizBuilderModal.jsx
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import {
   Modal,
   Button,
@@ -24,17 +24,15 @@ import styles from "./styles.module.scss";
 
 const { Text } = Typography;
 
-/**
- * Chuyển initial (từ BE hoặc từ library) -> state quiz nội bộ cho builder
- */
-const buildQuizFromInitial = (initial) => {
+/* ---------- build base quiz từ initial ---------- */
+const buildBaseFromInitial = (initial) => {
   if (!initial) {
     return {
       id: crypto.randomUUID(),
       title: "",
       description: "",
-      timeLimit: 30, // phút
-      passingScore: 60, // %
+      timeLimit: 30,
+      passingScore: 60,
       shuffleQuestions: false,
       shuffleOptions: true,
       showExplanation: true,
@@ -76,36 +74,9 @@ const buildQuizFromInitial = (initial) => {
   };
 };
 
-const mapQuestionTypeFromBE = (questionType) => {
-  if (questionType === "MULTIPLE_CHOICE") return "multiple";
-  if (questionType === "TRUE_FALSE") return "truefalse";
-  if (questionType === "FILL_IN") return "fill";
-  return "single";
-};
+// BE -> FE question type: luôn single
+const mapQuestionTypeFromBE = () => "single";
 
-/**
- * Props:
- * - open: boolean
- * - lessonId?: number (cần nếu muốn tự fetch câu hỏi từ BE khi edit)
- * - initial?: quiz meta + questions (từ library hoặc từ BE)
- * - onCancel: () => void
- * - onSave: (quizDraft) => Promise | void
- *      quizDraft có dạng:
- *      {
- *        id?,
- *        title,
- *        description,
- *        timeLimit,      // phút
- *        passingScore,   // %
- *        shuffleQuestions,
- *        shuffleOptions,
- *        showExplanation,
- *        isRequired,
- *        tags,
- *        questions: [...]
- *      }
- * - saving?: boolean (loading cho nút Save)
- */
 export default function QuizBuilderModal({
   open,
   lessonId,
@@ -114,16 +85,22 @@ export default function QuizBuilderModal({
   onSave,
   saving = false,
 }) {
-  const [quiz, setQuiz] = useState(() => buildQuizFromInitial(initial));
   const [metaForm] = Form.useForm();
+  const [quizId, setQuizId] = useState(null);
+  const [questions, setQuestions] = useState([]);
+
   const isNew = !initial?.id;
 
-  // Khi open/initial/lessonId thay đổi → setup lại state + meta form
+  // watch để hiện title ở header mà không cần set state
+  const watchedTitle = Form.useWatch("title", metaForm);
+
+  // Khi open/initial thay đổi → build lại state
   useEffect(() => {
     if (!open) return;
 
-    const base = buildQuizFromInitial(initial || null);
-    setQuiz(base);
+    const base = buildBaseFromInitial(initial || null);
+    setQuizId(base.id);
+    setQuestions(base.questions || []);
 
     metaForm.setFieldsValue({
       title: base.title,
@@ -136,10 +113,8 @@ export default function QuizBuilderModal({
       isRequired: base.isRequired,
     });
 
-    // Nếu đã có questions sẵn (vd: import từ library) → không fetch nữa
+    // nếu initial đã có questions sẵn thì không fetch nữa
     if (initial?.questions && initial.questions.length > 0) return;
-
-    // Nếu đang edit quiz đã có trên BE → fetch danh sách câu hỏi
     if (!lessonId || !initial?.id) return;
 
     (async () => {
@@ -153,7 +128,7 @@ export default function QuizBuilderModal({
           id: q.id,
           text: q.content || "",
           explanation: q.explanation || "",
-          type: mapQuestionTypeFromBE(q.questionType),
+          type: mapQuestionTypeFromBE(q.questionType), // luôn 'single'
           orderIndex: typeof q.orderIndex === "number" ? q.orderIndex : idx,
           points: typeof q.points === "number" ? q.points : 1,
           options: (q.options || []).map((op, i) => ({
@@ -164,7 +139,7 @@ export default function QuizBuilderModal({
           })),
         }));
 
-        setQuiz((prev) => ({ ...prev, questions: mapped }));
+        setQuestions(mapped);
       } catch (err) {
         console.error("Failed to load quiz questions", err);
       }
@@ -172,111 +147,110 @@ export default function QuizBuilderModal({
   }, [open, initial, lessonId, metaForm]);
 
   const totalPoints = useMemo(
-    () => (quiz.questions || []).reduce((s, q) => s + (q.points || 0), 0),
-    [quiz.questions]
+    () => (questions || []).reduce((s, q) => s + (q.points || 0), 0),
+    [questions]
   );
 
-  // ====== thao tác với câu hỏi ======
-  const addQuestion = (type = "single") =>
-    setQuiz((q) => ({
-      ...q,
-      questions: [...(q.questions || []), newQuestion(type)],
-    }));
+  /* ===== thao tác với câu hỏi (single choice) ===== */
 
-  const updateQuestion = (id, next) =>
-    setQuiz((q) => ({
-      ...q,
-      questions: q.questions.map((x) => (x.id === id ? next : x)),
-    }));
+  const addQuestion = useCallback(() => {
+    setQuestions((prev) => [...prev, newQuestion("single")]);
+  }, []);
 
-  const duplicateQuestion = (idx) =>
-    setQuiz((q) => {
-      const clone = structuredClone(q.questions[idx]);
+  const updateQuestion = useCallback((id, next) => {
+    setQuestions((prev) =>
+      prev.map((q) => (q.id === id ? { ...next, type: "single" } : q))
+    );
+  }, []);
+
+  const duplicateQuestion = useCallback((idx) => {
+    setQuestions((prev) => {
+      const clone = structuredClone(prev[idx]);
       clone.id = crypto.randomUUID();
-      return {
-        ...q,
-        questions: [
-          ...q.questions.slice(0, idx + 1),
-          clone,
-          ...q.questions.slice(idx + 1),
-        ],
-      };
+      clone.type = "single";
+      return [...prev.slice(0, idx + 1), clone, ...prev.slice(idx + 1)];
     });
+  }, []);
 
-  const deleteQuestion = (id) =>
-    setQuiz((q) => ({
-      ...q,
-      questions: q.questions.filter((x) => x.id !== id),
-    }));
+  const deleteQuestion = useCallback((id) => {
+    setQuestions((prev) => prev.filter((q) => q.id !== id));
+  }, []);
 
-  const moveQuestion = (idx, dir) =>
-    setQuiz((q) => {
-      const arr = [...q.questions];
+  const moveQuestion = useCallback((idx, dir) => {
+    setQuestions((prev) => {
+      const arr = [...prev];
       const j = dir === "up" ? idx - 1 : idx + 1;
+      if (j < 0 || j >= arr.length) return prev;
       [arr[idx], arr[j]] = [arr[j], arr[idx]];
-      return { ...q, questions: arr };
+      return arr;
     });
+  }, []);
 
-  // ====== SAVE ======
+  /* ===== SAVE ===== */
   const handleClickSave = async () => {
     try {
       const meta = await metaForm.validateFields();
 
-      // Validate tối thiểu
-      if (!quiz.questions || quiz.questions.length === 0) {
+      if (!questions || questions.length === 0) {
         message.error("Quiz cần ít nhất 1 câu hỏi.");
         return;
       }
 
       const payload = {
-        ...quiz,
+        id: quizId,
         ...meta,
-        // đảm bảo timeLimit & passingScore kiểu số
-        timeLimit: Number(meta.timeLimit ?? quiz.timeLimit ?? 30),
-        passingScore: Number(meta.passingScore ?? quiz.passingScore ?? 60),
+        timeLimit: Number(meta.timeLimit ?? 30),
+        passingScore: Number(meta.passingScore ?? 60),
+        shuffleQuestions: !!meta.shuffleQuestions,
+        shuffleOptions: meta.shuffleOptions !== false,
+        showExplanation:
+          typeof meta.showExplanation === "boolean"
+            ? meta.showExplanation
+            : true,
+        isRequired: !!meta.isRequired,
+        tags: initial?.tags || [],
+        // đảm bảo mọi câu hỏi đều single
+        questions: (questions || []).map((q) => ({
+          ...q,
+          type: "single",
+        })),
       };
 
-      // Trả quizDraft cho cha xử lý (POST/PUT BE)
-      if (onSave) {
-        await onSave(payload);
-      }
+      await onSave?.(payload);
     } catch (err) {
-      // metaForm.validateFields lỗi
-      if (err?.errorFields) return;
+      if (err?.errorFields) return; // lỗi validate của Form
       console.error(err);
       message.error("Lưu quiz thất bại.");
     }
   };
 
+  const quizTitleForHeader =
+    (watchedTitle || initial?.title || "").trim() || "Quiz";
+
   return (
     <Modal
       open={open}
-      title={`${isNew ? "New" : "Edit"} Quiz${
-        quiz.title ? ` – ${quiz.title}` : ""
-      }`}
+      title={`${isNew ? "New" : "Edit"} Quiz – ${quizTitleForHeader}`}
       onCancel={onCancel}
       width={980}
       destroyOnClose
       footer={null}
     >
-      {/* ===== Top bar: toolbar + Save button ===== */}
+      {/* ===== Top bar ===== */}
       <div className={styles.topBar}>
         <Space wrap>
-          <Button
-            icon={<PlusOutlined />}
-            type="primary"
-            onClick={() => addQuestion("single")}
-          >
-            Add Single
+          <Button icon={<PlusOutlined />} type="primary" onClick={addQuestion}>
+            Add question
           </Button>
-          <Button onClick={() => addQuestion("multiple")}>Add Multiple</Button>
-          <Button onClick={() => addQuestion("truefalse")}>Add T/F</Button>
-          <Button onClick={() => addQuestion("fill")}>Add Fill-in</Button>
+          <Text type="secondary">
+            Quiz này chỉ hỗ trợ dạng <b>Single choice</b>. Mỗi câu phải có 1 đáp
+            án đúng.
+          </Text>
         </Space>
 
         <Space>
           <span className={styles.topBarStats}>
-            {quiz.questions.length} câu · {totalPoints} điểm
+            {questions.length} câu · {totalPoints} điểm
           </span>
           <Button
             type="primary"
@@ -291,13 +265,8 @@ export default function QuizBuilderModal({
 
       <Divider style={{ margin: "8px 0 12px" }} />
 
-      {/* ===== Meta form (title, desc, time, passingScore, options) ===== */}
-      <Form
-        form={metaForm}
-        layout="vertical"
-        className={styles.metaForm}
-        onValuesChange={(_, all) => setQuiz((q) => ({ ...q, ...all }))}
-      >
+      {/* ===== Meta form (không còn onValuesChange set state nữa) ===== */}
+      <Form form={metaForm} layout="vertical" className={styles.metaForm}>
         <Row gutter={16}>
           <Col span={16}>
             <Form.Item
@@ -395,11 +364,11 @@ export default function QuizBuilderModal({
 
       {/* ===== Question list ===== */}
       <Text type="secondary" style={{ display: "block", marginBottom: 8 }}>
-        Questions
+        Questions (Single choice only)
       </Text>
 
-      {quiz.questions.length === 0 ? (
-        <Empty description="Chưa có câu hỏi. Bấm Add để thêm." />
+      {questions.length === 0 ? (
+        <Empty description="Chưa có câu hỏi. Bấm 'Add question' để thêm." />
       ) : (
         <Space
           direction="vertical"
@@ -407,12 +376,12 @@ export default function QuizBuilderModal({
           size="large"
           style={{ width: "100%" }}
         >
-          {quiz.questions.map((q, idx) => (
+          {questions.map((q, idx) => (
             <QuestionCard
               key={q.id}
-              q={q}
+              q={{ ...q, type: "single" }}
               idx={idx}
-              total={quiz.questions.length}
+              total={questions.length}
               onChange={(next) => updateQuestion(q.id, next)}
               onDuplicate={() => duplicateQuestion(idx)}
               onDelete={() => deleteQuestion(q.id)}

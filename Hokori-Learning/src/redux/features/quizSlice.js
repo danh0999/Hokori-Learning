@@ -16,11 +16,7 @@ const unwrap = (res) => res.data?.data ?? res.data;
  * FE: "single" | "multiple"
  * BE: "SINGLE_CHOICE" | "MULTIPLE_CHOICE"
  */
-const mapQuestionType = (type) => {
-  if (type === "multiple") return "MULTIPLE_CHOICE";
-  return "SINGLE_CHOICE";
-};
-
+const mapQuestionType = () => "SINGLE_CHOICE";
 /**
  * Chuẩn hoá list câu hỏi trước khi gửi lên BE:
  * - Chỉ giữ single / multiple
@@ -29,14 +25,10 @@ const mapQuestionType = (type) => {
  */
 const normalizeQuestions = (questions = []) =>
   questions
-    .filter(
-      (q) =>
-        (q.type === "single" || q.type === "multiple") &&
-        q?.text &&
-        (q.options || []).length >= 2
-    )
+    .filter((q) => q?.text && (q.options || []).length >= 2)
     .map((q, idx) => ({
       ...q,
+      type: "single", // ép về single
       _orderIndex: idx,
     }));
 

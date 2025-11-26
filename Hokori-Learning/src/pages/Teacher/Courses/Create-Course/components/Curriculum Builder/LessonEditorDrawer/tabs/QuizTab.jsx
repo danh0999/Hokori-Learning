@@ -148,10 +148,17 @@ export default function QuizTab({ lesson, onDurationComputed }) {
 
       <div style={{ marginTop: 16, marginBottom: 12 }}>
         <Space>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleCreate}
+            disabled={!!currentQuiz} // <–– lesson đã có quiz → disable
+          >
             New quiz
           </Button>
-          <Button onClick={() => setOpenBulk(true)}>Bulk import</Button>
+          <Button onClick={() => setOpenBulk(true)} disabled={!!currentQuiz}>
+            Bulk import
+          </Button>
         </Space>
       </div>
 
