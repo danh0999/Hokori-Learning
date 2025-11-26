@@ -1,4 +1,5 @@
-// FlashcardList.jsx
+// FlashcardList.jsx – ưu tiên state Redux, không phụ thuộc sectionContentId khi đã có set
+
 import React, { useEffect } from "react";
 import {
   List,
@@ -31,46 +32,49 @@ export default function FlashcardList({ sectionContentId, onEditSet }) {
     (state) => state.flashcardTeacher || state.flashcard
   );
 
-  // Lấy set theo sectionContentId
-  useEffect(() => {
-    if (sectionContentId) {
-      dispatch(fetchSetBySectionContent(sectionContentId));
-    }
-  }, [sectionContentId, dispatch]);
+  const hasSetInState = !!currentSet;
 
-  // Khi đã có set → lấy cards
+  /* 1) Nếu lesson đã có set trong Redux (vừa tạo xong) → không cần fetch theo sectionContentId nữa.
+        Nếu chưa có set nhưng có sectionContentId (lesson load lại từ server) → fetch set theo sectionContentId. */
   useEffect(() => {
-    if (currentSet?.id) {
-      dispatch(fetchCardsBySetId(currentSet.id));
-    }
+    if (!sectionContentId) return;
+    if (hasSetInState) return; // đã có currentSet, khỏi fetch nữa
+
+    dispatch(fetchSetBySectionContent(sectionContentId));
+  }, [sectionContentId, hasSetInState, dispatch]);
+
+  /* 2) Khi đã có currentSet.id (dù đến từ createCourseVocabSet hay fetchSetBySectionContent) → fetch cards */
+  useEffect(() => {
+    if (!currentSet?.id) return;
+    dispatch(fetchCardsBySetId(currentSet.id));
   }, [currentSet?.id, dispatch]);
 
-  if (!sectionContentId) return null;
+  /* 3) UI:
+        - Nếu lesson hoàn toàn chưa có content flashcard & chưa có set → return null (lesson mới tinh, chưa tạo gì).
+        - Nếu đã có set (currentSet) → luôn render danh sách từ Redux. */
+
+  if (!sectionContentId && !hasSetInState) {
+    return null; // lesson mới chưa đụng flashcard
+  }
 
   const handleDeleteSet = async () => {
     if (!currentSet?.id) return;
-    const action = await dispatch(deleteFlashcardSet(currentSet.id));
 
-    if (deleteFlashcardSet.fulfilled.match(action)) {
-      message.success("Đã xóa bộ flashcard.");
-      // cards và currentSet sẽ được clear trong extraReducers
+    const rs = await dispatch(deleteFlashcardSet(currentSet.id));
+    if (deleteFlashcardSet.fulfilled.match(rs)) {
+      message.success("Đã xóa bộ flashcard");
     } else {
-      message.error(
-        action.payload || "Không thể xóa bộ flashcard. Vui lòng thử lại."
-      );
+      message.error(rs.payload || "Không thể xóa bộ flashcard");
     }
   };
 
   const handleDeleteCard = async (cardId) => {
     if (!currentSet?.id) return;
-    const action = await dispatch(
+    const rs = await dispatch(
       deleteFlashcardCard({ setId: currentSet.id, cardId })
     );
-
-    if (deleteFlashcardCard.fulfilled.match(action)) {
-      message.success("Đã xóa flashcard.");
-    } else {
-      message.error("Không thể xóa flashcard.");
+    if (!deleteFlashcardCard.fulfilled.match(rs)) {
+      message.error("Không thể xóa flashcard");
     }
   };
 
@@ -83,21 +87,20 @@ export default function FlashcardList({ sectionContentId, onEditSet }) {
           <Title level={5} className={styles.title}>
             Flashcard set
           </Title>
-          {currentSet ? (
+          {!currentSet ? (
+            <Text type="secondary">Chưa có bộ flashcard nào.</Text>
+          ) : (
             <>
               <Text strong>{currentSet.title}</Text>
               {currentSet.description && (
                 <div className={styles.desc}>{currentSet.description}</div>
               )}
             </>
-          ) : (
-            <Text type="secondary">Chưa có bộ flashcard nào.</Text>
           )}
         </div>
 
         {currentSet && (
           <Space>
-            {/* View / Edit = mở modal builder */}
             <Button
               icon={<EditOutlined />}
               onClick={() => onEditSet && onEditSet(currentSet)}
@@ -107,17 +110,12 @@ export default function FlashcardList({ sectionContentId, onEditSet }) {
 
             <Popconfirm
               title="Xóa bộ flashcard?"
-              description="Toàn bộ thẻ trong bộ này sẽ bị xóa."
+              onConfirm={handleDeleteSet}
               okText="Xóa"
               cancelText="Hủy"
               okType="danger"
-              onConfirm={handleDeleteSet}
             >
-              <Button
-                danger
-                icon={<DeleteOutlined />}
-                loading={saving && !!currentSet}
-              >
+              <Button danger icon={<DeleteOutlined />} loading={saving}>
                 Delete set
               </Button>
             </Popconfirm>
@@ -126,7 +124,11 @@ export default function FlashcardList({ sectionContentId, onEditSet }) {
       </div>
 
       <Spin spinning={loadingSet || loadingCards}>
-        {currentSet && totalCards > 0 ? (
+        {!currentSet ? (
+          <Text type="secondary">Chưa có bộ flashcard nào.</Text>
+        ) : totalCards === 0 ? (
+          <Text type="secondary">Bộ flashcard chưa có thẻ nào.</Text>
+        ) : (
           <List
             className={styles.cardList}
             dataSource={cards}
@@ -144,44 +146,30 @@ export default function FlashcardList({ sectionContentId, onEditSet }) {
                       )}
                     </Space>
 
-                    <Space>
-                      {/* Xóa card */}
-                      <Popconfirm
-                        title="Xóa flashcard?"
-                        okText="Xóa"
-                        cancelText="Hủy"
-                        okType="danger"
-                        onConfirm={() => handleDeleteCard(card.id)}
-                      >
-                        <Button
-                          type="text"
-                          danger
-                          icon={<DeleteOutlined />}
-                          size="small"
-                        />
-                      </Popconfirm>
-                    </Space>
+                    <Popconfirm
+                      title="Xóa thẻ này?"
+                      onConfirm={() => handleDeleteCard(card.id)}
+                      okText="Xóa"
+                      cancelText="Hủy"
+                      okType="danger"
+                    >
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        size="small"
+                      />
+                    </Popconfirm>
                   </div>
 
                   <div className={styles.cardContent}>
                     <Text type="secondary">Back: </Text>
                     {card.backText}
                   </div>
-
-                  {card.exampleSentence && (
-                    <div className={styles.cardExample}>
-                      <Text type="secondary">Ví dụ: </Text>
-                      {card.exampleSentence}
-                    </div>
-                  )}
                 </Card>
               </List.Item>
             )}
           />
-        ) : currentSet ? (
-          <Text type="secondary">Bộ flashcard chưa có thẻ nào.</Text>
-        ) : (
-          <Text type="secondary">Chưa có bộ flashcard nào.</Text>
         )}
       </Spin>
     </div>
