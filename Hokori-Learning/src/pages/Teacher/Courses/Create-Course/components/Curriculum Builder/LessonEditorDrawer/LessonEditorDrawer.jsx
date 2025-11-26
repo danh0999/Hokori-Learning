@@ -30,6 +30,7 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
   );
 
   const [activeTab, setActiveTab] = useState("grammar");
+  //eslint-disable-next-line no-unused-vars
   const [sectionDurations, setSectionDurations] = useState({
     GRAMMAR: 0,
     KANJI: 0,
@@ -37,7 +38,7 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
     QUIZ: 0,
   });
 
-  // lấy lesson mới nhất trong tree
+  // luôn lấy lesson mới nhất trong tree
   const lessonFromTree = useMemo(() => {
     if (!lesson?.id || !currentCourseTree?.chapters) return lesson;
     for (const ch of currentCourseTree.chapters) {
@@ -49,7 +50,7 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
 
   const sectionsHook = useLessonSections(lessonFromTree);
 
-  // chỉ dispatch khi duration thực sự thay đổi & luôn gửi kèm title
+  // cập nhật totalDurationSec cho lesson, tránh loop
   const handleSectionDurationChange = useCallback(
     (studyType, seconds) => {
       if (!lessonFromTree?.id) return;
@@ -57,9 +58,7 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
       setSectionDurations((prev) => {
         const nextVal = seconds || 0;
         const currentVal = prev[studyType] || 0;
-
-        // không thay đổi → không setState, không dispatch → tránh loop
-        if (nextVal === currentVal) return prev;
+        if (nextVal === currentVal) return prev; // không đổi → khỏi dispatch
 
         const next = { ...prev, [studyType]: nextVal };
         const total = Object.values(next).reduce((sum, v) => sum + (v || 0), 0);
@@ -73,7 +72,7 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
           updateLessonThunk({
             lessonId: lessonFromTree.id,
             data: {
-              title: safeTitle, // BE bắt buộc title không được rỗng
+              title: safeTitle, // BE bắt buộc không được rỗng
               totalDurationSec: total,
             },
           })
@@ -96,7 +95,7 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
       0
     );
     if (!sectionCount && !contentCount) return "Chưa có section / content";
-    return `${sectionCount} section · ${contentCount} content`;
+    return `${sectionCount} section(s) · ${contentCount} content item(s)`;
   };
 
   const handleChildSaved = async () => {
@@ -178,6 +177,7 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
         <VocabFlashcardTab
           lesson={lessonFromTree}
           sectionsHook={sectionsHook}
+          onSaved={handleChildSaved} // 👉 quan trọng: tạo flashcard xong thì reload tree
           onDurationComputed={(sec) =>
             handleSectionDurationChange("VOCABULARY", sec)
           }
@@ -240,8 +240,8 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
             <Button onClick={onClose}>Cancel</Button>
             {activeTab === "grammar" && (
               <span className={styles.footerHint}>
-                Đây là <b>Grammar section</b> của lesson. Nhấn &quot;Save
-                Grammar&quot; để lưu video & mô tả.
+                Đây là <b>Grammar section</b>. Nhấn &quot;Save Grammar&quot; để
+                lưu video & mô tả.
               </span>
             )}
             {activeTab === "kanji" && (
@@ -258,8 +258,7 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
             )}
             {activeTab === "quiz" && (
               <span className={styles.footerHint}>
-                Đây là <b>Quiz content</b>. Quiz được lưu trong cửa sổ Quiz
-                builder.
+                Quiz được lưu bằng nút <b>Save</b> trong cửa sổ Quiz.
               </span>
             )}
           </Space>

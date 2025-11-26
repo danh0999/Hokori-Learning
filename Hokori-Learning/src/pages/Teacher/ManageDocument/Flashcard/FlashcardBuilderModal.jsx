@@ -1,3 +1,4 @@
+// FlashcardBuilderModal.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Modal,
@@ -12,7 +13,6 @@ import {
   Spin,
   Popconfirm,
 } from "antd";
-
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -50,18 +50,19 @@ export default function FlashcardBuilderModal({
   const [editingCard, setEditingCard] = useState(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
 
-  /* FETCH SET + CARDS */
+  // Nếu mở modal mà không truyền sẵn set, thì fetch theo sectionContentId (flow cũ)
   useEffect(() => {
-    if (open && sectionContentId && !effectiveSet) {
+    if (open && sectionContentId && !flashcardSet && !effectiveSet) {
       dispatch(fetchSetBySectionContent(sectionContentId));
     }
-  }, [open, sectionContentId, effectiveSet]);
+  }, [open, sectionContentId, flashcardSet, effectiveSet, dispatch]);
 
+  // Khi đã có set (từ prop hoặc từ redux) thì fetch cards
   useEffect(() => {
     if (open && effectiveSet?.id) {
       dispatch(fetchCardsBySetId(effectiveSet.id));
     }
-  }, [open, effectiveSet?.id]);
+  }, [open, effectiveSet?.id, dispatch]);
 
   useEffect(() => {
     if (!open) {
@@ -70,7 +71,7 @@ export default function FlashcardBuilderModal({
       setEditingCard(null);
       setEditModalOpen(false);
     }
-  }, [open]);
+  }, [open, form, editForm]);
 
   const totalCards = cards?.length || 0;
 
@@ -137,7 +138,6 @@ export default function FlashcardBuilderModal({
     }
   };
 
-  /* DELETE POPCONFIRM */
   const handleDeleteCard = async (card) => {
     const action = await dispatch(
       deleteFlashcardCard({ setId: effectiveSet.id, cardId: card.id })
@@ -160,7 +160,6 @@ export default function FlashcardBuilderModal({
         destroyOnClose={false}
       >
         <Spin spinning={loadingSet && !effectiveSet}>
-          {/* Header */}
           <div className={styles.header}>
             <div>
               <Title level={4} className={styles.title}>

@@ -168,7 +168,7 @@ export default function CourseOverview({ courseId, onNext }) {
         <Form.Item
           name="description"
           label="Course description"
-          rules={[{ required: true, message: "Vui lòng nhập mô tả." }]}
+          rules={[{ message: "Vui lòng nhập mô tả." }]}
         >
           <TextArea
             rows={6}

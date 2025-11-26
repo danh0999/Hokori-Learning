@@ -1,34 +1,32 @@
+/* Flashcard Builder Modal - clean Japanese design */
+
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  margin-bottom: 6px;
 }
 
 .title {
-  margin-bottom: 4px;
-}
-
-.cardCount {
-  text-align: right;
-  min-width: 60px;
+  font-size: 20px !important;
 }
 
 .addBox {
-  background: #f8fafc;
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid #e2e8f0;
-  margin-bottom: 16px;
+  background: #fafafa;
+  border: 1px dashed #d9d9d9;
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-top: 4px;
 }
 
 .addLabel {
-  margin-bottom: 8px;
+  font-size: 15px;
+  margin-bottom: 12px;
   display: block;
 }
 
 .row {
   display: flex;
-  gap: 12px;
+  gap: 16px;
 }
 
 .half {
@@ -38,55 +36,60 @@
 .addBtnRow {
   display: flex;
   justify-content: flex-end;
+  margin-top: 10px;
 }
 
 .listHeader {
   display: flex;
-  gap: 4px;
+  justify-content: space-between;
   margin-bottom: 8px;
 }
 
 .empty {
-  padding: 16px 0;
-  text-align: center;
-  color: #94a3b8;
+  color: #aaa;
+  padding: 10px 0;
+  font-size: 14px;
 }
 
 .cardItem {
   background: #ffffff;
-  color: #1e293b;
   border-radius: 12px;
-  padding: 12px;
-  border: 1px solid #1e293b;
-  min-height: 90px;
+  border: 1px solid #ececec;
+  padding: 14px 16px;
   display: flex;
-  flex-direction: column;
   justify-content: space-between;
+  transition: 0.2s;
+}
+
+.cardItem:hover {
+  border-color: #cfcfcf;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
 }
 
 .cardFrontRow {
-  margin-bottom: 4px;
-  flex-wrap: wrap;
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
 }
 
 .cardBack {
-  font-size: 13px;
-  margin-bottom: 4px;
+  font-size: 14px;
+  margin-top: 2px;
 }
 
 .cardExample {
-  font-size: 12px;
+  font-size: 13px;
+  color: #8a8a8a;
+  margin-top: 6px;
 }
 
 .cardActions {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
   gap: 6px;
-  margin-top: 6px;
 }
 
 .footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 12px;
+  margin-top: 20px;
+  text-align: right;
 }
