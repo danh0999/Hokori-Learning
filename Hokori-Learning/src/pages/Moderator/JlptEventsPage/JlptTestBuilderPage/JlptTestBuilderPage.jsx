@@ -38,6 +38,25 @@ import BulkImportModal from "../../../Teacher/ManageDocument/Quiz/BulkImportModa
 const { Text, Title } = Typography;
 
 const normalizeAudioPath = (p) => (p ? p.replace(/\s*\/\s*/g, "/").trim() : "");
+const resolveAudioSrc = (audioPath) => {
+  if (!audioPath) return null;
+  const p = normalizeAudioPath(audioPath);
+
+  // Nếu là URL đầy đủ (https://...) thì dùng luôn
+  if (/^https?:\/\//i.test(p)) return p;
+
+  // Nếu đã bắt đầu bằng "/" → coi như asset trong public
+  if (p.startsWith("/")) return p;
+
+  // Nếu là đường dẫn kiểu "jlpt-demo/..." hay "jlpt-n4/..."
+  // → cũng trỏ vào public
+  if (p.startsWith("jlpt-") || p.startsWith("audio/")) {
+    return `/${p}`;
+  }
+
+  // Còn lại: giả sử là file trên backend → dùng buildFileUrl như cũ
+  return buildFileUrl(p);
+};
 
 const QUESTION_TYPES = ["VOCAB", "GRAMMAR", "READING", "LISTENING"];
 
@@ -399,9 +418,7 @@ export default function JlptTestBuilderPage() {
                           controls
                           preload="none"
                           style={{ width: 260 }}
-                          src={buildFileUrl(
-                            normalizeAudioPath(q.audioPath || "")
-                          )}
+                          src={resolveAudioSrc(q.audioPath)}
                         />
                       </div>
                     )}
@@ -430,9 +447,7 @@ export default function JlptTestBuilderPage() {
                           controls
                           preload="none"
                           style={{ width: 260 }}
-                          src={buildFileUrl(
-                            normalizeAudioPath(q.audioPath || "")
-                          )}
+                          src={resolveAudioSrc(q.audioPath)}
                         />
                       </div>
                     )}

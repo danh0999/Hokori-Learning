@@ -123,17 +123,17 @@ const ModeratorDashboard = () => {
         nodeType: "course",
         nodeData: course,
         children: chapters.map((ch) => ({
-          title: `Chapter: ${ch.title}`,
+          title: ` ${ch.title}`,
           key: `chapter-${ch.id}`,
           nodeType: "chapter",
           nodeData: ch,
           children: (ch.lessons || []).map((les) => ({
-            title: `Lesson: ${les.title}`,
+            title: ` ${les.title}`,
             key: `lesson-${les.id}`,
             nodeType: "lesson",
             nodeData: les,
             children: (les.sections || []).map((sec) => ({
-              title: `Section: ${sec.title} (${sec.studyType})`,
+              title: ` ${sec.title} `,
               key: `section-${sec.id}`,
               nodeType: "section",
               nodeData: sec,
@@ -172,7 +172,7 @@ const ModeratorDashboard = () => {
             <b>Level:</b> {data.level}
           </p>
           <p>
-            <b>Price:</b> {data.priceCents / 100} {data.currency}
+            <b>Price:</b> {data.priceCents}
           </p>
           <p>
             <b>Status:</b> {data.status}
@@ -196,11 +196,7 @@ const ModeratorDashboard = () => {
       return (
         <div style={{ padding: 12 }}>
           <Title level={5}>Chapter: {data.title}</Title>
-          {data.summary && (
-            <p>
-              <b>Summary:</b> {data.summary}
-            </p>
-          )}
+          {data.summary && <p>{data.summary}</p>}
           <p>
             <b>Số bài:</b> {(data.lessons || []).length}
           </p>
@@ -267,7 +263,7 @@ const ModeratorDashboard = () => {
         } else {
           assetBlock = (
             <>
-              <Text strong>File asset:</Text>
+              <Text strong>File:</Text>
               <div style={{ marginTop: 8 }}>
                 <a href={url} target="_blank" rel="noreferrer">
                   {url}
@@ -332,7 +328,7 @@ const ModeratorDashboard = () => {
         align="center"
       >
         <Title level={3} style={{ marginBottom: 0 }}>
-          Moderator – Public Courses
+          Moderator – Những khóa học đang được công khai trên hệ thống
         </Title>
       </Space>
 
@@ -355,7 +351,7 @@ const ModeratorDashboard = () => {
           onChange={setSelectedLevel}
         />
 
-        <Button onClick={() => fetchCourses(page)}>Reload</Button>
+        <Button onClick={() => fetchCourses(page)}>Tải lại</Button>
       </Space>
 
       {/* COURSE LIST + CUSTOM PAGINATION */}
@@ -423,7 +419,7 @@ const ModeratorDashboard = () => {
                       <b>Level:</b> {course.level || "—"}
                     </p>
                     <p>
-                      <b>Price:</b> {course.priceCents / 100} {course.currency}
+                      <b>Price:</b> {course.priceCents} {course.currency}
                     </p>
                     <p>
                       <b>Status:</b> {course.status}
@@ -502,7 +498,7 @@ const ModeratorDashboard = () => {
             }}
           >
             <Card
-              title="Course structure"
+              title="Cấu trúc khóa học"
               size="small"
               bodyStyle={{ padding: 8 }}
             >
@@ -515,7 +511,7 @@ const ModeratorDashboard = () => {
               </div>
             </Card>
 
-            <Card title="Preview" size="small">
+            <Card title="Xem trước" size="small">
               {renderContentPreview()}
             </Card>
           </div>
