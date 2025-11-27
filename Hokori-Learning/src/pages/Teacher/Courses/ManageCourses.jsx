@@ -101,7 +101,7 @@ export default function ManageCourses() {
         id: c.id,
         title: c.title,
         code: c.slug || c.code || `COURSE-${c.id}`,
-        students: c.studentsCount ?? c.enrolledCount ?? 0,
+        students: c.enrollCount ?? c.enrollCount ?? 0,
         rating: c.rating ?? c.averageRating ?? "-",
         status: statusLabel,
         updatedAt: (c.updatedAt || c.publishedAt || c.createdAt || "").slice(
@@ -146,8 +146,6 @@ export default function ManageCourses() {
   };
 
   const onDelete = async (id) => {
-    console.log("[ManageCourses] onDelete DIRECT CALL with id =", id);
-
     try {
       const result = await dispatch(deleteCourseThunk(id)).unwrap();
       console.log("[ManageCourses] deleteCourseThunk SUCCESS:", result);
@@ -156,7 +154,6 @@ export default function ManageCourses() {
 
       message.success("Deleted course.");
     } catch (err) {
-      console.error("[ManageCourses] deleteCourseThunk ERROR:", err);
       message.error(err || "Delete failed. Please try again.");
     }
   };
@@ -188,7 +185,7 @@ export default function ManageCourses() {
 
   const columns = [
     {
-      title: "Course",
+      title: "Khóa học",
       dataIndex: "title",
       key: "title",
       render: (v, r) => (
@@ -199,45 +196,39 @@ export default function ManageCourses() {
       ),
     },
     {
-      title: "Students",
+      title: "Học viên",
       dataIndex: "students",
-      key: "students",
+      key: "enrollCount",
       width: 120,
     },
     {
-      title: "Rating",
-      dataIndex: "rating",
-      key: "rating",
-      width: 100,
-    },
-    {
-      title: "Status",
+      title: "Trạng thái",
       dataIndex: "status",
       key: "status",
       width: 130,
       render: statusTag,
     },
     {
-      title: "Updated",
+      title: "Cập nhật",
       dataIndex: "updatedAt",
       key: "updatedAt",
       width: 140,
     },
     {
-      title: "Actions",
+      title: "Hành động",
       key: "actions",
       width: 110,
       render: (_, row) => {
         const items = [
           {
             key: "manage",
-            label: "Manage",
+            label: "Quản lý",
           },
           ...(row.status === "Draft"
             ? [
                 {
                   key: "submit",
-                  label: "Submit for review",
+                  label: "Gửi duyệt",
                 },
               ]
             : []),
@@ -245,7 +236,7 @@ export default function ManageCourses() {
           {
             key: "del",
             danger: true,
-            label: "Delete",
+            label: "Xóa",
           },
         ];
 
@@ -283,9 +274,9 @@ export default function ManageCourses() {
     <div className={styles.wrapper}>
       <div className={styles.header}>
         <div>
-          <h1 className={styles.title}>Manage Courses</h1>
+          <h1 className={styles.title}>Quản lý khóa học</h1>
           <p className={styles.subtitle}>
-            Create, update, and manage your courses
+            Tạo, cập nhật và quản lý các khóa học của bạn
           </p>
         </div>
 
@@ -294,7 +285,7 @@ export default function ManageCourses() {
           icon={<PlusOutlined />}
           onClick={handleCreateCourse}
         >
-          New Course
+          Tạo khoá học
         </Button>
       </div>
 

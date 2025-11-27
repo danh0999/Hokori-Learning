@@ -1,6 +1,6 @@
 // LessonEditorDrawer/tabs/QuizTab.jsx
 import React, { useEffect, useState, useCallback } from "react";
-import { Button, Space, Typography, message, Spin } from "antd";
+import { Button, Space, Typography, Spin } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -15,6 +15,7 @@ import QuizBuilderModal from "../../../../../../ManageDocument/Quiz/QuizBuilderM
 import BulkImportModal from "../../../../../../ManageDocument/Quiz/BulkImportModal/BulkImportModal.jsx";
 
 import styles from "../styles.module.scss";
+import { toast } from "react-toastify";
 
 const { Text } = Typography;
 
@@ -107,7 +108,7 @@ export default function QuizTab({ lesson, onDurationComputed }) {
 
   const handleSaveQuiz = async (builderQuiz) => {
     if (!lesson?.id) {
-      message.error("Thiếu lessonId.");
+      toast.error("Thiếu lessonId.");
       return;
     }
 
@@ -119,7 +120,7 @@ export default function QuizTab({ lesson, onDurationComputed }) {
     );
 
     if (saveLessonQuizThunk.fulfilled.match(action)) {
-      message.success("Đã lưu quiz.");
+      toast.success("Đã lưu quiz.");
       setOpenBuilder(false);
 
       // duration = timeLimit (phút) * 60
@@ -131,12 +132,12 @@ export default function QuizTab({ lesson, onDurationComputed }) {
         onDurationComputed(minutes * 60);
       }
     } else {
-      message.error(action.payload || "Lưu quiz thất bại.");
+      toast.error(action.payload || "Lưu quiz thất bại.");
     }
   };
 
   const handleRemove = async () => {
-    message.error("Chưa implement delete quiz 😅");
+    toast.error("Chưa implement delete quiz 😅");
   };
 
   return (

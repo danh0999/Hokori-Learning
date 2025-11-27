@@ -147,7 +147,7 @@ export default function CurriculumBuilder({
       {/* input tạo chapter mới */}
       <div className={styles.newChapterRow}>
         <Input
-          placeholder="New chapter title"
+          placeholder="Thêm tiêu đề chương mới"
           value={newChapterTitle}
           onChange={(e) => setNewChapterTitle(e.target.value)}
           onPressEnter={handleAddChapter}
@@ -158,7 +158,7 @@ export default function CurriculumBuilder({
           icon={<PlusOutlined />}
           onClick={handleAddChapter}
         >
-          Add chapter
+          Thêm chương mới
         </Button>
       </div>
 
@@ -190,7 +190,7 @@ export default function CurriculumBuilder({
           >
             <div className={styles.lessonList}>
               {(ch.lessons || []).length === 0 ? (
-                <div className={styles.lessonEmpty}>No lessons yet</div>
+                <div className={styles.lessonEmpty}>Chưa có bài học nào</div>
               ) : (
                 (ch.lessons || []).map((les) => (
                   <div key={les.id} className={styles.lessonItem}>
@@ -236,7 +236,7 @@ export default function CurriculumBuilder({
                 className={styles.addLessonBtn}
                 onClick={() => handleAddLesson(ch.id)}
               >
-                Add lesson
+                Thêm bài học mới
               </Button>
             </div>
           </Card>
@@ -245,10 +245,12 @@ export default function CurriculumBuilder({
 
       {/* Footer: Back / Next */}
       <div className={styles.footerRow}>
-        {typeof onBack === "function" && <Button onClick={onBack}>Back</Button>}
+        {typeof onBack === "function" && (
+          <Button onClick={onBack}>Quay lại</Button>
+        )}
         {typeof onNext === "function" && (
           <Button type="primary" onClick={onNext} disabled={!canGoNext}>
-            Next: Pricing
+            Tiếp theo: Giá khoá học
           </Button>
         )}
       </div>

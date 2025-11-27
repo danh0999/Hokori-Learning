@@ -1,0 +1,106 @@
+.container {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 2000;
+  width: 280px;
+  padding: 14px 16px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  background: rgba(17, 25, 40, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45);
+
+  color: white;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.headerIcon {
+  color: #60a5fa;
+  margin-right: 6px;
+}
+
+.headerText {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.item {
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateX(-2px);
+  }
+}
+
+.itemInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.courseTitle {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 2px;
+  color: #f1f5f9;
+}
+
+.courseMeta {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.arrow {
+  font-size: 14px;
+  color: #60a5fa;
+}
+
+.deleteIcon {
+  font-size: 14px;
+  color: #f97373;
+
+  &:hover {
+    color: #fb5a5a;
+  }
+}
+
+.confirmTitle {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.confirmDesc {
+  font-size: 12px;
+  color: #64748b;
+}

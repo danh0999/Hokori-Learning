@@ -1,6 +1,6 @@
 // src/pages/Teacher/Courses/Create-Course/components/CourseOverview/CourseOverview.jsx
 import React, { useEffect, useMemo, useState, useRef } from "react";
-import { Card, Form, Input, Select, Upload, Button, message } from "antd";
+import { Card, Form, Input, Select, Upload, Button } from "antd";
 import { UploadOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -12,6 +12,7 @@ import {
 
 import styles from "./styles.module.scss";
 import api from "../../../../../../configs/axios.js";
+import { toast } from "react-toastify";
 
 const { TextArea } = Input;
 
@@ -74,7 +75,7 @@ export default function CourseOverview({ courseId, onNext }) {
       updateCourseThunk({ courseId, data: payload })
     );
     if (updateCourseThunk.fulfilled.match(action)) {
-      message.success("Đã lưu thông tin khoá học.");
+      toast.success("Đã lưu thông tin khoá học!");
       dispatch(fetchCourseTree(courseId));
 
       // 👉 Sau khi lưu thành công thì nhảy sang step tiếp theo (nếu có)
@@ -82,7 +83,7 @@ export default function CourseOverview({ courseId, onNext }) {
         onNext();
       }
     } else {
-      message.error("Lưu thất bại, vui lòng thử lại.");
+      toast.error("Lưu thất bại, vui lòng thử lại!");
     }
   };
 
@@ -100,16 +101,16 @@ export default function CourseOverview({ courseId, onNext }) {
       const action = await dispatch(uploadCourseCoverThunk({ courseId, file }));
 
       if (uploadCourseCoverThunk.fulfilled.match(action)) {
-        message.success("Đã cập nhật thumbnail.");
+        toast.success("Đã cập nhật thumbnail!");
         onSuccess?.("ok");
         dispatch(fetchCourseTree(courseId));
       } else {
-        message.error("Không lưu được thumbnail.");
+        toast.error("Không lưu được thumbnail.");
         onError?.();
       }
     } catch (e) {
       console.error(e);
-      message.error("Upload thumbnail thất bại.");
+      toast.error("Upload thumbnail thất bại.");
       onError?.(e);
     } finally {
       setUploadingThumb(false);
@@ -126,10 +127,10 @@ export default function CourseOverview({ courseId, onNext }) {
       })
     );
     if (updateCourseThunk.fulfilled.match(action)) {
-      message.success("Đã xoá thumbnail.");
+      toast.success("Đã xoá thumbnail.");
       dispatch(fetchCourseTree(courseId));
     } else {
-      message.error("Xoá thumbnail thất bại.");
+      toast.error("Xoá thumbnail thất bại.");
     }
   };
 
@@ -152,7 +153,7 @@ export default function CourseOverview({ courseId, onNext }) {
       >
         <Form.Item
           name="title"
-          label="Course title"
+          label="Tiêu đề"
           rules={[
             { required: true, message: "Vui lòng nhập tiêu đề." },
             { max: 120 },
@@ -161,13 +162,13 @@ export default function CourseOverview({ courseId, onNext }) {
           <Input placeholder="JLPT N5 – Nền tảng tiếng Nhật cho người mới" />
         </Form.Item>
 
-        <Form.Item name="subtitle" label="Subtitle" rules={[{ max: 160 }]}>
+        <Form.Item name="subtitle" label="Phụ đề" rules={[{ max: 160 }]}>
           <Input placeholder="Khoá học giúp bạn chinh phục JLPT N5 từ con số 0." />
         </Form.Item>
 
         <Form.Item
           name="description"
-          label="Course description"
+          label="Mô tả khoá học"
           rules={[{ message: "Vui lòng nhập mô tả." }]}
         >
           <TextArea
@@ -176,7 +177,7 @@ export default function CourseOverview({ courseId, onNext }) {
           />
         </Form.Item>
 
-        <Form.Item name="level" label="Level" rules={[{ required: true }]}>
+        <Form.Item name="level" label="Cấp độ" rules={[{ required: true }]}>
           <Select
             options={[
               { label: "JLPT N5", value: "N5" },
@@ -188,7 +189,7 @@ export default function CourseOverview({ courseId, onNext }) {
           />
         </Form.Item>
 
-        <Form.Item label="Course thumbnail">
+        <Form.Item label="Ảnh đại diện khoá học">
           {!hasThumb ? (
             <Upload.Dragger
               multiple={false}
@@ -200,10 +201,6 @@ export default function CourseOverview({ courseId, onNext }) {
               </p>
               <p className="ant-upload-text">
                 Click hoặc kéo thả ảnh thumbnail vào đây
-              </p>
-              <p className={styles.hintText}>
-                Khuyến nghị 1280x720, &lt; 2MB. Ảnh sẽ được upload bằng API{" "}
-                <code>POST /teacher/courses/{"{courseId}"}/cover-image</code>.
               </p>
             </Upload.Dragger>
           ) : (
@@ -236,7 +233,7 @@ export default function CourseOverview({ courseId, onNext }) {
                   customRequest={handleThumbnailUpload}
                 >
                   <Button type="default" size="small">
-                    Change thumbnail
+                    Thay đổi ảnh đại diện
                   </Button>
                 </Upload>
                 <Button
@@ -246,7 +243,7 @@ export default function CourseOverview({ courseId, onNext }) {
                   onClick={handleRemoveThumb}
                   size="small"
                 >
-                  Remove thumbnail
+                  Gỡ ảnh đại diện
                 </Button>
               </div>
             </div>
@@ -259,7 +256,7 @@ export default function CourseOverview({ courseId, onNext }) {
             htmlType="submit"
             loading={saving || uploadingThumb}
           >
-            {typeof onNext === "function" ? "Save & continue" : "Save basics"}
+            {typeof onNext === "function" ? " Lưu & tiếp tục" : "Lưu cơ bản"}
           </Button>
         </Form.Item>
       </Form>

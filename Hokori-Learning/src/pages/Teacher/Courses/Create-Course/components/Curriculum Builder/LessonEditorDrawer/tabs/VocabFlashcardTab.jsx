@@ -1,6 +1,6 @@
 // LessonEditorDrawer/tabs/VocabFlashcardTab.jsx
 import React, { useCallback, useEffect, useState } from "react";
-import { Button, Typography, message, Form, Input } from "antd";
+import { Button, Typography, Form, Input } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -18,6 +18,7 @@ import FlashcardBuilderModal from "../../../../../../ManageDocument/Flashcard/Fl
 import FlashcardList from "../../../../../../ManageDocument/Flashcard/FlashcardList/FlashcardList.jsx";
 
 import styles from "../styles.module.scss";
+import { toast } from "react-toastify";
 
 const { Text } = Typography;
 
@@ -104,7 +105,7 @@ export default function VocabFlashcardTab({
   }, [sectionContentId, onDurationComputed]);
 
   const handleOpenBuilder = useCallback(async () => {
-    if (!lesson?.id) return message.error("Missing lessonId");
+    if (!lesson?.id) return toast.error("Missing lessonId");
 
     // validate title
     let sectionTitle = "";
@@ -178,7 +179,7 @@ export default function VocabFlashcardTab({
       setModalOpen(true);
     } catch (err) {
       console.error(err);
-      message.error(err.message || "Không thể mở Flashcard builder.");
+      toast.error(err.message || "Không thể mở Flashcard builder.");
     } finally {
       setOpening(false);
     }
