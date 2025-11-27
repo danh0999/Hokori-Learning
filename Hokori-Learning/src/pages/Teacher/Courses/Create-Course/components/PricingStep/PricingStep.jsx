@@ -1,6 +1,6 @@
 // src/pages/Teacher/Courses/Create-Course/components/PricingStep/PricingStep.jsx
 import React, { useEffect } from "react";
-import { Card, Form, InputNumber, Button, message } from "antd";
+import { Card, Form, InputNumber, Button } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 
 import {
@@ -9,6 +9,7 @@ import {
 } from "../../../../../../redux/features/teacherCourseSlice.js";
 
 import styles from "./styles.module.scss";
+import { toast } from "react-toastify";
 
 /**
  * Props:
@@ -48,7 +49,7 @@ export default function PricingStep({ courseId, onNext, onBack }) {
     );
 
     if (updateCourseThunk.fulfilled.match(action)) {
-      message.success("Đã lưu giá khoá học.");
+      toast.success("Đã lưu giá khoá học.");
       dispatch(fetchCourseTree(courseId));
 
       // Sau khi lưu thành công, chuyển step nếu onNext có truyền vào
@@ -56,18 +57,14 @@ export default function PricingStep({ courseId, onNext, onBack }) {
         onNext();
       }
     } else {
-      message.error("Không lưu được giá, vui lòng thử lại.");
+      toast.error("Không lưu được giá, vui lòng thử lại.");
     }
   };
 
   return (
     <Card className={styles.cardBig}>
       <div className={styles.stepHeader}>
-        <div className={styles.stepTitle}>Pricing</div>
-        <div className={styles.stepDesc}>
-          Set your course price in VND. Learners will see it with currency
-          formatting.
-        </div>
+        <div className={styles.stepTitle}>Giá khoá học</div>
       </div>
 
       <Form
@@ -78,7 +75,7 @@ export default function PricingStep({ courseId, onNext, onBack }) {
       >
         <Form.Item
           name="price"
-          label="Price (VND)"
+          label="Giá (VND)"
           rules={[
             {
               validator(_, value) {
@@ -114,12 +111,10 @@ export default function PricingStep({ courseId, onNext, onBack }) {
         <Form.Item>
           <div className={styles.stepFooter}>
             {typeof onBack === "function" && (
-              <Button onClick={onBack}>Back</Button>
+              <Button onClick={onBack}>Quay lại</Button>
             )}
             <Button type="primary" htmlType="submit" loading={saving}>
-              {typeof onNext === "function"
-                ? "Save & continue"
-                : "Save pricing"}
+              {typeof onNext === "function" ? "Lưu & tiếp tục" : "Lưu giá"}
             </Button>
           </div>
         </Form.Item>

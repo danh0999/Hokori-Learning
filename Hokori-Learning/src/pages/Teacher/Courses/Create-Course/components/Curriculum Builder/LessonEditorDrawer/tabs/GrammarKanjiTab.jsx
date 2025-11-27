@@ -1,6 +1,6 @@
 // LessonEditorDrawer/tabs/GrammarKanjiTab.jsx
 import React, { useEffect, useState } from "react";
-import { Form, Input, Upload, Button, Typography, Space, message } from "antd";
+import { Form, Input, Upload, Button, Typography, Space } from "antd";
 import { InboxOutlined } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 
@@ -14,6 +14,7 @@ import {
 } from "../../../../../../../../redux/features/teacherCourseSlice.js";
 
 import styles from "../styles.module.scss";
+import { toast } from "react-toastify";
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -135,7 +136,7 @@ export default function GrammarKanjiTab({
       }
 
       if (!section?.id) {
-        message.error("Không tìm được section để lưu nội dung.");
+        toast.error("Không tìm được section để lưu nội dung.");
         return;
       }
 
@@ -229,13 +230,13 @@ export default function GrammarKanjiTab({
         onDurationComputed(totalSec);
       }
 
-      message.success(
-        type === "GRAMMAR" ? "Đã lưu Grammar section." : "Đã lưu Kanji section."
+      toast.success(
+        type === "GRAMMAR" ? "Đã lưu phần ngữ pháp." : "Đã lưu phần Kanji."
       );
       onSaved?.();
     } catch (err) {
       console.error(err);
-      message.error("Lưu section thất bại.");
+      toast.error("Lưu thất bại.");
     } finally {
       setSaving(false);
     }

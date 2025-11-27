@@ -320,18 +320,18 @@ const RegisterForm = () => {
             {/* Bio — giới hạn 200 ký tự */}
             <Form.Item
               name="bio"
-              label="Giới thiệu (tối đa 200 ký tự)"
+              label="Giới thiệu (tối đa 500 ký tự)"
               rules={[
                 {
-                  max: 200,
-                  message: "Bio tối đa 200 ký tự!",
+                  max: 500,
+                  message: "Bio tối đa 500 ký tự!",
                 },
               ]}
             >
               <Input.TextArea
                 rows={3}
                 placeholder="Giới thiệu ngắn gọn về kinh nghiệm giảng dạy hoặc thành tựu…"
-                maxLength={200}
+                maxLength={500}
                 showCount
               />
             </Form.Item>

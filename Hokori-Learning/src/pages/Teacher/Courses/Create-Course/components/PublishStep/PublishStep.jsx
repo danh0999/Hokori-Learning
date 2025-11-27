@@ -1,6 +1,6 @@
 // src/pages/Teacher/Courses/Create-Course/components/PublishStep/PublishStep.jsx
 import React from "react";
-import { Card, Button, message } from "antd";
+import { Card, Button } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
@@ -10,6 +10,7 @@ import {
 } from "../../../../../../redux/features/teacherCourseSlice.js";
 
 import styles from "./styles.module.scss";
+import { toast } from "react-toastify";
 
 /**
  * Props:
@@ -42,14 +43,14 @@ export default function PublishStep({ courseId, statusFlags, onBack }) {
     ? "In review"
     : isPublished
     ? "Update course info"
-    : "Submit for review";
+    : "Gửi kiểm duyệt";
 
   const canSubmit = readyToPublish && !isPending;
 
   const handleSubmitForReview = async () => {
     if (!courseId) return;
     if (!readyToPublish) {
-      message.warning("Hãy hoàn thành các bước trước khi gửi xét duyệt.");
+      toast.warning("Hãy hoàn thành các bước trước khi gửi xét duyệt.");
       return;
     }
 
@@ -57,17 +58,32 @@ export default function PublishStep({ courseId, statusFlags, onBack }) {
       const action = await dispatch(submitforapprovalCourseThunk(courseId));
 
       if (submitforapprovalCourseThunk.fulfilled.match(action)) {
-        message.success("Khoá học đã được gửi cho admin xét duyệt.");
-        // 👉 Sau khi submit thành công, quay về trang manage courses
+        // 🔥 CLEAR DRAFT LOCALSTORAGE NGAY Ở ĐÂY
+        try {
+          const raw = localStorage.getItem("teacher-draft-courses");
+          let list = raw ? JSON.parse(raw) : [];
+          if (!Array.isArray(list)) list = [];
+
+          // bỏ cái course vừa gửi duyệt ra khỏi list draft
+          list = list.filter((c) => c.id !== courseId);
+          localStorage.setItem("teacher-draft-courses", JSON.stringify(list));
+
+          // xoá luôn step cache
+          localStorage.removeItem(`course-wizard-step-${courseId}`);
+        } catch (e) {
+          console.warn("Cannot clear draft after submit", e);
+        }
+
+        toast.success("Khoá học đã được gửi cho admin xét duyệt.");
         navigate("/teacher/manage-courses");
       } else {
-        message.error(
+        toast.error(
           action.payload || "Gửi xét duyệt thất bại, vui lòng thử lại."
         );
       }
     } catch (err) {
       console.error(err);
-      message.error("Có lỗi khi gửi xét duyệt.");
+      toast.error("Có lỗi khi gửi xét duyệt.");
     }
   };
 
@@ -76,15 +92,13 @@ export default function PublishStep({ courseId, statusFlags, onBack }) {
     try {
       const action = await dispatch(unpublishCourseThunk(courseId));
       if (unpublishCourseThunk.fulfilled.match(action)) {
-        message.success("Khoá học đã được unpublish.");
+        toast.success("Khoá học đã được unpublish.");
       } else {
-        message.error(
-          action.payload || "Unpublish thất bại, vui lòng thử lại."
-        );
+        toast.error(action.payload || "Unpublish thất bại, vui lòng thử lại.");
       }
     } catch (err) {
       console.error(err);
-      message.error("Có lỗi khi unpublish khoá học.");
+      toast.error("Có lỗi khi unpublish khoá học.");
     }
   };
 
@@ -92,7 +106,7 @@ export default function PublishStep({ courseId, statusFlags, onBack }) {
     <Card className={styles.cardBig}>
       {/* Header */}
       <div className={styles.stepHeader}>
-        <div className={styles.stepTitle}>Review & publish</div>
+        <div className={styles.stepTitle}>Tổng kết</div>
         <div className={styles.stepDesc}>
           Kiểm tra lại thông tin khoá học trước khi gửi cho admin xét duyệt.
         </div>
@@ -101,7 +115,7 @@ export default function PublishStep({ courseId, statusFlags, onBack }) {
       {/* Summary status */}
       <div className={styles.reviewBox}>
         <div className={styles.row}>
-          <span className={styles.label}>Title & description</span>
+          <span className={styles.label}>Tiêu đề & mô tả</span>
           <span
             className={`${styles.value} ${
               basicsDone ? styles.valueOk : styles.valuePending
@@ -114,7 +128,7 @@ export default function PublishStep({ courseId, statusFlags, onBack }) {
         </div>
 
         <div className={styles.row}>
-          <span className={styles.label}>Curriculum</span>
+          <span className={styles.label}>Nội dung khoá học</span>
           <span
             className={`${styles.value} ${
               curriculumDone ? styles.valueOk : styles.valuePending
@@ -127,7 +141,7 @@ export default function PublishStep({ courseId, statusFlags, onBack }) {
         </div>
 
         <div className={styles.row}>
-          <span className={styles.label}>Pricing</span>
+          <span className={styles.label}>Giá</span>
           <span
             className={`${styles.value} ${
               pricingDone ? styles.valueOk : styles.valuePending
@@ -142,7 +156,7 @@ export default function PublishStep({ courseId, statusFlags, onBack }) {
         </div>
 
         <div className={styles.row}>
-          <span className={styles.label}>Status</span>
+          <span className={styles.label}>Trạng thái</span>
           <span className={styles.value}>
             {currentCourseMeta?.status || "DRAFT"}
           </span>
@@ -151,7 +165,9 @@ export default function PublishStep({ courseId, statusFlags, onBack }) {
 
       {/* Curriculum preview */}
       <div className={styles.curriculumPreviewBox}>
-        <div className={styles.curriculumHeader}>Curriculum preview</div>
+        <div className={styles.curriculumHeader}>
+          Xem trước nội dung khoá học
+        </div>
 
         {chapters.length === 0 ? (
           <div className={styles.curriculumEmpty}>
@@ -163,7 +179,7 @@ export default function PublishStep({ courseId, statusFlags, onBack }) {
               <div key={ch.id || chIndex} className={styles.curriculumChapter}>
                 <div className={styles.chapterLine}>
                   <span className={styles.chapterIndex}>
-                    Chapter {chIndex + 1}
+                    Chương {chIndex + 1}
                   </span>
                   <span className={styles.chapterTitle}>
                     {ch.title || "Untitled chapter"}
@@ -173,7 +189,7 @@ export default function PublishStep({ courseId, statusFlags, onBack }) {
                 <ul className={styles.lessonList}>
                   {(ch.lessons || []).length === 0 ? (
                     <li className={styles.lessonEmpty}>
-                      No lessons in this chapter
+                      Chưa có bài học nào trong chương này.
                     </li>
                   ) : (
                     (ch.lessons || []).map((les, lIndex) => (
@@ -198,7 +214,7 @@ export default function PublishStep({ courseId, statusFlags, onBack }) {
       <div className={styles.actionsRow}>
         {typeof onBack === "function" && (
           <Button onClick={onBack} disabled={saving}>
-            Back
+            Quay lại
           </Button>
         )}
 
@@ -214,7 +230,7 @@ export default function PublishStep({ courseId, statusFlags, onBack }) {
 
           {isPublished && (
             <Button danger onClick={handleUnpublish} loading={saving}>
-              Unpublish
+              Huỷ xuất bản
             </Button>
           )}
         </div>

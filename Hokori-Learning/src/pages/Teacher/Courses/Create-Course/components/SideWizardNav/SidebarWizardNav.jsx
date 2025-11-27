@@ -35,48 +35,48 @@ export default function SidebarWizardNav({ step, onChangeStep, status }) {
       {
         key: "plan",
         icon: <BulbOutlined />,
-        title: "Plan your course",
-        subtitle: "Set up the basics",
+        title: "Lên kế hoạch khoá học",
+        subtitle: "Thiết lập cơ bản cho khoá học của bạn",
         items: [
           {
             key: "course-info",
             stepIndex: 0,
-            label: "Course info",
-            desc: "Title, subtitle, description, category, language",
+            label: "Thông tin khoá học",
+            desc: "Tiêu đề, phụ đề, mô tả, cấp độ, ảnh bìa",
           },
         ],
       },
       {
         key: "create",
         icon: <BookOutlined />,
-        title: "Create your content",
-        subtitle: "Build your curriculum",
+        title: "Tạo nội dung khoá học",
+        subtitle: "Xây dựng chương trình học",
         items: [
           {
             key: "curriculum",
             stepIndex: 1,
-            label: "Curriculum",
-            desc: "Sections, lectures, quizzes, resources",
+            label: "Chương trình học",
+            desc: "Tạo chương và bài học cho khoá học",
           },
         ],
       },
       {
         key: "publish",
         icon: <RocketOutlined />,
-        title: "Publish your course",
-        subtitle: "Get ready to go live",
+        title: "Tổng kết",
+        subtitle: "Gửi kiểm duyệt và xuất bản khoá học",
         items: [
           {
             key: "pricing",
             stepIndex: 2,
-            label: "Pricing",
-            desc: "Choose price for your course",
+            label: "Giá",
+            desc: "Chọn giá cho khoá học của bạn",
           },
           {
             key: "review-submit",
             stepIndex: 3,
-            label: "Review & submit",
-            desc: "Final check before submitting",
+            label: "Xem lại & gửi",
+            desc: "Kiểm tra cuối trước khi gửi",
           },
         ],
       },
@@ -93,9 +93,9 @@ export default function SidebarWizardNav({ step, onChangeStep, status }) {
   return (
     <div className={styles.sidebarNav}>
       <div className={styles.navHeader}>
-        <div className={styles.navTitle}>Course setup</div>
+        <div className={styles.navTitle}>Thiết lập khoá học</div>
         <div className={styles.navSubtitle}>
-          Follow each step to create and publish your course.
+          Theo dõi từng bước để tạo và xuất bản khoá học của bạn.
         </div>
       </div>
 
@@ -148,12 +148,12 @@ export default function SidebarWizardNav({ step, onChangeStep, status }) {
 
                   <div className={styles.stepStatus}>
                     {isDone
-                      ? "Completed"
+                      ? "Hoàn thành"
                       : isActive
-                      ? "In progress"
+                      ? "Đang tiến hành"
                       : isLocked
-                      ? "Locked"
-                      : "Not started"}
+                      ? "Khóa"
+                      : "Chưa bắt đầu"}
                   </div>
                 </li>
               );

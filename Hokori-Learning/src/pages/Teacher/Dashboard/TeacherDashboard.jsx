@@ -71,7 +71,7 @@ export default function TeacherDashboard() {
 
   const columns = [
     {
-      title: "Course",
+      title: "Khóa học",
       dataIndex: "title",
       key: "title",
       render: (v, r) => (
@@ -81,32 +81,35 @@ export default function TeacherDashboard() {
         </div>
       ),
     },
-    { title: "Students", dataIndex: "students", width: 120 },
-    { title: "Rating", dataIndex: "rating", width: 100 },
     {
-      title: "Status",
+      title: "Học viên",
+      dataIndex: "students",
+      key: "enrollCount",
+      width: 150,
+    },
+    {
+      title: "Trạng thái",
       dataIndex: "status",
-      width: 120,
+      width: 150,
       render: statusTag,
     },
     {
-      title: "Updated",
+      title: "Cập nhật",
       dataIndex: "updatedAt",
-      width: 160,
+      width: 180,
     },
     {
       title: "",
       key: "actions",
-      width: 60,
+      width: 100,
       render: () => (
         <Dropdown
           trigger={["click"]}
           menu={{
             items: [
-              { key: "view", label: "View" },
-              { key: "edit", label: "Edit" },
-              { type: "divider" },
-              { key: "delete", danger: true, label: "Delete" },
+              { key: "view", label: "Xem" },
+              { key: "edit", label: "Chỉnh sửa" },
+              { key: "delete", danger: true, label: "Xóa" },
             ],
           }}
         >
@@ -158,12 +161,12 @@ export default function TeacherDashboard() {
         <div>
           <h1 className={styles.title}>Teacher Dashboard</h1>
           <p className={styles.subtitle}>
-            Snapshot of your teaching performance
+            Quản lý khóa học, theo dõi doanh thu và tương tác với học viên
           </p>
         </div>
         <div className={styles.headerActions}>
           <Button type="primary" onClick={handleCreateCourse}>
-            New Course
+            Tạo khóa học
           </Button>
         </div>
       </div>
@@ -190,27 +193,23 @@ export default function TeacherDashboard() {
         <Col xs={24} sm={12} md={6}>
           <Card className={styles.kpiCard}>
             <div className={styles.kpiIcon}>
-              <TeamOutlined />
-            </div>
-            <Statistic title="Active Students" value={data.activeStudents} />
-            <div className={styles.kpiHint}>
-              {data.activeStudentsChangePercent}% vs last month
-            </div>
-          </Card>
-        </Col>
-
-        <Col xs={24} sm={12} md={6}>
-          <Card className={styles.kpiCard}>
-            <div className={styles.kpiIcon}>
               <BookOutlined />
             </div>
             <Statistic
-              title="Published Courses"
+              title="Khoá học đã xuất bản"
               value={data.publishedCourses}
             />
             <div className={styles.kpiHint}>
-              {data.draftsWaitingReview} drafts waiting review
+              {data.draftsWaitingReview} bản nháp chờ duyệt
             </div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card className={styles.kpiCard}>
+            <div className={styles.kpiIcon}>
+              <TeamOutlined />
+            </div>
+            <Statistic title="Tổng số học viên" value={data.activeStudents} />
           </Card>
         </Col>
 
@@ -220,13 +219,10 @@ export default function TeacherDashboard() {
               <DollarOutlined />
             </div>
             <Statistic
-              title="Monthly Revenue"
+              title="Doanh thu "
               value={data.monthlyRevenue}
-              prefix="$"
+              suffix="Đ"
             />
-            <div className={styles.kpiHint}>
-              Next payout: {data.nextPayoutDate}
-            </div>
           </Card>
         </Col>
 
@@ -235,8 +231,7 @@ export default function TeacherDashboard() {
             <div className={styles.kpiIcon}>
               <MessageOutlined />
             </div>
-            <Statistic title="New Comments" value={data.newComments} />
-            <div className={styles.kpiHint}>From your students</div>
+            <Statistic title="Bình luận" value={data.newComments} />
           </Card>
         </Col>
       </Row>

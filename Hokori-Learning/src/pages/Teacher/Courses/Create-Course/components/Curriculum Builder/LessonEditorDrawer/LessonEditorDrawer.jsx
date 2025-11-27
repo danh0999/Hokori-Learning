@@ -1,6 +1,6 @@
 // LessonEditorDrawer/LessonEditorDrawer.jsx
 import React, { useMemo, useState, useCallback } from "react";
-import { Drawer, Tabs, Button, Space, message, Typography } from "antd";
+import { Drawer, Tabs, Button, Space, Typography } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import {
   BookOutlined,
@@ -20,6 +20,7 @@ import VocabFlashcardTab from "./tabs/VocabFlashcardTab.jsx";
 import QuizTab from "./tabs/QuizTab.jsx";
 
 import styles from "./styles.module.scss";
+import { toast } from "react-toastify";
 
 const { Text } = Typography;
 
@@ -78,7 +79,7 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
           })
         ).catch((err) => {
           console.error(err);
-          message.error("Không cập nhật được tổng thời lượng lesson.");
+          toast.error("Không cập nhật được tổng thời lượng lesson.");
         });
 
         return next;
@@ -106,7 +107,7 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
       onSave?.();
     } catch (err) {
       console.error(err);
-      message.error("Có lỗi khi reload curriculum.");
+      toast.error("Có lỗi khi reload curriculum.");
     }
   };
 
@@ -115,12 +116,12 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
       if (currentCourseMeta?.id) {
         await dispatch(fetchCourseTree(currentCourseMeta.id)).unwrap();
       }
-      message.success("Đã cập nhật lesson.");
+      toast.success("Đã cập nhật lesson.");
       onSave?.();
       onClose?.();
     } catch (err) {
       console.error(err);
-      message.error("Có lỗi khi reload curriculum.");
+      toast.error("Có lỗi khi reload curriculum.");
     }
   };
 

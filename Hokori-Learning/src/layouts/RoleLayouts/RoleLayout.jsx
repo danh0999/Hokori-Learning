@@ -4,6 +4,7 @@ import RoleHeader from "../RoleLayouts/Header/RoleHeader";
 import RoleSidebar from "../RoleLayouts/Sidebar/RoleSideBar";
 import styles from "./styles.module.scss";
 import { Outlet } from "react-router-dom";
+import DraftCoursesDock from "../../pages/Teacher/components/TeacherDraftDock/DraftCoursesDock.jsx"; // 👈 thêm
 
 const { Content } = Layout;
 
@@ -25,6 +26,9 @@ export default function RoleLayout({ role = "teacher", user }) {
           </Content>
         </Layout>
       </Layout>
+
+      {/* ⬇ chỉ teacher mới thấy dock, admin/mod không bị ảnh hưởng */}
+      {role === "teacher" && <DraftCoursesDock />}
     </Layout>
   );
 }
