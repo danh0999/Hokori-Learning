@@ -175,7 +175,8 @@ const QuizPage = () => {
       />
 
       <main className={styles.main}>
-        <div className={styles.content}>
+        <div className={styles.layoutTwoCol}>
+          <div className={styles.content}>
           {questions.map((q, idx) => (
             <div
               key={q.questionId}
@@ -197,17 +198,18 @@ const QuizPage = () => {
           {questions.length === 0 && (
             <p className={styles.emptyQuestions}>Chưa có câu hỏi.</p>
           )}
-        </div>
+          </div>
 
-        <aside className={styles.sidebar}>
-          <Sidebar
-            total={totalQuestions}
-            activeIndex={activeIndex}
-            answers={answers}
-            questions={questions}
-            onSelectQuestion={handleClickQuestionNumber}
-          />
-        </aside>
+          <aside className={styles.sidebarSticky}>
+            <Sidebar
+              total={totalQuestions}
+              activeIndex={activeIndex}
+              answers={answers}
+              questions={questions}
+              onSelectQuestion={handleClickQuestionNumber}
+            />
+          </aside>
+        </div>
       </main>
 
       <SubmitModal
