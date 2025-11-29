@@ -1,0 +1,60 @@
+.card {
+  border: 1px solid #e5e7eb;
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  h3 {
+    font-size: 18px;
+    font-weight: 600;
+  }
+}
+
+.levelTag {
+  background: #2563eb;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.desc {
+  color: #555;
+  font-size: 14px;
+}
+
+.infoGroup {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.infoItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.actionBtn {
+  margin-top: auto;
+  background: #2563eb;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+
+  &:hover {
+    background: #1d4ed8;
+  }
+}

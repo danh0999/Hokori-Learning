@@ -1,129 +1,89 @@
-import React, { useState } from "react";
+// src/pages/JLPT/JLPTList.jsx
+import { useEffect, useState } from "react";
 import styles from "./JLPTList.module.scss";
+
 import FilterBar from "./components/FilterBar";
 import JLPTCard from "./components/JLPTCard";
 import Pagination from "./components/Pagination";
-import { useNavigate } from "react-router-dom";
+
+import { useDispatch, useSelector } from "react-redux";
+import { fetchOpenEvents } from "../../redux/features/jlptLearnerSlice";
 
 const JLPTList = () => {
-  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  // ===============================
-  // Mock data KHỚP ERD
-  // ===============================
-  const jlptTests = [
-    {
-      event_id: 101,
-      title: "JLPT N5 Mock Test #1",
-      level: "N5",
-      status: "ACTIVE",
-      description: "Đề luyện thi N5 cơ bản cho người mới bắt đầu.",
-      start_at: "2025-10-01T08:00:00Z",
-      end_at: "2025-12-31T23:59:59Z",
-      test_id: 5001,
-      duration_min: 105,
-      max_participants: 500,
-    },
-    {
-      event_id: 102,
-      title: "JLPT N4 Mock Test #2",
-      level: "N4",
-      status: "ACTIVE",
-      description: "Ôn tập tổng hợp ngữ pháp và từ vựng trình độ N4.",
-      start_at: "2025-10-10T08:00:00Z",
-      end_at: "2025-12-31T23:59:59Z",
-      test_id: 5002,
-      duration_min: 125,
-      max_participants: 400,
-    },
-    {
-      event_id: 103,
-      title: "JLPT N3 Grammar",
-      level: "N3",
-      status: "ACTIVE",
-      description: "Bài luyện chuyên sâu ngữ pháp và từ vựng N3.",
-      start_at: "2025-10-15T08:00:00Z",
-      end_at: "2025-12-31T23:59:59Z",
-      test_id: 5003,
-      duration_min: 120,
-      max_participants: 300,
-    },
-    {
-      event_id: 104,
-      title: "JLPT N2 Practice Test",
-      level: "N2",
-      status: "ACTIVE",
-      description:
-        "Đề luyện tổng hợp N2 bao gồm Nghe hiểu, Đọc hiểu và Ngữ pháp.",
-      start_at: "2025-10-20T08:00:00Z",
-      end_at: "2025-12-31T23:59:59Z",
-      test_id: 5004,
-      duration_min: 155,
-      max_participants: 200,
-    },
-    {
-      event_id: 105,
-      title: "JLPT N1 Advanced Challenge",
-      level: "N1",
-      status: "ACTIVE",
-      description:
-        "Đề thử thách N1 với độ khó tương đương đề thật, phù hợp ôn nước rút.",
-      start_at: "2025-10-25T08:00:00Z",
-      end_at: "2025-12-31T23:59:59Z",
-      test_id: 5005,
-      duration_min: 170,
-      max_participants: 150,
-    },
-  ];
+  const { events, loadingEvents, eventsError } = useSelector(
+    (state) => state.jlptLearner
+  );
 
-  // ===============================
-  // State filter
-  // ===============================
-  const [filterLevel, setFilterLevel] = useState("Tất cả cấp độ");
+  // FILTER UI
   const [searchTerm, setSearchTerm] = useState("");
+  const [levelFilter, setLevelFilter] = useState("");
 
-  const filteredTests = jlptTests.filter((item) => {
-    const matchLevel =
-      filterLevel === "Tất cả cấp độ" || item.level === filterLevel;
-    const matchSearch = item.title
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    return matchLevel && matchSearch;
-  });
+  // Load list events OPEN
+  useEffect(() => {
+    dispatch(fetchOpenEvents());
+  }, [dispatch]);
+
+  const errorText =
+    typeof eventsError === "string"
+      ? eventsError
+      : eventsError?.message || JSON.stringify(eventsError || "");
+
+  let filteredEvents = events || [];
+
+  if (levelFilter) {
+    filteredEvents = filteredEvents.filter(
+      (ev) => ev.level?.toLowerCase() === levelFilter.toLowerCase()
+    );
+  }
+
+  if (searchTerm.trim()) {
+    const lower = searchTerm.toLowerCase();
+    filteredEvents = filteredEvents.filter((ev) =>
+      ev.title?.toLowerCase().includes(lower)
+    );
+  }
 
   return (
     <main id="main-content" className={styles.wrapper}>
       <div className={styles.container}>
-        {/* Bộ lọc cấp độ & tìm kiếm */}
+        
+        {/* FILTER BAR */}
         <FilterBar
-          filterLevel={filterLevel}
-          setFilterLevel={setFilterLevel}
+          levelFilter={levelFilter}
+          onChangeLevel={setLevelFilter}
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
         />
 
-        {/* Grid danh sách đề thi */}
+        {/* EVENT GRID */}
         <section className={styles.gridSection}>
+          {loadingEvents && (
+            <p className={styles.loading}>Đang tải danh sách đợt thi...</p>
+          )}
+
+          {eventsError && (
+            <p className={styles.error}>
+              Lỗi khi tải danh sách: {errorText}
+            </p>
+          )}
+
           <div className={styles.grid}>
-            {filteredTests.map((test) => (
-              <div
-                key={test.event_id}
-                onClick={() => navigate(`/jlpt/test/${test.test_id}`)}
-                style={{ cursor: "pointer" }}
-              >
-                <JLPTCard test={test} />
-              </div>
+            {filteredEvents.map((event) => (
+              <JLPTCard key={event.id} event={event} />
             ))}
 
-            {filteredTests.length === 0 && (
-              <p className={styles.emptyState}>
-                Không tìm thấy đề thi phù hợp.
-              </p>
-            )}
+            {!loadingEvents &&
+              !eventsError &&
+              filteredEvents.length === 0 && (
+                <p className={styles.emptyState}>
+                  Không có đợt thi phù hợp.
+                </p>
+              )}
           </div>
         </section>
 
-        {/* Phân trang */}
         <Pagination />
       </div>
     </main>

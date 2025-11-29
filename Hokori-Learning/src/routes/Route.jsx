@@ -22,11 +22,17 @@ import LessonPlayer from "../pages/LessonPlayer/LessonPlayer";
 import QuizPage from "../pages/QuizPage/QuizPage";
 import MyFlashcards from "../pages/Flashcards/MyFlashcards";
 import ProfilePage from "../pages/Profile/ProfilePage";
-import JLPTTestPage from "../pages/JLPTTest/JLPTTestPage";
+
 import Information from "../pages/Information/Information";
 import Policies from "../pages/Policies/Policies";
 import AiKaiwaPage from "../pages/AiKaiwa/AiKaiwaPage";
 import AiAnalysePage from "../pages/AiAnalyse/AiAnalysePage";
+import JLPTEventTests from "../pages/JLPTEventTests/JLPTEventTests";
+import MultipleChoice from "../pages/JLPTTest/MultipleChoice";
+import Reading from "../pages/JLPTTest/Reading";
+import Listening from "../pages/JLPTTest/Listening";
+import Result from "../pages/JLPTTest/Result";
+
 // ===== Teacher =====
 import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
 import ManageCourses from "../pages/Teacher/Courses/ManageCourses";
@@ -99,7 +105,16 @@ const routes = [
           { path: "ai-kaiwa", element: <AiKaiwaPage /> },
           { path: "ai-analyse", element: <AiAnalysePage /> },
           { path: "jlpt", element: <JLPTList /> },
-          { path: "jlpt/test/:testId", element: <JLPTTestPage /> },
+
+          
+          { path: "jlpt/events/:eventId", element: <JLPTEventTests /> },
+
+          // ==== FLOW 3 PHẦN THI ====
+          { path: "jlpt/test/:testId/grammar", element: <MultipleChoice /> },
+          { path: "jlpt/test/:testId/reading", element: <Reading /> },
+          { path: "jlpt/test/:testId/listening", element: <Listening /> },
+          { path: "jlpt/test/:testId/result", element: <Result /> },
+         
 
           {
             path: "course/:courseId/lesson/:lessonId",

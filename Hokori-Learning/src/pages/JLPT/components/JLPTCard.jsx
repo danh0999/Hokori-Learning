@@ -1,49 +1,65 @@
-import React from "react";
+// src/pages/JLPT/components/JLPTCard.jsx
 import styles from "./JLPTCard.module.scss";
-import { MdPeople } from "react-icons/md";
-import { IoMdTime } from "react-icons/io";
 import { CiCircleCheck } from "react-icons/ci";
+import { IoMdTime } from "react-icons/io";
+import { MdPeople } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
-const JLPTCard = ({ test }) => {
-  // test = 1 item join giữa JLPT_Event và JLPT_Test
-  // event_id, title, level, status, description, duration_min, max_participants
+
+const JLPTCard = ({ event }) => {
   const navigate = useNavigate();
-  const handleStartTest = () => {
-    // Điều hướng tới route con /jlpt/test/:testId
-    navigate(`/jlpt/test/${test.test_id}`);
+
+  const handleViewTests = () => {
+    navigate(`/jlpt/events/${event.id}`);
   };
+
+  const title = event.title || `Sự kiện JLPT ${event.level || ""}`;
+  const description = event.description || "";
+  const level = event.level || "";
+  const status = event.status || "OPEN";
+
+  const startTime = event.startTime
+    ? new Date(event.startTime).toLocaleString()
+    : null;
+
   return (
     <div className={styles.card}>
-      {/* Header: tiêu đề đề thi + cấp độ N? */}
+      {/* Header */}
       <div className={styles.cardHeader}>
-        <h3>{test.title}</h3>
-        <span className={styles.levelTag}>{test.level}</span>
+        <h3>{title}</h3>
+        {level && <span className={styles.levelTag}>{level}</span>}
       </div>
 
-      {/* Nội dung mô tả ngắn */}
-      {test.description && <p className={styles.desc}>{test.description}</p>}
+      {/* Description */}
+      {description && <p className={styles.desc}>{description}</p>}
 
-      {/* Thông tin chi tiết */}
+      {/* Info */}
       <div className={styles.infoGroup}>
+        {startTime && (
+          <div className={styles.infoItem}>
+            <IoMdTime />
+            <span>Bắt đầu: {startTime}</span>
+          </div>
+        )}
+
         <div className={styles.infoItem}>
-          <IoMdTime />
-          <span>{test.duration_min} phút</span>
+          <CiCircleCheck />
+          <span>Trạng thái: {status}</span>
         </div>
 
         <div className={styles.infoItem}>
           <MdPeople />
-          <span>Tối đa {test.max_participants} người</span>
-        </div>
-
-        <div className={styles.infoItem}>
-          <CiCircleCheck />
-          <span>Trạng thái: {test.status}</span>
+          <span>
+            Người tham gia: {event.currentParticipants || 0}
+            {event.maxParticipants
+              ? ` / ${event.maxParticipants}`
+              : ""}
+          </span>
         </div>
       </div>
 
       {/* CTA */}
-      <button className={styles.actionBtn} onClick={handleStartTest}>
-        Bắt đầu thi thử
+      <button className={styles.actionBtn} onClick={handleViewTests}>
+        Xem các đề thi
       </button>
     </div>
   );

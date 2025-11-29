@@ -1,59 +1,67 @@
-import React, { useState, useEffect } from "react";
-import styles from "./MultipleChoice.module.scss";
+// src/pages/JLPTTest/Reading.jsx
+import React, { useEffect, useMemo, useState } from "react";
+import styles from "./MultipleChoice.module.scss"; // UI GỐC
+import LoadingOverlay from "../../components/Loading/LoadingOverlay";
+import { useDispatch, useSelector } from "react-redux";
+import { useParams, useNavigate } from "react-router-dom";
+
 import SidebarQuestionList from "./components/SidebarQuestionList";
 import QuestionCard from "./components/QuestionCard";
 import JLPTModal from "./components/JLPTModal";
 
-const reading_passages = [
-  {
-    passage_id: 901,
-    test_id: 101,
-    title: "駅での出来事",
-    content:
-      "昨日、私は駅で面白いことを見ました。ある男性が切符を落として、それを拾った子どもが笑顔で渡しました。周りの人々も優しい気持ちになりました。",
-  },
-];
+// ĐÚNG ACTION TỪ SLICE
+import {
+  fetchReading,
+  submitAnswer,
+} from "../../redux/features/jlptLearnerSlice";
 
-const jlpt_reading_questions = [
-  {
-    id: 1,
-    passage_id: 901,
-    content: "この文章のテーマは何ですか？",
-    options: ["親切な行動", "子どもの遊び", "駅の問題", "天気の話"],
-    correct: "親切な行動",
-  },
-  {
-    id: 2,
-    passage_id: 901,
-    content: "子どもは何をしましたか？",
-    options: [
-      "切符を拾って渡した",
-      "駅で遊んだ",
-      "電車を待っていた",
-      "泣いていた",
-    ],
-    correct: "切符を拾って渡した",
-  },
-];
+const Reading = () => {
+  const { testId } = useParams();
+  const numericTestId = Number(testId);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-const Reading = ({ onNextSection, onFinishTest }) => {
-  const jlpt_test = {
-    test_id: 101,
-    title: "JLPT N3 - Đọc hiểu",
-    time_limit_minutes: 45,
-  };
+  const { reading, answers, loadingQuestions } = useSelector(
+    (state) => state.jlptLearner
+  );
 
-  // ===== STATE =====
+  const readingQuestions = reading || [];
+
+  // ===== LOCAL ANSWERS — để UI highlight ngay =====
+  const [localAnswers, setLocalAnswers] = useState({});
+
+  useEffect(() => {
+    if (answers) {
+      setLocalAnswers((prev) => ({ ...prev, ...answers }));
+    }
+  }, [answers]);
+
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState({});
+  const [timeLeft, setTimeLeft] = useState(0);
+
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalContext, setModalContext] = useState(null); // "submit" | "next"
-  const [timeLeft, setTimeLeft] = useState(jlpt_test.time_limit_minutes * 60);
+  const [modalContext, setModalContext] = useState(null);
+
+  // ===== FETCH READING QUESTIONS =====
+  useEffect(() => {
+    if (!numericTestId) return;
+
+    const load = async () => {
+      await dispatch(fetchReading(numericTestId));
+      setTimeLeft(45 * 60); // Thời gian phần Reading
+    };
+
+    load();
+  }, [dispatch, numericTestId]);
 
   // ===== TIMER =====
   useEffect(() => {
     if (timeLeft <= 0) return;
-    const t = setInterval(() => setTimeLeft((s) => (s > 0 ? s - 1 : 0)), 1000);
+
+    const t = setInterval(() => {
+      setTimeLeft((s) => (s > 0 ? s - 1 : 0));
+    }, 1000);
+
     return () => clearInterval(t);
   }, [timeLeft]);
 
@@ -63,64 +71,71 @@ const Reading = ({ onNextSection, onFinishTest }) => {
     return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   };
 
-  // ===== LOGIC =====
-  const questions = jlpt_reading_questions;
-  const total = questions.length;
-  const answered = Object.keys(answers).length;
+  // ===== PROGRESS =====
+  const total = readingQuestions.length;
+
+  const answered = useMemo(
+    () =>
+      readingQuestions.filter((q) => localAnswers[q.id] !== undefined).length,
+    [readingQuestions, localAnswers]
+  );
+
   const hasUnanswered = answered < total;
-  const progress = Math.round((answered / total) * 100);
+  const progress = total > 0 ? Math.round((answered / total) * 100) : 0;
 
-  const passage = reading_passages[0];
-  const currentQ = questions[currentIndex];
+  // ===== CURRENT QUESTION =====
+  const currentQ = total > 0 ? readingQuestions[currentIndex] : null;
 
-  const handleSelectAnswer = (qid, opt) =>
-    setAnswers((prev) => ({ ...prev, [qid]: opt }));
+  const uiQuestion =
+    currentQ &&
+    (() => ({
+      question_id: currentQ.id,
+      order_index: currentIndex + 1,
+      content: currentQ.content,
+      audio: currentQ.audioUrl || null,
+      image: currentQ.imagePath || null,
+      options: (currentQ.options || []).map((opt, i) => ({
+        option_id: opt.id,
+        label: String.fromCharCode(65 + i),
+        text: opt.content,
+      })),
+    }))();
 
- const handleNextQuestion = () => {
-  if (currentIndex < total - 1) {
-    setCurrentIndex((i) => i + 1);
-  } else {
-    // Khi đã ở câu cuối cùng
-    const answeredCount = Object.keys(answers).length;
+  // ===== SELECT ANSWER =====
+  const handleSelectAnswer = (questionId, optionId) => {
+    // Update UI immediately
+    setLocalAnswers((prev) => ({
+      ...prev,
+      [questionId]: optionId,
+    }));
 
-    // Nếu tất cả đều được chọn rồi → quay lại câu 1
-    if (answeredCount === total) {
-      setCurrentIndex(0);
-    } else {
-      // Nếu chưa làm hết thì không vòng lại (tuỳ ý bạn)
-      // Hoặc có thể alert người dùng:
-      // alert("Bạn chưa làm hết các câu hỏi!");
-    }
-  }
-};
+    // Send to BE
+    dispatch(
+      submitAnswer({
+        testId: numericTestId,
+        questionId,
+        selectedOptionId: optionId,
+      })
+    );
+  };
 
+  const handleNextQuestion = () => {
+    if (currentIndex < total - 1) setCurrentIndex((i) => i + 1);
+  };
 
   const handlePrevQuestion = () => {
     if (currentIndex > 0) setCurrentIndex((i) => i - 1);
   };
 
-  const calcScorePercent = () => {
-    let correct = 0;
-    questions.forEach((q) => {
-      if (answers[q.id] === q.correct) correct++;
-    });
-    return Math.round((correct / total) * 100);
-  };
-
+  // ===== SUBMIT & NEXT SECTION =====
   const handleClickSubmit = () => {
     setModalContext("submit");
     setModalOpen(true);
   };
 
   const handleClickNextSection = () => {
-    const scorePercent = calcScorePercent();
-
-    if (hasUnanswered) {
-      setModalContext("next");
-      setModalOpen(true);
-    } else {
-      onNextSection && onNextSection(scorePercent);
-    }
+    setModalContext("next");
+    setModalOpen(true);
   };
 
   const handleModalCancel = () => {
@@ -129,24 +144,26 @@ const Reading = ({ onNextSection, onFinishTest }) => {
   };
 
   const handleModalConfirm = () => {
-    const scorePercent = calcScorePercent();
-
     if (modalContext === "submit") {
-      onFinishTest && onFinishTest(scorePercent);
+      navigate(`/jlpt/test/${numericTestId}/result`);
     } else if (modalContext === "next") {
-      onNextSection && onNextSection(scorePercent);
+      navigate(`/jlpt/test/${numericTestId}/listening`);
     }
-
     setModalOpen(false);
     setModalContext(null);
   };
 
-  // ===== RENDER =====
+  const isLoading = loadingQuestions;
+
+
   return (
+    <>
+    {(loadingQuestions || readingQuestions.length === 0) && <LoadingOverlay />}
+
     <div className={styles.wrapper}>
       {/* HEADER */}
       <header className={styles.headerBar}>
-        <h1 className={styles.testTitle}>{jlpt_test.title}</h1>
+        <h1 className={styles.testTitle}>JLPT - Đọc hiểu</h1>
         <div className={styles.headerRight}>
           <div className={styles.timerBox}>
             <i className="fa-regular fa-clock" />
@@ -160,20 +177,27 @@ const Reading = ({ onNextSection, onFinishTest }) => {
 
       {/* MAIN */}
       <main className={styles.main}>
+        {/* SIDEBAR */}
         <aside className={styles.sidebarCard}>
-          <SidebarQuestionList
-            questions={questions.map((q, i) => ({
-              question_id: q.id,
-              order_index: i + 1,
-            }))}
-            currentIndex={currentIndex}
-            answersByQuestion={answers}
-            onJumpTo={setCurrentIndex}
-          />
+          {isLoading && <p>Đang tải câu hỏi...</p>}
+
+          {!isLoading && (
+            <SidebarQuestionList
+              questions={readingQuestions.map((q, i) => ({
+                question_id: q.id,
+                order_index: i + 1,
+              }))}
+              currentIndex={currentIndex}
+              answersByQuestion={localAnswers}
+              onJumpTo={setCurrentIndex}
+            />
+          )}
         </aside>
 
+        {/* CONTENT */}
         <section className={styles.questionArea}>
           <div className={styles.questionCardWrap}>
+            {/* PROGRESS BAR đẹp như UI gốc */}
             <div className={styles.progressCard}>
               <div className={styles.progressTopRow}>
                 <span className={styles.progressLabel}>Tiến độ hoàn thành</span>
@@ -187,33 +211,20 @@ const Reading = ({ onNextSection, onFinishTest }) => {
               </div>
             </div>
 
-            {/* Đoạn văn */}
-            <div className={styles.passage}>
-              <h3>{passage.title}</h3>
-              <p>{passage.content}</p>
-            </div>
-
-            {/* Câu hỏi */}
-            <QuestionCard
-              question={{
-                question_id: currentQ.id,
-                order_index: currentIndex + 1,
-                content: currentQ.content,
-                options: currentQ.options.map((opt, i) => ({
-                  option_id: i,
-                  label: String.fromCharCode(65 + i),
-                  text: opt,
-                })),
-              }}
-              selectedOptionId={answers[currentQ.id]}
-              onSelectOption={handleSelectAnswer}
-              onPrev={handlePrevQuestion}
-              onNext={handleNextQuestion}
-              lastSavedAt="Tự động lưu"
-            />
+            {/* QUESTION */}
+            {uiQuestion && (
+              <QuestionCard
+                question={uiQuestion}
+                selectedOptionId={localAnswers[uiQuestion.question_id] ?? null}
+                onSelectOption={handleSelectAnswer}
+                onPrev={handlePrevQuestion}
+                onNext={handleNextQuestion}
+                lastSavedAt="Tự động lưu"
+              />
+            )}
           </div>
 
-          {/* Nút tiếp tục */}
+          {/* NEXT BUTTON */}
           <div className={styles.nextSection}>
             <button
               className={styles.nextSectionBtn}
@@ -234,13 +245,9 @@ const Reading = ({ onNextSection, onFinishTest }) => {
             : "Chuyển sang phần Nghe hiểu?"
         }
         message={
-          modalContext === "submit"
-            ? hasUnanswered
-              ? `Bạn mới trả lời ${answered}/${total} câu. Nếu nộp bây giờ, các câu chưa làm sẽ bị tính sai.`
-              : "Bạn đã hoàn thành toàn bộ câu hỏi phần này. Nộp bài và xem kết quả luôn chứ?"
-            : hasUnanswered
-            ? `Bạn mới trả lời ${answered}/${total} câu. Sang phần Nghe hiểu, các câu chưa làm sẽ bị tính sai.`
-            : "Bạn đã hoàn thành phần Đọc hiểu. Sang phần Nghe hiểu chứ?"
+          hasUnanswered
+            ? `Bạn mới trả lời ${answered}/${total} câu. Nếu tiếp tục, các câu chưa làm sẽ bị tính sai.`
+            : "Bạn đã hoàn thành toàn bộ phần Đọc hiểu."
         }
         confirmLabel={
           modalContext === "submit" ? "Nộp bài" : "Sang phần Nghe hiểu"
@@ -250,6 +257,7 @@ const Reading = ({ onNextSection, onFinishTest }) => {
         onCancel={handleModalCancel}
       />
     </div>
+    </>
   );
 };
 
