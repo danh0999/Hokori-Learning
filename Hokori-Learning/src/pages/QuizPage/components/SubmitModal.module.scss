@@ -1,4 +1,4 @@
-.overlay {
+.backdrop {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
@@ -18,7 +18,7 @@
   font-family: inherit;
 }
 
-.modal h3 {
+.modal h2 {
   font-size: 18px;
   font-weight: 700;
   color: #111827;
@@ -38,8 +38,8 @@
   gap: 12px;
 }
 
-.cancel,
-.submit {
+.cancelBtn,
+.submitBtn {
   border: none;
   border-radius: 6px;
   padding: 8px 16px;
@@ -48,20 +48,28 @@
   transition: all 0.2s ease;
 }
 
-.cancel {
+.cancelBtn {
   background: #f3f4f6;
   color: #111827;
 }
 
-.cancel:hover {
+.cancelBtn:hover {
   background: #e5e7eb;
 }
 
-.submit {
+.submitBtn {
   background: #1f4ed8;
   color: #ffffff;
 }
 
-.submit:hover {
+.submitBtn:hover {
   background: #163bb6;
+}
+
+.pass {
+  color: #166534;
+}
+
+.notPass {
+  color: #b91c1c;
 }

@@ -1,3 +1,4 @@
+// src/pages/QuizPage/components/QuestionCard.jsx
 import React from "react";
 import styles from "./QuestionCard.module.scss";
 
@@ -5,47 +6,42 @@ const QuestionCard = ({
   question,
   index,
   total,
-  onNext,
-  onPrev,
-  selectedAnswer,
+  selectedOptionId,
   onSelectAnswer,
 }) => {
-  if (!question) return <p>Đang tải câu hỏi...</p>;
+  if (!question) return null;
+
+  const { content, options = [] } = question;
 
   return (
     <div className={styles.card}>
       <div className={styles.header}>
-        <h2>Câu {index + 1} / {total}</h2>
-        <p className={styles.text}>{question.question}</p>
+        <span className={styles.index}>Câu {index + 1}/{total}</span>
       </div>
 
+      <p className={styles.questionText}>{content}</p>
+
       <div className={styles.options}>
-        {question.options.map((opt, i) => (
+        {options.map((opt) => (
           <label
-            key={i}
+            key={opt.optionId}
             className={`${styles.option} ${
-              selectedAnswer === opt ? styles.selected : ""
+              selectedOptionId === opt.optionId ? styles.selected : ""
             }`}
           >
             <input
               type="radio"
-              name={`q${question.id}`}
-              value={opt}
-              checked={selectedAnswer === opt}
-              onChange={() => onSelectAnswer(question.id, opt)}
+              name={`q-${question.questionId}`}
+              checked={selectedOptionId === opt.optionId}
+              onChange={() => onSelectAnswer(opt.optionId)}
             />
-            {opt}
+            <span>{opt.content}</span>
           </label>
         ))}
-      </div>
 
-      <div className={styles.actions}>
-        <button onClick={onPrev} className={styles.prevBtn}>
-          ← Trước
-        </button>
-        <button onClick={onNext} className={styles.nextBtn}>
-          Tiếp →
-        </button>
+        {options.length === 0 && (
+          <p className={styles.noOptions}>Chưa có đáp án cho câu hỏi này.</p>
+        )}
       </div>
     </div>
   );

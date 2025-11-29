@@ -1,0 +1,69 @@
+.hokori-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  /* Nền rất nhẹ, tinh tế */
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(5px);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+/* Card tối giản – không bóng gắt */
+.hokori-loading-card {
+  background: rgba(255, 255, 255, 0.82);
+  padding: 22px 30px;
+  border-radius: 14px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+
+  /* Soft shadow rất nhẹ */
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+
+  animation: softPop 0.22s ease-out forwards;
+}
+
+/* Spinner thanh mảnh – nhẹ nhàng */
+.hokori-spinner {
+  width: 42px;
+  height: 42px;
+
+  border-radius: 50%;
+  border: 3px solid rgba(0, 0, 0, 0.08);
+  border-top-color: #2f70eb; /* xanh nhưng mảnh, không gắt */
+
+  animation: softSpin 0.9s ease-in-out infinite;
+}
+
+/* Text nhỏ – tinh tế */
+.hokori-loading-card p {
+  margin: 0;
+  color: #3b3f52;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.85;
+  letter-spacing: 0.2px;
+}
+
+/* Animation mềm */
+@keyframes softSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes softPop {
+  from { transform: scale(0.94); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}

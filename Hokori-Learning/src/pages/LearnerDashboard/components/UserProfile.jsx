@@ -27,7 +27,7 @@ const UserProfile = () => {
         setStreakDays(data?.currentLearningStreak || 0);
       } catch (err) {
         console.error("Error fetching learner dashboard summary:", err);
-        // Nếu lỗi thì giữ 0 cho đỡ crash UI
+
         setStreakDays(0);
       }
     };

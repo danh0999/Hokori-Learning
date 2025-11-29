@@ -1,41 +1,65 @@
-import React from "react";
+// src/pages/JLPTTest/Result.jsx
+import React, { useEffect } from "react";
 import styles from "./Result.module.scss";
-import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
+import {
+  CircularProgressbar,
+  buildStyles,
+} from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 
-export const Result = ({ sectionScores = {} }) => {
-  const sections = [
-    { key: "multiple", name: "Từ vựng & Ngữ pháp", score: sectionScores.multiple },
-    { key: "reading", name: "Đọc hiểu", score: sectionScores.reading },
-    { key: "listening", name: "Nghe hiểu", score: sectionScores.listening },
-  ];
+import { useParams, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 
-  const validScores = sections
-    .map((s) => s.score)
-    .filter((v) => Number.isFinite(v));
+// 🟦 SỬA IMPORT Ở ĐÂY
+import { fetchMyJlptResult } from "../../redux/features/jlptLearnerSlice";
 
-  const overall =
-    validScores.length > 0
-      ? validScores.reduce((acc, cur) => acc + cur, 0) / validScores.length
-      : 0;
+const Result = () => {
+  const { testId } = useParams();
+  const numericTestId = Number(testId);
+
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const { result, loadingResult } = useSelector(
+    (state) => state.jlptLearner
+  );
+
+  // 🟦 CALL API MỚI
+  useEffect(() => {
+    if (!numericTestId) return;
+    dispatch(fetchMyJlptResult(numericTestId));
+  }, [dispatch, numericTestId]);
+
+  if (loadingResult || !result) {
+    return (
+      <div className={styles.resultWrapper}>
+        <div className={styles.resultCard}>
+          <p>Đang tải kết quả bài thi...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const totalQuestions = result.totalQuestions ?? 0;
+  const correctCount = result.correctCount ?? 0;
+
+  const percent = Number.isFinite(result.score)
+    ? Number(result.score)
+    : 0;
 
   return (
     <div className={styles.resultWrapper}>
       <div className={styles.resultCard}>
-        <h1 className={styles.title}>JLPT N3 - Kết quả thi</h1>
+        <h1 className={styles.title}>Kết quả bài thi JLPT</h1>
         <p className={styles.subtitle}>
-          {validScores.length === 3
-            ? "Chúc mừng bạn đã hoàn thành toàn bộ bài thi JLPT N3!"
-            : validScores.length > 0
-            ? "Bạn đã nộp bài thi, một số phần chưa hoàn thành."
-            : "Chưa hoàn thành phần nào."}
+          Cảm ơn bạn đã hoàn thành bài thi. Dưới đây là kết quả của bạn.
         </p>
 
         <div className={styles.overallBox}>
           <div className={styles.chart}>
             <CircularProgressbar
-              value={overall}
-              text={`${overall.toFixed(0)}%`}
+              value={percent}
+              text={`${percent.toFixed(0)}%`}
               styles={buildStyles({
                 textColor: "#2563eb",
                 pathColor: "#2563eb",
@@ -43,58 +67,39 @@ export const Result = ({ sectionScores = {} }) => {
               })}
             />
           </div>
+
           <div className={styles.overallInfo}>
-            <h2>Tổng điểm trung bình</h2>
+            <h2>Tổng điểm quy đổi</h2>
             <p>
-              {validScores.length > 0
-                ? `${overall.toFixed(0)} / 100 điểm trung bình từ ${validScores.length} phần thi`
-                : "Chưa hoàn thành phần nào"}
+              Bạn đạt <strong>{percent.toFixed(0)}</strong> / 100 điểm.
+            </p>
+
+            <p>
+              Tổng số câu hỏi:{" "}
+              <strong>{totalQuestions}</strong> – Số câu đúng:{" "}
+              <strong>{correctCount}</strong>.
             </p>
           </div>
-        </div>
-
-        <div className={styles.sectionList}>
-          {sections.map((sec) => {
-            const hasScore = Number.isFinite(sec.score);
-            const displayScore = hasScore ? sec.score : 0;
-            return (
-              <div key={sec.key} className={styles.sectionItem}>
-                <div className={styles.sectionHeader}>
-                  <h3>{sec.name}</h3>
-                  <span
-                    className={`${styles.score} ${
-                      hasScore ? "" : styles.incomplete
-                    }`}
-                  >
-                    {hasScore ? `${sec.score}%` : "Chưa làm"}
-                  </span>
-                </div>
-                <div className={styles.progressBar}>
-                  <div
-                    className={styles.progressFill}
-                    style={{ width: `${displayScore}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
         </div>
 
         <div className={styles.actions}>
           <button
             className={styles.retryBtn}
-            onClick={() => window.location.reload()}
+            onClick={() => navigate(`/jlpt/test/${numericTestId}`)}
           >
             Làm lại bài thi
           </button>
+
           <button
             className={styles.backBtn}
-            onClick={() => (window.location.href = "/jlpt")}
+            onClick={() => navigate("/jlpt")}
           >
-            Trở về danh sách đề thi
+            Quay về danh sách đề thi
           </button>
         </div>
       </div>
     </div>
   );
 };
+
+export default Result;

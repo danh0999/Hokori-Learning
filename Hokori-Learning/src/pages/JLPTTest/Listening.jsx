@@ -1,169 +1,205 @@
+// src/pages/JLPTTest/Listening.jsx
 import React, { useState, useRef, useEffect } from "react";
 import styles from "./Listening.module.scss";
+
+import { useDispatch, useSelector } from "react-redux";
+import { useParams, useNavigate } from "react-router-dom";
+
 import SidebarQuestionList from "./components/SidebarQuestionList";
 import QuestionCard from "./components/QuestionCard";
 import JLPTModal from "./components/JLPTModal";
+import LoadingOverlay from "../../components/Loading/LoadingOverlay";
+import {
+  fetchListening,
+  submitAnswer,
+  clearTestData,
+} from "../../redux/features/jlptLearnerSlice";
 
-const jlpt_listening_questions = [
-  {
-    id: 1,
-    audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-    content: "Nghe đoạn hội thoại và chọn đáp án đúng.",
-    options: [
-      "Người đàn ông muốn uống cà phê.",
-      "Người phụ nữ muốn đi mua sắm.",
-      "Họ đang nói về thời tiết.",
-      "Họ đang nói về công việc.",
-    ],
-    correct: "Người đàn ông muốn uống cà phê.",
-  },
-  {
-    id: 2,
-    audio_url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-    content: "Nghe đoạn sau và chọn câu đúng nhất.",
-    options: [
-      "Cô ấy thích nấu ăn.",
-      "Cô ấy không thích nấu ăn.",
-      "Cô ấy đang học nấu ăn.",
-      "Cô ấy làm đầu bếp.",
-    ],
-    correct: "Cô ấy đang học nấu ăn.",
-  },
-];
+import api from "../../configs/axios";
 
-const Listening = ({ onFinishTest }) => {
-  const jlpt_test = {
-    test_id: 102,
-    title: "JLPT N3 - Nghe hiểu",
-  };
+// =========================================
+// FIX 100% – Build URL KHÔNG PHÁ https://
+// =========================================
+const buildFileUrl = (path) => {
+  if (!path) return "";
 
+  // Nếu backend trả full URL: ok
+  if (path.startsWith("http")) return path;
+
+  let base = api.defaults.baseURL || ""; // https://xxx/api
+  base = base.replace(/\/api\/?$/, "");  // https://xxx
+
+  // GHÉP CHUẨN
+  return `${base}/${path}`; // ==> https://xxx/jlpt-demo/listening/abc.m4a
+};
+
+const Listening = () => {
+  const { testId } = useParams();
+  const numericTestId = Number(testId);
+
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const { listening, answers, loadingQuestions } = useSelector(
+    (state) => state.jlptLearner
+  );
+
+  const listeningQuestions = listening || [];
+
+  // UI states
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState({});
+  const [localAnswers, setLocalAnswers] = useState({});
   const [modalOpen, setModalOpen] = useState(false);
 
-  // ====== Audio logic ======
+  // AUDIO state
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
 
-  // ====== Format Time ======
-  const formatTime = (sec = 0) => {
+  // 30 phút
+  const [timeLeft, setTimeLeft] = useState(30 * 60);
+
+  // clear test
+  useEffect(() => {
+    return () => dispatch(clearTestData());
+  }, [dispatch]);
+
+  useEffect(() => {
+    const load = async () => {
+      await dispatch(fetchListening(numericTestId));
+    };
+    load();
+  }, [dispatch, numericTestId]);
+
+  useEffect(() => {
+    setLocalAnswers({ ...answers });
+  }, [answers]);
+
+  // Timer
+  useEffect(() => {
+    if (timeLeft <= 0) return;
+    const t = setInterval(() => setTimeLeft((t) => t - 1), 1000);
+    return () => clearInterval(t);
+  }, [timeLeft]);
+
+  const formatTime = (sec) => {
     const m = Math.floor(sec / 60);
-    const s = Math.floor(sec % 60);
+    const s = sec % 60;
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
-  // ====== Effect: Update progress ======
+  // AUDIO EVENTS
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    const updateProgress = () => setAudioProgress(audio.currentTime);
-    const setDuration = () => setAudioDuration(audio.duration || 0);
+    const upd = () => setAudioProgress(audio.currentTime);
+    const setDur = () => setAudioDuration(audio.duration || 0);
 
-    audio.addEventListener("timeupdate", updateProgress);
-    audio.addEventListener("loadedmetadata", setDuration);
+    audio.addEventListener("timeupdate", upd);
+    audio.addEventListener("loadedmetadata", setDur);
 
     return () => {
-      audio.removeEventListener("timeupdate", updateProgress);
-      audio.removeEventListener("loadedmetadata", setDuration);
+      audio.removeEventListener("timeupdate", upd);
+      audio.removeEventListener("loadedmetadata", setDur);
     };
   }, []);
 
-  // ====== Handle play/pause ======
   const handlePlayPause = async () => {
     const audio = audioRef.current;
     if (!audio) return;
-
     try {
       if (isPlaying) {
         await audio.pause();
         setIsPlaying(false);
       } else {
-        if (!audioDuration && audio.duration) setAudioDuration(audio.duration);
         await audio.play();
         setIsPlaying(true);
       }
-    } catch (error) {
-      console.warn("Không thể phát audio:", error);
+    } catch {}
+  };
+
+  const handleSeek = (e) => {
+    const value = Number(e.target.value);
+    if (audioRef.current) {
+      audioRef.current.currentTime = value;
+      setAudioProgress(value);
     }
   };
 
-  // ====== Câu hỏi và điểm ======
-  const handleSelectAnswer = (qid, opt) =>
-    setAnswers((prev) => ({ ...prev, [qid]: opt }));
+  const total = listeningQuestions.length;
+  const answeredCount = listeningQuestions.filter(
+    (q) => localAnswers[q.id] !== undefined
+  ).length;
+  const progress = total ? Math.round((answeredCount / total) * 100) : 0;
 
-  const calcScorePercent = () => {
-    let correct = 0;
-    jlpt_listening_questions.forEach((q) => {
-      if (answers[q.id] === q.correct) correct++;
-    });
-    return Math.round((correct / jlpt_listening_questions.length) * 100);
+  const currentQ = total ? listeningQuestions[currentIndex] : null;
+
+  // Chuẩn hóa format cho QuestionCard
+  const uiQuestion =
+    currentQ &&
+    (() => ({
+      question_id: currentQ.id,
+      order_index: currentIndex + 1,
+      content: currentQ.content,
+      options: currentQ.options.map((opt, i) => ({
+        option_id: opt.id,
+        label: String.fromCharCode(65 + i),
+        text: opt.content,
+      })),
+    }))();
+
+  // FIX 100% – MATCH đúng QuestionCard params
+  const handleSelectAnswer = (qid, optionId) => {
+    setLocalAnswers((prev) => ({
+      ...prev,
+      [qid]: optionId,
+    }));
+
+    dispatch(
+      submitAnswer({
+        testId: numericTestId,
+        questionId: qid,
+        selectedOptionId: optionId,
+      })
+    );
   };
 
-  const total = jlpt_listening_questions.length;
-  const answered = Object.keys(answers).length;
-  const hasUnanswered = answered < total;
-  const progress = Math.round((answered / total) * 100);
-  const currentQ = jlpt_listening_questions[currentIndex];
+  const next = () => currentIndex < total - 1 && setCurrentIndex((i) => i + 1);
+  const prev = () => currentIndex > 0 && setCurrentIndex((i) => i - 1);
 
-  // ====== Next/Prev ======
-  const handleNextQuestion = () => {
-    if (currentIndex < total - 1) {
-      setCurrentIndex((i) => i + 1);
-    } else {
-      // Khi đã ở câu cuối cùng
-      const answeredCount = Object.keys(answers).length;
-
-      // Nếu tất cả đều được chọn rồi → quay lại câu 1
-      if (answeredCount === total) {
-        setCurrentIndex(0);
-      } else {
-        // Nếu chưa làm hết thì không vòng lại (tuỳ ý bạn)
-        // Hoặc có thể alert người dùng:
-        // alert("Bạn chưa làm hết các câu hỏi!");
-      }
-    }
-  };
-
-  const handlePrevQuestion = () => {
-    if (currentIndex > 0) setCurrentIndex((i) => i - 1);
-  };
-
-  // ====== Modal logic ======
-  const openSubmitModal = () => setModalOpen(true);
-  const handleModalCancel = () => setModalOpen(false);
-  const handleModalConfirm = () => {
-    const scorePercent = calcScorePercent();
-    onFinishTest && onFinishTest(scorePercent);
-    setModalOpen(false);
-  };
+  const finish = () => navigate(`/jlpt/test/${numericTestId}/result`);
 
   return (
+    <>
+        {(loadingQuestions || listeningQuestions.length === 0) && <LoadingOverlay />}
     <div className={styles.wrapper}>
-      {/* Header */}
       <header className={styles.headerBar}>
-        <h1 className={styles.testTitle}>{jlpt_test.title}</h1>
+        <h1 className={styles.testTitle}>JLPT - Nghe hiểu</h1>
+        <div className={styles.headerRight}>
+          <div className={styles.timerBox}>
+            <span className={styles.timerText}>{formatTime(timeLeft)}</span>
+          </div>
+        </div>
       </header>
 
-      {/* Main */}
       <main className={styles.main}>
         <aside className={styles.sidebarCard}>
           <SidebarQuestionList
-            questions={jlpt_listening_questions.map((q, i) => ({
+            questions={listeningQuestions.map((q, i) => ({
               question_id: q.id,
               order_index: i + 1,
             }))}
             currentIndex={currentIndex}
-            answersByQuestion={answers}
+            answersByQuestion={localAnswers}
             onJumpTo={setCurrentIndex}
           />
         </aside>
 
         <section className={styles.questionArea}>
           <div className={styles.questionCardWrap}>
-            {/* Thanh tiến độ bên trong */}
+            {/* Progress card */}
             <div className={styles.progressCard}>
               <div className={styles.progressTopRow}>
                 <span className={styles.progressLabel}>Tiến độ hoàn thành</span>
@@ -177,13 +213,14 @@ const Listening = ({ onFinishTest }) => {
               </div>
             </div>
 
-            {/* AUDIO PLAYER */}
+            {/* AUDIO BLOCK */}
             <div className={styles.audioBlock}>
               <audio
                 ref={audioRef}
-                src={currentQ.audio_url}
+                src={buildFileUrl(currentQ?.audioUrl)}
                 preload="metadata"
               />
+
               <button className={styles.audioBtn} onClick={handlePlayPause}>
                 {isPlaying ? (
                   <i className="fa-solid fa-pause" />
@@ -197,11 +234,9 @@ const Listening = ({ onFinishTest }) => {
                   <div
                     className={styles.progressFill}
                     style={{
-                      width: `${
-                        audioDuration
-                          ? (audioProgress / audioDuration) * 100
-                          : 0
-                      }%`,
+                      width: `${audioDuration
+                        ? (audioProgress / audioDuration) * 100
+                        : 0}%`,
                     }}
                   ></div>
                 </div>
@@ -223,50 +258,42 @@ const Listening = ({ onFinishTest }) => {
               </div>
             </div>
 
-            {/* Câu hỏi */}
-            <QuestionCard
-              question={{
-                question_id: currentQ.id,
-                order_index: currentIndex + 1,
-                content: currentQ.content,
-                options: currentQ.options.map((opt, i) => ({
-                  option_id: i,
-                  label: String.fromCharCode(65 + i),
-                  text: opt,
-                })),
-              }}
-              selectedOptionId={answers[currentQ.id]}
-              onSelectOption={handleSelectAnswer}
-              onPrev={handlePrevQuestion}
-              onNext={handleNextQuestion}
-              lastSavedAt="Tự động lưu"
-            />
+            {/* QUESTION */}
+            {uiQuestion && (
+              <QuestionCard
+                question={uiQuestion}
+                selectedOptionId={localAnswers[uiQuestion.question_id]}
+                onSelectOption={handleSelectAnswer} // FIX CHUẨN
+                onPrev={prev}
+                onNext={next}
+                lastSavedAt="Tự động lưu"
+              />
+            )}
           </div>
 
-          {/* Nút hoàn thành (nút duy nhất) */}
           <div className={styles.nextSection}>
-            <button className={styles.nextSectionBtn} onClick={openSubmitModal}>
+            <button className={styles.nextSectionBtn} onClick={() => setModalOpen(true)}>
               Hoàn thành phần Nghe hiểu & Xem kết quả
             </button>
           </div>
         </section>
       </main>
 
-      {/* Modal xác nhận nộp */}
       <JLPTModal
         open={modalOpen}
         title="Nộp bài phần Nghe hiểu?"
         message={
-          hasUnanswered
-            ? `Bạn mới trả lời ${answered}/${total} câu. Nếu nộp bây giờ, các câu chưa làm sẽ bị tính sai.`
-            : "Bạn đã hoàn thành toàn bộ phần Nghe hiểu. Nộp bài và xem kết quả tổng?"
+          answeredCount < total
+            ? `Bạn mới trả lời ${answeredCount}/${total} câu.`
+            : "Bạn đã hoàn thành toàn bộ câu hỏi."
         }
-        confirmLabel="Nộp bài & Xem kết quả"
-        cancelLabel="Ở lại làm tiếp"
-        onConfirm={handleModalConfirm}
-        onCancel={handleModalCancel}
+        confirmLabel="Xem kết quả"
+        cancelLabel="Làm tiếp"
+        onConfirm={finish}
+        onCancel={() => setModalOpen(false)}
       />
     </div>
+  </>
   );
 };
 

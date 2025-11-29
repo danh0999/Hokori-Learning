@@ -1,107 +1,225 @@
-import React, { useEffect, useState } from "react";
+// src/pages/QuizPage/QuizPage.jsx
+import React, { useEffect, useState, useMemo } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+
 import styles from "./QuizPage.module.scss";
 import QuizHeader from "./components/QuizHeader";
 import QuestionCard from "./components/QuestionCard";
 import Sidebar from "./components/Sidebar";
 import SubmitModal from "./components/SubmitModal";
 
+import {
+  fetchQuizInfoThunk,
+  startAttemptThunk,
+  loadAllQuestionsThunk,
+  answerQuestionThunk,
+  submitAttemptThunk,
+  resetQuizAttempt,
+} from "../../redux/features/quizAttemptSlice";
+
 const QuizPage = () => {
-  const [quizData, setQuizData] = useState(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState({});
-  const [timeLeft, setTimeLeft] = useState(30 * 60);
-  const [modalData, setModalData] = useState(null);
+  const { courseId, lessonId, quizId } = useParams();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
+  const {
+    quizInfo,
+    attemptId,
+    questions,
+    answers,
+    loading,
+    error,
+    submitting,
+    result,
+  } = useSelector((state) => state.quizAttempt);
+
+  const [timeLeft, setTimeLeft] = useState(null); // seconds
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
+
+  // ====== 1) Fetch info + start attempt + load all questions ======
   useEffect(() => {
-    const mockQuiz = {
-      title: "JLPT N3 Mock Test – Grammar Section",
-      duration: 30 * 60,
-      questions: [
-        { id: 1, question: "私は毎朝コーヒー___飲みます。", options: ["が", "を", "に", "へ"], correct: "を" },
-        { id: 2, question: "「行きます」の過去形はどれですか？", options: ["行きました", "行った", "行って", "行かない"], correct: "行きました" },
-        { id: 3, question: "形容詞ではないのはどれ？", options: ["大きい", "静か", "高い", "明るい"], correct: "静か" },
-        { id: 4, question: "『勉強』の動詞形はどれ？", options: ["勉強します", "勉強が", "勉強を", "勉強に"], correct: "勉強します" },
-        { id: 5, question: "日本___住んでいます。", options: ["に", "を", "で", "が"], correct: "に" },
-      ],
+    if (!lessonId) return;
+
+    const initQuiz = async () => {
+      try {
+        // 1) Lấy quiz info
+        const infoAction = await dispatch(fetchQuizInfoThunk(lessonId));
+        if (fetchQuizInfoThunk.rejected.match(infoAction)) return;
+
+        const info = infoAction.payload.quizInfo;
+        // set time limit nếu có
+        if (info?.timeLimitSec) {
+          setTimeLeft(info.timeLimitSec);
+        } else {
+          // default 30 phút nếu không set
+          setTimeLeft(30 * 60);
+        }
+
+        // 2) Start attempt
+        const attemptAction = await dispatch(startAttemptThunk(lessonId));
+        if (startAttemptThunk.rejected.match(attemptAction)) return;
+
+        const startedAttempt = attemptAction.payload.attempt;
+        const id =
+          startedAttempt?.attemptId || startedAttempt?.id || attemptId;
+        if (!id) return;
+
+        // 3) Load toàn bộ câu hỏi
+        await dispatch(
+          loadAllQuestionsThunk({ lessonId, attemptId: id })
+        );
+      } catch (err) {
+        console.error("Init quiz error:", err);
+      }
     };
-    setQuizData(mockQuiz);
-    setTimeLeft(mockQuiz.duration);
-  }, []);
 
+    initQuiz();
+
+    // cleanup
+    return () => {
+      dispatch(resetQuizAttempt());
+    };
+  }, [lessonId, dispatch]);
+
+  // ====== 2) Countdown timer ======
   useEffect(() => {
-    if (timeLeft <= 0) { handleSubmit(true); return; }
-    const t = setInterval(() => setTimeLeft(v => (v > 0 ? v - 1 : 0)), 1000);
-    return () => clearInterval(t);
-  }, [timeLeft]);
-
-  const formatTime = (sec) =>
-    `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
-
-  const handleSelectAnswer = (id, ans) =>
-    setAnswers(prev => ({ ...prev, [id]: ans }));
-
-  const handleChangeQuestion = (i) => setCurrentIndex(i);
-  const handleNext = () => quizData && currentIndex < quizData.questions.length - 1 && setCurrentIndex(i => i + 1);
-  const handlePrev = () => currentIndex > 0 && setCurrentIndex(i => i - 1);
-
-  const handleSubmit = (force = false) => {
-    if (!quizData) return;
-    const total = quizData.questions.length;
-    const done = Object.keys(answers).length;
-    if (done < total && !force) {
-      setModalData({ type: "warn" });
+    if (timeLeft == null) return;
+    if (timeLeft <= 0) {
+      setShowSubmitModal(true); // auto gợi ý submit khi hết giờ
       return;
     }
 
-    let correct = 0;
-    quizData.questions.forEach(q => {
-      if (answers[q.id] === q.correct) correct++;
-    });
+    const t = setInterval(() => {
+      setTimeLeft((prev) => (prev != null ? prev - 1 : prev));
+    }, 1000);
 
-    setModalData({
-      type: "result",
-      score: {
-        correct,
-        total,
-        percent: Math.round((correct / total) * 100),
-      },
-    });
+    return () => clearInterval(t);
+  }, [timeLeft]);
+
+  // ====== 3) Derived state ======
+  const totalQuestions = questions.length;
+  const answeredCount = useMemo(
+    () =>
+      questions.filter((q) => answers && answers[q.questionId] != null).length,
+    [questions, answers]
+  );
+
+  // ====== 4) Handlers ======
+  const handleSelectAnswer = (questionId, optionId) => {
+    if (!lessonId || !attemptId) return;
+    dispatch(
+      answerQuestionThunk({ lessonId, attemptId, questionId, optionId })
+    );
   };
+
+  const handleClickQuestionNumber = (index) => {
+    setActiveIndex(index);
+    const el = document.getElementById(`question-${index}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const handleOpenSubmit = () => {
+    setShowSubmitModal(true);
+  };
+
+  const handleConfirmSubmit = async () => {
+    if (!lessonId || !attemptId) return;
+    const action = await dispatch(
+      submitAttemptThunk({ lessonId, attemptId })
+    );
+    if (submitAttemptThunk.fulfilled.match(action)) {
+      // ở đây bạn có thể điều hướng sang trang kết quả riêng:
+      // navigate(`/course/${courseId}/lesson/${lessonId}/quiz/${quizId}/result`);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowSubmitModal(false);
+  };
+
+  // ====== 5) Render ======
+  if (loading && !quizInfo) {
+    return <div className={styles.loading}>Đang tải bài quiz...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className={styles.error}>
+        Lỗi tải quiz: {String(error)}
+        <button onClick={() => navigate(-1)}>Quay lại</button>
+      </div>
+    );
+  }
+
+  if (!quizInfo) {
+    return (
+      <div className={styles.empty}>
+        <p>Bài học này chưa có quiz.</p>
+        <button onClick={() => navigate(-1)}>Quay lại bài học</button>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.page}>
       <QuizHeader
-        quiz={quizData}
-        timeLeft={formatTime(timeLeft)}
-        onSubmit={() => handleSubmit(false)}
+        title={quizInfo.title}
+        totalQuestions={totalQuestions}
+        answeredCount={answeredCount}
+        timeLeft={timeLeft}
+        onSubmit={handleOpenSubmit}
       />
+
       <main className={styles.main}>
-        <div className={styles.layout}>
-          <section className={styles.quizArea}>
-            <QuestionCard
-              question={quizData?.questions[currentIndex]}
-              index={currentIndex}
-              total={quizData?.questions?.length || 0}
-              onNext={handleNext}
-              onPrev={handlePrev}
-              selectedAnswer={answers[quizData?.questions[currentIndex]?.id]}
-              onSelectAnswer={handleSelectAnswer}
-            />
-          </section>
-          <aside className={styles.sidebarArea}>
+        <div className={styles.layoutTwoCol}>
+          <div className={styles.content}>
+          {questions.map((q, idx) => (
+            <div
+              key={q.questionId}
+              id={`question-${idx}`}
+              className={styles.questionWrapper}
+            >
+              <QuestionCard
+                question={q}
+                index={idx}
+                total={totalQuestions}
+                selectedOptionId={answers[q.questionId]}
+                onSelectAnswer={(optionId) =>
+                  handleSelectAnswer(q.questionId, optionId)
+                }
+              />
+            </div>
+          ))}
+
+          {questions.length === 0 && (
+            <p className={styles.emptyQuestions}>Chưa có câu hỏi.</p>
+          )}
+          </div>
+
+          <aside className={styles.sidebarSticky}>
             <Sidebar
-              total={quizData?.questions?.length || 0}
-              current={currentIndex}
+              total={totalQuestions}
+              activeIndex={activeIndex}
               answers={answers}
-              onSelectQuestion={handleChangeQuestion}
+              questions={questions}
+              onSelectQuestion={handleClickQuestionNumber}
             />
           </aside>
         </div>
       </main>
+
       <SubmitModal
-        data={modalData}
-        onClose={() => setModalData(null)}
-        onConfirm={() => { setModalData(null); handleSubmit(true); }}
+        open={showSubmitModal}
+        loading={submitting}
+        result={result}
+        totalQuestions={totalQuestions}
+        answeredCount={answeredCount}
+        onCancel={handleCloseModal}
+        onConfirm={handleConfirmSubmit}
       />
     </div>
   );
