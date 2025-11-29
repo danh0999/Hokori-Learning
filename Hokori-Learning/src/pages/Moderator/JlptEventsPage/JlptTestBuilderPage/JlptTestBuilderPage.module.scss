@@ -1,0 +1,88 @@
+/* src/pages/Moderator/JlptTestBuilderPage.module.scss */
+
+.container {
+  padding: 24px 48px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.testListActions {
+  display: flex;
+  gap: 4px;
+}
+
+.questionItem {
+  width: 100%;
+}
+
+.questionRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.questionMain {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.questionContent {
+  display: flex;
+  flex-direction: column;
+}
+
+.questionOptions {
+  margin-top: 8px;
+  margin-left: 40px;
+}
+
+.optionRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.answersBlock {
+  padding: 12px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.inlineAddOption {
+  margin-top: 8px;
+}
+
+.audio {
+  margin-top: 4px;
+  max-width: 280px;
+}
+
+.image {
+  margin-top: 4px;
+  max-width: 320px;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+}

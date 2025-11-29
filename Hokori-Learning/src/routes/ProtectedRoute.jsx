@@ -4,9 +4,12 @@ import { useSelector } from "react-redux";
 function normalizeUser(u) {
   const cur = u?.current ?? u ?? {};
   const roleFromObj = cur?.role?.roleName || cur?.roleName;
-  const rolesArr = Array.isArray(cur?.roles) && cur.roles.length > 0
-    ? cur.roles
-    : roleFromObj ? [roleFromObj] : [];
+  const rolesArr =
+    Array.isArray(cur?.roles) && cur.roles.length > 0
+      ? cur.roles
+      : roleFromObj
+      ? [roleFromObj]
+      : [];
   const rolesUpper = rolesArr.map((x) => (x || "").toUpperCase());
   const token = cur?.accessToken || cur?.token || localStorage.getItem("token");
   return { cur, rolesUpper, token };
@@ -18,7 +21,8 @@ export default function ProtectedRoute({ allow = [] }) {
   const { rolesUpper, token } = normalizeUser(storeUser);
 
   // Chưa đăng nhập -> về login, giữ lại URL cũ
-  if (!token) return <Navigate to="/login" replace state={{ from: location }} />;
+  if (!token)
+    return <Navigate to="/login" replace state={{ from: location }} />;
 
   // Không truyền allow => chỉ cần đăng nhập
   if (!allow?.length) return <Outlet />;
@@ -28,5 +32,5 @@ export default function ProtectedRoute({ allow = [] }) {
   const ok = rolesUpper.some((r) => allowUpper.includes(r));
 
   // Không có trang /403 trong routes của bạn -> trả về trang chủ
-  return ok ? <Outlet /> : <Navigate to="/" replace />;
+  return ok ? <Outlet /> : <Navigate to="/unauthorized" replace />;
 }

@@ -64,6 +64,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import JlptTestBuilderPage from "../pages/Moderator/JlptEventsPage/JlptTestBuilderPage/JlptTestBuilderPage";
 import CourseReviewPage from "../pages/Moderator/Queues/CourseReviewPage/CourseReviewPage";
 import ModeratorDashboard from "../pages/Moderator/ModDashboard/ModeratorDashboard";
+import Unauthorized from "../pages/authen/components/Unauthorized/Unauthorized";
 
 const routes = [
   // ============================
@@ -71,6 +72,7 @@ const routes = [
   // ============================
   { path: "login", element: <Login /> },
   { path: "register", element: <Register /> },
+  { path: "unauthorized", element: <Unauthorized /> },
 
   // ============================
   // PUBLIC + LEARNER AREA
@@ -137,6 +139,7 @@ const routes = [
   // ============================
   {
     path: "teacher",
+    element: <ProtectedRoute allow={["TEACHER"]} />,
     children: [
       {
         path: "",
@@ -176,6 +179,7 @@ const routes = [
   // ============================
   {
     path: "moderator",
+    element: <ProtectedRoute allow={["MODERATOR"]} />,
     children: [
       {
         path: "",
@@ -203,6 +207,7 @@ const routes = [
   // ============================
   {
     path: "admin",
+    element: <ProtectedRoute allow={["ADMIN"]} />,
     children: [
       {
         path: "",

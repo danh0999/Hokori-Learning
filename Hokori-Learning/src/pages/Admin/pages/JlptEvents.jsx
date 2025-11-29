@@ -147,6 +147,61 @@ const ConfirmModal = ({ open, title, desc, onConfirm, onCancel }) => {
 };
 
 // =====================
+// MODAL XEM LIST TEST
+// =====================
+const TestListModal = ({ open, event, tests, loading, onClose }) => {
+  if (!open) return null;
+
+  return (
+    <div className={s.modalOverlay}>
+      <div className={s.modal}>
+        <h2 className={s.modalTitle}>
+          Danh sách đề thi – Event #{event?.id} ({event?.title})
+        </h2>
+        <p className={s.modalDesc}>
+          Level: <b>{event?.level}</b> · Số đề: <b>{tests?.length || 0}</b>
+        </p>
+
+        {loading ? (
+          <p>Đang tải danh sách đề thi...</p>
+        ) : tests && tests.length > 0 ? (
+          <table className={s.table}>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Level</th>
+                <th>Thời lượng (phút)</th>
+                <th>Tổng điểm</th>
+                <th>Ghi chú kết quả</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tests.map((t) => (
+                <tr key={t.id}>
+                  <td>{t.id}</td>
+                  <td>{t.level}</td>
+                  <td>{t.durationMin}</td>
+                  <td>{t.totalScore}</td>
+                  <td>{t.resultNote || "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p>Event này chưa có đề thi nào.</p>
+        )}
+
+        <div className={s.modalActions}>
+          <button className={s.btnPrimary} onClick={onClose}>
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// =====================
 // MAIN PAGE – ADMIN
 // =====================
 export default function JlptEvents() {
@@ -155,7 +210,7 @@ export default function JlptEvents() {
 
   const [modalOpen, setModalOpen] = useState(false);
 
-  // test status cho từng event
+  // testStatus: eventId -> số đề
   const [testStatus, setTestStatus] = useState({});
 
   const [confirmCfg, setConfirmCfg] = useState({
@@ -164,16 +219,22 @@ export default function JlptEvents() {
     next: null,
   });
 
+  // modal xem list test
+  const [testModalOpen, setTestModalOpen] = useState(false);
+  const [testModalEvent, setTestModalEvent] = useState(null);
+  const [testModalTests, setTestModalTests] = useState([]);
+  const [loadingTestsModal, setLoadingTestsModal] = useState(false);
+
   // ------ GET /api/jlpt/events ------
   const fetchEvents = async () => {
     setLoading(true);
     try {
       const res = await api.get("jlpt/events");
-      let list = res.data || [];
+      let list = (res.data || []).sort((a, b) => b.id - a.id);
 
       const now = new Date();
 
-      // 1) TỰ ĐỘNG CLOSE CÁC EVENT ĐÃ HẾT HẠN
+      // 1) Auto close các event đã hết hạn (UI)
       const needCloseIds = [];
 
       list = list.map((ev) => {
@@ -182,7 +243,6 @@ export default function JlptEvents() {
 
         if (isExpired) {
           needCloseIds.push(ev.id);
-          // update luôn UI cho mượt
           return { ...ev, status: "CLOSED" };
         }
         return ev;
@@ -190,7 +250,7 @@ export default function JlptEvents() {
 
       setEvents(list);
 
-      // Gửi PATCH để update status CLOSED trên BE
+      // PATCH CLOSE trên BE nếu cần
       if (needCloseIds.length > 0) {
         await Promise.all(
           needCloseIds.map((id) =>
@@ -203,7 +263,7 @@ export default function JlptEvents() {
         );
       }
 
-      // 2) Kiểm tra event đã có test chưa
+      // 2) Lấy số đề thi cho từng event
       const results = await Promise.all(
         list.map((ev) =>
           api
@@ -215,7 +275,7 @@ export default function JlptEvents() {
 
       const map = {};
       results.forEach((item) => {
-        map[item.id] = item.count > 0;
+        map[item.id] = item.count; // lưu số đề, không phải boolean
       });
       setTestStatus(map);
     } catch (err) {
@@ -259,8 +319,9 @@ export default function JlptEvents() {
     if (ev.status === "OPEN") nextStatus = "CLOSED";
     if (ev.status === "CLOSED") nextStatus = "OPEN";
 
-    // Nếu chưa có test thì không được OPEN
-    if (nextStatus === "OPEN" && !testStatus[ev.id]) {
+    const count = testStatus[ev.id] ?? 0;
+    // không cho OPEN nếu chưa có đề
+    if (nextStatus === "OPEN" && count === 0) {
       return toast.error("Sự kiện chưa có đề thi – không thể OPEN");
     }
 
@@ -288,6 +349,22 @@ export default function JlptEvents() {
       console.error(err);
       toast.error("Cập nhật trạng thái thất bại");
       setConfirmCfg({ open: false, target: null, next: null });
+    }
+  };
+
+  // mở modal xem list đề
+  const openTestList = async (ev) => {
+    setTestModalEvent(ev);
+    setTestModalOpen(true);
+    setLoadingTestsModal(true);
+    try {
+      const res = await api.get(`jlpt/events/${ev.id}/tests`);
+      setTestModalTests(res.data || []);
+    } catch (err) {
+      console.error(err);
+      toast.error("Không tải được danh sách đề thi");
+    } finally {
+      setLoadingTestsModal(false);
     }
   };
 
@@ -327,55 +404,66 @@ export default function JlptEvents() {
                 </tr>
               )}
 
-              {events.map((ev) => (
-                <tr key={ev.id}>
-                  <td>{ev.title}</td>
-                  <td>{ev.level}</td>
-                  <td>{ev.description}</td>
-                  <td>
-                    {ev.startAt
-                      ? new Date(ev.startAt).toLocaleString("vi-VN")
-                      : "-"}
-                  </td>
-                  <td>
-                    {ev.endAt
-                      ? new Date(ev.endAt).toLocaleString("vi-VN")
-                      : "-"}
-                  </td>
+              {events.map((ev) => {
+                const testCount = testStatus[ev.id] ?? 0;
+                const hasTest = testCount > 0;
 
-                  {/* Test Ready column */}
-                  <td>
-                    {testStatus[ev.id] ? (
-                      <span className={s.ready}>READY</span>
-                    ) : (
-                      <span className={s.notReady}>No test</span>
-                    )}
-                  </td>
+                return (
+                  <tr key={ev.id}>
+                    <td>{ev.title}</td>
+                    <td>{ev.level}</td>
+                    <td>{ev.description}</td>
+                    <td>
+                      {ev.startAt
+                        ? new Date(ev.startAt).toLocaleString("vi-VN")
+                        : "-"}
+                    </td>
+                    <td>
+                      {ev.endAt
+                        ? new Date(ev.endAt).toLocaleString("vi-VN")
+                        : "-"}
+                    </td>
 
-                  <td>
-                    <span
-                      className={`${s.badge} ${
-                        ev.status === "OPEN"
-                          ? s.open
-                          : ev.status === "DRAFT"
-                          ? s.draft
-                          : s.closed
-                      }`}
-                    >
-                      {ev.status}
-                    </span>
-                  </td>
+                    {/* Cột số đề */}
+                    <td>
+                      {hasTest ? (
+                        <span className={s.ready}>{testCount} đề</span>
+                      ) : (
+                        <span className={s.notReady}>0 đề</span>
+                      )}
+                    </td>
 
-                  <td className={s.actions}>
-                    <button
-                      className={s.btnSmall}
-                      onClick={() => askToggle(ev)}
-                    >
-                      {ev.status === "OPEN" ? "Đóng (CLOSED)" : "Mở (OPEN)"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    <td>
+                      <span
+                        className={`${s.badge} ${
+                          ev.status === "OPEN"
+                            ? s.open
+                            : ev.status === "DRAFT"
+                            ? s.draft
+                            : s.closed
+                        }`}
+                      >
+                        {ev.status}
+                      </span>
+                    </td>
+
+                    <td className={s.actions}>
+                      <button
+                        className={s.btnSmall}
+                        onClick={() => openTestList(ev)}
+                      >
+                        Xem list đề
+                      </button>
+                      <button
+                        className={s.btnSmall}
+                        onClick={() => askToggle(ev)}
+                      >
+                        {ev.status === "OPEN" ? "Đóng (CLOSED)" : "Mở (OPEN)"}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -395,6 +483,14 @@ export default function JlptEvents() {
         onCancel={() =>
           setConfirmCfg({ open: false, target: null, next: null })
         }
+      />
+
+      <TestListModal
+        open={testModalOpen}
+        event={testModalEvent}
+        tests={testModalTests}
+        loading={loadingTestsModal}
+        onClose={() => setTestModalOpen(false)}
       />
     </div>
   );
