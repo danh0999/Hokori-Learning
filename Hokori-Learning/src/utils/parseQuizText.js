@@ -1,4 +1,12 @@
-// utils/parseQuizText.js — v2.3 (TF + Audio + ưu tiên Q-start)
+// utils/parseQuizText.js — v2.4 (TF + Audio block-level)
+
+/**
+ * Hỗ trợ:
+ * - Multiple choice A/B/C/D
+ * - True/False
+ * - 1 audio chung cho nhiều câu (Audio: xxx đặt trước block)
+ * - Audio riêng cho từng câu (Audio: xxx đặt cạnh câu)
+ */
 
 const isBlank = (s) => !s || !String(s).trim();
 
@@ -23,7 +31,6 @@ const bulletRe = /^[ \- \* \u2022 \u30FB]\s*(\[[xX ]\])?\s*(.+)$/;
 const ansLineRe = /^ans(?:wer)?\s*:\s*(.+)$/i;
 // Q1) | Q1. | 1) | 1.
 const qStartRe = /^(?:Q\s*\d+[:.)]|\d+[:.)])/i;
-
 // Audio: path/to/file.mp3  (hoặc audio - xxx)
 const audioRe = /^audio\s*[:\-]\s*(.+)$/i;
 
@@ -31,13 +38,18 @@ const audioRe = /^audio\s*[:\-]\s*(.+)$/i;
 const tfInlineRe =
   /(true|t|đúng)\s*(?:\/|-|\s\/\s|\s-\s)\s*(false|f|sai)|(false|f|sai)\s*(?:\/|-|\s\/\s|\s-\s)\s*(true|t|đúng)/i;
 
+// 🔥 Audio dùng chung cho nhiều câu
+let currentAudioPath = "";
+
+/**
+ * Flush 1 block câu hỏi ra mảng out[]
+ */
 function flushBlock(block, out) {
   if (!block) return;
 
   const options = [];
   let sawTF = false;
 
-  // có "True/False" trong câu hỏi?
   if (tfInlineRe.test(block.qText)) sawTF = true;
 
   // gom option lines
@@ -122,7 +134,6 @@ function flushBlock(block, out) {
     type = "single";
   }
 
-  // build
   const q = {
     id: crypto.randomUUID(),
     type,
@@ -151,9 +162,10 @@ function flushBlock(block, out) {
     explanation: "",
   };
 
-  // gắn audio nếu có (dùng cho JLPT Listening)
-  if (block.audioPath) {
-    q.audioPath = block.audioPath.trim();
+  // 👉 Gắn audio: ưu tiên block.audioPath, nếu không thì dùng currentAudioPath
+  const mergedAudio = block.audioPath || currentAudioPath;
+  if (mergedAudio) {
+    q.audioPath = mergedAudio.trim();
   }
 
   // safety: nếu chưa tìm được đáp án
@@ -186,6 +198,9 @@ export function parseQuizFromText(input) {
     };
   };
 
+  // Mỗi lần parse mới → reset audio dùng chung
+  currentAudioPath = "";
+
   for (const raw of lines) {
     const line = raw.trim();
     if (isBlank(line)) continue;
@@ -198,11 +213,15 @@ export function parseQuizFromText(input) {
       continue;
     }
 
-    // 2) Audio line
+    // 2) Audio line (dùng chung / hoặc override)
     const au = line.match(audioRe);
     if (au) {
+      const normalizedAudioPath = au[1].replace(/\s*\/\s*/g, "/").trim();
+      // set audio global cho các câu sau
+      currentAudioPath = normalizedAudioPath;
+      // nếu đang trong 1 block thì gán cho block hiện tại luôn (trường hợp audio riêng)
       if (!block) startNew("");
-      block.audioPath = au[1].replace(/\s*\/\s*/g, "/").trim();
+      block.audioPath = normalizedAudioPath;
       continue;
     }
 

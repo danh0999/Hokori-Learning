@@ -13,9 +13,10 @@ export default function JlptEventsPage() {
 
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [hasTestMap, setHasTestMap] = useState({});
+  // lưu số lượng test cho từng eventId
+  const [testCountMap, setTestCountMap] = useState({});
 
-  // Fetch events & test status
+  // Fetch events & test count
   const fetchEvents = async () => {
     setLoading(true);
     try {
@@ -23,7 +24,7 @@ export default function JlptEventsPage() {
       const list = res.data || [];
       setEvents(list);
 
-      // Kiểm tra test cho từng event
+      // Lấy số lượng test cho từng event
       const results = await Promise.all(
         list.map((ev) =>
           api
@@ -38,9 +39,9 @@ export default function JlptEventsPage() {
 
       const map = {};
       results.forEach((item) => {
-        map[item.id] = item.count > 0;
+        map[item.id] = item.count; // lưu thẳng số lượng
       });
-      setHasTestMap(map);
+      setTestCountMap(map);
     } catch (err) {
       console.error(err);
       message.error("Không tải được danh sách sự kiện JLPT");
@@ -83,19 +84,23 @@ export default function JlptEventsPage() {
     },
     {
       title: "Đề thi",
-      width: 120,
-      render: (_, record) =>
-        hasTestMap[record.id] ? (
-          <Tag color="green">READY</Tag>
+      width: 140,
+      render: (_, record) => {
+        const count = testCountMap[record.id] ?? 0;
+        return count > 0 ? (
+          <Tag color="green">{count} đề</Tag>
         ) : (
-          <Tag>No test</Tag>
-        ),
+          <Tag>Chưa có đề</Tag>
+        );
+      },
     },
     {
       title: "Thao tác",
       width: 180,
       render: (_, record) => {
-        const hasTest = hasTestMap[record.id];
+        const count = testCountMap[record.id] ?? 0;
+        const hasTest = count > 0;
+
         return (
           <Button
             type={hasTest ? "default" : "primary"}
@@ -106,7 +111,7 @@ export default function JlptEventsPage() {
               })
             }
           >
-            {hasTest ? "Edit Test" : "Build Test"}
+            Xem sự kiện
           </Button>
         );
       },

@@ -1,3 +1,4 @@
+// src/redux/features/jlptModeratorSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../configs/axios.js";
 
@@ -139,6 +140,33 @@ export const deleteJlptQuestionThunk = createAsyncThunk(
   }
 );
 
+// -----------------------------
+// UPLOAD LISTENING AUDIO for TEST
+// POST /api/jlpt/tests/{testId}/files
+// -----------------------------
+export const uploadJlptTestAudioThunk = createAsyncThunk(
+  "jlptModerator/uploadTestAudio",
+  async ({ testId, file }, { rejectWithValue }) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await api.post(`/jlpt/tests/${testId}/files`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      // BE spec: { filePath: "string", url: "string" }
+      return {
+        testId,
+        filePath: res.data.filePath,
+        url: res.data.url,
+      };
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
 // =====================================================
 // SLICE
 // =====================================================
@@ -147,7 +175,9 @@ const jlptModeratorSlice = createSlice({
   initialState: {
     testsByEvent: {},
     questionsByTest: {},
+    audioByTest: {}, // { [testId]: { filePath, url } }
     loading: false,
+    uploadingAudio: false,
     error: null,
   },
   reducers: {},
@@ -165,6 +195,36 @@ const jlptModeratorSlice = createSlice({
           ...(state.testsByEvent[eventId] || []),
           test,
         ];
+      })
+
+      // update test
+      .addCase(updateJlptTestThunk.fulfilled, (state, action) => {
+        const updated = action.payload;
+        Object.keys(state.testsByEvent).forEach((eventId) => {
+          const list = state.testsByEvent[eventId] || [];
+          state.testsByEvent[eventId] = list.map((t) =>
+            t.id === updated.id ? updated : t
+          );
+        });
+      })
+
+      // delete test
+      .addCase(deleteJlptTestThunk.fulfilled, (state, action) => {
+        const deletedTestId = action.payload;
+
+        Object.keys(state.testsByEvent).forEach((eventId) => {
+          const list = state.testsByEvent[eventId] || [];
+          state.testsByEvent[eventId] = list.filter(
+            (t) => t.id !== deletedTestId
+          );
+        });
+
+        if (state.questionsByTest[deletedTestId]) {
+          delete state.questionsByTest[deletedTestId];
+        }
+        if (state.audioByTest[deletedTestId]) {
+          delete state.audioByTest[deletedTestId];
+        }
       })
 
       // fetch questions
@@ -211,6 +271,21 @@ const jlptModeratorSlice = createSlice({
         state.questionsByTest[testId] = state.questionsByTest[testId].filter(
           (q) => q.id !== questionId
         );
+      })
+
+      // upload audio
+      .addCase(uploadJlptTestAudioThunk.pending, (state) => {
+        state.uploadingAudio = true;
+        state.error = null;
+      })
+      .addCase(uploadJlptTestAudioThunk.fulfilled, (state, action) => {
+        state.uploadingAudio = false;
+        const { testId, filePath, url } = action.payload;
+        state.audioByTest[testId] = { filePath, url };
+      })
+      .addCase(uploadJlptTestAudioThunk.rejected, (state, action) => {
+        state.uploadingAudio = false;
+        state.error = action.payload || action.error.message;
       });
   },
 });
