@@ -13,6 +13,8 @@ import progressSlice from "./features/progressSlice.js";
 import walletReducer from "./features/walletSlice.js";
 import jlptModeratorReducer from "./features/jlptModeratorSlice.js";
 import aiPackageReducer from "./features/aiPackageSlice.js";
+import quizAttemptreducer from "./features/quizAttemptSlice.js";
+
 const rootReducer = combineReducers({
   user: userReducer,
   teacherProfile: teacherProfileReducer,
@@ -23,6 +25,7 @@ const rootReducer = combineReducers({
 
   teacherCourse: teacherCourseReducer,
   quiz: quizReducer,
+  quizAttempt: quizAttemptreducer,
 
   flashcards: flashcardLearnerReducer,
   flashcardTeacher: flashcardReducer,
