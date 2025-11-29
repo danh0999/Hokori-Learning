@@ -1,77 +1,108 @@
+// src/pages/LessonPlayer/LessonPlayer.jsx
 import React, { useEffect, useState } from "react";
-import { useParams, Outlet } from "react-router-dom"; 
-import Sidebar from "./components/Sidebar";
-import VideoPanel from "./components/VideoPanel";
-import LessonContent from "./components/LessonContent";
-import QuickActions from "./components/QuickActions";
-import ActionBar from "./components/ActionBar";
+import { useParams, useNavigate, useLocation, Outlet } from "react-router-dom";
+import api from "../../configs/axios";
 import styles from "./LessonPlayer.module.scss";
 
+import Sidebar from "./components/Sidebar";
+import VideoPanel from "./components/VideoPanel";
+import QuickActions from "./components/QuickActions";
+import LessonContent from "./components/LessonContent";
+import ActionBar from "./components/ActionBar";
+import { buildFileUrl } from "../../utils/fileUrl";
+
+
 const LessonPlayer = () => {
-const { lessonId } = useParams();
-const isTrialMode = lessonId === "trial";
+  const { courseId, lessonId } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
 
+  const trialMode = location.state?.trialMode || false;
 
+  const [lessons, setLessons] = useState([]);
   const [lessonData, setLessonData] = useState(null);
 
+  /** 📌 1) Fetch danh sách bài học */
   useEffect(() => {
-  const isTrialMode = lessonId === "trial";
+    if (lessonId === "trial") return; // đang ở màn placeholder học thử
 
-  // 🔥 Nếu là bài học thử (Học thử)
-  if (isTrialMode) {
-    setLessonData({
-      title: "Bài học thử miễn phí",
-      description:
-        "Bạn đang trải nghiệm bài học thử thuộc Chương 1. Nội dung bên dưới sẽ giúp bạn đánh giá khóa học trước khi mua.",
-      sections: [
-        {
-          title: "Nội dung demo",
-          content:
-            "Đây là nội dung demo của bài học chương 1. Khi bạn mua khóa học, toàn bộ bài học sẽ được mở khóa đầy đủ.",
-        },
-        {
-          title: "Lợi ích khi tham gia khóa học",
-          content:
-            "・Nội dung ngữ pháp đầy đủ\n・Bài tập có đáp án chi tiết\n・Video và PDF tải về\n・Theo dõi tiến độ học tập",
-        },
-      ],
-    });
-    return; // ❗ Dừng ở đây — không load bài học thật
+    const fetchLessons = async () => {
+      try {
+        const res = await api.get(`/learner/courses/${courseId}/lessons`);
+        const list = res.data ?? [];
+        setLessons(list);
+
+        // Nếu learner truy cập /lesson mà thiếu lessonId → điều hướng bài đầu tiên
+        if (!lessonId && list.length > 0) {
+          navigate(`/course/${courseId}/lesson/${list[0].lessonId}`, {
+            replace: true,
+          });
+        }
+      } catch (err) {
+        console.error("Lỗi tải danh sách bài học:", err);
+      }
+    };
+
+    fetchLessons();
+  }, [courseId, lessonId, navigate]);
+
+
+  /** 📌 2) Fetch chi tiết bài học */
+  useEffect(() => {
+    if (!lessonId || lessonId === "trial") return;
+
+    const fetchLessonDetail = async () => {
+      try {
+        const res = await api.get(`/learner/lessons/${lessonId}/detail`);
+        setLessonData(res.data);
+      } catch (err) {
+        console.error("Lỗi tải dữ liệu bài học:", err);
+      }
+    };
+
+    fetchLessonDetail();
+  }, [lessonId]);
+
+
+  /** Nếu lessons chưa load xong */
+  const isLoading = lessons.length === 0;
+  if (isLoading) {
+    return <main className={styles.main}>Đang tải bài học...</main>;
   }
 
-  // ⚙️ MOCK LESSON DATA – demo cho bài học thật (giữ nguyên code cũ)
-  const mockData = {
-    title: "Ngữ pháp cơ bản – Thể ます",
-    description:
-      "Giới thiệu tổng quan về thể ます, cách chia động từ và ứng dụng trong giao tiếp tiếng Nhật.",
-    sections: [
-      {
-        title: "Tổng quan bài học",
-        content:
-          "Trong video, giảng viên hướng dẫn cách chia động từ sang thể ます và cách sử dụng trong các câu ví dụ thực tế.",
-      },
-      {
-        title: "Các điểm chính",
-        content:
-          "・Phân biệt nhóm động từ (I, II, III)\n・Mẫu khẳng định / phủ định / quá khứ\n・Lưu ý khi giao tiếp bằng thể ます",
-      },
-    ],
-  };
+  // === Lấy nội dung video (ASSET & primaryContent) từ lessonData ===
+  const primaryContent = lessonData?.sections
+    ?.flatMap(sec => sec.contents)
+    ?.find(c => c.primaryContent && c.contentFormat === "ASSET");
 
-  setLessonData(mockData);
-}, [lessonId]);
+  const videoUrl = primaryContent
+  ? buildFileUrl(primaryContent.filePath)
+  : null;
+
+
 
 
   return (
     <main className={styles.main}>
+      {/* === SIDEBAR === */}
       <aside className={styles.sidebar}>
-        <Sidebar />
+        <Sidebar
+          lessons={lessons}
+          currentLessonId={Number(lessonId)}
+          trialMode={trialMode}
+          courseId={Number(courseId)}
+        />
       </aside>
 
+      {/* === NỘI DUNG BÀI HỌC === */}
       <section className={styles.lesson}>
         <div className={styles.container}>
-          {/* === Nội dung bài học === */}
-          <VideoPanel title={lessonData?.title} />
+              <VideoPanel
+      videoUrl={videoUrl}
+      title={lessonData?.title}
+      duration={lessonData?.totalDurationSec}
+      />
+
           <div className={styles.header}>
             <h1>{lessonData?.title || "Tiêu đề bài học"}</h1>
             <p className={styles.desc}>{lessonData?.description}</p>
@@ -81,11 +112,12 @@ const isTrialMode = lessonId === "trial";
           <LessonContent data={lessonData?.sections} />
           <ActionBar />
 
-          {/* === Hiển thị Quiz khi URL là /lesson/:id/quiz/:quizId === */}
+          {/* === Quiz hiển thị khi vào /lesson/:id/quiz/... === */}
           <Outlet />
         </div>
       </section>
 
+      {/* === KHUNG TRỐNG CHO AI SAU NÀY === */}
       <aside className={styles.ai}></aside>
     </main>
   );

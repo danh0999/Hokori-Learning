@@ -4,6 +4,9 @@ import { Layout } from "antd";
 import { useLocation, useNavigate } from "react-router-dom";
 import { sidebarMenusByRole } from "../menu.jsx";
 import styles from "./styles.module.scss";
+import { logout } from "../../../redux/features/userSlice.js";
+import { logoutFirebase } from "../../../redux/features/auth.js";
+import { useDispatch } from "react-redux";
 
 const { Sider } = Layout;
 
@@ -73,6 +76,17 @@ export default function RoleSidebar({
   );
 
   const [openKeys, setOpenKeys] = useState([]);
+  const dispatch = useDispatch();
+
+  const onLogout = async () => {
+    try {
+      await logoutFirebase();
+      dispatch(logout());
+      navigate("/login", { replace: true });
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
+  };
 
   useEffect(() => {
     if (!selectedKey) return;
@@ -85,6 +99,10 @@ export default function RoleSidebar({
 
   const handleItemClick = (key) => {
     const path = keyToPath.get(key);
+    if (key === "logout") {
+      onLogout(); // 🟢 gọi hàm logout nằm ngay trong Sidebar
+      return;
+    }
     if (path) navigate(path);
   };
 

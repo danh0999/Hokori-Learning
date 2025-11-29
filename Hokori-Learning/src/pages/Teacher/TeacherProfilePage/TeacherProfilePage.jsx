@@ -55,23 +55,33 @@ export default function TeacherProfilePage() {
 
   const user = profile?.user || {};
   const teacher = profile?.teacher || {};
+  const hasCertificate = (certificates?.length || 0) > 0;
+  const hasValidBio = (teacher?.bio || "").trim().length >= 50;
 
-  const canSubmit =
-    !!teacher?.headline &&
-    (teacher?.bio || "").trim().length >= 50 &&
-    (certificates?.length || 0) > 0;
+  const canSubmit = hasCertificate && hasValidBio;
 
-  const showSubmit =
-    teacher?.approvalStatus === "DRAFT" ||
-    teacher?.approvalStatus === "REJECTED" ||
-    !teacher?.approvalStatus;
+  // Chỉ ẩn khi đã APPROVED, còn lại (DRAFT, REJECTED, PENDING, null) đều hiện nút
+  const showSubmit = teacher?.approvalStatus !== "APPROVED";
+
+  // Trạng thái đang chờ duyệt → khoá chức năng chỉnh sửa chứng chỉ
+  const isPendingApproval = teacher?.approvalStatus === "PENDING";
 
   const onSubmitApproval = async () => {
+    // ✅ Tự validate điều kiện trước khi gọi API
+    if (!canSubmit) {
+      message.error(
+        "Vui lòng cung cấp ít nhất 1 chứng chỉ và viết bio tối thiểu 50 ký tự trước khi gửi duyệt."
+      );
+      return;
+    }
+
     const res = await dispatch(
       submitTeacherProfile({ message: "Xin duyệt hồ sơ giáo viên." })
     );
     if (res.meta.requestStatus === "fulfilled") {
-      message.success("Đã gửi duyệt hồ sơ. Trạng thái: PENDING");
+      message.success(
+        "Đã gửi duyệt hồ sơ. Trạng thái chuyển sang PENDING, trong thời gian chờ duyệt bạn sẽ không thể chỉnh sửa chứng chỉ."
+      );
     } else {
       message.error(res?.payload?.message || "Gửi duyệt thất bại");
     }
@@ -93,14 +103,13 @@ export default function TeacherProfilePage() {
           {showSubmit && (
             <Popconfirm
               title="Gửi duyệt hồ sơ?"
-              description="Sau khi gửi, trạng thái chuyển sang PENDING để admin xem xét."
+              description="Sau khi gửi, trạng thái chuyển sang PENDING để admin xem xét. Trong thời gian PENDING, bạn sẽ không thể thêm/sửa/xoá chứng chỉ."
               onConfirm={onSubmitApproval}
               okText="Gửi duyệt"
               cancelText="Hủy"
-              okButtonProps={{ loading: submitting, disabled: !canSubmit }}
-              disabled={!canSubmit}
+              okButtonProps={{ loading: submitting }} // ❗ không disable theo canSubmit nữa
             >
-              <Button type="primary" loading={submitting} disabled={!canSubmit}>
+              <Button type="primary" loading={submitting}>
                 Gửi duyệt
               </Button>
             </Popconfirm>
@@ -110,6 +119,7 @@ export default function TeacherProfilePage() {
             type="default"
             icon={<IdcardOutlined />}
             onClick={() => setOpenCertModal(true)}
+            disabled={isPendingApproval}
           >
             Cung cấp chứng chỉ
           </Button>
@@ -157,13 +167,12 @@ export default function TeacherProfilePage() {
                 <div className={styles.displayName}>
                   {user.displayName || "—"}
                 </div>
-                <div className={styles.headline}>{teacher.headline || "—"}</div>
               </div>
               <div className={styles.status}>{statusTag}</div>
             </div>
 
             {/* Thông tin tài khoản */}
-            <h3 style={{ marginTop: 16 }}>Thông tin tài khoản (profile/me)</h3>
+            <h3 style={{ marginTop: 16 }}>Thông tin tài khoản </h3>
             <div className={styles.grid}>
               <div className={styles.field}>
                 <label>Email</label>
@@ -177,58 +186,65 @@ export default function TeacherProfilePage() {
                 <label>Số điện thoại</label>
                 <div>{user.phoneNumber || "—"}</div>
               </div>
-              <div className={styles.field}>
-                <label>Quốc gia</label>
-                <div>{user.country || "—"}</div>
-              </div>
+
               <div className={styles.field}>
                 <label>Role</label>
                 <div>{user.role || "—"}</div>
               </div>
               <div className={styles.field}>
-                <label>Email verified</label>
-                <div>{user.isVerified ? "Yes" : "No"}</div>
+                <label>Tình trạng xác minh</label>
+                <div>{user.isVerified ? "Đã xác minh" : "Chưa xác minh"}</div>
               </div>
             </div>
 
             {/* Thông tin giảng viên */}
-            <h3 style={{ marginTop: 24 }}>
-              Thông tin giảng viên (profile/me/teacher)
-            </h3>
-            <div className={styles.grid}>
-              <div className={styles.field}>
-                <label>Headline</label>
-                <div>{teacher.headline || "—"}</div>
-              </div>
-              <div className={styles.field}>
-                <label>Số năm kinh nghiệm</label>
-                <div>{teacher.yearsOfExperience ?? "—"}</div>
-              </div>
-              <div className={styles.field}>
-                <label>Website</label>
-                <div>{teacher.websiteUrl || "—"}</div>
-              </div>
-              <div className={styles.field}>
-                <label>LinkedIn</label>
-                <div>{teacher.linkedin || "—"}</div>
-              </div>
-              <div className={styles.fieldFull}>
+            <h3 style={{ marginTop: 24 }}>Thông tin giảng viên</h3>
+
+            <div className={styles.teacherSection}>
+              {/* BIO FULL WIDTH */}
+              <div className={`${styles.fieldCard} ${styles.fullWidth}`}>
                 <label>Giới thiệu</label>
                 <div>{teacher.bio || "—"}</div>
               </div>
-              <div className={styles.field}>
-                <label>Số tài khoản ngân hàng</label>
-                <div>{teacher.bankAccountNumber || "—"}</div>
+
+              {/* Experience – Website – LinkedIn */}
+              <div className={styles.teacherRow}>
+                <div className={styles.fieldCard}>
+                  <label>Số năm kinh nghiệm</label>
+                  <div>{teacher.yearsOfExperience ?? "—"}</div>
+                </div>
+
+                <div className={styles.fieldCard}>
+                  <label>Website</label>
+                  <div>{teacher.websiteUrl || "—"}</div>
+                </div>
+
+                <div className={styles.fieldCard}>
+                  <label>LinkedIn</label>
+                  <div>{teacher.linkedin || "—"}</div>
+                </div>
               </div>
-              <div className={styles.field}>
-                <label>Tên chủ tài khoản</label>
-                <div>{teacher.bankAccountName || "—"}</div>
+
+              {/* BANK GROUP */}
+              <div className={styles.teacherRow}>
+                <div className={styles.fieldCard}>
+                  <label>Số tài khoản ngân hàng</label>
+                  <div>{teacher.bankAccountNumber || "—"}</div>
+                </div>
+
+                <div className={styles.fieldCard}>
+                  <label>Tên chủ tài khoản</label>
+                  <div>{teacher.bankAccountName || "—"}</div>
+                </div>
+
+                <div className={styles.fieldCard}>
+                  <label>Ngân hàng</label>
+                  <div>{teacher.bankName || "—"}</div>
+                </div>
               </div>
-              <div className={styles.field}>
-                <label>Ngân hàng</label>
-                <div>{teacher.bankName || "—"}</div>
-              </div>
-              <div className={styles.field}>
+
+              {/* BRANCH FULL WIDTH */}
+              <div className={`${styles.fieldCard} ${styles.fullWidth}`}>
                 <label>Chi nhánh</label>
                 <div>{teacher.bankBranchName || "—"}</div>
               </div>
@@ -274,6 +290,7 @@ export default function TeacherProfilePage() {
         <ModalCertificates
           open={openCertModal}
           onClose={() => setOpenCertModal(false)}
+          locked={isPendingApproval}
         />
       )}
 

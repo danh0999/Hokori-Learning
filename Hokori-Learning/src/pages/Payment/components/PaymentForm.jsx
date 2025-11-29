@@ -10,6 +10,7 @@ export default function PaymentForm({ onSubmit }) {
     paymentMethod: "",
     agree: false,
   });
+
   const [errors, setErrors] = useState({});
 
   const validateField = (name, value) => {
@@ -38,6 +39,7 @@ export default function PaymentForm({ onSubmit }) {
       default:
         break;
     }
+
     return msg;
   };
 
@@ -47,7 +49,6 @@ export default function PaymentForm({ onSubmit }) {
 
     setForm((prev) => ({ ...prev, [name]: newValue }));
 
-    // realtime validation
     const errMsg = validateField(name, newValue);
     setErrors((prev) => ({ ...prev, [name]: errMsg }));
   };
@@ -55,15 +56,18 @@ export default function PaymentForm({ onSubmit }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     const newErrors = {};
+
     Object.keys(form).forEach((key) => {
       const msg = validateField(key, form[key]);
       if (msg) newErrors[key] = msg;
     });
+
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
-      if (onSubmit) onSubmit(form);
-      alert("Thanh toán thành công!");
+      // 🔥 Không còn alert mock!
+      // Gửi data cho PaymentPage xử lý thực tế (API / redirect VNPay / navigate...)
+      onSubmit?.(form);
     }
   };
 
@@ -73,6 +77,7 @@ export default function PaymentForm({ onSubmit }) {
         {/* === Thông tin học viên === */}
         <div className={styles.card}>
           <h2>Thông tin học viên</h2>
+
           <div className={styles.form}>
             <label>
               Họ và tên *
@@ -155,7 +160,7 @@ export default function PaymentForm({ onSubmit }) {
           )}
         </div>
 
-        {/* === Checkbox & Nút === */}
+        {/* === Checkbox & submit === */}
         <div className={styles.card}>
           <label className={styles.terms}>
             <input
@@ -172,7 +177,10 @@ export default function PaymentForm({ onSubmit }) {
               của Hokori
             </span>
           </label>
-          {errors.agree && <span className={styles.error}>{errors.agree}</span>}
+
+          {errors.agree && (
+            <span className={styles.error}>{errors.agree}</span>
+          )}
 
           <button type="submit" className={styles.payBtn}>
             Hoàn tất thanh toán

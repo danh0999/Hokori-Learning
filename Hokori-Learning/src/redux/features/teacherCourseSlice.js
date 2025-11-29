@@ -73,10 +73,7 @@ export const uploadCourseCoverThunk = createAsyncThunk(
 
       const res = await api.post(
         `teacher/courses/${courseId}/cover-image`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
+        formData
       );
 
       // BE thường sẽ trả về Course đã được cập nhật coverImagePath
@@ -342,10 +339,7 @@ export const uploadSectionFileThunk = createAsyncThunk(
 
       const res = await api.post(
         `teacher/courses/sections/${sectionId}/files`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
+        formData
       );
 
       return { sectionId, ...res.data };
@@ -512,9 +506,20 @@ const teacherCourseSlice = createSlice({
       .addCase(updateCourseThunk.fulfilled, (state, action) => {
         state.saving = false;
         const updated = action.payload;
-        state.currentCourseMeta = updated;
+
+        // MERGE: giữ lại các field cũ (description, subtitle, v.v.)
+        state.currentCourseMeta = {
+          ...(state.currentCourseMeta || {}),
+          ...(updated || {}),
+        };
+
         const idx = state.list.findIndex((c) => c.id === updated.id);
-        if (idx !== -1) state.list[idx] = updated;
+        if (idx !== -1) {
+          state.list[idx] = {
+            ...state.list[idx],
+            ...(updated || {}),
+          };
+        }
       })
       .addCase(updateCourseThunk.rejected, (state, action) => {
         state.saving = false;
@@ -527,10 +532,21 @@ const teacherCourseSlice = createSlice({
       .addCase(uploadCourseCoverThunk.fulfilled, (state, action) => {
         state.saving = false;
         const updated = action.payload;
-        state.currentCourseMeta = updated;
+
+        state.currentCourseMeta = {
+          ...(state.currentCourseMeta || {}),
+          ...(updated || {}),
+        };
+
         const idx = state.list.findIndex((c) => c.id === updated.id);
-        if (idx !== -1) state.list[idx] = updated;
+        if (idx !== -1) {
+          state.list[idx] = {
+            ...state.list[idx],
+            ...(updated || {}),
+          };
+        }
       })
+
       .addCase(uploadCourseCoverThunk.rejected, (state, action) => {
         state.saving = false;
         state.error = action.payload;
@@ -587,9 +603,37 @@ const teacherCourseSlice = createSlice({
       .addCase(fetchCourseTree.fulfilled, (state, action) => {
         state.loadingTree = false;
         state.loadingMeta = false;
-        state.currentCourseTree = action.payload;
-        state.currentCourseMeta = action.payload; // /detail trả luôn meta
+
+        const tree = action.payload;
+        state.currentCourseTree = tree;
+
+        // Nếu chưa có meta thì xài tạm meta từ /detail
+        if (!state.currentCourseMeta) {
+          state.currentCourseMeta = tree;
+        } else {
+          const prev = state.currentCourseMeta;
+
+          // Merge, nhưng nếu /detail trả description/subtitle = null
+          // thì giữ lại giá trị cũ
+          const merged = { ...prev, ...tree };
+
+          if (
+            (tree.description == null || tree.description === "") &&
+            prev.description
+          ) {
+            merged.description = prev.description;
+          }
+          if (
+            (tree.subtitle == null || tree.subtitle === "") &&
+            prev.subtitle
+          ) {
+            merged.subtitle = prev.subtitle;
+          }
+
+          state.currentCourseMeta = merged;
+        }
       })
+
       .addCase(fetchCourseTree.rejected, (state, action) => {
         state.loadingTree = false;
         state.loadingMeta = false;

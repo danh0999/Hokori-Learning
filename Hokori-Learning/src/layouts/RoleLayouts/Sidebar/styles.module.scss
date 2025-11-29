@@ -159,3 +159,21 @@
 .level2 .menuItemContent {
   padding-left: 30px;
 }
+/* Logout item */
+.menuItem.logout {
+  margin-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 12px;
+}
+
+.menuItem.logout .label {
+  color: #fca5a5 !important; /* red-300 */
+}
+
+.menuItem.logout .iconWrapper {
+  color: #f87171 !important; /* red-400 */
+}
+
+.menuItem.logout:hover {
+  background: rgba(239, 68, 68, 0.18); /* red-500/20 */
+}

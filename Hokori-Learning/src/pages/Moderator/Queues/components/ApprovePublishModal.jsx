@@ -2,37 +2,30 @@
 import React from "react";
 import { Modal, Descriptions } from "antd";
 
-// dùng lại logic format giá
+// format giá từ priceCents (VND)
 function formatPriceFromSummary(courseSummary) {
   if (!courseSummary) return "—";
 
-  // nếu FE đã truyền sẵn price (string) thì ưu tiên
+  // Nếu FE đã truyền sẵn price (string) thì ưu tiên
   if (courseSummary.price != null && courseSummary.price !== "") {
     return courseSummary.price;
   }
 
-  const { discountedPriceCents, priceCents, currency } = courseSummary;
+  const { priceCents } = courseSummary;
 
-  let cents = null;
-  if (typeof discountedPriceCents === "number" && discountedPriceCents > 0) {
-    cents = discountedPriceCents;
-  } else if (typeof priceCents === "number") {
-    cents = priceCents;
-  }
+  if (typeof priceCents !== "number") return "—";
 
-  if (typeof cents !== "number") return "—";
-
-  const amount = cents / 100;
+  const amount = priceCents;
 
   try {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
-      currency: currency || "VND",
+      currency: "VND",
       maximumFractionDigits: 0,
     }).format(amount);
   } catch (e) {
     console.log(e);
-    return `${amount.toLocaleString("vi-VN")} ${currency || ""}`.trim();
+    return `${amount.toLocaleString("vi-VN")} ₫`;
   }
 }
 
@@ -83,7 +76,7 @@ export default function ApprovePublishModal({
         <Descriptions.Item label="Course Title">
           {courseSummary.title}
         </Descriptions.Item>
-        <Descriptions.Item label="Price">{priceLabel}</Descriptions.Item>
+        <Descriptions.Item label="Price (VND)">{priceLabel}</Descriptions.Item>
         <Descriptions.Item label="Visibility">
           {visibilityLabel}
         </Descriptions.Item>

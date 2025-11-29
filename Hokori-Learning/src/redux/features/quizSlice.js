@@ -16,11 +16,7 @@ const unwrap = (res) => res.data?.data ?? res.data;
  * FE: "single" | "multiple"
  * BE: "SINGLE_CHOICE" | "MULTIPLE_CHOICE"
  */
-const mapQuestionType = (type) => {
-  if (type === "multiple") return "MULTIPLE_CHOICE";
-  return "SINGLE_CHOICE";
-};
-
+const mapQuestionType = () => "SINGLE_CHOICE";
 /**
  * Chuẩn hoá list câu hỏi trước khi gửi lên BE:
  * - Chỉ giữ single / multiple
@@ -29,14 +25,10 @@ const mapQuestionType = (type) => {
  */
 const normalizeQuestions = (questions = []) =>
   questions
-    .filter(
-      (q) =>
-        (q.type === "single" || q.type === "multiple") &&
-        q?.text &&
-        (q.options || []).length >= 2
-    )
+    .filter((q) => q?.text && (q.options || []).length >= 2)
     .map((q, idx) => ({
       ...q,
+      type: "single", // ép về single
       _orderIndex: idx,
     }));
 
@@ -60,12 +52,17 @@ export const fetchLessonQuizThunk = createAsyncThunk(
       const status = err?.response?.status;
       const msg = err?.response?.data?.message;
 
-      // BE đang trả 400 + "Quiz not found for this lesson" khi chưa có quiz
+      // Lesson chưa có quiz:
+      // - chuẩn: 404
+      // - đôi khi: 400 "Quiz not found for this lesson"
+      // - bug hiện tại: message "Index 0 out of bounds for length 0"
       if (
         status === 404 ||
         (status === 400 &&
           typeof msg === "string" &&
-          msg.includes("Quiz not found"))
+          msg.includes("Quiz not found")) ||
+        (typeof msg === "string" &&
+          msg.includes("Index 0 out of bounds for length 0"))
       ) {
         return null; // lesson chưa có quiz
       }
@@ -103,16 +100,7 @@ export const fetchQuizQuestionsThunk = createAsyncThunk(
  *   description,
  *   timeLimit,      // phút
  *   passingScore,   // %
- *   questions: [
- *     {
- *       id?,
- *       text,
- *       explanation,
- *       type: "single" | "multiple",
- *       points,
- *       options: [{ text, isCorrect }]
- *     }
- *   ]
+ *   questions: [...]
  * }
  */
 export const saveLessonQuizThunk = createAsyncThunk(
@@ -135,8 +123,11 @@ export const saveLessonQuizThunk = createAsyncThunk(
           status === 404 ||
           (status === 400 &&
             typeof msg === "string" &&
-            msg.includes("Quiz not found"))
+            msg.includes("Quiz not found")) ||
+          (typeof msg === "string" &&
+            msg.includes("Index 0 out of bounds for length 0"))
         ) {
+          // lesson chưa có quiz → tạo mới
           existingQuiz = null;
         } else {
           throw err;
@@ -166,7 +157,7 @@ export const saveLessonQuizThunk = createAsyncThunk(
           quizPayload
         );
         const quizObj = unwrap(res); // { id, lessonId, ... }
-        quizId = quizObj.id; // 👈 FIX quizId
+        quizId = quizObj.id;
       } else {
         quizId = existingQuiz.id;
         await api.put(
@@ -207,9 +198,7 @@ export const saveLessonQuizThunk = createAsyncThunk(
         const questionObj = unwrap(qRes);
         const questionId = questionObj.id;
 
-        // 5.2 Chuẩn hoá options để đảm bảo
-        //     - single: EXACTLY 1 isCorrect
-        //     - multiple: ít nhất 1 isCorrect
+        // 5.2 Chuẩn hoá options
         const rawOptions = q.options || [];
         let correctIdxs = [];
 
@@ -219,27 +208,21 @@ export const saveLessonQuizThunk = createAsyncThunk(
 
         if (q.type === "single") {
           if (correctIdxs.length === 0) {
-            correctIdxs = [0]; // auto chọn option đầu nếu user quên tick
+            correctIdxs = [0];
           } else if (correctIdxs.length > 1) {
-            correctIdxs = [correctIdxs[0]]; // chỉ giữ 1 cái đầu tiên
+            correctIdxs = [correctIdxs[0]];
           }
         } else {
-          // multiple choice
           if (correctIdxs.length === 0 && rawOptions.length > 0) {
-            correctIdxs = [0]; // ít nhất 1 cái đúng cho BE
+            correctIdxs = [0];
           }
         }
 
         const correctSet = new Set(correctIdxs);
 
-        const normalizedOptions = rawOptions.map((opt, idx) => ({
-          ...opt,
-          isCorrect: correctSet.has(idx),
-        }));
-
-        const optionsPayload = normalizedOptions.map((opt, idx) => ({
+        const optionsPayload = rawOptions.map((opt, idx) => ({
           content: opt.text || "",
-          isCorrect: !!opt.isCorrect,
+          isCorrect: correctSet.has(idx),
           orderIndex: idx,
         }));
 
@@ -293,11 +276,12 @@ const quizSlice = createSlice({
       })
       .addCase(fetchLessonQuizThunk.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentQuiz = action.payload;
+        state.currentQuiz = action.payload; // có thể là null
       })
       .addCase(fetchLessonQuizThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+        state.currentQuiz = null;
       });
 
     // saveLessonQuiz

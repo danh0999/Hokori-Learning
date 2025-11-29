@@ -1,19 +1,22 @@
 import React from "react";
 import styles from "./CartItem.module.scss";
-import { FaTrashAlt, FaHeart } from "react-icons/fa";
+import { FaTrashAlt } from "react-icons/fa";
 
 const CartItem = ({ course, cartItemId, onRemove }) => {
-  if (!course) return null; // bảo vệ tránh lỗi nếu course undefined
+  if (!course) return null;
 
   return (
     <div className={styles.item}>
-      {/* Ảnh hoặc thumbnail khóa học */}
+      {/* Thumbnail */}
       <div className={styles.thumbnail}>Course Thumbnail</div>
 
+      {/* Info */}
       <div className={styles.info}>
-        {/* ===== PHẦN TRÊN: Tên + nút xóa ===== */}
-        <div className={styles.top}>
-          <h3>{course.title}</h3>
+        
+        {/* ===== Header: Title + Delete ===== */}
+        <div className={styles.headerRow}>
+          <h3 className={styles.title}>{course.title}</h3>
+
           <button
             className={styles.delete}
             onClick={() => onRemove(cartItemId)}
@@ -23,9 +26,8 @@ const CartItem = ({ course, cartItemId, onRemove }) => {
           </button>
         </div>
 
-        {/* ===== GIẢNG VIÊN (đã fix lỗi render object) ===== */}
+        {/* Teacher */}
         <div className={styles.teacher}>
-          {/* Nếu có avatar thì hiển thị */}
           {course.teacher?.avatar && (
             <img
               src={course.teacher.avatar}
@@ -33,7 +35,6 @@ const CartItem = ({ course, cartItemId, onRemove }) => {
               className={styles.teacherAvatar}
             />
           )}
-
           <div className={styles.teacherInfo}>
             <p className={styles.teacherName}>
               Bởi {course.teacher?.name || "Giảng viên"}
@@ -44,14 +45,14 @@ const CartItem = ({ course, cartItemId, onRemove }) => {
           </div>
         </div>
 
-        {/* ===== THÔNG TIN KHÓA HỌC ===== */}
+        {/* Meta */}
         <div className={styles.meta}>
           {course.level && <span>{course.level}</span>}
           {course.lessons && <span>{course.lessons} bài học</span>}
           {course.duration && <span>{course.duration}</span>}
         </div>
 
-        {/* ===== GIÁ + NÚT HÀNH ĐỘNG ===== */}
+        {/* Price area */}
         <div className={styles.bottom}>
           <div className={styles.price}>
             <span className={styles.current}>
@@ -69,13 +70,6 @@ const CartItem = ({ course, cartItemId, onRemove }) => {
               </>
             )}
           </div>
-
-          {/* <div className={styles.actions}>
-            <button onClick={() => onSave(course.id)}>Lưu để sau</button>
-            <button onClick={() => onFavorite(course.id)}>
-              <FaHeart /> Yêu thích
-            </button>
-          </div> */}
         </div>
       </div>
     </div>

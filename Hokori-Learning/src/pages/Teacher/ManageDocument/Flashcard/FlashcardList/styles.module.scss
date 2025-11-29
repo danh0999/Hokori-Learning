@@ -1,0 +1,72 @@
+/* FlashcardList - Beautiful clean style */
+
+.wrapper {
+  background: #ffffff;
+  border: 1px solid #f0f0f0;
+  border-radius: 14px;
+  padding: 20px 22px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.title {
+  font-size: 16px !important;
+  margin-bottom: 4px !important;
+}
+
+.desc {
+  color: #999;
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.cardList {
+  margin-top: 10px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.cardList::-webkit-scrollbar {
+  width: 6px;
+}
+.cardList::-webkit-scrollbar-thumb {
+  border-radius: 12px;
+  background: #d0d0d0;
+}
+
+.card {
+  border-radius: 12px !important;
+  border: 1px solid #eaeaea !important;
+  padding: 14px;
+  transition: 0.2s ease-in-out;
+}
+
+.card:hover {
+  border-color: #c8c8c8 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.cardContent {
+  font-size: 14px;
+  margin-top: 2px;
+}
+
+.cardExample {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed #e5e5e5;
+  color: #777;
+  font-size: 13px;
+}

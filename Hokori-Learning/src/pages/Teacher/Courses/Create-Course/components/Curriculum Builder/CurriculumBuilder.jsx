@@ -21,8 +21,15 @@ import styles from "./styles.module.scss";
  * Props:
  *  - courseId
  *  - loadingTree
+ *  - onNext?: () => void
+ *  - onBack?: () => void
  */
-export default function CurriculumBuilder({ courseId, loadingTree }) {
+export default function CurriculumBuilder({
+  courseId,
+  loadingTree,
+  onNext,
+  onBack,
+}) {
   const dispatch = useDispatch();
   const { currentCourseTree } = useSelector((state) => state.teacherCourse);
 
@@ -80,7 +87,6 @@ export default function CurriculumBuilder({ courseId, loadingTree }) {
     await dispatch(fetchCourseTree(courseId));
   };
 
-  // chỉ cập nhật draft trên FE, KHÔNG gọi API
   const handleChangeLessonTitle = (lessonId, value) => {
     setLessonTitleDrafts((prev) => ({
       ...prev,
@@ -88,10 +94,8 @@ export default function CurriculumBuilder({ courseId, loadingTree }) {
     }));
   };
 
-  // khi rời ô input mới gọi API update
   const handleBlurLessonTitle = async (lessonId, originalTitle) => {
     const draft = lessonTitleDrafts[lessonId];
-
     const trimmed = (draft ?? "").trim();
     if (!trimmed || trimmed === originalTitle) return;
 
@@ -113,7 +117,6 @@ export default function CurriculumBuilder({ courseId, loadingTree }) {
     }
   };
 
-  // Khi drawer lưu xong
   const handleLessonSaved = async () => {
     if (courseId) {
       await dispatch(fetchCourseTree(courseId));
@@ -137,12 +140,14 @@ export default function CurriculumBuilder({ courseId, loadingTree }) {
     );
   }
 
+  const canGoNext = chapters.length > 0; // có ít nhất 1 chapter mới cho Next
+
   return (
     <div className={styles.curriculumWrap}>
       {/* input tạo chapter mới */}
       <div className={styles.newChapterRow}>
         <Input
-          placeholder="New chapter title"
+          placeholder="Thêm tiêu đề chương mới"
           value={newChapterTitle}
           onChange={(e) => setNewChapterTitle(e.target.value)}
           onPressEnter={handleAddChapter}
@@ -153,7 +158,7 @@ export default function CurriculumBuilder({ courseId, loadingTree }) {
           icon={<PlusOutlined />}
           onClick={handleAddChapter}
         >
-          Add chapter
+          Thêm chương mới
         </Button>
       </div>
 
@@ -185,7 +190,7 @@ export default function CurriculumBuilder({ courseId, loadingTree }) {
           >
             <div className={styles.lessonList}>
               {(ch.lessons || []).length === 0 ? (
-                <div className={styles.lessonEmpty}>No lessons yet</div>
+                <div className={styles.lessonEmpty}>Chưa có bài học nào</div>
               ) : (
                 (ch.lessons || []).map((les) => (
                   <div key={les.id} className={styles.lessonItem}>
@@ -231,12 +236,24 @@ export default function CurriculumBuilder({ courseId, loadingTree }) {
                 className={styles.addLessonBtn}
                 onClick={() => handleAddLesson(ch.id)}
               >
-                Add lesson
+                Thêm bài học mới
               </Button>
             </div>
           </Card>
         ))
       )}
+
+      {/* Footer: Back / Next */}
+      <div className={styles.footerRow}>
+        {typeof onBack === "function" && (
+          <Button onClick={onBack}>Quay lại</Button>
+        )}
+        {typeof onNext === "function" && (
+          <Button type="primary" onClick={onNext} disabled={!canGoNext}>
+            Tiếp theo: Giá khoá học
+          </Button>
+        )}
+      </div>
 
       {/* Drawer edit lesson */}
       {openLesson && (

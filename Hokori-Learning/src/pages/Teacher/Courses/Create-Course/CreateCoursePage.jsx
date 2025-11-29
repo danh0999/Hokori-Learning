@@ -1,4 +1,3 @@
-// src/pages/Teacher/Courses/Create-Course/CreateCoursePage.jsx
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Button, message } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
@@ -26,8 +25,6 @@ export default function CreateCoursePage() {
   const { courseId: courseIdParam } = useParams(); // /teacher/create-course/:courseId
   const courseId = courseIdParam ? Number(courseIdParam) : null;
 
-  const [step, setStep] = useState(0);
-
   const { currentCourseMeta, currentCourseTree, loadingTree } = useSelector(
     (state) => state.teacherCourse
   );
@@ -35,17 +32,103 @@ export default function CreateCoursePage() {
   // flag chống double-create trong StrictMode
   const createdRef = useRef(false);
 
-  // 1. Khi đổi courseId trên URL ⇒ clear tree cũ + load meta + detail mới
-  useEffect(() => {
-    // luôn clear tree để tránh recycle curriculum của course trước
-    dispatch(clearCourseTree());
+  // ----- 1. STEP STATE + PERSIST -----
+  const [step, setStep] = useState(0);
+  const [stepLoaded, setStepLoaded] = useState(false);
 
+  // Khi có courseId => đọc step từ localStorage
+  useEffect(() => {
+    if (!courseId) return;
+    try {
+      const raw = window.localStorage.getItem(`course-wizard-step-${courseId}`);
+      const savedStep = raw != null ? Number(raw) : 0;
+      if (!Number.isNaN(savedStep) && savedStep >= 0 && savedStep <= 3) {
+        setStep(savedStep);
+      } else {
+        setStep(0);
+      }
+    } catch (e) {
+      console.warn("Cannot read course step from localStorage", e);
+      setStep(0);
+    } finally {
+      // 🔑 cho phép effect ghi chạy sau khi đã load
+      setStepLoaded(true);
+    }
+  }, [courseId]);
+
+  // Mỗi khi step đổi => lưu lại (chỉ sau khi đã load xong bước ban đầu)
+  useEffect(() => {
+    if (!courseId) return;
+    if (!stepLoaded) return; // ❗ tránh ghi đè giá trị cũ trong lần mount đầu
+
+    try {
+      window.localStorage.setItem(
+        `course-wizard-step-${courseId}`,
+        String(step)
+      );
+    } catch (e) {
+      console.warn("Cannot save course step to localStorage", e);
+    }
+  }, [step, courseId, stepLoaded]);
+
+  // Nếu course đã publish / archived thì xoá step cache
+  useEffect(() => {
+    if (!courseId || !currentCourseMeta?.status) return;
+    const doneStatuses = ["PUBLISHED", "ARCHIVED"];
+    if (doneStatuses.includes(currentCourseMeta.status)) {
+      try {
+        window.localStorage.removeItem(`course-wizard-step-${courseId}`);
+      } catch (e) {
+        console.warn("Cannot remove course step from localStorage", e);
+      }
+    }
+  }, [courseId, currentCourseMeta]);
+  //dock
+  useEffect(() => {
     if (!courseId) return;
 
+    const status = currentCourseMeta?.status || "DRAFT";
+    // 👉 Coi PENDING_APPROVAL cũng là "xong rồi", không còn là draft
+    const nonDraftStatuses = ["PUBLISHED", "ARCHIVED", "PENDING_APPROVAL"];
+    const isDone = nonDraftStatuses.includes(status);
+
+    try {
+      const raw = window.localStorage.getItem("teacher-draft-courses");
+      let list = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(list)) list = [];
+
+      if (isDone) {
+        // ❌ Gửi duyệt / publish / archive => xoá khỏi danh sách draft
+        list = list.filter((c) => c.id !== courseId);
+      } else {
+        // ✅ Chỉ DRAFT mới được coi là đang tạo dở
+        const entry = {
+          id: courseId,
+          title: currentCourseMeta?.title || "Untitled course",
+          level: currentCourseMeta?.level || "N5",
+        };
+        const idx = list.findIndex((c) => c.id === courseId);
+        if (idx >= 0) list[idx] = entry;
+        else list.push(entry);
+      }
+
+      window.localStorage.setItem(
+        "teacher-draft-courses",
+        JSON.stringify(list)
+      );
+    } catch (e) {
+      console.warn("Cannot sync draft courses to localStorage", e);
+    }
+  }, [courseId, currentCourseMeta]);
+
+  // 2. Khi đổi courseId trên URL ⇒ clear tree cũ + load meta + detail mới
+  useEffect(() => {
+    dispatch(clearCourseTree());
+    if (!courseId) return;
     dispatch(fetchCourseTree(courseId));
   }, [courseId, dispatch]);
 
-  // 2. Nếu KHÔNG có courseId trên URL ⇒ tạo nháp 1 lần rồi điều hướng sang /:id
+  // 3. Nếu KHÔNG có courseId trên URL ⇒ tạo nháp 1 lần rồi điều hướng sang /:id
   useEffect(() => {
     if (courseId) return; // đã có id trên URL thì thôi
     if (createdRef.current) return; // đã gửi request rồi thì thôi (chống StrictMode)
@@ -105,15 +188,32 @@ export default function CreateCoursePage() {
 
     switch (step) {
       case 0:
-        return <CourseOverview courseId={courseId} />;
+        return <CourseOverview courseId={courseId} onNext={() => setStep(1)} />;
       case 1:
         return (
-          <CurriculumBuilder courseId={courseId} loadingTree={loadingTree} />
+          <CurriculumBuilder
+            courseId={courseId}
+            loadingTree={loadingTree}
+            onBack={() => setStep(0)}
+            onNext={() => setStep(2)}
+          />
         );
       case 2:
-        return <PricingStep courseId={courseId} />;
+        return (
+          <PricingStep
+            courseId={courseId}
+            onBack={() => setStep(1)}
+            onNext={() => setStep(3)}
+          />
+        );
       case 3:
-        return <PublishStep courseId={courseId} statusFlags={status} />;
+        return (
+          <PublishStep
+            courseId={courseId}
+            statusFlags={status}
+            onBack={() => setStep(2)}
+          />
+        );
       default:
         return null;
     }
@@ -128,11 +228,11 @@ export default function CreateCoursePage() {
             icon={<ArrowLeftOutlined />}
             onClick={() => navigate("/teacher/manage-courses")}
           >
-            Back to Courses
+            Quay lại danh sách khoá học
           </Button>
 
           <div className={styles.statusText}>
-            {currentCourseMeta?.status || "DRAFT"} · Not submitted
+            {currentCourseMeta?.status || "DRAFT"} · Chưa gửi xét duyệt
           </div>
         </div>
       </div>

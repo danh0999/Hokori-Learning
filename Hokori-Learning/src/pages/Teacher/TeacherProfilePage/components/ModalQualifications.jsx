@@ -9,6 +9,7 @@ import {
   message,
   List,
   Popconfirm,
+  Alert,
 } from "antd";
 import dayjs from "dayjs";
 import { useDispatch, useSelector } from "react-redux";
@@ -21,7 +22,7 @@ import {
   selectDeletingCertificate,
 } from "../../../../redux/features/teacherprofileSlice.js";
 
-export default function ModalCertificates({ open, onClose }) {
+export default function ModalCertificates({ open, onClose, locked = false }) {
   const [form] = Form.useForm();
   const dispatch = useDispatch();
   const certificates = useSelector(selectTeacherCertificates);
@@ -54,6 +55,13 @@ export default function ModalCertificates({ open, onClose }) {
   };
 
   const onSubmit = async () => {
+    if (locked) {
+      message.warning(
+        "Hồ sơ đang ở trạng thái PENDING, bạn không thể chỉnh sửa chứng chỉ."
+      );
+      return;
+    }
+
     try {
       const values = await form.validateFields();
       const payload = normalizePayload(values);
@@ -74,6 +82,13 @@ export default function ModalCertificates({ open, onClose }) {
   };
 
   const onDelete = async (id) => {
+    if (locked) {
+      message.warning(
+        "Hồ sơ đang ở trạng thái PENDING, bạn không thể xoá chứng chỉ."
+      );
+      return;
+    }
+
     const res = await dispatch(deleteTeacherCertificate(id));
     if (res.meta.requestStatus === "fulfilled") {
       message.success("Đã xoá chứng chỉ");
@@ -83,6 +98,13 @@ export default function ModalCertificates({ open, onClose }) {
   };
 
   const onEdit = (item) => {
+    if (locked) {
+      message.warning(
+        "Hồ sơ đang ở trạng thái PENDING, bạn không thể sửa chứng chỉ."
+      );
+      return;
+    }
+
     setEditingId(item.id);
     form.setFieldsValue({
       title: item.title,
@@ -107,25 +129,46 @@ export default function ModalCertificates({ open, onClose }) {
       footer={null}
       destroyOnClose
     >
+      {locked && (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="Hồ sơ đang chờ duyệt (PENDING)"
+          description="Trong thời gian chờ admin duyệt, bạn không thể thêm/sửa/xoá chứng chỉ. Bạn chỉ có thể xem danh sách chứng chỉ hiện tại."
+        />
+      )}
+
       <Form form={form} layout="vertical" onFinish={onSubmit}>
         <Form.Item
           name="title"
           label="Tên chứng chỉ"
           rules={[{ required: true, message: "Vui lòng nhập tên chứng chỉ" }]}
         >
-          <Input placeholder="VD: TESOL / JLPT N1 / TOEFL 100" />
+          <Input
+            placeholder="VD: TESOL / JLPT N1 / TOEFL 100"
+            disabled={locked}
+          />
         </Form.Item>
         <Form.Item name="credentialId" label="Mã chứng chỉ / Credential ID">
-          <Input placeholder="VD: TESOL-2021-XYZ" />
+          <Input placeholder="VD: TESOL-2021-XYZ" disabled={locked} />
         </Form.Item>
         <Form.Item name="issueDate" label="Ngày cấp">
-          <DatePicker style={{ width: "100%" }} format="YYYY-MM-DD" />
+          <DatePicker
+            style={{ width: "100%" }}
+            format="YYYY-MM-DD"
+            disabled={locked}
+          />
         </Form.Item>
         <Form.Item name="expiryDate" label="Ngày hết hạn">
-          <DatePicker style={{ width: "100%" }} format="YYYY-MM-DD" />
+          <DatePicker
+            style={{ width: "100%" }}
+            format="YYYY-MM-DD"
+            disabled={locked}
+          />
         </Form.Item>
         <Form.Item name="note" label="Ghi chú">
-          <Input.TextArea rows={3} />
+          <Input.TextArea rows={3} disabled={locked} />
         </Form.Item>
         <Space>
           <Button
@@ -133,10 +176,16 @@ export default function ModalCertificates({ open, onClose }) {
               setEditingId(null);
               form.resetFields();
             }}
+            disabled={locked}
           >
             Reset
           </Button>
-          <Button type="primary" htmlType="submit" loading={saving}>
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={saving}
+            disabled={locked}
+          >
             {editingId ? "Cập nhật" : "Lưu"}
           </Button>
         </Space>
@@ -149,22 +198,30 @@ export default function ModalCertificates({ open, onClose }) {
           locale={{ emptyText: "Chưa có chứng chỉ nào" }}
           renderItem={(item) => (
             <List.Item
-              actions={[
-                <Button type="link" onClick={() => onEdit(item)} key="edit">
-                  Sửa
-                </Button>,
-                <Popconfirm
-                  title="Xoá chứng chỉ này?"
-                  onConfirm={() => onDelete(item.id)}
-                  okText="Xoá"
-                  cancelText="Huỷ"
-                  key="delete"
-                >
-                  <Button type="link" danger loading={deleting}>
-                    Xoá
-                  </Button>
-                </Popconfirm>,
-              ]}
+              actions={
+                locked
+                  ? [] // không cho sửa/xoá khi PENDING
+                  : [
+                      <Button
+                        type="link"
+                        onClick={() => onEdit(item)}
+                        key="edit"
+                      >
+                        Sửa
+                      </Button>,
+                      <Popconfirm
+                        title="Xoá chứng chỉ này?"
+                        onConfirm={() => onDelete(item.id)}
+                        okText="Xoá"
+                        cancelText="Huỷ"
+                        key="delete"
+                      >
+                        <Button type="link" danger loading={deleting}>
+                          Xoá
+                        </Button>
+                      </Popconfirm>,
+                    ]
+              }
             >
               <List.Item.Meta
                 title={item.title}

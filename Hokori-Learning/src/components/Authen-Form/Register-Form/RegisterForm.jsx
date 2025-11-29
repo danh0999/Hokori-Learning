@@ -1,5 +1,5 @@
 // src/pages/Authen-Form/Register-Form/RegisterForm.jsx
-import { Button, Form, Input, Select, Tabs, Divider } from "antd";
+import { Button, Form, Input, Select, Tabs, Divider, Modal } from "antd";
 import { GoogleOutlined } from "@ant-design/icons";
 import Title from "antd/es/typography/Title";
 import { useNavigate } from "react-router-dom";
@@ -23,6 +23,11 @@ const RegisterForm = () => {
   const [loading, setLoading] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
 
+  // Modal chọn role khi đăng ký bằng Google
+  const [roleModalOpen, setRoleModalOpen] = useState(false);
+  const [firebaseToken, setFirebaseToken] = useState(null);
+  const [registeringRole, setRegisteringRole] = useState(false);
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -40,19 +45,50 @@ const RegisterForm = () => {
     try {
       setLoadingGoogle(true);
 
+      // Đăng nhập Firebase bằng Google (popup)
       await loginWithGoogle();
       const fbUser = getAuth().currentUser;
       if (!fbUser) throw new Error("Không lấy được tài khoản Google");
 
-      const firebaseToken = await fbUser.getIdToken(true);
+      // Lấy Firebase ID token
+      const token = await fbUser.getIdToken(true);
+      setFirebaseToken(token);
+
+      // Mở modal hỏi user muốn đăng ký là Học viên hay Giáo viên
+      setRoleModalOpen(true);
+    } catch (err) {
+      const msg =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.message;
+      toast.error(msg || "Đăng ký Google thất bại!");
+    } finally {
+      setLoadingGoogle(false);
+    }
+  };
+
+  // Gọi BE với role user đã chọn ở modal
+  const handleGoogleRegisterWithRole = async (selectedRole) => {
+    if (!firebaseToken) {
+      toast.error("Không tìm thấy token Google, vui lòng thử lại.");
+      return;
+    }
+
+    try {
+      setRegisteringRole(true);
 
       const res = await api.post(
         "/auth/firebase/register",
-        { firebaseToken },
+        {
+          firebaseToken,
+          // BE cần đọc field này để set role tương ứng
+          // ví dụ: "TEACHER" hoặc "LEARNER"
+          registerAs: selectedRole === "teacher" ? "TEACHER" : "LEARNER",
+        },
         { headers: { Authorization: undefined } }
       );
 
-      const { user, roles, accessToken, refreshToken } = res.data.data;
+      const { user, roles, accessToken, refreshToken } = res.data.data || {};
 
       dispatch(
         saveUser({
@@ -66,23 +102,37 @@ const RegisterForm = () => {
 
       localStorage.setItem("token", accessToken);
 
-      toast.success(`Đăng ký thành công bằng Google. Xin chào ${user?.displayName || user?.email}!`);
+      toast.success(
+        `Đăng ký thành công bằng Google. Xin chào ${
+          user?.displayName || user?.email
+        }!`
+      );
 
-      navigate(roles?.includes("TEACHER") ? "/teacher" : "/");
+      setRoleModalOpen(false);
+      setFirebaseToken(null);
+
+      // Điều hướng theo role BE trả về
+      if (roles?.includes("TEACHER")) {
+        navigate("/teacher");
+      } else {
+        navigate("/");
+      }
     } catch (err) {
       const status = err?.response?.status;
       const msg =
         err?.response?.data?.error ||
         err?.response?.data?.message ||
         err?.message;
+
       if (status === 409) {
         toast.info("Email đã tồn tại. Vui lòng đăng nhập bằng Google.");
         navigate("/login");
         return;
       }
+
       toast.error(msg || "Đăng ký Google thất bại!");
     } finally {
-      setLoadingGoogle(false);
+      setRegisteringRole(false);
     }
   };
 
@@ -237,7 +287,9 @@ const RegisterForm = () => {
             <Form.Item
               name="displayName"
               label="Tên hiển thị"
-              rules={[{ required: true, message: "Vui lòng nhập tên hiển thị" }]}
+              rules={[
+                { required: true, message: "Vui lòng nhập tên hiển thị" },
+              ]}
             >
               <Input />
             </Form.Item>
@@ -268,18 +320,18 @@ const RegisterForm = () => {
             {/* Bio — giới hạn 200 ký tự */}
             <Form.Item
               name="bio"
-              label="Giới thiệu (tối đa 200 ký tự)"
+              label="Giới thiệu (tối đa 500 ký tự)"
               rules={[
                 {
-                  max: 200,
-                  message: "Bio tối đa 200 ký tự!",
+                  max: 500,
+                  message: "Bio tối đa 500 ký tự!",
                 },
               ]}
             >
               <Input.TextArea
                 rows={3}
                 placeholder="Giới thiệu ngắn gọn về kinh nghiệm giảng dạy hoặc thành tựu…"
-                maxLength={200}
+                maxLength={500}
                 showCount
               />
             </Form.Item>
@@ -324,6 +376,35 @@ const RegisterForm = () => {
           </div>
         </Form.Item>
       </Form>
+
+      {/* Modal chọn role khi đăng ký Google */}
+      <Modal
+        open={roleModalOpen}
+        title="Chọn loại tài khoản"
+        onCancel={() => setRoleModalOpen(false)}
+        footer={null}
+        centered
+      >
+        <p>Đăng ký tài khoản bằng Google với vai trò:</p>
+
+        <Button
+          block
+          type="primary"
+          style={{ marginBottom: 8 }}
+          loading={registeringRole}
+          onClick={() => handleGoogleRegisterWithRole("learner")}
+        >
+          Học viên
+        </Button>
+
+        <Button
+          block
+          loading={registeringRole}
+          onClick={() => handleGoogleRegisterWithRole("teacher")}
+        >
+          Giáo viên
+        </Button>
+      </Modal>
     </div>
   );
 };

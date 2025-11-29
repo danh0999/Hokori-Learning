@@ -1,12 +1,13 @@
 // LessonEditorDrawer/tabs/QuizTab.jsx
 import React, { useEffect, useState, useCallback } from "react";
-import { Button, Space, Typography, message, Spin } from "antd";
+import { Button, Space, Typography, Spin } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 
 import {
   fetchLessonQuizThunk,
   saveLessonQuizThunk,
+  clearCurrentQuiz,
 } from "../../../../../../../../redux/features/quizSlice.js";
 
 import QuizList from "../../../../../../ManageDocument/Quiz/QuizList/QuizList.jsx";
@@ -14,10 +15,11 @@ import QuizBuilderModal from "../../../../../../ManageDocument/Quiz/QuizBuilderM
 import BulkImportModal from "../../../../../../ManageDocument/Quiz/BulkImportModal/BulkImportModal.jsx";
 
 import styles from "../styles.module.scss";
+import { toast } from "react-toastify";
 
 const { Text } = Typography;
 
-export default function QuizTab({ lesson }) {
+export default function QuizTab({ lesson, onDurationComputed }) {
   const dispatch = useDispatch();
   const { currentQuiz, loading, saving } = useSelector(
     (state) => state.quiz || {}
@@ -29,9 +31,23 @@ export default function QuizTab({ lesson }) {
 
   // load quiz khi mở/chọn lesson
   useEffect(() => {
+    dispatch(clearCurrentQuiz());
     if (!lesson?.id) return;
     dispatch(fetchLessonQuizThunk(lesson.id));
   }, [lesson?.id, dispatch]);
+
+  // Nếu BE đã có quiz với timeLimitSec -> báo duration cho parent
+  useEffect(() => {
+    if (!currentQuiz || typeof onDurationComputed !== "function") return;
+
+    const sec =
+      typeof currentQuiz.timeLimitSec === "number" &&
+      currentQuiz.timeLimitSec > 0
+        ? currentQuiz.timeLimitSec
+        : 30 * 60; // default 30 phút
+
+    onDurationComputed(sec);
+  }, [currentQuiz, onDurationComputed]);
 
   // map QuizDto từ BE -> Quiz builder format
   const mapQuizFromBE = useCallback((q) => {
@@ -40,12 +56,10 @@ export default function QuizTab({ lesson }) {
       id: q.id,
       title: q.title,
       description: q.description,
-      // BE: timeLimitSec (giây) -> FE: timeLimit (phút)
       timeLimit:
         typeof q.timeLimitSec === "number" && q.timeLimitSec > 0
           ? Math.round(q.timeLimitSec / 60)
           : 30,
-      // BE: passScorePercent -> FE: passingScore
       passingScore:
         typeof q.passScorePercent === "number" ? q.passScorePercent : 60,
       shuffleQuestions: !!q.shuffleQuestions,
@@ -54,17 +68,15 @@ export default function QuizTab({ lesson }) {
         typeof q.showExplanation === "boolean" ? q.showExplanation : true,
       isRequired: !!q.isRequired,
       tags: q.tags || [],
-      questions: [], // câu hỏi sẽ được QuizBuilderModal tự fetch nếu cần
+      questions: [],
     };
   }, []);
 
-  // Mở tạo quiz mới
   const handleCreate = () => {
     setDraftQuiz(null);
     setOpenBuilder(true);
   };
 
-  // Edit quiz hiện tại
   const handleEdit = () => {
     if (!currentQuiz) {
       setDraftQuiz(null);
@@ -74,7 +86,6 @@ export default function QuizTab({ lesson }) {
     setOpenBuilder(true);
   };
 
-  // Bulk import
   const handleBulkDone = (questions) => {
     setOpenBulk(false);
     if (!questions?.length) return;
@@ -95,10 +106,9 @@ export default function QuizTab({ lesson }) {
     setOpenBuilder(true);
   };
 
-  // Lưu quiz
   const handleSaveQuiz = async (builderQuiz) => {
     if (!lesson?.id) {
-      message.error("Thiếu lessonId.");
+      toast.error("Thiếu lessonId.");
       return;
     }
 
@@ -110,16 +120,24 @@ export default function QuizTab({ lesson }) {
     );
 
     if (saveLessonQuizThunk.fulfilled.match(action)) {
-      message.success("Đã lưu quiz.");
+      toast.success("Đã lưu quiz.");
       setOpenBuilder(false);
+
+      // duration = timeLimit (phút) * 60
+      if (typeof onDurationComputed === "function") {
+        const minutes =
+          typeof builderQuiz.timeLimit === "number" && builderQuiz.timeLimit > 0
+            ? builderQuiz.timeLimit
+            : 30;
+        onDurationComputed(minutes * 60);
+      }
     } else {
-      message.error(action.payload || "Lưu quiz thất bại.");
+      toast.error(action.payload || "Lưu quiz thất bại.");
     }
   };
 
   const handleRemove = async () => {
-    // TODO: nếu sau này BE hỗ trợ xoá quiz thì mình thêm thunk deleteQuizThunk ở đây
-    message.error("Chưa implement delete quiz 😅");
+    toast.error("Chưa implement delete quiz 😅");
   };
 
   return (
@@ -131,10 +149,17 @@ export default function QuizTab({ lesson }) {
 
       <div style={{ marginTop: 16, marginBottom: 12 }}>
         <Space>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleCreate}
+            disabled={!!currentQuiz} // <–– lesson đã có quiz → disable
+          >
             New quiz
           </Button>
-          <Button onClick={() => setOpenBulk(true)}>Bulk import</Button>
+          <Button onClick={() => setOpenBulk(true)} disabled={!!currentQuiz}>
+            Bulk import
+          </Button>
         </Space>
       </div>
 
@@ -146,14 +171,12 @@ export default function QuizTab({ lesson }) {
         />
       </Spin>
 
-      {/* Bulk import modal */}
       <BulkImportModal
         open={openBulk}
         onCancel={() => setOpenBulk(false)}
         onDone={handleBulkDone}
       />
 
-      {/* Builder modal */}
       <QuizBuilderModal
         open={openBuilder}
         lessonId={lesson?.id}

@@ -26,9 +26,14 @@ import {
   fetchTeacherCourses,
   deleteCourseThunk,
 } from "../../../redux/features/teacherCourseSlice";
+import {
+  fetchTeacherProfile,
+  selectTeacherApproved,
+  selectTeacherProfileStatus,
+} from "../../../redux/features/teacherprofileSlice.js";
 import styles from "./styles.module.scss";
 
-// const { confirm } = Modal;
+const { warning } = Modal;
 
 // helper: render Tag status
 const statusTag = (s) => {
@@ -65,19 +70,21 @@ export default function ManageCourses() {
   const dispatch = useDispatch();
 
   const { list, listLoading } = useSelector((state) => state.teacherCourse);
+  const isApproved = useSelector(selectTeacherApproved);
+  const profileStatus = useSelector(selectTeacherProfileStatus);
 
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("All");
   const [data, setData] = useState([]); // rows đang hiển thị (sau khi map từ list)
 
-  // gọi API lấy danh sách course 1 lần
+  // gọi API lấy danh sách course & profile 1 lần
   useEffect(() => {
     dispatch(fetchTeacherCourses());
+    dispatch(fetchTeacherProfile());
   }, [dispatch]);
 
   // chuẩn hoá dữ liệu từ Redux → rows cho Table
   const tableData = useMemo(() => {
-    // list có thể là [], hoặc {content:[...]} hoặc object khác → ép về array an toàn
     let raw = list;
     if (Array.isArray(raw)) {
       // ok
@@ -94,7 +101,7 @@ export default function ManageCourses() {
         id: c.id,
         title: c.title,
         code: c.slug || c.code || `COURSE-${c.id}`,
-        students: c.studentsCount ?? c.enrolledCount ?? 0,
+        students: c.enrollCount ?? c.enrollCount ?? 0,
         rating: c.rating ?? c.averageRating ?? "-",
         status: statusLabel,
         updatedAt: (c.updatedAt || c.publishedAt || c.createdAt || "").slice(
@@ -105,7 +112,6 @@ export default function ManageCourses() {
     });
   }, [list]);
 
-  // mỗi khi data từ Redux đổi → sync vào local state để filter / duplicate...
   useEffect(() => {
     setData(tableData);
   }, [tableData]);
@@ -140,27 +146,46 @@ export default function ManageCourses() {
   };
 
   const onDelete = async (id) => {
-    console.log("[ManageCourses] onDelete DIRECT CALL with id =", id);
-
     try {
       const result = await dispatch(deleteCourseThunk(id)).unwrap();
       console.log("[ManageCourses] deleteCourseThunk SUCCESS:", result);
 
-      // Xoá luôn ở UI cho chắc
       setData((prev) => prev.filter((c) => String(c.id) !== String(id)));
 
       message.success("Deleted course.");
-      // Nếu muốn sync lại từ BE:
-      // await dispatch(fetchTeacherCourses());
     } catch (err) {
-      console.error("[ManageCourses] deleteCourseThunk ERROR:", err);
       message.error(err || "Delete failed. Please try again.");
     }
   };
 
+  // ✅ Validate trước khi cho tạo khoá mới
+  const handleCreateCourse = () => {
+    // nếu profile còn đang load thì nhắc nhẹ
+    if (profileStatus === "loading" || profileStatus === "idle") {
+      message.loading({
+        content: "Đang kiểm tra trạng thái hồ sơ giáo viên...",
+        key: "check-approval",
+        duration: 0.8,
+      });
+    }
+
+    if (!isApproved) {
+      warning({
+        title: "Hồ sơ giáo viên chưa được duyệt",
+        icon: <ExclamationCircleFilled />,
+        content:
+          "Bạn cần cập nhật Teacher Profile và được admin duyệt (trạng thái APPROVED) trước khi tạo và đăng bán khóa học.",
+        okText: "Đã hiểu",
+      });
+      return;
+    }
+
+    navigate("/teacher/create-course");
+  };
+
   const columns = [
     {
-      title: "Course",
+      title: "Khóa học",
       dataIndex: "title",
       key: "title",
       render: (v, r) => (
@@ -171,45 +196,39 @@ export default function ManageCourses() {
       ),
     },
     {
-      title: "Students",
+      title: "Học viên",
       dataIndex: "students",
-      key: "students",
+      key: "enrollCount",
       width: 120,
     },
     {
-      title: "Rating",
-      dataIndex: "rating",
-      key: "rating",
-      width: 100,
-    },
-    {
-      title: "Status",
+      title: "Trạng thái",
       dataIndex: "status",
       key: "status",
       width: 130,
       render: statusTag,
     },
     {
-      title: "Updated",
+      title: "Cập nhật",
       dataIndex: "updatedAt",
       key: "updatedAt",
       width: 140,
     },
     {
-      title: "Actions",
+      title: "Hành động",
       key: "actions",
       width: 110,
       render: (_, row) => {
         const items = [
           {
             key: "manage",
-            label: "Manage",
+            label: "Quản lý",
           },
           ...(row.status === "Draft"
             ? [
                 {
                   key: "submit",
-                  label: "Submit for review",
+                  label: "Gửi duyệt",
                 },
               ]
             : []),
@@ -217,7 +236,7 @@ export default function ManageCourses() {
           {
             key: "del",
             danger: true,
-            label: "Delete",
+            label: "Xóa",
           },
         ];
 
@@ -255,18 +274,18 @@ export default function ManageCourses() {
     <div className={styles.wrapper}>
       <div className={styles.header}>
         <div>
-          <h1 className={styles.title}>Manage Courses</h1>
+          <h1 className={styles.title}>Quản lý khóa học</h1>
           <p className={styles.subtitle}>
-            Create, update, and manage your courses
+            Tạo, cập nhật và quản lý các khóa học của bạn
           </p>
         </div>
 
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => navigate("/teacher/create-course")}
+          onClick={handleCreateCourse}
         >
-          New Course
+          Tạo khoá học
         </Button>
       </div>
 

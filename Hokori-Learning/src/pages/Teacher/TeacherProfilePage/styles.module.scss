@@ -51,3 +51,39 @@
 }
 .status {
 }
+/* Layout mới cho phần giảng viên */
+.teacherSection {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.teacherRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.fieldCard {
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 10px;
+  border: 1px solid #eee;
+}
+
+.fieldCard label {
+  font-weight: 600;
+  color: #333;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.fieldCard div {
+  color: #555;
+  white-space: pre-line;
+}
+
+/* Bio full width */
+.fullWidth {
+  grid-column: 1 / -1;
+}

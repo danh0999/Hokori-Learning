@@ -1,21 +1,29 @@
-import React, { useEffect } from "react";
+// src/pages/QuizPage/components/QuizHeader.jsx
+import React from "react";
 import styles from "./QuizHeader.module.scss";
 
-const QuizHeader = ({ quiz, timeLeft, onSubmit }) => {
-  // ✅ Gắn class page-quiz vào body để đổi nền toàn trang
-  useEffect(() => {
-    document.body.classList.add("page-quiz");
-    return () => document.body.classList.remove("page-quiz");
-  }, []);
+const formatTime = (sec) => {
+  if (sec == null) return "--:--";
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+};
 
+const QuizHeader = ({ title, totalQuestions, answeredCount, timeLeft, onSubmit }) => {
   return (
     <header className={styles.header}>
-      <h1>{quiz?.title || "Tên bài Quiz"}</h1>
+      <div>
+        <h1 className={styles.title}>{title || "Bài Quiz"}</h1>
+        <p className={styles.meta}>
+          {answeredCount}/{totalQuestions} câu đã trả lời
+        </p>
+      </div>
 
       <div className={styles.right}>
-        <span className={styles.timer}>
-          Thời gian còn lại: <strong>{timeLeft}</strong>
-        </span>
+        <div className={styles.timer}>
+          <span>Thời gian còn lại:</span>
+          <strong>{formatTime(timeLeft)}</strong>
+        </div>
         <button className={styles.submitBtn} onClick={onSubmit}>
           Nộp bài
         </button>

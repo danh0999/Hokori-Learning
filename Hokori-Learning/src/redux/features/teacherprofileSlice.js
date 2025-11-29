@@ -71,7 +71,12 @@ export const updateUserProfile = createAsyncThunk(
   async (payload, { rejectWithValue }) => {
     try {
       const res = await api.put("profile/me", payload);
-      const rawUser = res?.data || {};
+
+      const raw = res?.data;
+      // nếu có raw.data (wrapper) thì lấy raw.data, còn không thì lấy raw luôn
+      const rawUser =
+        raw?.data && typeof raw.data === "object" ? raw.data : raw || {};
+
       return extractUserPart(rawUser);
     } catch (err) {
       return rejectWithValue(

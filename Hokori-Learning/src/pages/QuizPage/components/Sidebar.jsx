@@ -1,26 +1,41 @@
+// src/pages/QuizPage/components/Sidebar.jsx
 import React from "react";
 import styles from "./Sidebar.module.scss";
 
-const Sidebar = ({ total = 5, current = 0, answers = {}, onSelectQuestion }) => {
+const Sidebar = ({
+  total,
+  activeIndex,
+  answers,
+  questions,
+  onSelectQuestion,
+}) => {
+  if (!questions || questions.length === 0) return null;
+
   return (
     <div className={styles.sidebar}>
-      <h3>Danh sách câu hỏi</h3>
+      <h3 className={styles.title}>Câu hỏi</h3>
       <div className={styles.grid}>
-        {Array.from({ length: total }, (_, i) => {
-          const answered = answers[i + 1];
+        {questions.map((q, idx) => {
+          const isAnswered = answers && answers[q.questionId] != null;
+          const isActive = idx === activeIndex;
+
           return (
             <button
-              key={i}
-              className={`${styles.navBtn} 
-                ${i === current ? styles.current : ""} 
-                ${answered ? styles.answered : ""}`}
-              onClick={() => onSelectQuestion(i)}
+              key={q.questionId}
+              type="button"
+              className={`${styles.number} ${
+                isActive ? styles.active : ""
+              } ${isAnswered ? styles.answered : ""}`}
+              onClick={() => onSelectQuestion(idx)}
             >
-              {i + 1}
+              {idx + 1}
             </button>
           );
         })}
       </div>
+      <p className={styles.legend}>
+        <span className={styles.dotAnswered}></span> Đã trả lời
+      </p>
     </div>
   );
 };

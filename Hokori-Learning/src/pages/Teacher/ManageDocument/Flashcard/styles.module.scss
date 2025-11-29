@@ -1,26 +1,95 @@
-.card {
+/* Flashcard Builder Modal - clean Japanese design */
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.title {
+  font-size: 20px !important;
+}
+
+.addBox {
+  background: #fafafa;
+  border: 1px dashed #d9d9d9;
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-top: 4px;
+}
+
+.addLabel {
+  font-size: 15px;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.row {
+  display: flex;
+  gap: 16px;
+}
+
+.half {
+  flex: 1;
+}
+
+.addBtnRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.listHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.empty {
+  color: #aaa;
+  padding: 10px 0;
+  font-size: 14px;
+}
+
+.cardItem {
+  background: #ffffff;
   border-radius: 12px;
+  border: 1px solid #ececec;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  transition: 0.2s;
 }
-.tabPane {
-  padding: 8px 0;
+
+.cardItem:hover {
+  border-color: #cfcfcf;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
 }
-.manualForm {
-  width: 420px;
-  max-width: 100%;
+
+.cardFrontRow {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
 }
-.fcItem {
+
+.cardBack {
+  font-size: 14px;
+  margin-top: 2px;
+}
+
+.cardExample {
+  font-size: 13px;
+  color: #8a8a8a;
+  margin-top: 6px;
+}
+
+.cardActions {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 8px 0;
+  gap: 6px;
 }
-.term {
-  font-weight: 600;
-}
-.meaning {
-  color: #111827;
-}
-.example {
-  color: #6b7280;
-  font-style: italic;
+
+.footer {
+  margin-top: 20px;
+  text-align: right;
 }
