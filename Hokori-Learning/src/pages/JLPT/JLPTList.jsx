@@ -1,63 +1,86 @@
 // src/pages/JLPT/JLPTList.jsx
 import { useEffect, useState } from "react";
 import styles from "./JLPTList.module.scss";
+
 import FilterBar from "./components/FilterBar";
 import JLPTCard from "./components/JLPTCard";
 import Pagination from "./components/Pagination";
+
 import { useDispatch, useSelector } from "react-redux";
 import { fetchOpenEvents } from "../../redux/features/jlptLearnerSlice";
 
 const JLPTList = () => {
   const dispatch = useDispatch();
 
-  const {
-    events,
-    loadingEvents,
-    levelFilter,
-  } = useSelector((state) => state.jlptLearner);
+  const { events, loadingEvents, eventsError } = useSelector(
+    (state) => state.jlptLearner
+  );
 
-  // Search local FE
+  // FILTER UI
   const [searchTerm, setSearchTerm] = useState("");
+  const [levelFilter, setLevelFilter] = useState("");
 
-  // Lần đầu load → lấy danh sách EVENT OPEN
+  // Load list events OPEN
   useEffect(() => {
     dispatch(fetchOpenEvents());
   }, [dispatch]);
 
-  // Lọc theo searchTerm
+  const errorText =
+    typeof eventsError === "string"
+      ? eventsError
+      : eventsError?.message || JSON.stringify(eventsError || "");
+
   let filteredEvents = events || [];
+
+  if (levelFilter) {
+    filteredEvents = filteredEvents.filter(
+      (ev) => ev.level?.toLowerCase() === levelFilter.toLowerCase()
+    );
+  }
+
   if (searchTerm.trim()) {
+    const lower = searchTerm.toLowerCase();
     filteredEvents = filteredEvents.filter((ev) =>
-      ev.title?.toLowerCase().includes(searchTerm.toLowerCase())
+      ev.title?.toLowerCase().includes(lower)
     );
   }
 
   return (
     <main id="main-content" className={styles.wrapper}>
       <div className={styles.container}>
-
-        {/* Filter + Search */}
+        
+        {/* FILTER BAR */}
         <FilterBar
           levelFilter={levelFilter}
-          onChangeLevel={(level) => dispatch(fetchOpenEvents(level))}
+          onChangeLevel={setLevelFilter}
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
         />
 
-        {/* EVENTS LIST */}
+        {/* EVENT GRID */}
         <section className={styles.gridSection}>
           {loadingEvents && (
-            <p className={styles.loading}>Đang tải dữ liệu...</p>
+            <p className={styles.loading}>Đang tải danh sách đợt thi...</p>
+          )}
+
+          {eventsError && (
+            <p className={styles.error}>
+              Lỗi khi tải danh sách: {errorText}
+            </p>
           )}
 
           <div className={styles.grid}>
             {filteredEvents.map((event) => (
-              <JLPTCard key={event.id} event={event} />   
+              <JLPTCard key={event.id} event={event} />
             ))}
 
-            {!loadingEvents && filteredEvents.length === 0 && (
-              <p className={styles.emptyState}>Không có đợt thi nào phù hợp.</p>
-            )}
+            {!loadingEvents &&
+              !eventsError &&
+              filteredEvents.length === 0 && (
+                <p className={styles.emptyState}>
+                  Không có đợt thi phù hợp.
+                </p>
+              )}
           </div>
         </section>
 

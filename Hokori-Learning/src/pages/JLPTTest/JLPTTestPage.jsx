@@ -10,14 +10,15 @@ import SidebarQuestionList from "./components/SidebarQuestionList";
 import QuestionCard from "./components/QuestionCard";
 import JLPTModal from "./components/JLPTModal";
 
+// ====== Redux actions đúng với slice mới ======
 import {
-  fetchTestQuestions,
-  setLocalAnswer,
-  submitJlptAnswer,
+  fetchLearnerTests,
+  fetchGrammarVocab,
+  fetchReading,
+  fetchListening,
+  submitAnswer,
+  clearTestData,
 } from "../../redux/features/jlptLearnerSlice";
-
-// BE hiện chưa trả duration → tạm 120 phút
-const DEFAULT_DURATION_MIN = 120;
 
 const JLPTTestPage = () => {
   const { testId } = useParams();
@@ -27,121 +28,143 @@ const JLPTTestPage = () => {
   const navigate = useNavigate();
 
   const {
-    questions,
+    allTests,
+    grammarVocab,
+    reading,
+    listening,
     answers,
+    loadingAllTests,
     loadingQuestions,
-    submittingAnswer,
   } = useSelector((state) => state.jlptLearner);
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [remainingSeconds, setRemainingSeconds] = useState(
-    DEFAULT_DURATION_MIN * 60
-  );
-
+  const [remainingSeconds, setRemainingSeconds] = useState(0);
   const [submitModalOpen, setSubmitModalOpen] = useState(false);
 
-  /* ============================
-     LOAD QUESTIONS
-  ============================= */
+  /* ============================================================
+     CLEAR OLD DATA when leaving test or switching test
+  ============================================================ */
+  useEffect(() => {
+    return () => dispatch(clearTestData());
+  }, [dispatch]);
+
+  /* ============================================================
+     STEP 1: Ensure we have all test metadata
+  ============================================================ */
   useEffect(() => {
     if (!numericTestId) return;
 
-    dispatch(fetchTestQuestions(numericTestId));
-    setRemainingSeconds(DEFAULT_DURATION_MIN * 60);
+    // Nếu allTests rỗng → fetch
+    if (!allTests || allTests.length === 0) {
+      dispatch(fetchLearnerTests());
+    }
   }, [dispatch, numericTestId]);
 
-  /* ============================
-     RESTORE CURRENT QUESTION BASED ON ANSWERS
-     (Fix F5 quay lại câu 1)
-  ============================= */
+  // Lấy test metadata theo testId
+  const testMeta = useMemo(() => {
+    return allTests.find((t) => t.id === numericTestId);
+  }, [allTests, numericTestId]);
+
+  /* ============================================================
+     STEP 2: Set timer based on testMeta.durationMin
+  ============================================================ */
   useEffect(() => {
-    if (questions.length === 0) return;
+    if (testMeta && testMeta.durationMin) {
+      setRemainingSeconds(testMeta.durationMin * 60);
+    }
+  }, [testMeta]);
+
+  /* ============================================================
+     STEP 3: Load 3 groups of questions
+  ============================================================ */
+  useEffect(() => {
+    if (!numericTestId) return;
+
+    const loadQuestions = async () => {
+      await Promise.all([
+        dispatch(fetchGrammarVocab(numericTestId)),
+        dispatch(fetchReading(numericTestId)),
+        dispatch(fetchListening(numericTestId)),
+      ]);
+    };
+
+    loadQuestions();
+  }, [dispatch, numericTestId]);
+
+  /* ============================================================
+     MERGE 3 groups of questions
+  ============================================================ */
+  const mergedQuestions = useMemo(() => {
+    return [
+      ...(grammarVocab || []),
+      ...(reading || []),
+      ...(listening || []),
+    ];
+  }, [grammarVocab, reading, listening]);
+
+  const totalQuestions = mergedQuestions.length;
+
+  /* ============================================================
+     RESTORE current question index based on answered
+  ============================================================ */
+  useEffect(() => {
+    if (totalQuestions === 0) return;
 
     const answeredIds = Object.keys(answers).map(Number);
 
-    const firstUnansweredIndex = questions.findIndex(
+    const firstUnanswered = mergedQuestions.findIndex(
       (q) => !answeredIds.includes(q.id)
     );
 
-    setCurrentIndex(
-      firstUnansweredIndex === -1 ? 0 : firstUnansweredIndex
-    );
-  }, [questions]);
+    setCurrentIndex(firstUnanswered === -1 ? 0 : firstUnanswered);
+  }, [mergedQuestions]);
 
-  /* ============================
-     TIMER COUNTDOWN
-  ============================= */
+  /* ============================================================
+     TIMER
+  ============================================================ */
   useEffect(() => {
     if (remainingSeconds <= 0) return;
 
-    const timer = setInterval(() => {
+    const t = setInterval(() => {
       setRemainingSeconds((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => clearInterval(t);
   }, [remainingSeconds]);
 
   useEffect(() => {
-    if (remainingSeconds === 0 && questions.length > 0) {
+    if (remainingSeconds === 0 && totalQuestions > 0) {
       setSubmitModalOpen(true);
     }
-  }, [remainingSeconds, questions.length]);
+  }, [remainingSeconds, totalQuestions]);
 
-  /* ============================
-     UI CALCULATIONS
-  ============================= */
-  const isLoading = loadingQuestions;
-
-  const totalQuestions = questions.length;
-  const answeredCount = useMemo(
-    () => Object.keys(answers).length,
-    [answers]
-  );
-
-  const progressPercent =
-    totalQuestions > 0
-      ? Math.round((answeredCount / totalQuestions) * 100)
-      : 0;
-
-  const sidebarQuestions = useMemo(
-    () =>
-      questions.map((q, idx) => ({
-        question_id: q.id,
-        order_index: q.orderIndex ?? idx + 1,
-      })),
-    [questions]
-  );
-
-  /* ============================
-     CURRENT QUESTION MAPPING (API → UI)
-  ============================= */
+  /* ============================================================
+     MAP UI QUESTION
+  ============================================================ */
   const currentQuestionRaw =
-    totalQuestions > 0 ? questions[currentIndex] : null;
+    totalQuestions > 0 ? mergedQuestions[currentIndex] : null;
 
   const uiQuestion = currentQuestionRaw
     ? {
         question_id: currentQuestionRaw.id,
-        order_index: currentQuestionRaw.orderIndex ?? currentIndex + 1,
+        order_index: currentIndex + 1,
         content: currentQuestionRaw.content,
         audio: currentQuestionRaw.audioUrl || null,
         image: currentQuestionRaw.imagePath || null,
         options: (currentQuestionRaw.options || []).map((opt, idx) => ({
           option_id: opt.id,
-          label: String.fromCharCode(65 + idx), // A, B, C, D
+          label: String.fromCharCode(65 + idx),
           text: opt.content,
         })),
       }
     : null;
 
-  /* ============================
+  /* ============================================================
      HANDLERS
-  ============================= */
-
+  ============================================================ */
   const handleSelectOption = (questionId, optionId) => {
-    dispatch(setLocalAnswer({ questionId, selectedOptionId: optionId }));
-
     dispatch(
-      submitJlptAnswer({
+      submitAnswer({
         testId: numericTestId,
         questionId,
         selectedOptionId: optionId,
@@ -149,41 +172,37 @@ const JLPTTestPage = () => {
     );
   };
 
-  const handlePrev = () => {
-    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : prev));
-  };
+  const handlePrev = () =>
+    setCurrentIndex((i) => (i > 0 ? i - 1 : i));
 
-  const handleNext = () => {
-    setCurrentIndex((prev) =>
-      prev < totalQuestions - 1 ? prev + 1 : prev
-    );
-  };
+  const handleNext = () =>
+    setCurrentIndex((i) => (i < totalQuestions - 1 ? i + 1 : i));
 
-  const handleOpenSubmitModal = () => {
-    setSubmitModalOpen(true);
-  };
-
-  const handleCancelSubmit = () => {
-    setSubmitModalOpen(false);
-  };
+  const handleSubmit = () => setSubmitModalOpen(true);
 
   const handleConfirmSubmit = () => {
-    setSubmitModalOpen(false);
     navigate(`/jlpt/test/${numericTestId}/result`);
   };
 
-  const testTitle = `JLPT Test #${numericTestId}`;
+  /* ============================================================
+     PROGRESS
+  ============================================================ */
+  const progressPercent =
+    totalQuestions > 0
+      ? Math.round((Object.keys(answers).length / totalQuestions) * 100)
+      : 0;
 
-  /* ============================
+  const isLoading = loadingAllTests || loadingQuestions || !testMeta;
+
+  /* ============================================================
      RENDER
-  ============================= */
-
+  ============================================================ */
   return (
     <div className={styles.wrapper}>
       <HeaderBar
-        title={testTitle}
+        title={testMeta?.title || `JLPT Test #${testId}`}
         remainingSeconds={remainingSeconds}
-        onSubmit={handleOpenSubmitModal}
+        onSubmit={handleSubmit}
       />
 
       <main className={styles.main}>
@@ -192,7 +211,10 @@ const JLPTTestPage = () => {
 
           {!isLoading && (
             <SidebarQuestionList
-              questions={sidebarQuestions}
+              questions={mergedQuestions.map((q, idx) => ({
+                question_id: q.id,
+                order_index: idx + 1,
+              }))}
               currentIndex={currentIndex}
               answersByQuestion={answers}
               onJumpTo={setCurrentIndex}
@@ -201,15 +223,10 @@ const JLPTTestPage = () => {
         </aside>
 
         <section className={styles.content}>
-          {/* PROGRESS CARD */}
           <div className={styles.progressCard}>
             <div className={styles.progressTopRow}>
-              <span className={styles.progressLabel}>
-                Tiến độ hoàn thành
-              </span>
-              <span className={styles.progressPct}>
-                {progressPercent}%
-              </span>
+              <span>Tiến độ làm bài</span>
+              <span>{progressPercent}%</span>
             </div>
             <div className={styles.progressTrack}>
               <div
@@ -226,26 +243,21 @@ const JLPTTestPage = () => {
               onSelectOption={handleSelectOption}
               onPrev={handlePrev}
               onNext={handleNext}
-              lastSavedAt={submittingAnswer ? "Đang lưu..." : "Tự động lưu"}
             />
           )}
         </section>
       </main>
 
-      <FooterProgress
-        currentIndex={currentIndex}
-        totalQuestions={totalQuestions}
-        progressPercent={progressPercent}
-      />
+      <FooterProgress pct={progressPercent} />
 
       <JLPTModal
         open={submitModalOpen}
-        title="Nộp bài JLPT Test?"
-        message="Hệ thống sẽ chấm điểm dựa trên các câu đã trả lời. Bạn chắc chắn muốn nộp bài chứ?"
+        title="Nộp bài JLPT"
+        message="Sau khi nộp bài bạn sẽ không sửa được kết quả. Tiếp tục?"
         confirmLabel="Nộp bài"
-        cancelLabel="Quay lại"
+        cancelLabel="Hủy"
         onConfirm={handleConfirmSubmit}
-        onCancel={handleCancelSubmit}
+        onCancel={() => setSubmitModalOpen(false)}
       />
     </div>
   );

@@ -10,9 +10,10 @@ import "react-circular-progressbar/dist/styles.css";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 
+// 🟦 SỬA IMPORT Ở ĐÂY
 import { fetchMyJlptResult } from "../../redux/features/jlptLearnerSlice";
 
-export const Result = () => {
+const Result = () => {
   const { testId } = useParams();
   const numericTestId = Number(testId);
 
@@ -23,13 +24,12 @@ export const Result = () => {
     (state) => state.jlptLearner
   );
 
-  // Gọi API lấy kết quả
+  // 🟦 CALL API MỚI
   useEffect(() => {
     if (!numericTestId) return;
     dispatch(fetchMyJlptResult(numericTestId));
   }, [dispatch, numericTestId]);
 
-  // Loading UI
   if (loadingResult || !result) {
     return (
       <div className={styles.resultWrapper}>
@@ -40,11 +40,9 @@ export const Result = () => {
     );
   }
 
-  // API mới: { totalQuestions, correctCount, score }
   const totalQuestions = result.totalQuestions ?? 0;
   const correctCount = result.correctCount ?? 0;
 
-  // BE score là điểm quy đổi 0–100
   const percent = Number.isFinite(result.score)
     ? Number(result.score)
     : 0;
