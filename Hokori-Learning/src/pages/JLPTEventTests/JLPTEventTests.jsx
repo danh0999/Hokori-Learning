@@ -1,4 +1,5 @@
 // src/pages/JLPT/JLPTEventTests.jsx
+// :contentReference[oaicite:3]{index=3}
 import React, { useEffect } from "react";
 import styles from "./JLPTEventTests.module.scss";
 import { useParams, useNavigate } from "react-router-dom";
@@ -16,23 +17,27 @@ const JLPTEventTests = () => {
     (state) => state.jlptLearner
   );
 
+  /* ============================================================
+     FETCH TEST LIST FOR EVENT
+  ============================================================ */
   useEffect(() => {
     if (!eventId) return;
     dispatch(fetchTestsByEvent(eventId));
   }, [dispatch, eventId]);
 
-  const tests = Array.isArray(allTests) ? allTests : [];
+  /* ============================================================
+     START TEST
+  ============================================================ */
+  const handleStart = (testId) => {
+    navigate(`/jlpt/test/${testId}/grammar?eventId=${eventId}`);
+  };
 
   const errorText =
     typeof testsError === "string" ? testsError : testsError?.message || "";
 
-  const handleStart = (testId) => {
-    navigate(`/jlpt/test/${testId}/grammar`);
-  };
-
   return (
     <div className={styles.wrapper}>
-      <h1 className={styles.title}>Danh sách đề thi của sự kiện</h1>
+      <h1 className={styles.title}>Danh sách đề thi</h1>
 
       {loadingAllTests && <p className={styles.loading}>Đang tải...</p>}
 
@@ -42,12 +47,12 @@ const JLPTEventTests = () => {
         </p>
       )}
 
-      {!loadingAllTests && !testsError && tests.length === 0 && (
-        <p className={styles.empty}>Sự kiện này chưa có đề thi.</p>
+      {!loadingAllTests && !testsError && allTests.length === 0 && (
+        <p className={styles.empty}>Không có đề thi hợp lệ.</p>
       )}
 
       <div className={styles.list}>
-        {tests.map((test) => (
+        {allTests.map((test) => (
           <TestCard
             key={test.id}
             test={test}

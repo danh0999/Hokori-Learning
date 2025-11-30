@@ -1,10 +1,10 @@
 // src/redux/features/jlptLearnerSlice.js
+// :contentReference[oaicite:1]{index=1}
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../configs/axios";
 
 /* =========================================================
-   1) GET danh sách EVENT OPEN (KHÔNG CÓ /learner/)
-   GET /jlpt/events/open
+   1) GET danh sách EVENT mở
 ========================================================= */
 export const fetchOpenEvents = createAsyncThunk(
   "jlptLearner/fetchOpenEvents",
@@ -19,14 +19,14 @@ export const fetchOpenEvents = createAsyncThunk(
 );
 
 /* =========================================================
-   2) GET danh sách đề thi theo event
-   GET /learner/jlpt/tests
+   2) GET danh sách đề thi theo EVENT (API mới)
+   GET /learner/jlpt/events/{eventId}/tests
 ========================================================= */
-export const fetchLearnerTests = createAsyncThunk(
-  "jlptLearner/fetchLearnerTests",
-  async (_, { rejectWithValue }) => {
+export const fetchTestsByEvent = createAsyncThunk(
+  "jlptLearner/fetchTestsByEvent",
+  async (eventId, { rejectWithValue }) => {
     try {
-      const res = await api.get("/learner/jlpt/tests");
+      const res = await api.get(`/learner/jlpt/events/${eventId}/tests`);
       return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
@@ -86,8 +86,33 @@ export const fetchListening = createAsyncThunk(
 );
 
 /* =========================================================
-   6) SUBMIT ANSWER
-   POST /learner/jlpt/tests/{testId}/answers
+   6) GET Active users (polling)
+========================================================= */
+export const fetchActiveUsers = createAsyncThunk(
+  "jlptLearner/fetchActiveUsers",
+  async (testId, { rejectWithValue }) => {
+    try {
+      const res = await api.get(
+        `/learner/jlpt/tests/${testId}/active-users`
+      );
+
+      const data = res.data;
+      let count = 0;
+
+      if (typeof data === "number") count = data;
+      else if (data?.activeUsers !== undefined) count = data.activeUsers;
+      else if (Array.isArray(data) && typeof data[0] === "number")
+        count = data[0];
+
+      return { testId, count };
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
+/* =========================================================
+   7) SUBMIT ANSWER
 ========================================================= */
 export const submitAnswer = createAsyncThunk(
   "jlptLearner/submitAnswer",
@@ -106,31 +131,13 @@ export const submitAnswer = createAsyncThunk(
 );
 
 /* =========================================================
-   7) RESULT
-   GET /learner/jlpt/tests/{testId}/my-result
+   8) GET RESULT
 ========================================================= */
 export const fetchMyJlptResult = createAsyncThunk(
   "jlptLearner/fetchMyJlptResult",
   async (testId, { rejectWithValue }) => {
     try {
       const res = await api.get(`/learner/jlpt/tests/${testId}/my-result`);
-      return res.data;
-    } catch (err) {
-      return rejectWithValue(err.response?.data || err.message);
-    }
-  }
-);
-/* =========================================================
-   GET danh sách test theo EVENT
-   GET /learner/jlpt/tests?eventId=xxx
-========================================================= */
-export const fetchTestsByEvent = createAsyncThunk(
-  "jlptLearner/fetchTestsByEvent",
-  async (eventId, { rejectWithValue }) => {
-    try {
-      const res = await api.get(`/learner/jlpt/tests`, {
-        params: { eventId },
-      });
       return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
@@ -161,6 +168,9 @@ const initialState = {
   result: null,
   loadingResult: false,
   resultError: null,
+
+  activeUsers: {},
+  activeUsersError: null,
 };
 
 /* =========================================================
@@ -180,12 +190,9 @@ const jlptLearnerSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      /* =======================
-         OPEN EVENTS
-      ======================== */
+      /* EVENTS */
       .addCase(fetchOpenEvents.pending, (state) => {
         state.loadingEvents = true;
-        state.eventsError = null;
       })
       .addCase(fetchOpenEvents.fulfilled, (state, action) => {
         state.loadingEvents = false;
@@ -196,28 +203,23 @@ const jlptLearnerSlice = createSlice({
         state.eventsError = action.payload;
       })
 
-      /* =======================
-         TEST LIST
-      ======================== */
-      .addCase(fetchLearnerTests.pending, (state) => {
+      /* TEST LIST BY EVENT */
+      .addCase(fetchTestsByEvent.pending, (state) => {
         state.loadingAllTests = true;
         state.testsError = null;
       })
-      .addCase(fetchLearnerTests.fulfilled, (state, action) => {
+      .addCase(fetchTestsByEvent.fulfilled, (state, action) => {
         state.loadingAllTests = false;
-        state.allTests = action.payload || [];
+        state.allTests = action.payload?.filter((t) => !t.deleteFlag) || [];
       })
-      .addCase(fetchLearnerTests.rejected, (state, action) => {
+      .addCase(fetchTestsByEvent.rejected, (state, action) => {
         state.loadingAllTests = false;
         state.testsError = action.payload;
       })
 
-      /* =======================
-         QUESTIONS
-      ======================== */
+      /* QUESTIONS */
       .addCase(fetchGrammarVocab.pending, (state) => {
         state.loadingQuestions = true;
-        state.questionsError = null;
       })
       .addCase(fetchGrammarVocab.fulfilled, (state, action) => {
         state.loadingQuestions = false;
@@ -227,26 +229,26 @@ const jlptLearnerSlice = createSlice({
         state.loadingQuestions = false;
         state.questionsError = action.payload;
       })
-
       .addCase(fetchReading.fulfilled, (state, action) => {
         state.reading = action.payload || [];
       })
-
       .addCase(fetchListening.fulfilled, (state, action) => {
         state.listening = action.payload || [];
       })
 
-      /* =======================
-         SUBMIT ANSWER
-      ======================== */
+      /* ACTIVE USERS */
+      .addCase(fetchActiveUsers.fulfilled, (state, action) => {
+        const { testId, count } = action.payload || {};
+        state.activeUsers[testId] = count;
+      })
+
+      /* SUBMIT */
       .addCase(submitAnswer.fulfilled, (state, action) => {
         const { questionId, selectedOptionId } = action.payload;
         state.answers[questionId] = selectedOptionId;
       })
 
-      /* =======================
-         RESULT
-      ======================== */
+      /* RESULT */
       .addCase(fetchMyJlptResult.pending, (state) => {
         state.loadingResult = true;
         state.resultError = null;
@@ -258,22 +260,9 @@ const jlptLearnerSlice = createSlice({
       .addCase(fetchMyJlptResult.rejected, (state, action) => {
         state.loadingResult = false;
         state.resultError = action.payload;
-      })
-      .addCase(fetchTestsByEvent.pending, (state) => {
-        state.loadingAllTests = true;
-        state.testsError = null;
-      })
-      .addCase(fetchTestsByEvent.fulfilled, (state, action) => {
-        state.loadingAllTests = false;
-        state.allTests = action.payload || [];
-      })
-      .addCase(fetchTestsByEvent.rejected, (state, action) => {
-        state.loadingAllTests = false;
-        state.testsError = action.payload;
       });
   },
 });
 
 export const { clearTestData } = jlptLearnerSlice.actions;
-
 export default jlptLearnerSlice.reducer;
