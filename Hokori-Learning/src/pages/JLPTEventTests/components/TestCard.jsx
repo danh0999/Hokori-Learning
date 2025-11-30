@@ -2,20 +2,28 @@
 import React from "react";
 import styles from "./TestCard.module.scss";
 import { IoMdTime } from "react-icons/io";
-import { MdOutlineScore } from "react-icons/md";
 
+import { MdPeople } from "react-icons/md";
+import { MdCreditScore } from "react-icons/md";
 const TestCard = ({ test, onStart }) => {
-  const { title, level, durationMin, totalScore, resultNote } = test;
+  const {
+    title,
+    level,
+    durationMin,
+    totalScore,
+    
+    currentParticipants,
+  } = test;
 
   return (
     <div className={styles.card}>
+      {/* HEADER */}
       <div className={styles.header}>
         <h3>{title}</h3>
         {level && <span className={styles.levelTag}>{level}</span>}
       </div>
 
-      {resultNote && <p className={styles.desc}>{resultNote}</p>}
-
+      {/* INFO */}
       <div className={styles.infoGroup}>
         <div className={styles.infoItem}>
           <IoMdTime />
@@ -23,11 +31,19 @@ const TestCard = ({ test, onStart }) => {
         </div>
 
         <div className={styles.infoItem}>
-          <MdOutlineScore />
+          <MdCreditScore />
           <span>Tổng điểm: {totalScore}</span>
         </div>
+
+        {typeof currentParticipants === "number" && (
+          <div className={styles.infoItem}>
+            <MdPeople />
+            <span>Người tham gia: {currentParticipants}</span>
+          </div>
+        )}
       </div>
 
+      {/* CTA */}
       <button className={styles.actionBtn} onClick={onStart}>
         Bắt đầu thi thử
       </button>

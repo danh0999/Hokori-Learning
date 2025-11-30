@@ -14,6 +14,7 @@ import {
   fetchGrammarVocab,
   submitAnswer,
   clearTestData,
+  fetchActiveUsers, // 🟦 mới
 } from "../../redux/features/jlptLearnerSlice";
 
 const MultipleChoice = () => {
@@ -22,7 +23,7 @@ const MultipleChoice = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { grammarVocab, answers, loadingQuestions } = useSelector(
+  const { grammarVocab, answers, loadingQuestions, activeUsers } = useSelector(
     (state) => state.jlptLearner
   );
 
@@ -63,6 +64,20 @@ const MultipleChoice = () => {
     };
 
     load();
+  }, [dispatch, numericTestId]);
+
+  // 🟦 POLLING ACTIVE USERS mỗi 3s
+  useEffect(() => {
+    if (!numericTestId) return;
+
+    const fetchOnce = () => {
+      dispatch(fetchActiveUsers(numericTestId));
+    };
+
+    fetchOnce(); // gọi ngay lần đầu
+    const intervalId = setInterval(fetchOnce, 3000);
+
+    return () => clearInterval(intervalId);
   }, [dispatch, numericTestId]);
 
   // ===== TIMER LOCAL CHO PHẦN NÀY =====
@@ -169,114 +184,125 @@ const MultipleChoice = () => {
 
   const isLoading = loadingQuestions;
 
+  const activeCount = activeUsers?.[numericTestId] ?? 0;
+
   // ============================
   //  UI GỐC — GIỮ NGUYÊN
   // ============================
   return (
     <>
-    {(loadingQuestions || grammarQuestions.length === 0) && <LoadingOverlay />}
+      {(loadingQuestions || grammarQuestions.length === 0) && <LoadingOverlay />}
 
-    <div className={styles.wrapper}>
-      {/* HEADER */}
-      <header className={styles.headerBar}>
-        <h1 className={styles.testTitle}>JLPT - Từ vựng &amp; Ngữ pháp</h1>
-        <div className={styles.headerRight}>
-          <div className={styles.timerBox}>
-            <i className="fa-regular fa-clock" />
-            <span className={styles.timerText}>{formatTime(timeLeft)}</span>
-          </div>
-          <button className={styles.submitBtn} onClick={handleClickSubmit}>
-            Nộp bài
-          </button>
-        </div>
-      </header>
-
-      {/* MAIN */}
-      <main className={styles.main}>
-        {/* SIDEBAR */}
-        <aside className={styles.sidebarCard}>
-          {isLoading && <p>Đang tải câu hỏi...</p>}
-
-          {!isLoading && (
-            <SidebarQuestionList
-              questions={grammarQuestions.map((q, i) => ({
-                question_id: q.id,
-                order_index: i + 1,
-              }))}
-              currentIndex={currentIndex}
-              // DÙNG localAnswers ĐỂ TO MÀU Ô ĐÃ CHỌN
-              answersByQuestion={localAnswers}
-              onJumpTo={setCurrentIndex}
-            />
-          )}
-        </aside>
-
-        {/* CONTENT */}
-        <section className={styles.questionArea}>
-          <div className={styles.questionCardWrap}>
-            {/* Thanh tiến độ (UI gốc) */}
-            <div className={styles.progressCard}>
-              <div className={styles.progressTopRow}>
-                <span className={styles.progressLabel}>
-                  Tiến độ hoàn thành
-                </span>
-                <span className={styles.progressPct}>{progress}%</span>
-              </div>
-              <div className={styles.progressTrack}>
-                <div
-                  className={styles.progressBar}
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
+      <div className={styles.wrapper}>
+        {/* HEADER */}
+        <header className={styles.headerBar}>
+          <h1 className={styles.testTitle}>JLPT - Từ vựng &amp; Ngữ pháp</h1>
+          <div className={styles.headerRight}>
+            {/* 🟦 Box realtime active users */}
+            <div className={styles.activeUsersBox}>
+              <i className="fa-solid fa-user-group" />
+              <span>
+                Đang có {activeCount} người tham gia bài thi này
+              </span>
             </div>
 
-            {/* Câu hỏi */}
-            {uiQuestion && (
-              <QuestionCard
-                question={uiQuestion}
-                selectedOptionId={localAnswers[uiQuestion.question_id] ?? null}
-                onSelectOption={handleSelectAnswer}
-                onPrev={handlePrevQuestion}
-                onNext={handleNextQuestion}
-                lastSavedAt="Tự động lưu"
-              />
-            )}
-          </div>
-
-          {/* Nút sang phần Đọc hiểu */}
-          <div className={styles.nextSection}>
-            <button
-              className={styles.nextSectionBtn}
-              onClick={handleClickNextSection}
-            >
-              Tiếp tục phần Đọc hiểu
+            <div className={styles.timerBox}>
+              <i className="fa-regular fa-clock" />
+              <span className={styles.timerText}>{formatTime(timeLeft)}</span>
+            </div>
+            <button className={styles.submitBtn} onClick={handleClickSubmit}>
+              Nộp bài
             </button>
           </div>
-        </section>
-      </main>
+        </header>
 
-      {/* MODAL JLPT */}
-      <JLPTModal
-        open={modalOpen}
-        title={
-          modalContext === "submit"
-            ? "Nộp bài phần Từ vựng & Ngữ pháp?"
-            : "Chuyển sang phần Đọc hiểu?"
-        }
-        message={
-          hasUnanswered
-            ? `Bạn mới trả lời ${answered}/${total} câu. Nếu tiếp tục, các câu chưa làm sẽ bị tính sai.`
-            : "Bạn đã hoàn thành toàn bộ câu hỏi trong phần này."
-        }
-        confirmLabel={modalContext === "submit" ? "Nộp bài" : "Sang phần Đọc hiểu"}
-        cancelLabel="Ở lại làm tiếp"
-        onConfirm={handleModalConfirm}
-        onCancel={handleModalCancel}
-      />
-    </div>
+        {/* MAIN */}
+        <main className={styles.main}>
+          {/* SIDEBAR */}
+          <aside className={styles.sidebarCard}>
+            {isLoading && <p>Đang tải câu hỏi...</p>}
+
+            {!isLoading && (
+              <SidebarQuestionList
+                questions={grammarQuestions.map((q, i) => ({
+                  question_id: q.id,
+                  order_index: i + 1,
+                }))}
+                currentIndex={currentIndex}
+                // DÙNG localAnswers ĐỂ TO MÀU Ô ĐÃ CHỌN
+                answersByQuestion={localAnswers}
+                onJumpTo={setCurrentIndex}
+              />
+            )}
+          </aside>
+
+          {/* CONTENT */}
+          <section className={styles.questionArea}>
+            <div className={styles.questionCardWrap}>
+              {/* Thanh tiến độ (UI gốc) */}
+              <div className={styles.progressCard}>
+                <div className={styles.progressTopRow}>
+                  <span className={styles.progressLabel}>
+                    Tiến độ hoàn thành
+                  </span>
+                  <span className={styles.progressPct}>{progress}%</span>
+                </div>
+                <div className={styles.progressTrack}>
+                  <div
+                    className={styles.progressBar}
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Câu hỏi */}
+              {uiQuestion && (
+                <QuestionCard
+                  question={uiQuestion}
+                  selectedOptionId={localAnswers[uiQuestion.question_id] ?? null}
+                  onSelectOption={handleSelectAnswer}
+                  onPrev={handlePrevQuestion}
+                  onNext={handleNextQuestion}
+                  lastSavedAt="Tự động lưu"
+                />
+              )}
+            </div>
+
+            {/* Nút sang phần Đọc hiểu */}
+            <div className={styles.nextSection}>
+              <button
+                className={styles.nextSectionBtn}
+                onClick={handleClickNextSection}
+              >
+                Tiếp tục phần Đọc hiểu
+              </button>
+            </div>
+          </section>
+        </main>
+
+        {/* MODAL JLPT */}
+        <JLPTModal
+          open={modalOpen}
+          title={
+            modalContext === "submit"
+              ? "Nộp bài phần Từ vựng & Ngữ pháp?"
+              : "Chuyển sang phần Đọc hiểu?"
+          }
+          message={
+            hasUnanswered
+              ? `Bạn mới trả lời ${answered}/${total} câu. Nếu tiếp tục, các câu chưa làm sẽ bị tính sai.`
+              : "Bạn đã hoàn thành toàn bộ câu hỏi trong phần này."
+          }
+          confirmLabel={
+            modalContext === "submit" ? "Nộp bài" : "Sang phần Đọc hiểu"
+          }
+          cancelLabel="Ở lại làm tiếp"
+          onConfirm={handleModalConfirm}
+          onCancel={handleModalCancel}
+        />
+      </div>
     </>
   );
 };
 
 export default MultipleChoice;
- 

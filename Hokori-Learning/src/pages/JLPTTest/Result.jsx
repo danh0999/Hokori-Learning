@@ -7,15 +7,17 @@ import {
 } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 
-// 🟦 SỬA IMPORT Ở ĐÂY
 import { fetchMyJlptResult } from "../../redux/features/jlptLearnerSlice";
 
 const Result = () => {
   const { testId } = useParams();
   const numericTestId = Number(testId);
+
+  const [params] = useSearchParams();
+  const eventId = params.get("eventId");
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -24,7 +26,7 @@ const Result = () => {
     (state) => state.jlptLearner
   );
 
-  // 🟦 CALL API MỚI
+  // CALL API
   useEffect(() => {
     if (!numericTestId) return;
     dispatch(fetchMyJlptResult(numericTestId));
@@ -83,9 +85,13 @@ const Result = () => {
         </div>
 
         <div className={styles.actions}>
+
+          {/* ❗ FIX LẠI ĐÚNG ROUTE */}
           <button
             className={styles.retryBtn}
-            onClick={() => navigate(`/jlpt/test/${numericTestId}`)}
+            onClick={() =>
+              navigate(`/jlpt/test/${numericTestId}/grammar${eventId ? `?eventId=${eventId}` : ""}`)
+            }
           >
             Làm lại bài thi
           </button>

@@ -1,8 +1,7 @@
 // src/pages/JLPT/components/JLPTCard.jsx
 import styles from "./JLPTCard.module.scss";
-import { CiCircleCheck } from "react-icons/ci";
 import { IoMdTime } from "react-icons/io";
-import { MdPeople } from "react-icons/md";
+import { CiCircleCheck } from "react-icons/ci";
 import { useNavigate } from "react-router-dom";
 
 const JLPTCard = ({ event }) => {
@@ -17,9 +16,16 @@ const JLPTCard = ({ event }) => {
   const level = event.level || "";
   const status = event.status || "OPEN";
 
-  const startTime = event.startTime
-    ? new Date(event.startTime).toLocaleString()
-    : null;
+  const formatDate = (iso) => {
+    if (!iso) return "Chưa có";
+    return new Date(iso).toLocaleString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   return (
     <div className={styles.card}>
@@ -34,26 +40,19 @@ const JLPTCard = ({ event }) => {
 
       {/* Info */}
       <div className={styles.infoGroup}>
-        {startTime && (
-          <div className={styles.infoItem}>
-            <IoMdTime />
-            <span>Bắt đầu: {startTime}</span>
-          </div>
-        )}
+        <div className={styles.infoItem}>
+          <IoMdTime />
+          <span>Bắt đầu: {formatDate(event.startAt)}</span>
+        </div>
+
+        <div className={styles.infoItem}>
+          <IoMdTime />
+          <span>Kết thúc: {formatDate(event.endAt)}</span>
+        </div>
 
         <div className={styles.infoItem}>
           <CiCircleCheck />
           <span>Trạng thái: {status}</span>
-        </div>
-
-        <div className={styles.infoItem}>
-          <MdPeople />
-          <span>
-            Người tham gia: {event.currentParticipants || 0}
-            {event.maxParticipants
-              ? ` / ${event.maxParticipants}`
-              : ""}
-          </span>
         </div>
       </div>
 
