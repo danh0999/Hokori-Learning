@@ -234,8 +234,6 @@ export default function TeacherCertificates() {
           <thead>
             <tr>
               <th>Giáo viên</th>
-              <th>Email</th>
-              <th>Cấp độ / Title</th>
               <th>Ngày gửi</th>
               <th>Trạng thái</th>
               <th>Thao tác</th>
@@ -254,8 +252,6 @@ export default function TeacherCertificates() {
             {certs.map((c) => (
               <tr key={c.id}>
                 <td>{c.teacherName || `User #${c.userId}`}</td>
-                <td>{c.email || "—"}</td>
-                <td>{c.level || "—"}</td>
                 <td>
                   {c.submittedAt
                     ? new Date(c.submittedAt).toLocaleString("vi-VN")

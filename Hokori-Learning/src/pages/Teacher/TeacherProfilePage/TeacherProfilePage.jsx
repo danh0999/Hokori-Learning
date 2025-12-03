@@ -82,6 +82,8 @@ export default function TeacherProfilePage() {
       message.success(
         "Đã gửi duyệt hồ sơ. Trạng thái chuyển sang PENDING, trong thời gian chờ duyệt bạn sẽ không thể chỉnh sửa chứng chỉ."
       );
+      dispatch(fetchTeacherProfile());
+      dispatch(fetchTeacherCertificates());
     } else {
       message.error(res?.payload?.message || "Gửi duyệt thất bại");
     }
@@ -93,7 +95,37 @@ export default function TeacherProfilePage() {
     return <Tag color={m.color}>{m.text}</Tag>;
   }, [teacher?.approvalStatus]);
 
-  const showGateBanner = !isApproved;
+  const bannerConfig = useMemo(() => {
+    // Đã APPROVED thì không cần banner
+    if (isApproved) return null;
+
+    // Đang chờ duyệt
+    if (teacher?.approvalStatus === "PENDING") {
+      return {
+        type: "info",
+        message: "Hồ sơ của bạn đang trong thời gian chờ duyệt",
+        description: (
+          <>
+            Hiện tại hồ sơ và chứng chỉ của bạn đang được admin xem xét. Trong
+            thời gian <b>PENDING</b>, bạn <b>không thể thêm, sửa hoặc xoá</b>{" "}
+            chứng chỉ. Nếu cần cập nhật, vui lòng chờ kết quả duyệt.
+          </>
+        ),
+      };
+    }
+
+    // Các trạng thái còn lại: chưa gửi / bị từ chối / nháp
+    return {
+      type: "warning",
+      message: "Hồ sơ của bạn chưa được duyệt",
+      description: (
+        <>
+          Để tạo và đăng bán khóa học, hồ sơ cần ở trạng thái <b>APPROVED</b>.
+          Vui lòng hoàn thiện thông tin & chứng chỉ, sau đó gửi duyệt.
+        </>
+      ),
+    };
+  }, [isApproved, teacher?.approvalStatus]);
 
   return (
     <div className={styles.wrapper}>
@@ -133,19 +165,13 @@ export default function TeacherProfilePage() {
         </Space>
       </div>
 
-      {showGateBanner && (
+      {bannerConfig && (
         <Alert
           className={styles.banner}
-          type="warning"
+          type={bannerConfig.type}
           showIcon
-          message="Hồ sơ của bạn chưa được duyệt"
-          description={
-            <>
-              Để tạo và đăng bán khóa học, hồ sơ cần ở trạng thái{" "}
-              <b>APPROVED</b>. Vui lòng hoàn thiện thông tin & chứng chỉ, sau đó
-              gửi duyệt.
-            </>
-          }
+          message={bannerConfig.message}
+          description={bannerConfig.description}
         />
       )}
 
@@ -193,7 +219,9 @@ export default function TeacherProfilePage() {
               </div>
               <div className={styles.field}>
                 <label>Tình trạng xác minh</label>
-                <div>{user.isVerified ? "Đã xác minh" : "Chưa xác minh"}</div>
+                <div>
+                  {teacher.isApproved ? "Đã xác minh" : "Chưa xác minh"}
+                </div>
               </div>
             </div>
 

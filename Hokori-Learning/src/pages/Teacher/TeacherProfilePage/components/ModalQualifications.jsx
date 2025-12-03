@@ -21,6 +21,7 @@ import {
   selectSavingCertificate,
   selectDeletingCertificate,
 } from "../../../../redux/features/teacherprofileSlice.js";
+import { toast } from "react-toastify";
 
 export default function ModalCertificates({ open, onClose, locked = false }) {
   const [form] = Form.useForm();
@@ -67,14 +68,14 @@ export default function ModalCertificates({ open, onClose, locked = false }) {
       const payload = normalizePayload(values);
       const res = await dispatch(upsertTeacherCertificate(payload));
       if (res.meta.requestStatus === "fulfilled") {
-        message.success(
+        toast.success(
           editingId ? "Đã cập nhật chứng chỉ" : "Đã thêm chứng chỉ"
         );
         setEditingId(null);
         form.resetFields();
         dispatch(fetchTeacherCertificates());
       } else {
-        message.error(res?.payload?.message || "Lưu chứng chỉ thất bại");
+        toast.error(res?.payload?.message || "Lưu chứng chỉ thất bại");
       }
     } catch (e) {
       console.log(e);
@@ -91,15 +92,15 @@ export default function ModalCertificates({ open, onClose, locked = false }) {
 
     const res = await dispatch(deleteTeacherCertificate(id));
     if (res.meta.requestStatus === "fulfilled") {
-      message.success("Đã xoá chứng chỉ");
+      toast.success("Đã xoá chứng chỉ");
     } else {
-      message.error(res?.payload?.message || "Xoá thất bại");
+      toast.error(res?.payload?.message || "Xoá thất bại");
     }
   };
 
   const onEdit = (item) => {
     if (locked) {
-      message.warning(
+      toast.warning(
         "Hồ sơ đang ở trạng thái PENDING, bạn không thể sửa chứng chỉ."
       );
       return;

@@ -144,22 +144,57 @@ export default function CourseReviewPage() {
   };
 
   const handleAiReview = async () => {
+    if (!courseId) return;
+
     setAiLoading(true);
     setAiError(null);
+
     try {
-      // TODO: chỉnh endpoint khi BE làm xong
-      const res = await api.post(`/moderator/courses/${courseId}/ai-review`);
+      // BE trả /api/moderator/courses/{id}/ai-check (GET)
+      // axios instance `api` đã có base `/api` rồi
+      const res = await api.get(`/moderator/courses/${courseId}/ai-check`);
+
       const payload = res.data;
       const reviewData = payload?.data ?? payload;
+
       setAiReview(reviewData);
     } catch (err) {
       console.error("AI review error:", err);
-      setAiError(
-        err?.response?.data?.message ||
-          "Không gọi được AI review. Kiểm tra endpoint / cấu hình."
-      );
+
+      const status = err?.response?.status;
+
+      if (status === 503) {
+        setAiError("AI service hiện không khả dụng. Vui lòng thử lại sau.");
+      } else if (status === 400) {
+        setAiError(
+          "Course không ở trạng thái PENDING_APPROVAL, không thể AI check."
+        );
+      } else if (status === 404) {
+        setAiError("Không tìm thấy course để AI check.");
+      } else if (status === 401 || status === 403) {
+        setAiError(
+          "Bạn không có quyền sử dụng AI check. Vui lòng đăng nhập lại."
+        );
+      } else {
+        setAiError(
+          err?.response?.data?.message ||
+            "Không gọi được AI review. Kiểm tra endpoint / cấu hình."
+        );
+      }
     } finally {
       setAiLoading(false);
+    }
+  };
+  const getSafetyStatusColor = (status) => {
+    switch (status) {
+      case "SAFE":
+        return "green";
+      case "WARNING":
+        return "gold";
+      case "UNSAFE":
+        return "red";
+      default:
+        return "default";
     }
   };
 
@@ -298,13 +333,84 @@ export default function CourseReviewPage() {
 
             {!aiLoading && aiReview && (
               <div className={styles.aiReviewBox}>
-                {typeof aiReview === "string" ? (
-                  <Paragraph>{aiReview}</Paragraph>
-                ) : (
-                  <pre className={styles.aiReviewPre}>
-                    {JSON.stringify(aiReview, null, 2)}
-                  </pre>
+                {/* Thông tin chung */}
+                <Paragraph strong>
+                  Course:{" "}
+                  {aiReview.courseTitle || course?.title || `#${courseId}`}
+                </Paragraph>
+                <Text type="secondary">
+                  Checked at:{" "}
+                  {aiReview.checkedAt
+                    ? new Date(aiReview.checkedAt).toLocaleString("vi-VN")
+                    : "—"}
+                </Text>
+
+                {/* Safety Check */}
+                {aiReview.safetyCheck && (
+                  <div style={{ marginTop: 16 }}>
+                    <Text strong>Safety check:&nbsp;</Text>
+                    <Tag
+                      color={getSafetyStatusColor(aiReview.safetyCheck.status)}
+                    >
+                      {aiReview.safetyCheck.status || "UNKNOWN"}
+                    </Tag>
+                    <div>
+                      <Text>
+                        Score:{" "}
+                        {typeof aiReview.safetyCheck.score === "number"
+                          ? aiReview.safetyCheck.score.toFixed(2) + " / 1.0"
+                          : "—"}
+                      </Text>
+                    </div>
+                    <Paragraph style={{ marginTop: 4 }}>
+                      {aiReview.safetyCheck.summary}
+                    </Paragraph>
+                  </div>
                 )}
+
+                {/* Level Match */}
+                {aiReview.levelMatch && (
+                  <div style={{ marginTop: 16 }}>
+                    <Text strong>Level match</Text>
+                    <div>
+                      <Text>
+                        Declared level:{" "}
+                        {aiReview.levelMatch.declaredLevel || "—"}
+                      </Text>
+                    </div>
+                    <Paragraph style={{ marginTop: 4 }}>
+                      {aiReview.levelMatch.summary}
+                    </Paragraph>
+                  </div>
+                )}
+
+                {/* Recommendations */}
+                {Array.isArray(aiReview.recommendations) &&
+                  aiReview.recommendations.length > 0 && (
+                    <div style={{ marginTop: 16 }}>
+                      <Text strong>📋 Recommendations</Text>
+                      <ul style={{ paddingLeft: 18 }}>
+                        {aiReview.recommendations.map((rec, idx) => (
+                          <li key={idx}>{rec}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                {/* Warnings */}
+                {Array.isArray(aiReview.warnings) &&
+                  aiReview.warnings.length > 0 && (
+                    <div style={{ marginTop: 16 }}>
+                      <Text strong style={{ color: "#faad14" }}>
+                        ⚠ Warnings
+                      </Text>
+                      <ul style={{ paddingLeft: 18 }}>
+                        {aiReview.warnings.map((w, idx) => (
+                          <li key={idx}>{w}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
               </div>
             )}
           </div>
