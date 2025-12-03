@@ -1,15 +1,11 @@
 // src/pages/JLPTTest/Result.jsx
 import React, { useEffect } from "react";
 import styles from "./Result.module.scss";
-import {
-  CircularProgressbar,
-  buildStyles,
-} from "react-circular-progressbar";
+import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-
 import { fetchMyJlptResult } from "../../redux/features/jlptLearnerSlice";
 
 const Result = () => {
@@ -17,19 +13,17 @@ const Result = () => {
   const numericTestId = Number(testId);
 
   const [params] = useSearchParams();
-  const eventId = params.get("eventId");
+  const eventId = params.get("eventId"); // optional
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { result, loadingResult } = useSelector(
-    (state) => state.jlptLearner
-  );
+  const { result, loadingResult } = useSelector((state) => state.jlptLearner);
 
-  // CALL API
   useEffect(() => {
-    if (!numericTestId) return;
-    dispatch(fetchMyJlptResult(numericTestId));
+    if (numericTestId) {
+      dispatch(fetchMyJlptResult(numericTestId));
+    }
   }, [dispatch, numericTestId]);
 
   if (loadingResult || !result) {
@@ -44,17 +38,18 @@ const Result = () => {
 
   const totalQuestions = result.totalQuestions ?? 0;
   const correctCount = result.correctCount ?? 0;
+  const percent = Number(result.score) || 0;
 
-  const percent = Number.isFinite(result.score)
-    ? Number(result.score)
-    : 0;
+  const passScore = result.passScore ?? 0;
+  const passed = result.passed ?? false;
 
   return (
     <div className={styles.resultWrapper}>
       <div className={styles.resultCard}>
         <h1 className={styles.title}>Kết quả bài thi JLPT</h1>
+
         <p className={styles.subtitle}>
-          Cảm ơn bạn đã hoàn thành bài thi. Dưới đây là kết quả của bạn.
+          Dưới đây là kết quả tổng hợp của bạn trong toàn bộ bài thi.
         </p>
 
         <div className={styles.overallBox}>
@@ -81,16 +76,30 @@ const Result = () => {
               <strong>{totalQuestions}</strong> – Số câu đúng:{" "}
               <strong>{correctCount}</strong>.
             </p>
+
+            {/* NEW — Pass / Fail */}
+            <p style={{ marginTop: "0.5rem", fontWeight: 600 }}>
+              {passed ? (
+                <span style={{ color: "#10b981" }}>
+                  ✔ Chúc mừng! Bạn đã ĐẬU kỳ thi!
+                </span>
+              ) : (
+                <span style={{ color: "#ef4444" }}>
+                  ✘ Bạn chưa đạt yêu cầu. Điểm đạt là {passScore}.
+                </span>
+              )}
+            </p>
           </div>
         </div>
 
+        {/* ACTIONS */}
         <div className={styles.actions}>
-
-          {/* ❗ FIX LẠI ĐÚNG ROUTE */}
           <button
             className={styles.retryBtn}
             onClick={() =>
-              navigate(`/jlpt/test/${numericTestId}/grammar${eventId ? `?eventId=${eventId}` : ""}`)
+              navigate(
+                `/jlpt/test/${numericTestId}${eventId ? `?eventId=${eventId}` : ""}`
+              )
             }
           >
             Làm lại bài thi

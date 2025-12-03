@@ -1,4 +1,4 @@
-// src/pages/JLPTTest/MultipleChoice.jsx
+// src/pages/JLPTTest/MultipleChoice.jsx (Original Simplified Version)
 import React, { useEffect, useState, useMemo } from "react";
 import styles from "./MultipleChoice.module.scss";
 import LoadingOverlay from "../../components/Loading/LoadingOverlay";
@@ -9,129 +9,100 @@ import SidebarQuestionList from "./components/SidebarQuestionList";
 import QuestionCard from "./components/QuestionCard";
 import JLPTModal from "./components/JLPTModal";
 
-// DÙNG ĐÚNG ACTION TỪ SLICE MỚI
 import {
   fetchGrammarVocab,
   submitAnswer,
-  clearTestData,
-  fetchActiveUsers, // 🟦 mới
+  fetchActiveUsers,
 } from "../../redux/features/jlptLearnerSlice";
 
 const MultipleChoice = () => {
   const { testId } = useParams();
   const numericTestId = Number(testId);
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { grammarVocab, answers, loadingQuestions, activeUsers } = useSelector(
-    (state) => state.jlptLearner
-  );
+  const { grammarVocab, answers, loadingQuestions, activeUsers, timeLeft } =
+    useSelector((state) => state.jlptLearner);
 
-  // ==== LOCAL ANSWERS: để UI highlight ngay ====
+  const grammarQuestions = grammarVocab || [];
+
+  // LOCAL UI STATE ONLY
   const [localAnswers, setLocalAnswers] = useState({});
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalContext, setModalContext] = useState(null);
 
+  /* ============================================================
+        LOAD QUESTIONS
+     ============================================================ */
   useEffect(() => {
-    // sync lại nếu slice có dữ liệu (VD: reload)
+    dispatch(fetchGrammarVocab(numericTestId));
+  }, [dispatch, numericTestId]);
+
+  /* ============================================================
+        SYNC ANSWERS FROM REDUX → LOCAL
+     ============================================================ */
+  useEffect(() => {
     if (answers) {
       setLocalAnswers((prev) => ({ ...prev, ...answers }));
     }
   }, [answers]);
 
-  const grammarQuestions = grammarVocab || [];
-
-  // ===== STATE LOCAL =====
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(0); // giây
-
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalContext, setModalContext] = useState(null); // "submit" | "next"
-
-  // CLEAR KHI RỜI TRANG
+  /* ============================================================
+        ACTIVE USERS
+     ============================================================ */
   useEffect(() => {
-    return () => {
-      dispatch(clearTestData());
-    };
-  }, [dispatch]);
-
-  // ===== INIT: fetch grammar questions =====
-  useEffect(() => {
-    if (!numericTestId) return;
-
-    const load = async () => {
-      await dispatch(fetchGrammarVocab(numericTestId));
-      // Giả định phần này 30 phút
-      setTimeLeft(30 * 60);
-    };
-
-    load();
-  }, [dispatch, numericTestId]);
-
-  // 🟦 POLLING ACTIVE USERS mỗi 3s
-  useEffect(() => {
-    if (!numericTestId) return;
-
-    const fetchOnce = () => {
-      dispatch(fetchActiveUsers(numericTestId));
-    };
-
-    fetchOnce(); // gọi ngay lần đầu
-    const intervalId = setInterval(fetchOnce, 3000);
-
-    return () => clearInterval(intervalId);
-  }, [dispatch, numericTestId]);
-
-  // ===== TIMER LOCAL CHO PHẦN NÀY =====
-  useEffect(() => {
-    if (timeLeft <= 0) return;
-
-    const t = setInterval(() => {
-      setTimeLeft((s) => (s > 0 ? s - 1 : 0));
-    }, 1000);
-
+    const run = () => dispatch(fetchActiveUsers(numericTestId));
+    run();
+    const t = setInterval(run, 3000);
     return () => clearInterval(t);
-  }, [timeLeft]);
+  }, [dispatch, numericTestId]);
 
+  /* ============================================================
+        FORMAT TIME
+     ============================================================ */
   const formatTime = (sec = 0) => {
     const m = Math.floor(sec / 60);
     const s = sec % 60;
     return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   };
 
-  // ===== DERIVED =====
+  /* ============================================================
+        PROGRESS
+     ============================================================ */
   const total = grammarQuestions.length;
+
   const answered = useMemo(
     () => grammarQuestions.filter((q) => localAnswers[q.id] !== undefined).length,
     [grammarQuestions, localAnswers]
   );
-  const hasUnanswered = answered < total;
-  const progress = total > 0 ? Math.round((answered / total) * 100) : 0;
 
-  const currentQ = total > 0 ? grammarQuestions[currentIndex] : null;
+  const progress = total ? Math.round((answered / total) * 100) : 0;
+ 
+
+  const currentQ = grammarQuestions[currentIndex] || null;
 
   const uiQuestion =
-    currentQ &&
-    (() => ({
+    currentQ && {
       question_id: currentQ.id,
       order_index: currentIndex + 1,
       content: currentQ.content,
       audio: currentQ.audioUrl || null,
       image: currentQ.imagePath || null,
-      options: (currentQ.options || []).map((opt, i) => ({
+      options: currentQ.options.map((opt, i) => ({
         option_id: opt.id,
         label: String.fromCharCode(65 + i),
         text: opt.content,
       })),
-    }))();
+    };
 
-  // ===== HANDLERS =====
+  /* ============================================================
+        SELECT ANSWER
+     ============================================================ */
   const handleSelectAnswer = (questionId, optionId) => {
-    // 1. Cập nhật UI ngay
-    setLocalAnswers((prev) => ({
-      ...prev,
-      [questionId]: optionId,
-    }));
+    setLocalAnswers((prev) => ({ ...prev, [questionId]: optionId }));
 
-    // 2. Gửi lên backend
     dispatch(
       submitAnswer({
         testId: numericTestId,
@@ -141,76 +112,74 @@ const MultipleChoice = () => {
     );
   };
 
-  const handleNextQuestion = () => {
-    if (currentIndex < total - 1) {
-      setCurrentIndex((i) => i + 1);
+  /* ============================================================
+        NEXT / PREV
+     ============================================================ */
+  const findNextUnanswered = () => {
+    for (let i = currentIndex + 1; i < total; i++) {
+      if (!localAnswers[grammarQuestions[i].id]) return i;
     }
-  };
-
-  const handlePrevQuestion = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex((i) => i - 1);
+    for (let i = 0; i < currentIndex; i++) {
+      if (!localAnswers[grammarQuestions[i].id]) return i;
     }
+    return null;
   };
 
-  // Nút "Nộp bài"
-  const handleClickSubmit = () => {
-    setModalContext("submit");
-    setModalOpen(true);
+  const next = () => {
+    const nextIdx = findNextUnanswered();
+    if (nextIdx !== null) setCurrentIndex(nextIdx);
+    else if (currentIndex < total - 1) setCurrentIndex((i) => i + 1);
+    else setCurrentIndex(0);
   };
 
-  // Nút "Tiếp tục phần Đọc hiểu"
-  const handleClickNextSection = () => {
-    setModalContext("next");
-    setModalOpen(true);
+  const prev = () => {
+    if (currentIndex > 0) setCurrentIndex((i) => i - 1);
   };
 
-  const handleModalCancel = () => {
-    setModalOpen(false);
-    setModalContext(null);
-  };
-
-  const handleModalConfirm = () => {
-    if (modalContext === "submit") {
-      // Nộp bài luôn -> sang result
-      navigate(`/jlpt/test/${numericTestId}/result`);
-    } else if (modalContext === "next") {
-      // Sang phần Đọc hiểu (nếu learner skip, các câu chưa làm = sai)
-      navigate(`/jlpt/test/${numericTestId}/reading`);
-    }
-    setModalOpen(false);
-    setModalContext(null);
-  };
-
-  const isLoading = loadingQuestions;
+  /* ============================================================
+        SUBMIT / GO TO READING
+     ============================================================ */
+  const handleModalConfirm = () =>
+    navigate(
+      modalContext === "submit"
+        ? `/jlpt/test/${numericTestId}/result`
+        : `/jlpt/test/${numericTestId}/reading`
+    );
 
   const activeCount = activeUsers?.[numericTestId] ?? 0;
 
-  // ============================
-  //  UI GỐC — GIỮ NGUYÊN
-  // ============================
+  /* ============================================================
+        UI RENDER
+     ============================================================ */
   return (
     <>
-      {(loadingQuestions || grammarQuestions.length === 0) && <LoadingOverlay />}
+      {(loadingQuestions || grammarQuestions.length === 0) && (
+        <LoadingOverlay />
+      )}
 
       <div className={styles.wrapper}>
         {/* HEADER */}
         <header className={styles.headerBar}>
-          <h1 className={styles.testTitle}>JLPT - Từ vựng &amp; Ngữ pháp</h1>
+          <h1 className={styles.testTitle}>JLPT - Từ vựng & Ngữ pháp</h1>
+
           <div className={styles.headerRight}>
-            {/* 🟦 Box realtime active users */}
             <div className={styles.activeUsersBox}>
               <i className="fa-solid fa-user-group" />
-              <span>
-                Đang có {activeCount} người tham gia bài thi này
-              </span>
+              <span>Đang có {activeCount} người tham gia bài thi này</span>
             </div>
 
             <div className={styles.timerBox}>
               <i className="fa-regular fa-clock" />
               <span className={styles.timerText}>{formatTime(timeLeft)}</span>
             </div>
-            <button className={styles.submitBtn} onClick={handleClickSubmit}>
+
+            <button
+              className={styles.submitBtn}
+              onClick={() => {
+                setModalContext("submit");
+                setModalOpen(true);
+              }}
+            >
               Nộp bài
             </button>
           </div>
@@ -218,33 +187,25 @@ const MultipleChoice = () => {
 
         {/* MAIN */}
         <main className={styles.main}>
-          {/* SIDEBAR */}
           <aside className={styles.sidebarCard}>
-            {isLoading && <p>Đang tải câu hỏi...</p>}
-
-            {!isLoading && (
-              <SidebarQuestionList
-                questions={grammarQuestions.map((q, i) => ({
-                  question_id: q.id,
-                  order_index: i + 1,
-                }))}
-                currentIndex={currentIndex}
-                // DÙNG localAnswers ĐỂ TO MÀU Ô ĐÃ CHỌN
-                answersByQuestion={localAnswers}
-                onJumpTo={setCurrentIndex}
-              />
-            )}
+            <SidebarQuestionList
+              questions={grammarQuestions.map((q, i) => ({
+                question_id: q.id,
+                order_index: i + 1,
+              }))}
+              currentIndex={currentIndex}
+              answersByQuestion={localAnswers}
+              onJumpTo={setCurrentIndex}
+            />
           </aside>
 
-          {/* CONTENT */}
+          {/* RIGHT */}
           <section className={styles.questionArea}>
             <div className={styles.questionCardWrap}>
-              {/* Thanh tiến độ (UI gốc) */}
+              {/* PROGRESS */}
               <div className={styles.progressCard}>
                 <div className={styles.progressTopRow}>
-                  <span className={styles.progressLabel}>
-                    Tiến độ hoàn thành
-                  </span>
+                  <span className={styles.progressLabel}>Tiến độ hoàn thành</span>
                   <span className={styles.progressPct}>{progress}%</span>
                 </div>
                 <div className={styles.progressTrack}>
@@ -255,24 +216,26 @@ const MultipleChoice = () => {
                 </div>
               </div>
 
-              {/* Câu hỏi */}
+              {/* QUESTION */}
               {uiQuestion && (
                 <QuestionCard
                   question={uiQuestion}
-                  selectedOptionId={localAnswers[uiQuestion.question_id] ?? null}
+                  selectedOptionId={localAnswers[uiQuestion.question_id]}
                   onSelectOption={handleSelectAnswer}
-                  onPrev={handlePrevQuestion}
-                  onNext={handleNextQuestion}
-                  lastSavedAt="Tự động lưu"
+                  onPrev={prev}
+                  onNext={next}
                 />
               )}
             </div>
 
-            {/* Nút sang phần Đọc hiểu */}
+            {/* NEXT SECTION */}
             <div className={styles.nextSection}>
               <button
                 className={styles.nextSectionBtn}
-                onClick={handleClickNextSection}
+                onClick={() => {
+                  setModalContext("next");
+                  setModalOpen(true);
+                }}
               >
                 Tiếp tục phần Đọc hiểu
               </button>
@@ -280,7 +243,7 @@ const MultipleChoice = () => {
           </section>
         </main>
 
-        {/* MODAL JLPT */}
+        {/* MODAL */}
         <JLPTModal
           open={modalOpen}
           title={
@@ -289,16 +252,16 @@ const MultipleChoice = () => {
               : "Chuyển sang phần Đọc hiểu?"
           }
           message={
-            hasUnanswered
-              ? `Bạn mới trả lời ${answered}/${total} câu. Nếu tiếp tục, các câu chưa làm sẽ bị tính sai.`
-              : "Bạn đã hoàn thành toàn bộ câu hỏi trong phần này."
+            answered < total
+              ? `Bạn đã trả lời ${answered}/${total} câu. Câu chưa làm = tính sai.`
+              : "Bạn đã hoàn thành toàn bộ phần này."
           }
           confirmLabel={
             modalContext === "submit" ? "Nộp bài" : "Sang phần Đọc hiểu"
           }
           cancelLabel="Ở lại làm tiếp"
           onConfirm={handleModalConfirm}
-          onCancel={handleModalCancel}
+          onCancel={() => setModalOpen(false)}
         />
       </div>
     </>

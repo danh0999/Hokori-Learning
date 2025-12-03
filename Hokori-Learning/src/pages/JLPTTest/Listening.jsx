@@ -1,4 +1,4 @@
-// src/pages/JLPTTest/Listening.jsx
+// src/pages/JLPTTest/Listening.jsx (Final Clean Version + Radio FIX)
 import React, { useState, useRef, useEffect } from "react";
 import styles from "./Listening.module.scss";
 
@@ -12,218 +12,252 @@ import LoadingOverlay from "../../components/Loading/LoadingOverlay";
 
 import {
   fetchListening,
+  fetchActiveUsers,
   submitAnswer,
+  setTestTime,
+  updateTimeLeft,
   clearTestData,
-  fetchActiveUsers, // 🟦 mới
 } from "../../redux/features/jlptLearnerSlice";
 
 import api from "../../configs/axios";
 
-// =========================================
-// Build audio URL CHUẨN từ BE
-// =========================================
+/* ========================================================================== */
 const buildFileUrl = (path) => {
   if (!path) return "";
   if (path.startsWith("http")) return path;
 
   let base = api.defaults.baseURL || "";
   base = base.replace(/\/api\/?$/, "");
-  return `${base}/${path}`;
+  return `${base}${path.startsWith("/") ? path : "/" + path}`;
 };
+/* ========================================================================== */
 
 const Listening = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { testId } = useParams();
   const numericTestId = Number(testId);
 
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
+  const { listening, answers, loadingQuestions, activeUsers, timeLeft } =
+    useSelector((state) => state.jlptLearner);
 
-  const { listening, answers, loadingQuestions, activeUsers } = useSelector(
-    (state) => state.jlptLearner
-  );
-
-  const listeningQuestions = listening || [];
   const [currentIndex, setCurrentIndex] = useState(0);
-
   const [localAnswers, setLocalAnswers] = useState({});
   const [modalOpen, setModalOpen] = useState(false);
 
-  // AUDIO CONTROL
+  // AUDIO
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
 
-  // TIME
-  const [timeLeft, setTimeLeft] = useState(30 * 60);
-
-  // CLEAR QUESTIONS WHEN EXIT
+  /* ========================================================================== 
+      CLEAR REDUX KHI RỜI TRANG 
+  ========================================================================== */
   useEffect(() => {
-    return () => dispatch(clearTestData());
+    return () => {
+      dispatch(clearTestData());
+    };
   }, [dispatch]);
 
-  // LOAD DATA
+  /* ========================================================================== 
+      BẮT ĐẦU TEST: gọi /start và fetch listening
+  ========================================================================== */
   useEffect(() => {
-    dispatch(fetchListening(numericTestId));
+    async function startTest() {
+      try {
+        const res = await api.post(`/learner/jlpt/tests/${numericTestId}/start`);
+        const duration = res.data?.durationMin || 180;
+
+        dispatch(
+          setTestTime({
+            timeLeft: duration * 60,
+            durationMin: duration,
+          })
+        );
+
+        dispatch(fetchListening(numericTestId));
+      } catch  {
+        navigate("/jlpt");
+      }
+    }
+
+    startTest();
+  }, [dispatch, numericTestId, navigate]);
+
+  /* ========================================================================== 
+      POLLING ACTIVE USERS
+  ========================================================================== */
+  useEffect(() => {
+    const run = () => dispatch(fetchActiveUsers(numericTestId));
+    run();
+    const id = setInterval(run, 3000);
+    return () => clearInterval(id);
   }, [dispatch, numericTestId]);
 
-  // 🟦 POLLING ACTIVE USERS
-  useEffect(() => {
-    if (!numericTestId) return;
-
-    const fetchOnce = () => {
-      dispatch(fetchActiveUsers(numericTestId));
-    };
-
-    fetchOnce();
-    const intervalId = setInterval(fetchOnce, 3000);
-
-    return () => clearInterval(intervalId);
-  }, [dispatch, numericTestId]);
-
-  // MERGE ANSWERS
+  /* ========================================================================== 
+      SYNC ANSWERS REDUX → LOCAL
+  ========================================================================== */
   useEffect(() => {
     setLocalAnswers({ ...answers });
   }, [answers]);
 
-  // COUNTDOWN
+  /* ========================================================================== 
+      GLOBAL TIMER
+  ========================================================================== */
   useEffect(() => {
-    if (timeLeft <= 0) return;
-    const t = setInterval(() => setTimeLeft((t) => t - 1), 1000);
-    return () => clearInterval(t);
-  }, [timeLeft]);
+    if (!timeLeft || timeLeft <= 0) return;
+    const id = setInterval(() => dispatch(updateTimeLeft()), 1000);
+    return () => clearInterval(id);
+  }, [dispatch, timeLeft]);
 
-  const formatTime = (sec) =>
-    `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
+  const formatTime = (sec) => {
+    if (!sec) return "00:00";
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
 
-  // AUDIO EVENT HANDLERS
+  /* ========================================================================== 
+      AUDIO SETUP
+  ========================================================================== */
+  const audioUrl =
+    listening && listening[0]?.audioUrl
+      ? buildFileUrl(listening[0].audioUrl)
+      : "";
+
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !audioUrl) return;
 
     const updateTime = () => setAudioProgress(audio.currentTime);
-    const updateDuration = () => setAudioDuration(audio.duration || 0);
+    const updateDuration = () => {
+      if (audio.duration > 0) setAudioDuration(audio.duration);
+    };
 
     audio.addEventListener("timeupdate", updateTime);
     audio.addEventListener("loadedmetadata", updateDuration);
+    audio.addEventListener("play", () => setIsPlaying(true));
+    audio.addEventListener("pause", () => setIsPlaying(false));
+    audio.addEventListener("ended", () => setIsPlaying(false));
 
     return () => {
       audio.removeEventListener("timeupdate", updateTime);
       audio.removeEventListener("loadedmetadata", updateDuration);
     };
-  }, [currentIndex]);
-
-  // RESET AUDIO WHEN QUESTION CHANGES
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    audio.pause();
-    audio.currentTime = 0;
-
-    setIsPlaying(false);
-    setAudioProgress(0);
-    setAudioDuration(0);
-  }, [currentIndex]);
+  }, [audioUrl]);
 
   const handlePlayPause = () => {
     const audio = audioRef.current;
     if (!audio) return;
-
-    if (isPlaying) {
-      audio.pause();
-      setIsPlaying(false);
-    } else {
-      audio.play();
-      setIsPlaying(true);
-    }
+    audio.paused ? audio.play().catch(console.error) : audio.pause();
   };
 
-  const total = listeningQuestions.length;
-  const answeredCount = listeningQuestions.filter(
-    (q) => localAnswers[q.id] !== undefined
-  ).length;
+  /* ========================================================================== 
+      QUESTIONS LOGIC
+  ========================================================================== */
+  const questions = listening || [];
+  const total = questions.length;
 
-  const progressPct = total
-    ? Math.round((answeredCount / total) * 100)
-    : 0;
+  const findNextUnanswered = () => {
+    for (let i = currentIndex + 1; i < total; i++) {
+      if (!localAnswers[questions[i].id]) return i;
+    }
+    for (let i = 0; i < currentIndex; i++) {
+      if (!localAnswers[questions[i].id]) return i;
+    }
+    return null;
+  };
 
-  const currentQ = listeningQuestions[currentIndex] || null;
+  const next = () => {
+    const n = findNextUnanswered();
+    if (n !== null) setCurrentIndex(n);
+    else setCurrentIndex((i) => (i < total - 1 ? i + 1 : 0));
+  };
 
-  // Format BE → FE
+  const prev = () => currentIndex > 0 && setCurrentIndex((i) => i - 1);
+
+  const finish = () => {
+    navigate(`/jlpt/test/${numericTestId}/result`);
+  };
+
+  /* ========================================================================== 
+      UI QUESTION SHAPE
+  ========================================================================== */
   const uiQuestion =
-    currentQ && {
-      question_id: currentQ.id,
-      order_index: currentIndex + 1,
-      content: currentQ.content,
-      options: currentQ.options.map((opt, i) => ({
-        option_id: opt.id,
-        label: String.fromCharCode(65 + i),
-        text: opt.content,
-      })),
-    };
+    questions.length > 0
+      ? {
+          question_id: questions[currentIndex].id,
+          order_index: currentIndex + 1,
+          content: questions[currentIndex].content,
+          options: questions[currentIndex].options.map((opt, i) => ({
+            option_id: opt.id,
+            label: String.fromCharCode(65 + i),
+            text: opt.content,
+          })),
+        }
+      : null;
 
-  const handleSelectAnswer = (qid, optionId) => {
-    setLocalAnswers((prev) => ({ ...prev, [qid]: optionId }));
+  const answeredCount = questions.filter((q) => localAnswers[q.id]).length;
+
+  const progressPct = total ? Math.round((answeredCount / total) * 100) : 0;
+
+  const activeCount = activeUsers?.[numericTestId] ?? 0;
+
+  /* ========================================================================== 
+      FIX RADIO: ĐÚNG FORMAT onSelectOption(question_id, option_id)
+  ========================================================================== */
+  const handleSelectAnswer = (qid, optId) => {
+    setLocalAnswers((prev) => ({
+      ...prev,
+      [qid]: optId,
+    }));
 
     dispatch(
       submitAnswer({
         testId: numericTestId,
         questionId: qid,
-        selectedOptionId: optionId,
+        selectedOptionId: optId,
       })
     );
   };
 
-  const next = () =>
-    currentIndex < total - 1 && setCurrentIndex((i) => i + 1);
-
-  const prev = () =>
-    currentIndex > 0 && setCurrentIndex((i) => i - 1);
-
-  const finish = () => navigate(`/jlpt/test/${numericTestId}/result`);
-
-  const activeCount = activeUsers?.[numericTestId] ?? 0;
-
+  /* ========================================================================== 
+      RENDER
+  ========================================================================== */
   return (
     <>
-      {(loadingQuestions || listeningQuestions.length === 0) && (
-        <LoadingOverlay />
-      )}
+      {(loadingQuestions || questions.length === 0) && <LoadingOverlay />}
 
       <div className={styles.wrapper}>
         <header className={styles.headerBar}>
           <h1 className={styles.testTitle}>JLPT - Nghe hiểu</h1>
+
           <div className={styles.headerRight}>
             <div className={styles.activeUsersBox}>
               <i className="fa-solid fa-user-group" />
-              <span>
-                Đang có {activeCount} người tham gia bài thi này
-              </span>
+              <span>Đang có {activeCount} người đang làm</span>
             </div>
+
             <div className={styles.timerBox}>
-              <span className={styles.timerText}>
-                {formatTime(timeLeft)}
-              </span>
+              <span className={styles.timerText}>{formatTime(timeLeft)}</span>
             </div>
           </div>
         </header>
 
         <main className={styles.main}>
-          {/* SIDEBAR */}
           <aside className={styles.sidebarCard}>
             <SidebarQuestionList
-              questions={listeningQuestions.map((q, i) => ({
+              questions={questions.map((q, i) => ({
                 question_id: q.id,
                 order_index: i + 1,
               }))}
-              currentIndex={currentIndex}
               answersByQuestion={localAnswers}
+              currentIndex={currentIndex}
               onJumpTo={setCurrentIndex}
             />
           </aside>
 
-          {/* MAIN SECTION */}
           <section className={styles.questionArea}>
             <div className={styles.questionCardWrap}>
               {/* PROGRESS */}
@@ -232,31 +266,23 @@ const Listening = () => {
                   <span className={styles.progressLabel}>
                     Tiến độ hoàn thành
                   </span>
-                  <span className={styles.progressPct}>
-                    {progressPct}%
-                  </span>
+                  <span className={styles.progressPct}>{progressPct}%</span>
                 </div>
+
                 <div className={styles.progressTrack}>
                   <div
                     className={styles.progressBar}
                     style={{ width: `${progressPct}%` }}
-                  ></div>
+                  />
                 </div>
               </div>
 
-              {/* AUDIO PLAYER */}
-              {currentQ && (
+              {/* AUDIO */}
+              {audioUrl && (
                 <div className={styles.audioBlock}>
-                  <audio
-                    ref={audioRef}
-                    preload="metadata"
-                    src={buildFileUrl(currentQ.audioUrl)}
-                  />
+                  <audio ref={audioRef} src={audioUrl} preload="metadata" />
 
-                  <button
-                    className={styles.audioBtn}
-                    onClick={handlePlayPause}
-                  >
+                  <button className={styles.hokoriPlayBtn} onClick={handlePlayPause}>
                     {isPlaying ? (
                       <i className="fa-solid fa-pause" />
                     ) : (
@@ -264,19 +290,20 @@ const Listening = () => {
                     )}
                   </button>
 
-                  <div className={styles.progressContainer}>
-                    <div className={styles.progressBar1}>
+                  <div className={styles.audioProgressWrap}>
+                    <div className={styles.audioProgressTrack}>
                       <div
-                        className={styles.progressFill}
+                        className={styles.audioProgressFill}
                         style={{
-                          width: audioDuration
-                            ? (audioProgress / audioDuration) * 100 + "%"
-                            : "0%",
+                          width:
+                            audioDuration > 0
+                              ? (audioProgress / audioDuration) * 100 + "%"
+                              : "0%",
                         }}
-                      ></div>
+                      />
                     </div>
 
-                    <div className={styles.timeBox}>
+                    <div className={styles.audioTimeRow}>
                       <span>{formatTime(audioProgress)}</span>
                       <span>{formatTime(audioDuration)}</span>
                     </div>
@@ -284,15 +311,14 @@ const Listening = () => {
                 </div>
               )}
 
-              {/* QUESTION CARD */}
+              {/* QUESTION */}
               {uiQuestion && (
                 <QuestionCard
                   question={uiQuestion}
                   selectedOptionId={localAnswers[uiQuestion.question_id]}
-                  onSelectOption={handleSelectAnswer}
+                  onSelectOption={handleSelectAnswer}  // <-- FIXED HERE
                   onPrev={prev}
                   onNext={next}
-                  lastSavedAt="Tự động lưu"
                 />
               )}
             </div>
@@ -311,11 +337,7 @@ const Listening = () => {
         <JLPTModal
           open={modalOpen}
           title="Nộp bài phần Nghe hiểu?"
-          message={
-            answeredCount < total
-              ? `Bạn mới trả lời ${answeredCount}/${total} câu.`
-              : "Bạn đã hoàn thành toàn bộ câu hỏi."
-          }
+          message={`Bạn đã trả lời ${answeredCount}/${total} câu.`}
           confirmLabel="Xem kết quả"
           cancelLabel="Làm tiếp"
           onConfirm={finish}
