@@ -13,7 +13,7 @@ const ProfilePage = () => {
   const { data: user, loading } = useSelector((state) => state.profile);
   const [openPwModal, setOpenPwModal] = useState(false);
 
-  // 🔹 Lấy thông tin user khi mở trang
+  //  Lấy thông tin user khi mở trang
   useEffect(() => {
     dispatch(fetchMe());
   }, [dispatch]);

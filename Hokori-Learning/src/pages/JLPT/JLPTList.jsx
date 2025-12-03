@@ -48,7 +48,6 @@ const JLPTList = () => {
   return (
     <main id="main-content" className={styles.wrapper}>
       <div className={styles.container}>
-        
         {/* FILTER BAR */}
         <FilterBar
           levelFilter={levelFilter}
@@ -63,10 +62,8 @@ const JLPTList = () => {
             <p className={styles.loading}>Đang tải danh sách đợt thi...</p>
           )}
 
-          {eventsError && (
-            <p className={styles.error}>
-              Lỗi khi tải danh sách: {errorText}
-            </p>
+          {eventsError && eventsError !== 403 && (
+            <p className={styles.error}>Lỗi khi tải danh sách: {errorText}</p>
           )}
 
           <div className={styles.grid}>
@@ -74,13 +71,11 @@ const JLPTList = () => {
               <JLPTCard key={event.id} event={event} />
             ))}
 
-            {!loadingEvents &&
-              !eventsError &&
-              filteredEvents.length === 0 && (
-                <p className={styles.emptyState}>
-                  Không có đợt thi phù hợp.
-                </p>
-              )}
+            {!loadingEvents && !eventsError && filteredEvents.length === 0 && (
+              <p className={styles.emptyState}>
+                Hiện chưa có đợt thi JLPT nào đang mở.
+              </p>
+            )}
           </div>
         </section>
 

@@ -1,8 +1,7 @@
-
 // ======= Thunk (API thật ) =======
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { toast } from "react-toastify";
-import api from "../../configs/axios"; //  Un-comment when backend API ready
+import api from "../../configs/axios";
 
 const initialState = {
   items: [],
@@ -18,10 +17,12 @@ const initialState = {
 export const fetchCart = createAsyncThunk("cart/fetch", async (_, thunkAPI) => {
   try {
     const res = await api.get("cart");
-    // BE có thể trả { items: [...] } hoặc [] trực tiếp
     return res.data;
   } catch (err) {
-    toast.error("Không thể tải giỏ hàng!");
+    // ❗ KHÔNG SHOW TOAST NỮA KHI LỖI 403
+    if (err.response?.status !== 403) {
+      toast.error("Không thể tải giỏ hàng!");
+    }
     return thunkAPI.rejectWithValue(err.response?.data || err.message);
   }
 });
@@ -31,17 +32,13 @@ export const addToCart = createAsyncThunk(
   "cart/add",
   async (course, thunkAPI) => {
     try {
-      // ⚠️ TODO: nếu BE dùng field khác (vd: course_id) thì sửa lại ở đây
       await api.post("cart/items", {
         courseId: course.id,
       });
 
-      // Lấy lại giỏ hàng mới nhất
       const res = await api.get("cart");
 
       toast.success(`Đã thêm "${course.title}" vào giỏ hàng!`, {
-        icon: "🛍️",
-        style: { backgroundColor: "#fff", color: "#111" },
         autoClose: 1500,
       });
 
@@ -52,7 +49,8 @@ export const addToCart = createAsyncThunk(
     }
   }
 );
-// Cập nhật 1 item trong giỏ (số lượng hoặc trạng thái chọn)
+
+// Cập nhật item
 export const updateCartItem = createAsyncThunk(
   "cart/updateItem",
   async ({ itemId, quantity, selected }, thunkAPI) => {
@@ -64,11 +62,11 @@ export const updateCartItem = createAsyncThunk(
       await api.patch(`cart/items/${itemId}`, body);
 
       const res = await api.get("cart");
+
       toast.success("Cập nhật giỏ hàng thành công!", {
-        icon: "🔄",
-        style: { backgroundColor: "#fff", color: "#111" },
         autoClose: 1000,
       });
+
       return res.data;
     } catch (err) {
       toast.error("Không thể cập nhật giỏ hàng!");
@@ -77,7 +75,7 @@ export const updateCartItem = createAsyncThunk(
   }
 );
 
-// Chọn / Bỏ chọn tất cả item
+// Chọn / Bỏ chọn tất cả
 export const selectAllCartItems = createAsyncThunk(
   "cart/selectAll",
   async (selected, thunkAPI) => {
@@ -86,8 +84,6 @@ export const selectAllCartItems = createAsyncThunk(
       const res = await api.get("cart");
 
       toast.info(selected ? "Đã chọn tất cả khóa học" : "Đã bỏ chọn tất cả!", {
-        icon: selected ? "✅" : "🚫",
-        style: { backgroundColor: "#fff", color: "#111" },
         autoClose: 1200,
       });
 
@@ -99,7 +95,7 @@ export const selectAllCartItems = createAsyncThunk(
   }
 );
 
-// Xóa 1 dòng khỏi giỏ (itemId = id của cart item)
+// Xóa 1 item
 export const removeFromCart = createAsyncThunk(
   "cart/remove",
   async (itemId, thunkAPI) => {
@@ -109,8 +105,6 @@ export const removeFromCart = createAsyncThunk(
       const res = await api.get("cart");
 
       toast.info("Đã xóa khóa học khỏi giỏ hàng!", {
-        icon: "🗑️",
-        style: { backgroundColor: "#fff", color: "#111" },
         autoClose: 1200,
       });
 
@@ -122,7 +116,7 @@ export const removeFromCart = createAsyncThunk(
   }
 );
 
-// Xóa toàn bộ giỏ trên server
+// Xóa toàn bộ giỏ
 export const clearCartOnServer = createAsyncThunk(
   "cart/clear",
   async (_, thunkAPI) => {
@@ -132,8 +126,6 @@ export const clearCartOnServer = createAsyncThunk(
       const res = await api.get("cart");
 
       toast.info("Đã xóa toàn bộ giỏ hàng!", {
-        icon: "🧺",
-        style: { backgroundColor: "#fff", color: "#111" },
         autoClose: 1500,
       });
 
@@ -149,15 +141,13 @@ const cartSlice = createSlice({
   name: "cart",
   initialState,
   reducers: {
-    // Các action client-only, nếu vẫn muốn dùng cho demo
+    // Local demo actions
     addItem: (state, action) => {
       const course = action.payload;
       const exists = state.items.some((c) => c.id === course.id);
 
       if (exists) {
         toast.warn(`Khóa học "${course.title}" đã có trong giỏ hàng!`, {
-          icon: "🛒",
-          style: { backgroundColor: "#fff", color: "#111" },
           autoClose: 1500,
         });
         return;
@@ -175,6 +165,7 @@ const cartSlice = createSlice({
       state.items = [];
     },
   },
+
   extraReducers: (builder) => {
     const setItemsFromPayload = (state, action) => {
       state.status = "succeeded";

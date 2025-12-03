@@ -49,10 +49,10 @@ export const Header = () => {
   // AUTO FETCH CART WHEN LOGIN
   // ============================
   useEffect(() => {
-    if (user?.accessToken) {
+    if (user && user.accessToken && profile) {
       dispatch(fetchCart());
     }
-  }, [user, dispatch]);
+  }, [user, profile, dispatch]);
 
   // ============================
   // DROPDOWN CONTROL
