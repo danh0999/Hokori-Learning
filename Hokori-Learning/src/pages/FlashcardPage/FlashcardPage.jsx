@@ -1,7 +1,9 @@
+// src/pages/FlashcardPage/FlashcardPage.jsx
 import React, { useEffect, useState } from "react";
-import styles from "./FlashcardPage.module.scss";
-import api from "../../configs/axios";
 import { useParams } from "react-router-dom";
+import api from "../../configs/axios";
+import styles from "./FlashcardPage.module.scss";
+import { IoChevronBack, IoChevronForward } from "react-icons/io5";
 
 export default function FlashcardPage() {
   const { sectionContentId } = useParams();
@@ -13,38 +15,34 @@ export default function FlashcardPage() {
   const [current, setCurrent] = useState(0);
   const [flipped, setFlipped] = useState(false);
 
-  const [progress, setProgress] = useState(null);
-  const [progressPercent, setProgressPercent] = useState(0);
+  // Đếm số thẻ đã "next" → dùng để vẽ progress bar
+  const [learnedCount, setLearnedCount] = useState(0);
 
   /* ============================================================
-      TÍNH PROGRESS %
-  ============================================================ */
-  function getProgressPercent(status) {
-    if (status === "MASTERED") return 100;
-    if (status === "LEARNING") return 50;
-    return 0;
-  }
-
-  /* ============================================================
-      FETCH FLASHCARD SET + CARDS
+     FETCH FLASHCARD SET + CARDS
   ============================================================ */
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true);
 
-        // 1. GET metadata của set
+        // 1) Lấy metadata của set
         const setRes = await api.get(
           `/learner/contents/${sectionContentId}/flashcard-set`
         );
         const setData = setRes.data;
         setSetInfo(setData);
 
-        // 2. GET danh sách flashcards
-        const cardsRes = await api.get(`/flashcards/sets/${setData.id}/cards`);
+        // 2) Lấy danh sách thẻ trong set
+        const cardsRes = await api.get(
+          `/flashcards/sets/${setData.id}/cards`
+        );
         setCards(cardsRes.data || []);
+        setCurrent(0);
+        setFlipped(false);
+        setLearnedCount(0);
       } catch (err) {
-        console.error("Flashcard load error:", err);
+        console.error("Lỗi tải flashcard set:", err);
       } finally {
         setLoading(false);
       }
@@ -54,134 +52,151 @@ export default function FlashcardPage() {
   }, [sectionContentId]);
 
   /* ============================================================
-      FETCH PROGRESS CỦA 1 FLASHCARD
+     PROGRESS BAR (OPTION A)
+     Tiến trình = số thẻ đã Next / tổng số thẻ
   ============================================================ */
-  async function fetchProgress(cardId) {
-    try {
-      const res = await api.get(`/flashcards/progress/${cardId}`);
-      const p = res.data;
-      setProgress(p);
-      setProgressPercent(getProgressPercent(p.status));
-    } catch (err) {
-      console.error("Error loading progress:", err);
-    }
-  }
-
-  // Mỗi khi đổi thẻ → fetch progress mới
-  useEffect(() => {
-    if (cards.length > 0 && cards[current]?.id) {
-      fetchProgress(cards[current].id);
-    }
-  }, [current, cards]);
+  const progressPercent =
+    cards.length > 0
+      ? Math.min(100, Math.round((learnedCount / cards.length) * 100))
+      : 0;
 
   /* ============================================================
-      HANDLERS
+     GỌI API CẬP NHẬT PROGRESS
   ============================================================ */
-  const flipCard = () => setFlipped((v) => !v);
+  const updateProgress = async (flashcardId, status) => {
+    try {
+      await api.post(`/flashcards/progress/${flashcardId}`, { status });
+      // Không cần set state gì thêm, backend tự tăng reviewCount, v.v.
+    } catch (err) {
+      console.error("Lỗi cập nhật progress:", err);
+    }
+  };
 
-  const nextCard = () => {
-    if (current < cards.length - 1) {
+  /* ============================================================
+     HANDLERS
+  ============================================================ */
+  const handleFlip = () => {
+    if (!cards.length) return;
+    setFlipped((v) => !v);
+  };
+
+  const handleNext = () => {
+    if (!cards.length) return;
+
+    const card = cards[current];
+    if (!card) return;
+
+    const isLast = current === cards.length - 1;
+    const status = isLast ? "MASTERED" : "LEARNING";
+
+    // Gọi API cập nhật tiến độ
+    updateProgress(card.id, status);
+
+    // Tăng tiến độ local để vẽ progress bar
+    setLearnedCount((prev) => Math.min(prev + 1, cards.length));
+
+    // Chuyển thẻ tiếp theo (nếu có)
+    if (!isLast) {
       setCurrent((i) => i + 1);
       setFlipped(false);
     }
   };
 
-  const prevCard = () => {
+  const handlePrev = () => {
     if (current > 0) {
       setCurrent((i) => i - 1);
       setFlipped(false);
     }
   };
 
-  /* ============================================================
-      RENDER
-  ============================================================ */
-
   const card = cards[current];
 
-  return (
-    <div className={styles.container}>
-      {/* HEADER */}
-      <div className={styles.pageHeader}>
+  /* ============================================================
+     RENDER
+  ============================================================ */
+
+  if (loading) {
+    return <div className={styles.loading}>Đang tải flashcard...</div>;
+  }
+
+  if (!cards.length) {
+    return (
+      <div className={styles.empty}>
         <h2>{setInfo?.title || "Flashcard"}</h2>
-        <p className={styles.sub}>
-          {cards.length > 0 ? `${current + 1} / ${cards.length}` : ""}
-        </p>
+        <p>Bộ này hiện chưa có thẻ nào.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.wrapper}>
+      {/* TIÊU ĐỀ */}
+      <h2 className={styles.title}>{setInfo?.title || "Flashcard"}</h2>
+      <div className={styles.counter}>
+        {current + 1} / {cards.length}
       </div>
 
-      {/* LOADING */}
-      {loading && <p className={styles.loading}>Đang tải...</p>}
-
-      {/* EMPTY */}
-      {!loading && cards.length === 0 && (
-        <p className={styles.empty}>Chưa có thẻ nào trong bộ này.</p>
-      )}
+      {/* PROGRESS BAR */}
+      <div className={styles.progressBar}>
+        <div
+          className={styles.progressFill}
+          style={{ width: `${progressPercent}%` }}
+        />
+      </div>
 
       {/* FLASHCARD */}
-      {!loading && card && (
-        <>
-          {/* PROGRESS BAR */}
-          <div className={styles.progressBar}>
-            <div
-              className={styles.progressFill}
-              style={{ width: `${progressPercent}%` }}
-            ></div>
+      <div className={styles.cardWrapper} onClick={handleFlip}>
+        <div
+          className={`${styles.cardInner} ${
+            flipped ? styles.flipped : ""
+          }`}
+        >
+          {/* MẶT TRƯỚC */}
+          <div className={styles.cardFace + " " + styles.cardFront}>
+            <div className={styles.frontContent}>{card.frontText}</div>
           </div>
 
-          <div
-            className={`${styles.cardWrapper} ${
-              flipped ? styles.flipped : ""
-            }`}
-            onClick={flipCard}
-          >
-            <div className={styles.cardInner}>
-              {/* FRONT */}
-              <div className={styles.cardFront}>
-                <div className={styles.frontContent}>{card.frontText}</div>
-              </div>
+          {/* MẶT SAU */}
+          <div className={styles.cardFace + " " + styles.cardBack}>
+            <div className={styles.backContent}>
+              <div className={styles.meaning}>{card.backText}</div>
 
-              {/* BACK */}
-              <div className={styles.cardBack}>
-                <div className={styles.backContent}>
-                  <div className={styles.meaning}>{card.backText}</div>
-                  {card.reading && (
-                    <div className={styles.reading}>({card.reading})</div>
-                  )}
+              {card.reading && (
+                <div className={styles.reading}>({card.reading})</div>
+              )}
 
-                  {card.exampleSentence &&
-                    card.exampleSentence.trim() !== "" && (
-                      <div className={styles.exampleBox}>
-                        <p className={styles.exampleLabel}>Ví dụ:</p>
-                        <p className={styles.exampleText}>
-                          {card.exampleSentence}
-                        </p>
-                      </div>
-                    )}
-                </div>
-              </div>
+              {card.exampleSentence &&
+                card.exampleSentence.trim() !== "" && (
+                  <div className={styles.exampleBox}>
+                    <p className={styles.exampleLabel}>Ví dụ:</p>
+                    <p className={styles.exampleText}>
+                      {card.exampleSentence}
+                    </p>
+                  </div>
+                )}
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* NAVIGATION */}
-          <div className={styles.nav}>
-            <button
-              className={styles.navBtn}
-              disabled={current === 0}
-              onClick={prevCard}
-            >
-              <i className="fa-solid fa-arrow-left"></i>
-            </button>
+      {/* NÚT ĐIỀU HƯỚNG */}
+      <div className={styles.nav}>
+        <button
+          className={styles.navBtn}
+          disabled={current === 0}
+          onClick={handlePrev}
+        >
+          <IoChevronBack />
+        </button>
 
-            <button
-              className={styles.navBtn}
-              disabled={current === cards.length - 1}
-              onClick={nextCard}
-            >
-              <i className="fa-solid fa-arrow-right"></i>
-            </button>
-          </div>
-        </>
-      )}
+        <button
+          className={styles.navBtn}
+          disabled={current === cards.length - 1}
+          onClick={handleNext}
+        >
+          <IoChevronForward />
+        </button>
+      </div>
     </div>
   );
 }
