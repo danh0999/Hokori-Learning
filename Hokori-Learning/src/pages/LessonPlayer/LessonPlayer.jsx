@@ -79,6 +79,14 @@ const LessonPlayer = () => {
   ? buildFileUrl(primaryContent.filePath)
   : null;
 
+  // === TÌM FLASHCARD ===
+const flashcardContent = lessonData?.sections
+  ?.flatMap((sec) => sec.contents)
+  ?.find((c) => c.contentFormat === "FLASHCARD_SET");
+
+const flashcardContentId = flashcardContent?.id;
+
+
 
 
 
@@ -108,7 +116,11 @@ const LessonPlayer = () => {
             <p className={styles.desc}>{lessonData?.description}</p>
           </div>
 
-          <QuickActions />
+          <QuickActions
+            lessonId={lessonId}
+            flashcardContentId={flashcardContentId}
+          />
+
           <LessonContent data={lessonData?.sections} />
           <ActionBar />
 

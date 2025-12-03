@@ -3,21 +3,27 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "../../../components/Button/Button";
 import styles from "./QuickActions.module.scss";
 
-const QuickActions = ({ lessonId, firstQuizId }) => {
+const QuickActions = ({ lessonId, firstQuizId, flashcardContentId }) => {
   const navigate = useNavigate();
 
-  //  [SAU NÀY SẼ XÓA ĐỂ DÙNG ID TỪ API]
   const mockQuizId = firstQuizId || 1;
 
   const handleQuiz = () => {
-    //  Dòng này GIỮ NGUYÊN sau này
     navigate(`quiz/${mockQuizId}`);
+  };
+
+  const handleFlashcard = () => {
+    if (!flashcardContentId) {
+      alert("Bài học này không có flashcard.");
+      return;
+    }
+    navigate(`/learner/flashcards/${flashcardContentId}`);
   };
 
   const actions = [
     { label: "Tệp đính kèm", action: null },
     { label: "Quiz nhanh", action: handleQuiz },
-    { label: "Flashcard", action: null },
+    { label: "Flashcard", action: handleFlashcard },
     { label: "Ghi chú của tôi", action: null },
   ];
 

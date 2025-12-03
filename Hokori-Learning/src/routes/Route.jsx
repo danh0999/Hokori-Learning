@@ -32,6 +32,7 @@ import MultipleChoice from "../pages/JLPTTest/MultipleChoice";
 import Reading from "../pages/JLPTTest/Reading";
 import Listening from "../pages/JLPTTest/Listening";
 import Result from "../pages/JLPTTest/Result";
+import FlashcardPage from "../pages/FlashcardPage/FlashcardPage";
 
 // ===== Teacher =====
 import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
@@ -89,6 +90,7 @@ const routes = [
       { path: "contact", element: <Contact /> },
       { path: "information", element: <Information /> },
       { path: "policies", element: <Policies /> },
+      { path: "learner/flashcards/:sectionContentId", element: <FlashcardPage /> },
 
       // Protected Routes (Learner/Teacher/Admin/Moderator)
       {
