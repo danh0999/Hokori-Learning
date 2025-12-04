@@ -9,6 +9,7 @@ import PricingStep from "../Create-Course/components/PricingStep/PricingStep.jsx
 import CourseCurriculumView from "../CourseCurriculumView/CourseCurriculumView.jsx";
 import LessonEditorDrawer from "../Create-Course/components/Curriculum Builder/LessonEditorDrawer/LessonEditorDrawer.jsx";
 import CourseFeedbackTab from "./CourseFeedbackTab/CourseFeedbackTab.jsx";
+import CourseProgressTab from "./CourseProgressTab/CourseProgressTab.jsx";
 
 import {
   fetchCourseTree,
@@ -212,6 +213,16 @@ export default function CourseInformation() {
                   courseTree={currentCourseTree}
                   loading={loadingTree}
                   onEditLesson={handleEditLesson}
+                />
+              ),
+            },
+            {
+              key: "progress",
+              label: "Learners progress",
+              children: (
+                <CourseProgressTab
+                  courseId={courseId}
+                  isActive={activeKey === "progress"}
                 />
               ),
             },

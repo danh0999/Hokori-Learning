@@ -109,26 +109,176 @@
 }
 
 /* AI REVIEW */
+/* AI REVIEW */
 .aiLoading {
   text-align: center;
   padding: 8px 0;
 }
 
+/* Panel tổng */
 .aiReviewBox {
   margin-top: 6px;
-  padding: 8px 10px;
-  border-radius: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
   background: #f9fafb;
   border: 1px solid #e5e7eb;
-  max-height: 360px;
+  max-height: 380px;
   overflow: auto;
+
+  /* Đè mọi rule global gây chữ dọc / break-all */
+  writing-mode: horizontal-tb !important;
+  word-break: normal !important;
+  white-space: normal !important;
 }
 
-.aiReviewPre {
-  margin: 0;
+/* Mọi text bên trong panel AI đều viết ngang, break theo từ */
+.aiReviewBox * {
+  writing-mode: horizontal-tb !important;
+  word-break: normal !important;
+  white-space: normal !important;
+}
+
+/* Header */
+.aiHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.aiHeaderMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.aiCourseTitle {
+  margin-bottom: 2px;
+}
+
+.aiScoreBlock {
+  min-width: 170px;
+  text-align: right;
+}
+
+/* Section chung */
+.aiSection {
+  margin-top: 12px;
+}
+
+.aiSectionTitle {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8c8c8c;
+  margin-bottom: 4px;
+}
+
+/* Overview mini cards */
+.aiOverviewRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+
+.aiOverviewItem {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 8px 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.aiOverviewValue {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* List chung */
+.aiList {
+  margin: 4px 0 0;
+  padding-left: 18px;
+
+  li {
+    margin-bottom: 4px;
+  }
+}
+
+/* Block con */
+.aiSubBlock {
+  margin-top: 6px;
+}
+
+.aiSubTitle {
   font-size: 12px;
-  white-space: pre-wrap;
-  word-break: break-word;
+  font-weight: 500;
+  color: #595959;
+  margin: 6px 0 2px;
+}
+
+/* Error list (language accuracy) */
+.aiErrorList {
+  margin: 4px 0 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.aiErrorItem {
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  margin-bottom: 6px;
+}
+
+.aiErrorLocation {
+  font-size: 11px;
+  display: block;
+  margin-bottom: 2px;
+  color: #6b7280;
+}
+
+.aiErrorTextSnippet {
+  font-size: 12px;
+  color: #374151;
+}
+
+.aiError,
+.aiSuggestion {
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+/* Issue list (grammar progression) */
+.aiIssueList {
+  margin: 4px 0 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.aiIssueItem {
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  margin-bottom: 6px;
+}
+
+.aiIssueHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.aiIssueHeaderTitle {
+  flex: 1;
+  min-width: 0;
+}
+
+.aiIssueDescription,
+.aiIssueConfusion {
+  font-size: 12px;
+  margin-top: 4px;
 }
 
 /* RESPONSIVE */
@@ -152,4 +302,169 @@
     flex-direction: column;
     align-items: flex-start;
   }
+}
+.aiReviewBox {
+  background: #fafafa;
+  border-radius: 12px;
+  padding: 16px 16px 12px;
+}
+
+.aiHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.aiHeaderMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.aiCourseTitle {
+  margin-bottom: 2px;
+}
+
+.aiScoreBlock {
+  min-width: 180px;
+  text-align: right;
+}
+
+.aiSection {
+  margin-top: 14px;
+}
+
+.aiSectionTitle {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8c8c8c;
+  margin-bottom: 4px;
+}
+
+.aiOverviewRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+
+.aiOverviewItem {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 8px 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.aiOverviewValue {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.aiList {
+  margin: 4px 0 0;
+  padding-left: 18px;
+
+  li {
+    margin-bottom: 4px;
+  }
+}
+.aiSubBlock {
+  margin-top: 6px;
+}
+
+.aiSubTitle {
+  font-size: 12px;
+  font-weight: 500;
+  color: #595959;
+  margin: 6px 0 2px;
+}
+
+.aiErrorList {
+  margin: 4px 0 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.aiErrorItem {
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  margin-bottom: 6px;
+}
+
+.aiErrorLocation {
+  font-size: 11px;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.aiErrorTextSnippet {
+  font-size: 12px;
+  color: #595959;
+}
+
+.aiError,
+.aiSuggestion {
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.aiIssueList {
+  margin: 4px 0 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.aiIssueItem {
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  margin-bottom: 6px;
+}
+
+.aiIssueHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.aiIssueMeta {
+  margin-top: 2px;
+
+  span {
+    font-size: 11px;
+    display: block;
+  }
+}
+
+.aiIssueDescription,
+.aiIssueConfusion {
+  font-size: 12px;
+  margin-top: 4px;
+}
+/* Đảm bảo toàn bộ panel AI luôn viết ngang */
+.aiReviewBox {
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+}
+
+/* Các đoạn mô tả dài không bị bẻ từng ký tự */
+.aiIssueDescription,
+.aiIssueConfusion,
+.aiErrorTextSnippet,
+.aiError,
+.aiSuggestion {
+  white-space: normal;
+  word-break: break-word; // hoặc overflow-wrap: break-word;
+}
+
+/* Thêm cho chắc nếu ở đâu đó bạn có global word-break: break-all */
+.aiIssueItem,
+.aiErrorItem {
+  word-break: normal;
+  overflow-wrap: break-word;
 }

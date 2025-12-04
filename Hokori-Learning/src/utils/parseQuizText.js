@@ -26,6 +26,7 @@ function normalize(s) {
 // A. xxx
 const optLetterRe = /^[A-H]\.\s*(.+)$/i;
 // - [x] xxx  | - xxx | • xxx | ・xxx
+//eslint-disable-next-line no-irregular-whitespace
 const bulletRe = /^[ \- \* \u2022 \u30FB]\s*(\[[xX ]\])?\s*(.+)$/;
 // Answer: xxx
 const ansLineRe = /^ans(?:wer)?\s*:\s*(.+)$/i;

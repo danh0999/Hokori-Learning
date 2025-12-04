@@ -6,7 +6,6 @@ import {
   InputNumber,
   Button,
   Space,
-  message,
   Row,
   Col,
   Divider,
@@ -20,6 +19,7 @@ import {
   selectUpdatingUser,
   selectUpdatingTeacher,
 } from "../../../../redux/features/teacherprofileSlice.js";
+import { toast } from "react-toastify";
 
 export default function ProfileEditModal({ open, onClose }) {
   const [form] = Form.useForm();
@@ -87,16 +87,18 @@ export default function ProfileEditModal({ open, onClose }) {
       const okTeacher = resTeacher.meta.requestStatus === "fulfilled";
 
       if (okUser && okTeacher) {
-        message.success("Cập nhật hồ sơ thành công!");
+        toast.success("Cập nhật hồ sơ thành công!");
         onClose?.();
       } else {
-        message.error(
+        toast.error(
           resUser?.payload?.message ||
             resTeacher?.payload?.message ||
             "Cập nhật thất bại"
         );
       }
     } catch (err) {
+      console.log(err);
+
       // lỗi validate thì k làm gì
     }
   };
