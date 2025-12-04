@@ -43,10 +43,13 @@ const ProfileHeader = ({ user, onOpenChangePassword }) => {
             onChange={handleUpload}
           />
         </label>
+
+        <p className={styles.roleBelow}>{role}</p>
       </div>
 
       <div className={styles.info}>
-        <p className={styles.role}>{role}</p>
+        <p className={styles.label}>Tên hiển thị</p>
+
         <h1 className={styles.name}>{displayName}</h1>
 
         {user.email && <p className={styles.email}>{user.email}</p>}

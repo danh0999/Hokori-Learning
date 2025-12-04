@@ -281,3 +281,63 @@ h4 {
   width: 16px;
   height: 16px;
 }
+/* ================================
+   PRICE RANGE (COMPACT)
+================================ */
+
+.priceInputs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+
+  input {
+    width: 100%;
+    padding: 6px 8px;
+    font-size: 13px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #f9fafb;
+    transition: border-color 0.2s ease;
+
+    &:focus {
+      border-color: #2563eb;
+      outline: none;
+    }
+  }
+
+  .hyphen {
+    font-size: 14px;
+    color: #6b7280;
+  }
+}
+
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+
+  button {
+    flex: 1;
+    min-width: 48%;
+    padding: 6px 8px;
+    font-size: 12.5px;
+    border: 1px solid #e5e7eb;
+    background: #fafafa;
+    border-radius: 5px;
+    cursor: pointer;
+    white-space: nowrap;
+    text-align: center;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: #f3f4f6;
+      border-color: #93c5fd;
+    }
+
+    &:active {
+      background: #e5e7eb;
+    }
+  }
+}

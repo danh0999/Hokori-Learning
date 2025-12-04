@@ -1,4 +1,3 @@
-// src/pages/JLPTTest/Reading.jsx (Original Simplified Version)
 import React, { useEffect, useMemo, useState } from "react";
 import styles from "./MultipleChoice.module.scss";
 import LoadingOverlay from "../../components/Loading/LoadingOverlay";
@@ -13,7 +12,10 @@ import {
   fetchReading,
   submitAnswer,
   fetchActiveUsers,
+  setTestTime,
+  updateTimeLeft,
 } from "../../redux/features/jlptLearnerSlice";
+import api from "../../configs/axios";
 
 const Reading = () => {
   const { testId } = useParams();
@@ -27,22 +29,68 @@ const Reading = () => {
 
   const readingQuestions = reading || [];
 
-  // LOCAL UI ONLY — NO SAVING
   const [localAnswers, setLocalAnswers] = useState({});
   const [currentIndex, setCurrentIndex] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContext, setModalContext] = useState(null);
 
   /* ============================================================
-        LOAD QUESTIONS
-     ============================================================ */
+      START TEST (ONLY IF timeLeft === 0)
+  ============================================================ */
+  useEffect(() => {
+    async function startTest() {
+      if (timeLeft > 0) return; // đã có timer rồi thì bỏ qua
+
+      try {
+        const res = await api.post(
+          `/learner/jlpt/tests/${numericTestId}/start`
+        );
+        const duration = res.data?.durationMin || 180;
+
+        dispatch(
+          setTestTime({
+            timeLeft: duration * 60,
+            durationMin: duration,
+          })
+        );
+      } catch (err) {
+        console.error("Cannot start test", err);
+        navigate("/jlpt");
+      }
+    }
+
+    startTest();
+  }, [dispatch, numericTestId, timeLeft, navigate]);
+
+  /* ============================================================
+      TIMER COUNTDOWN
+  ============================================================ */
+  useEffect(() => {
+    if (!timeLeft || timeLeft <= 0) return;
+
+    const t = setInterval(() => dispatch(updateTimeLeft()), 1000);
+    return () => clearInterval(t);
+  }, [dispatch, timeLeft]);
+
+  /* ============================================================
+      AUTO MOVE WHEN TIME OUT → Listening
+  ============================================================ */
+  useEffect(() => {
+    if (timeLeft === 0) {
+      navigate(`/jlpt/test/${numericTestId}/listening`);
+    }
+  }, [timeLeft, navigate, numericTestId]);
+
+  /* ============================================================
+      LOAD QUESTIONS
+  ============================================================ */
   useEffect(() => {
     dispatch(fetchReading(numericTestId));
   }, [dispatch, numericTestId]);
 
   /* ============================================================
-        SYNC ANSWERS FROM REDUX
-     ============================================================ */
+      SYNC ANSWERS FROM REDUX
+  ============================================================ */
   useEffect(() => {
     if (answers) {
       setLocalAnswers((prev) => ({ ...prev, ...answers }));
@@ -50,8 +98,8 @@ const Reading = () => {
   }, [answers]);
 
   /* ============================================================
-        ACTIVE USERS
-     ============================================================ */
+      ACTIVE USERS
+  ============================================================ */
   useEffect(() => {
     const run = () => dispatch(fetchActiveUsers(numericTestId));
     run();
@@ -66,8 +114,8 @@ const Reading = () => {
   };
 
   /* ============================================================
-        PROGRESS
-     ============================================================ */
+      PROGRESS
+  ============================================================ */
   const total = readingQuestions.length;
   const answered = useMemo(
     () =>
@@ -95,8 +143,8 @@ const Reading = () => {
     };
 
   /* ============================================================
-        SELECT ANSWER (UI + BE)
-     ============================================================ */
+      SELECT ANSWER (UI + BE)
+  ============================================================ */
   const handleSelectAnswer = (qid, optionId) => {
     setLocalAnswers((prev) => ({ ...prev, [qid]: optionId }));
 
@@ -110,8 +158,8 @@ const Reading = () => {
   };
 
   /* ============================================================
-        NEXT/PREV
-     ============================================================ */
+      NEXT/PREV
+  ============================================================ */
   const findNextUnanswered = () => {
     for (let i = currentIndex + 1; i < total; i++) {
       if (!localAnswers[readingQuestions[i].id]) return i;
@@ -134,8 +182,8 @@ const Reading = () => {
   };
 
   /* ============================================================
-        SUBMIT / MOVE TO LISTENING
-     ============================================================ */
+      SUBMIT / MOVE TO LISTENING
+  ============================================================ */
   const handleModalConfirm = () => {
     if (modalContext === "submit") {
       navigate(`/jlpt/test/${numericTestId}/result`);
@@ -159,7 +207,7 @@ const Reading = () => {
           <div className={styles.headerRight}>
             <div className={styles.activeUsersBox}>
               <i className="fa-solid fa-user-group" />
-              <span>Đang có {activeCount} người tham gia bài thi này</span>
+              <span>{activeCount} người đang làm</span>
             </div>
 
             <div className={styles.timerBox}>
@@ -196,7 +244,7 @@ const Reading = () => {
             <div className={styles.questionCardWrap}>
               <div className={styles.progressCard}>
                 <div className={styles.progressTopRow}>
-                  <span className={styles.progressLabel}>Tiến độ hoàn thành</span>
+                  <span className={styles.progressLabel}>Tiến độ</span>
                   <span className={styles.progressPct}>{progress}%</span>
                 </div>
                 <div className={styles.progressTrack}>
@@ -211,7 +259,7 @@ const Reading = () => {
                 <QuestionCard
                   question={uiQuestion}
                   selectedOptionId={localAnswers[uiQuestion.question_id]}
-                  onSelectOption={(qid, opt) => handleSelectAnswer(qid, opt)}
+                  onSelectOption={handleSelectAnswer}
                   onPrev={prev}
                   onNext={next}
                 />

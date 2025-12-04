@@ -12,9 +12,12 @@ import JLPTModal from "./components/JLPTModal";
 import {
   fetchGrammarVocab,
   submitAnswer,
+  setTestTime,
+  updateTimeLeft, 
   fetchActiveUsers,
 } from "../../redux/features/jlptLearnerSlice";
 
+import api from "../../configs/axios";
 const MultipleChoice = () => {
   const { testId } = useParams();
   const numericTestId = Number(testId);
@@ -32,6 +35,40 @@ const MultipleChoice = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContext, setModalContext] = useState(null);
+  // =======================================================
+  // START TEST → lấy thời gian từ API
+  // =======================================================
+  useEffect(() => {
+    async function startTest() {
+      try {
+        const res = await api.post(
+          `/learner/jlpt/tests/${numericTestId}/start`
+        );
+        const duration = res.data?.durationMin || 180;
+
+        dispatch(
+          setTestTime({
+            timeLeft: duration * 60,
+            durationMin: duration,
+          })
+        );
+      } catch (err) {
+        console.error("Cannot start test", err);
+        navigate("/jlpt");
+      }
+    }
+
+    startTest();
+  }, [dispatch, numericTestId, navigate]);
+  /* ============================================================
+      TIMER COUNTDOWN (NEEDED!)
+============================================================ */
+  useEffect(() => {
+    if (!timeLeft || timeLeft <= 0) return;
+
+    const timer = setInterval(() => dispatch(updateTimeLeft()), 1000);
+    return () => clearInterval(timer);
+  }, [dispatch, timeLeft]);
 
   /* ============================================================
         LOAD QUESTIONS
@@ -74,28 +111,27 @@ const MultipleChoice = () => {
   const total = grammarQuestions.length;
 
   const answered = useMemo(
-    () => grammarQuestions.filter((q) => localAnswers[q.id] !== undefined).length,
+    () =>
+      grammarQuestions.filter((q) => localAnswers[q.id] !== undefined).length,
     [grammarQuestions, localAnswers]
   );
 
   const progress = total ? Math.round((answered / total) * 100) : 0;
- 
 
   const currentQ = grammarQuestions[currentIndex] || null;
 
-  const uiQuestion =
-    currentQ && {
-      question_id: currentQ.id,
-      order_index: currentIndex + 1,
-      content: currentQ.content,
-      audio: currentQ.audioUrl || null,
-      image: currentQ.imagePath || null,
-      options: currentQ.options.map((opt, i) => ({
-        option_id: opt.id,
-        label: String.fromCharCode(65 + i),
-        text: opt.content,
-      })),
-    };
+  const uiQuestion = currentQ && {
+    question_id: currentQ.id,
+    order_index: currentIndex + 1,
+    content: currentQ.content,
+    audio: currentQ.audioUrl || null,
+    image: currentQ.imagePath || null,
+    options: currentQ.options.map((opt, i) => ({
+      option_id: opt.id,
+      label: String.fromCharCode(65 + i),
+      text: opt.content,
+    })),
+  };
 
   /* ============================================================
         SELECT ANSWER
@@ -205,7 +241,9 @@ const MultipleChoice = () => {
               {/* PROGRESS */}
               <div className={styles.progressCard}>
                 <div className={styles.progressTopRow}>
-                  <span className={styles.progressLabel}>Tiến độ hoàn thành</span>
+                  <span className={styles.progressLabel}>
+                    Tiến độ hoàn thành
+                  </span>
                   <span className={styles.progressPct}>{progress}%</span>
                 </div>
                 <div className={styles.progressTrack}>
