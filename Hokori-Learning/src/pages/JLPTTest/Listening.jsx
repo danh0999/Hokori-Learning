@@ -152,7 +152,7 @@ const Listening = () => {
     if (!audio) return;
     audio.paused ? audio.play().catch(console.error) : audio.pause();
   };
-
+    
   /* ========================================================================== 
       QUESTIONS LOGIC
   ========================================================================== */
