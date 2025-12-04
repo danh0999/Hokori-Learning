@@ -1,4 +1,3 @@
-// src/pages/Moderator/CourseReviewPage.jsx
 import React, { useEffect, useState } from "react";
 import {
   Descriptions,
@@ -9,6 +8,8 @@ import {
   Spin,
   Alert,
   message,
+  Progress,
+  Divider,
 } from "antd";
 import { ArrowLeftOutlined, RobotOutlined } from "@ant-design/icons";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
@@ -39,6 +40,25 @@ function formatPriceFromCourse(course) {
     return `${amount.toLocaleString("vi-VN")} ₫`;
   }
 }
+
+const getSafetyStatusColor = (status) => {
+  switch ((status || "").toUpperCase()) {
+    case "SAFE":
+      return "green";
+    case "WARNING":
+      return "gold";
+    case "UNSAFE":
+      return "red";
+    default:
+      return "default";
+  }
+};
+
+const formatScore10 = (score) => {
+  if (typeof score !== "number" || Number.isNaN(score)) return null;
+  const s = Math.max(0, Math.min(1, score)); // clamp 0–1
+  return Math.round(s * 100) / 10; // 0.0 – 10.0
+};
 
 export default function CourseReviewPage() {
   const navigate = useNavigate();
@@ -150,10 +170,7 @@ export default function CourseReviewPage() {
     setAiError(null);
 
     try {
-      // BE trả /api/moderator/courses/{id}/ai-check (GET)
-      // axios instance `api` đã có base `/api` rồi
       const res = await api.get(`/moderator/courses/${courseId}/ai-check`);
-
       const payload = res.data;
       const reviewData = payload?.data ?? payload;
 
@@ -183,18 +200,6 @@ export default function CourseReviewPage() {
       }
     } finally {
       setAiLoading(false);
-    }
-  };
-  const getSafetyStatusColor = (status) => {
-    switch (status) {
-      case "SAFE":
-        return "green";
-      case "WARNING":
-        return "gold";
-      case "UNSAFE":
-        return "red";
-      default:
-        return "default";
     }
   };
 
@@ -292,7 +297,6 @@ export default function CourseReviewPage() {
               </Paragraph>
             </div>
 
-            {/* Dùng lại component Curriculum của teacher */}
             <CourseCurriculumView
               courseMeta={course || detail}
               courseTree={detail}
@@ -333,84 +337,503 @@ export default function CourseReviewPage() {
 
             {!aiLoading && aiReview && (
               <div className={styles.aiReviewBox}>
-                {/* Thông tin chung */}
-                <Paragraph strong>
-                  Course:{" "}
-                  {aiReview.courseTitle || course?.title || `#${courseId}`}
-                </Paragraph>
-                <Text type="secondary">
-                  Checked at:{" "}
-                  {aiReview.checkedAt
-                    ? new Date(aiReview.checkedAt).toLocaleString("vi-VN")
-                    : "—"}
-                </Text>
+                {(() => {
+                  const safety = aiReview.safetyCheck || {};
+                  const levelMatch = aiReview.levelMatch || {};
+                  const overview = aiReview.contentOverview || {};
+                  const pedagogy = aiReview.pedagogicalQuality || null;
+                  const langAcc = aiReview.languageAccuracy || null;
+                  const grammarProg = aiReview.grammarProgression || null;
 
-                {/* Safety Check */}
-                {aiReview.safetyCheck && (
-                  <div style={{ marginTop: 16 }}>
-                    <Text strong>Safety check:&nbsp;</Text>
-                    <Tag
-                      color={getSafetyStatusColor(aiReview.safetyCheck.status)}
-                    >
-                      {aiReview.safetyCheck.status || "UNKNOWN"}
-                    </Tag>
-                    <div>
-                      <Text>
-                        Score:{" "}
-                        {typeof aiReview.safetyCheck.score === "number"
-                          ? aiReview.safetyCheck.score.toFixed(2) + " / 1.0"
-                          : "—"}
-                      </Text>
-                    </div>
-                    <Paragraph style={{ marginTop: 4 }}>
-                      {aiReview.safetyCheck.summary}
-                    </Paragraph>
-                  </div>
-                )}
+                  const overallScore10 =
+                    typeof aiReview.overallScore10 === "number"
+                      ? aiReview.overallScore10
+                      : formatScore10(safety.score);
 
-                {/* Level Match */}
-                {aiReview.levelMatch && (
-                  <div style={{ marginTop: 16 }}>
-                    <Text strong>Level match</Text>
-                    <div>
-                      <Text>
-                        Declared level:{" "}
-                        {aiReview.levelMatch.declaredLevel || "—"}
-                      </Text>
-                    </div>
-                    <Paragraph style={{ marginTop: 4 }}>
-                      {aiReview.levelMatch.summary}
-                    </Paragraph>
-                  </div>
-                )}
+                  const hasIssues =
+                    safety.hasIssues === true ||
+                    (Array.isArray(aiReview.warnings) &&
+                      aiReview.warnings.length > 0);
 
-                {/* Recommendations */}
-                {Array.isArray(aiReview.recommendations) &&
-                  aiReview.recommendations.length > 0 && (
-                    <div style={{ marginTop: 16 }}>
-                      <Text strong>📋 Recommendations</Text>
-                      <ul style={{ paddingLeft: 18 }}>
-                        {aiReview.recommendations.map((rec, idx) => (
-                          <li key={idx}>{rec}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                  // xử lý trường hợp Gemini lỗi dài dòng (nếu BE còn trả)
+                  const rawLevelSummary = levelMatch.summary;
+                  const levelSummary =
+                    rawLevelSummary &&
+                    rawLevelSummary.includes("Failed to call Gemini API")
+                      ? "Không thể đánh giá chi tiết level vì dịch vụ AI phụ (Gemini) trên server chưa được bật. Các phần khác vẫn được kiểm tra bình thường."
+                      : rawLevelSummary;
 
-                {/* Warnings */}
-                {Array.isArray(aiReview.warnings) &&
-                  aiReview.warnings.length > 0 && (
-                    <div style={{ marginTop: 16 }}>
-                      <Text strong style={{ color: "#faad14" }}>
-                        ⚠ Warnings
-                      </Text>
-                      <ul style={{ paddingLeft: 18 }}>
-                        {aiReview.warnings.map((w, idx) => (
-                          <li key={idx}>{w}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                  const pedagogyScore10 = pedagogy
+                    ? formatScore10(pedagogy.score)
+                    : null;
+                  const langScore10 = langAcc
+                    ? formatScore10(langAcc.score)
+                    : null;
+                  const grammarScore10 = grammarProg
+                    ? formatScore10(grammarProg.score)
+                    : null;
+
+                  return (
+                    <>
+                      {/* Header: course + thời gian + overall score */}
+                      <div className={styles.aiHeaderRow}>
+                        <div className={styles.aiHeaderMain}>
+                          <Paragraph strong className={styles.aiCourseTitle}>
+                            {aiReview.courseTitle ||
+                              course?.title ||
+                              `Course #${courseId}`}
+                          </Paragraph>
+                          <Text type="secondary">
+                            Checked at:{" "}
+                            {aiReview.checkedAt
+                              ? new Date(aiReview.checkedAt).toLocaleString(
+                                  "vi-VN"
+                                )
+                              : "—"}
+                          </Text>
+                        </div>
+
+                        {overallScore10 !== null && (
+                          <div className={styles.aiScoreBlock}>
+                            <Text strong>Overall score</Text>
+                            <Progress
+                              percent={(overallScore10 / 10) * 100}
+                              format={() => `${overallScore10}/10`}
+                              size="small"
+                              status={hasIssues ? "exception" : "normal"}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <Divider />
+
+                      {/* Content overview (nếu BE có build sau này) */}
+                      {(overview.totalChapters ||
+                        overview.totalLessons ||
+                        overview.totalQuizzes ||
+                        overview.estimatedStudyHours) && (
+                        <div className={styles.aiSection}>
+                          <div className={styles.aiSectionTitle}>
+                            Course overview
+                          </div>
+                          <div className={styles.aiOverviewRow}>
+                            <div className={styles.aiOverviewItem}>
+                              <Text type="secondary">Chapters</Text>
+                              <div className={styles.aiOverviewValue}>
+                                {overview.totalChapters ?? 0}
+                              </div>
+                            </div>
+                            <div className={styles.aiOverviewItem}>
+                              <Text type="secondary">Lessons</Text>
+                              <div className={styles.aiOverviewValue}>
+                                {overview.totalLessons ?? 0}
+                              </div>
+                            </div>
+                            <div className={styles.aiOverviewItem}>
+                              <Text type="secondary">Quizzes</Text>
+                              <div className={styles.aiOverviewValue}>
+                                {overview.totalQuizzes ?? 0}
+                              </div>
+                            </div>
+                            <div className={styles.aiOverviewItem}>
+                              <Text type="secondary">Est. hours</Text>
+                              <div className={styles.aiOverviewValue}>
+                                {overview.estimatedStudyHours ?? 0}
+                              </div>
+                            </div>
+                          </div>
+                          {overview.summary && (
+                            <Paragraph style={{ marginTop: 8 }}>
+                              {overview.summary}
+                            </Paragraph>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Safety check */}
+                      {aiReview.safetyCheck && (
+                        <div className={styles.aiSection}>
+                          <div className={styles.aiSectionTitle}>
+                            Safety check
+                          </div>
+                          <Space direction="vertical" size={4}>
+                            <Space>
+                              <Tag color={getSafetyStatusColor(safety.status)}>
+                                {safety.status || "UNKNOWN"}
+                              </Tag>
+                              {overallScore10 !== null && (
+                                <Text type="secondary">
+                                  Safety score (scaled): {overallScore10}/10
+                                </Text>
+                              )}
+                            </Space>
+                            <Paragraph style={{ marginBottom: 0 }}>
+                              {safety.summary}
+                            </Paragraph>
+                          </Space>
+                        </div>
+                      )}
+
+                      {/* Level match */}
+                      {aiReview.levelMatch && (
+                        <div className={styles.aiSection}>
+                          <div className={styles.aiSectionTitle}>
+                            Level suitability
+                          </div>
+                          <Space direction="vertical" size={4}>
+                            <Space wrap>
+                              {levelMatch.declaredLevel && (
+                                <Tag>Declared: {levelMatch.declaredLevel}</Tag>
+                              )}
+                              {levelMatch.detectedLevel && (
+                                <Tag color="blue">
+                                  Detected: {levelMatch.detectedLevel}
+                                </Tag>
+                              )}
+                              {typeof levelMatch.match === "boolean" && (
+                                <Tag color={levelMatch.match ? "green" : "red"}>
+                                  {levelMatch.match
+                                    ? "Phù hợp level"
+                                    : "Chưa phù hợp level"}
+                                </Tag>
+                              )}
+                            </Space>
+                            <Paragraph style={{ marginBottom: 0 }}>
+                              {levelSummary}
+                            </Paragraph>
+                          </Space>
+                        </div>
+                      )}
+
+                      {/* Pedagogical Quality */}
+                      {pedagogy && (
+                        <div className={styles.aiSection}>
+                          <div className={styles.aiSectionTitle}>
+                            Pedagogical quality
+                          </div>
+                          <Space
+                            direction="vertical"
+                            size={4}
+                            className={styles.aiSubBlock}
+                          >
+                            {pedagogyScore10 !== null && (
+                              <Progress
+                                percent={(pedagogyScore10 / 10) * 100}
+                                size="small"
+                                format={() => `${pedagogyScore10}/10`}
+                              />
+                            )}
+                            {pedagogy.summary && (
+                              <Paragraph style={{ marginTop: 4 }}>
+                                {pedagogy.summary}
+                              </Paragraph>
+                            )}
+
+                            {Array.isArray(pedagogy.strengths) &&
+                              pedagogy.strengths.length > 0 && (
+                                <>
+                                  <div className={styles.aiSubTitle}>
+                                    Điểm mạnh về sư phạm
+                                  </div>
+                                  <ul className={styles.aiList}>
+                                    {pedagogy.strengths.map((item, idx) => (
+                                      <li key={idx}>{item}</li>
+                                    ))}
+                                  </ul>
+                                </>
+                              )}
+
+                            {Array.isArray(pedagogy.weaknesses) &&
+                              pedagogy.weaknesses.length > 0 && (
+                                <>
+                                  <div className={styles.aiSubTitle}>
+                                    Hạn chế về sư phạm
+                                  </div>
+                                  <ul className={styles.aiList}>
+                                    {pedagogy.weaknesses.map((item, idx) => (
+                                      <li key={idx}>{item}</li>
+                                    ))}
+                                  </ul>
+                                </>
+                              )}
+
+                            {Array.isArray(pedagogy.recommendations) &&
+                              pedagogy.recommendations.length > 0 && (
+                                <>
+                                  <div className={styles.aiSubTitle}>
+                                    Gợi ý cải thiện teaching
+                                  </div>
+                                  <ul className={styles.aiList}>
+                                    {pedagogy.recommendations.map(
+                                      (item, idx) => (
+                                        <li key={idx}>{item}</li>
+                                      )
+                                    )}
+                                  </ul>
+                                </>
+                              )}
+                          </Space>
+                        </div>
+                      )}
+
+                      {/* Language Accuracy */}
+                      {langAcc && (
+                        <div className={styles.aiSection}>
+                          <div className={styles.aiSectionTitle}>
+                            Language accuracy
+                          </div>
+                          {langScore10 !== null && (
+                            <Progress
+                              percent={(langScore10 / 10) * 100}
+                              size="small"
+                              format={() => `${langScore10}/10`}
+                            />
+                          )}
+
+                          {langAcc.summary && (
+                            <Paragraph style={{ marginTop: 4 }}>
+                              {langAcc.summary}
+                            </Paragraph>
+                          )}
+
+                          {/* Vietnamese errors */}
+                          {Array.isArray(langAcc.vietnameseErrors) &&
+                            langAcc.vietnameseErrors.length > 0 && (
+                              <div className={styles.aiSubBlock}>
+                                <div className={styles.aiSubTitle}>
+                                  Lỗi tiếng Việt
+                                </div>
+                                <ul className={styles.aiErrorList}>
+                                  {langAcc.vietnameseErrors.map(
+                                    (errItem, idx) => (
+                                      <li
+                                        key={idx}
+                                        className={styles.aiErrorItem}
+                                      >
+                                        {errItem.location && (
+                                          <Text
+                                            type="secondary"
+                                            className={styles.aiErrorLocation}
+                                          >
+                                            Vị trí: {errItem.location}
+                                          </Text>
+                                        )}
+                                        {errItem.text && (
+                                          <Paragraph
+                                            ellipsis={{ rows: 2 }}
+                                            className={
+                                              styles.aiErrorTextSnippet
+                                            }
+                                          >
+                                            “{errItem.text}”
+                                          </Paragraph>
+                                        )}
+                                        {errItem.error && (
+                                          <Paragraph className={styles.aiError}>
+                                            <b>Lỗi:</b> {errItem.error}
+                                          </Paragraph>
+                                        )}
+                                        {errItem.suggestion && (
+                                          <Paragraph
+                                            className={styles.aiSuggestion}
+                                          >
+                                            <b>Gợi ý:</b> {errItem.suggestion}
+                                          </Paragraph>
+                                        )}
+                                      </li>
+                                    )
+                                  )}
+                                </ul>
+                              </div>
+                            )}
+
+                          {/* Japanese errors nếu có trong tương lai */}
+                          {Array.isArray(langAcc.japaneseErrors) &&
+                            langAcc.japaneseErrors.length > 0 && (
+                              <div className={styles.aiSubBlock}>
+                                <div className={styles.aiSubTitle}>
+                                  Lỗi tiếng Nhật
+                                </div>
+                                <ul className={styles.aiList}>
+                                  {langAcc.japaneseErrors.map(
+                                    (errItem, idx) => (
+                                      <li key={idx}>
+                                        {errItem.error ||
+                                          JSON.stringify(errItem)}
+                                      </li>
+                                    )
+                                  )}
+                                </ul>
+                              </div>
+                            )}
+                        </div>
+                      )}
+
+                      {/* Grammar progression */}
+                      {grammarProg && (
+                        <div className={styles.aiSection}>
+                          <div className={styles.aiSectionTitle}>
+                            Grammar progression
+                          </div>
+                          <Space
+                            direction="vertical"
+                            size={4}
+                            className={styles.aiSubBlock}
+                          >
+                            <Space>
+                              <Tag
+                                color={grammarProg.isLogical ? "green" : "red"}
+                              >
+                                {grammarProg.isLogical
+                                  ? "Trình tự hợp lý"
+                                  : "Trình tự chưa hợp lý"}
+                              </Tag>
+                              {grammarScore10 !== null && (
+                                <Text type="secondary">
+                                  Grammar score: {grammarScore10}/10
+                                </Text>
+                              )}
+                            </Space>
+
+                            {grammarProg.summary && (
+                              <Paragraph style={{ marginTop: 4 }}>
+                                {grammarProg.summary}
+                              </Paragraph>
+                            )}
+
+                            {Array.isArray(grammarProg.issues) &&
+                              grammarProg.issues.length > 0 && (
+                                <>
+                                  <div className={styles.aiSubTitle}>
+                                    Vấn đề trong tiến trình ngữ pháp
+                                  </div>
+                                  <ul className={styles.aiIssueList}>
+                                    {grammarProg.issues.map((issue, idx) => (
+                                      <li
+                                        key={idx}
+                                        className={styles.aiIssueItem}
+                                      >
+                                        <div className={styles.aiIssueHeader}>
+                                          <div
+                                            className={
+                                              styles.aiIssueHeaderTitle
+                                            }
+                                          >
+                                            <Text strong>
+                                              {issue.grammar || "Grammar point"}
+                                            </Text>
+                                          </div>
+                                          {issue.severity && (
+                                            <Tag
+                                              color={
+                                                issue.severity === "HIGH"
+                                                  ? "red"
+                                                  : issue.severity === "MEDIUM"
+                                                  ? "gold"
+                                                  : "default"
+                                              }
+                                            >
+                                              {issue.severity}
+                                            </Tag>
+                                          )}
+                                        </div>
+
+                                        <div className={styles.aiIssueMeta}>
+                                          {issue.currentLocation && (
+                                            <Text type="secondary">
+                                              Vị trí hiện tại:{" "}
+                                              {issue.currentLocation}
+                                            </Text>
+                                          )}
+                                          {issue.requiredPrerequisite && (
+                                            <Text
+                                              type="secondary"
+                                              style={{
+                                                display: "block",
+                                              }}
+                                            >
+                                              Cần học trước:{" "}
+                                              {issue.requiredPrerequisite}{" "}
+                                              {issue.prerequisiteLocation &&
+                                                `(${issue.prerequisiteLocation})`}
+                                            </Text>
+                                          )}
+                                        </div>
+                                        {issue.description && (
+                                          <Paragraph
+                                            className={
+                                              styles.aiIssueDescription
+                                            }
+                                          >
+                                            {issue.description}
+                                          </Paragraph>
+                                        )}
+                                        {issue.potentialConfusion && (
+                                          <Paragraph
+                                            className={styles.aiIssueConfusion}
+                                          >
+                                            <b>Nguy cơ gây nhầm lẫn:</b>{" "}
+                                            {issue.potentialConfusion}
+                                          </Paragraph>
+                                        )}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </>
+                              )}
+
+                            {Array.isArray(grammarProg.recommendations) &&
+                              grammarProg.recommendations.length > 0 && (
+                                <>
+                                  <div className={styles.aiSubTitle}>
+                                    Gợi ý cải thiện tiến trình
+                                  </div>
+                                  <ul className={styles.aiList}>
+                                    {grammarProg.recommendations.map(
+                                      (item, idx) => (
+                                        <li key={idx}>{item}</li>
+                                      )
+                                    )}
+                                  </ul>
+                                </>
+                              )}
+                          </Space>
+                        </div>
+                      )}
+
+                      {/* Global Recommendations */}
+                      {Array.isArray(aiReview.recommendations) &&
+                        aiReview.recommendations.length > 0 && (
+                          <div className={styles.aiSection}>
+                            <div className={styles.aiSectionTitle}>
+                              Gợi ý tổng quan từ AI
+                            </div>
+                            <ul className={styles.aiList}>
+                              {aiReview.recommendations.map((item, idx) => (
+                                <li key={idx}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                      {/* Global Warnings */}
+                      {Array.isArray(aiReview.warnings) &&
+                        aiReview.warnings.length > 0 && (
+                          <div className={styles.aiSection}>
+                            <div className={styles.aiSectionTitle}>
+                              Cảnh báo
+                            </div>
+                            <ul className={styles.aiList}>
+                              {aiReview.warnings.map((item, idx) => (
+                                <li key={idx}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                    </>
+                  );
+                })()}
               </div>
             )}
           </div>

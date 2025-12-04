@@ -1,4 +1,3 @@
-// src/pages/JLPTTest/Listening.jsx (Final Clean Version + Radio FIX)
 import React, { useState, useRef, useEffect } from "react";
 import styles from "./Listening.module.scss";
 
@@ -61,29 +60,34 @@ const Listening = () => {
   }, [dispatch]);
 
   /* ========================================================================== 
-      BẮT ĐẦU TEST: gọi /start và fetch listening
+      INIT TEST: chỉ /start nếu chưa có timeLeft, luôn fetchListening
   ========================================================================== */
   useEffect(() => {
-    async function startTest() {
+    async function init() {
       try {
-        const res = await api.post(`/learner/jlpt/tests/${numericTestId}/start`);
-        const duration = res.data?.durationMin || 180;
+        if (!timeLeft || timeLeft <= 0) {
+          const res = await api.post(
+            `/learner/jlpt/tests/${numericTestId}/start`
+          );
+          const duration = res.data?.durationMin || 180;
 
-        dispatch(
-          setTestTime({
-            timeLeft: duration * 60,
-            durationMin: duration,
-          })
-        );
+          dispatch(
+            setTestTime({
+              timeLeft: duration * 60,
+              durationMin: duration,
+            })
+          );
+        }
 
+        // Luôn fetch câu hỏi Listening
         dispatch(fetchListening(numericTestId));
-      } catch  {
+      } catch {
         navigate("/jlpt");
       }
     }
 
-    startTest();
-  }, [dispatch, numericTestId, navigate]);
+    init();
+  }, [dispatch, numericTestId, navigate, timeLeft]);
 
   /* ========================================================================== 
       POLLING ACTIVE USERS
@@ -110,6 +114,15 @@ const Listening = () => {
     const id = setInterval(() => dispatch(updateTimeLeft()), 1000);
     return () => clearInterval(id);
   }, [dispatch, timeLeft]);
+
+  /* ========================================================================== 
+      AUTO MOVE WHEN TIME OUT → RESULT
+  ========================================================================== */
+  useEffect(() => {
+    if (timeLeft === 0) {
+      navigate(`/jlpt/test/${numericTestId}/result`);
+    }
+  }, [timeLeft, navigate, numericTestId]);
 
   const formatTime = (sec) => {
     if (!sec) return "00:00";
@@ -199,14 +212,9 @@ const Listening = () => {
       : null;
 
   const answeredCount = questions.filter((q) => localAnswers[q.id]).length;
-
   const progressPct = total ? Math.round((answeredCount / total) * 100) : 0;
-
   const activeCount = activeUsers?.[numericTestId] ?? 0;
 
-  /* ========================================================================== 
-      FIX RADIO: ĐÚNG FORMAT onSelectOption(question_id, option_id)
-  ========================================================================== */
   const handleSelectAnswer = (qid, optId) => {
     setLocalAnswers((prev) => ({
       ...prev,
@@ -282,7 +290,10 @@ const Listening = () => {
                 <div className={styles.audioBlock}>
                   <audio ref={audioRef} src={audioUrl} preload="metadata" />
 
-                  <button className={styles.hokoriPlayBtn} onClick={handlePlayPause}>
+                  <button
+                    className={styles.hokoriPlayBtn}
+                    onClick={handlePlayPause}
+                  >
                     {isPlaying ? (
                       <i className="fa-solid fa-pause" />
                     ) : (
@@ -316,7 +327,7 @@ const Listening = () => {
                 <QuestionCard
                   question={uiQuestion}
                   selectedOptionId={localAnswers[uiQuestion.question_id]}
-                  onSelectOption={handleSelectAnswer}  // <-- FIXED HERE
+                  onSelectOption={handleSelectAnswer}
                   onPrev={prev}
                   onNext={next}
                 />

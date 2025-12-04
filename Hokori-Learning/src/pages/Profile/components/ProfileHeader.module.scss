@@ -89,3 +89,47 @@
   padding: 2px 8px;
   border-radius: 6px;
 }
+/* Đưa role xuống dưới avatar */
+.roleBelow {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #2563eb;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Label “Tên hiển thị” */
+.label {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 2px;
+}
+
+/* Tên người dùng */
+.name {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;          /* sát trên dưới */
+  line-height: 1.2;
+}
+
+/* Email nằm sát hơn */
+.email {
+  margin-top: 4px;
+  font-size: 15px;
+  color: #4b5563;
+}
+
+/* Avatar box căn giữa đẹp hơn */
+.avatarBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Giảm spacing tổng thể cho gọn */
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;   /* giảm khoảng cách giữa name - email */
+}
