@@ -1,36 +1,9 @@
 // src/pages/Admin/pages/Users.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import s from "./Users.module.scss";
 import DataTable from "../components/DataTable";
 import { toast } from "react-toastify";
-
-// ======================= MOCK =======================
-const MOCK_USERS = [
-  {
-    id: 1,
-    displayName: "Nguyễn Văn A",
-    email: "a@example.com",
-    role: "TEACHER",
-    status: "ACTIVE",
-    createdAt: "2025-10-10T09:30",
-  },
-  {
-    id: 2,
-    displayName: "Trần Thị B",
-    email: "b@example.com",
-    role: "LEARNER",
-    status: "PENDING",
-    createdAt: "2025-10-11T14:10",
-  },
-  {
-    id: 3,
-    displayName: "Mod C",
-    email: "mod@example.com",
-    role: "MODERATOR",
-    status: "BLOCKED",
-    createdAt: "2025-10-12T08:00",
-  },
-];
+import api from "../../../configs/axios"; 
 
 const ROLE_LABEL = {
   LEARNER: "Học viên",
@@ -54,12 +27,8 @@ const ConfirmModal = ({ open, title, desc, onConfirm, onCancel }) => {
         <h2 className={s.modalTitle}>{title}</h2>
         {desc && <p className={s.modalDesc}>{desc}</p>}
         <div className={s.modalActions}>
-          <button className={s.btnGhost} onClick={onCancel}>
-            Hủy
-          </button>
-          <button className={s.btnPrimary} onClick={onConfirm}>
-            Xác nhận
-          </button>
+          <button className={s.btnGhost} onClick={onCancel}>Hủy</button>
+          <button className={s.btnPrimary} onClick={onConfirm}>Xác nhận</button>
         </div>
       </div>
     </div>
@@ -67,7 +36,6 @@ const ConfirmModal = ({ open, title, desc, onConfirm, onCancel }) => {
 };
 
 //  User Form Modal 
-
 const UserFormModal = ({ open, mode, initial, onSubmit, onClose }) => {
   const [form, setForm] = useState(
     initial || {
@@ -87,10 +55,7 @@ const UserFormModal = ({ open, mode, initial, onSubmit, onClose }) => {
     if (field === "displayName" && !value.trim())
       msg = "Tên hiển thị là bắt buộc";
 
-    if (
-      field === "email" &&
-      (!value.trim() || !/\S+@\S+\.\S+/.test(value))
-    )
+    if (field === "email" && (!value.trim() || !/\S+@\S+\.\S+/.test(value)))
       msg = "Email không hợp lệ";
 
     if (field === "password" && mode === "create" && value.length < 6)
@@ -114,7 +79,6 @@ const UserFormModal = ({ open, mode, initial, onSubmit, onClose }) => {
 
   const submit = (e) => {
     e.preventDefault();
-
     Object.keys(form).forEach((key) => validate(key, form[key]));
     if (Object.values(errors).some((m) => m)) return;
 
@@ -139,9 +103,7 @@ const UserFormModal = ({ open, mode, initial, onSubmit, onClose }) => {
               value={form.displayName}
               onChange={change("displayName")}
             />
-            {errors.displayName && (
-              <p className={s.errorText}>{errors.displayName}</p>
-            )}
+            {errors.displayName && <p className={s.errorText}>{errors.displayName}</p>}
           </label>
 
           {/* Email */}
@@ -162,31 +124,23 @@ const UserFormModal = ({ open, mode, initial, onSubmit, onClose }) => {
                 Mật khẩu
                 <input
                   type="password"
-                  className={`${s.input} ${
-                    errors.password ? s.errorInput : ""
-                  }`}
+                  className={`${s.input} ${errors.password ? s.errorInput : ""}`}
                   value={form.password}
                   onChange={change("password")}
                 />
-                {errors.password && (
-                  <p className={s.errorText}>{errors.password}</p>
-                )}
+                {errors.password && <p className={s.errorText}>{errors.password}</p>}
               </label>
 
               <label className={s.label}>
                 Xác nhận mật khẩu
                 <input
                   type="password"
-                  className={`${s.input} ${
-                    errors.confirmPassword ? s.errorInput : ""
-                  }`}
+                  className={`${s.input} ${errors.confirmPassword ? s.errorInput : ""}`}
                   value={form.confirmPassword}
                   onChange={change("confirmPassword")}
                 />
                 {errors.confirmPassword && (
-                  <p className={s.errorText}>
-                    {errors.confirmPassword}
-                  </p>
+                  <p className={s.errorText}>{errors.confirmPassword}</p>
                 )}
               </label>
             </>
@@ -195,11 +149,7 @@ const UserFormModal = ({ open, mode, initial, onSubmit, onClose }) => {
           {/* Role */}
           <label className={s.label}>
             Vai trò
-            <select
-              className={s.select}
-              value={form.role}
-              onChange={change("role")}
-            >
+            <select className={s.select} value={form.role} onChange={change("role")}>
               <option value="LEARNER">Học viên</option>
               <option value="TEACHER">Giáo viên</option>
               <option value="MODERATOR">Moderator</option>
@@ -208,9 +158,7 @@ const UserFormModal = ({ open, mode, initial, onSubmit, onClose }) => {
           </label>
 
           <div className={s.modalActions}>
-            <button type="button" className={s.btnGhost} onClick={onClose}>
-              Hủy
-            </button>
+            <button type="button" className={s.btnGhost} onClick={onClose}>Hủy</button>
             <button type="submit" className={s.btnPrimary}>
               {mode === "create" ? "Tạo" : "Lưu"}
             </button>
@@ -225,7 +173,7 @@ const UserFormModal = ({ open, mode, initial, onSubmit, onClose }) => {
 // 🔶 MAIN PAGE
 // =====================================================
 export default function Users() {
-  const [users, setUsers] = useState(MOCK_USERS);
+  const [users, setUsers] = useState([]);
 
   const [filterRole, setFilterRole] = useState("ALL");
   const [filterStatus, setFilterStatus] = useState("ALL");
@@ -242,7 +190,35 @@ export default function Users() {
     onConfirm: () => {},
   });
 
-  // ================= Create / Edit =================
+  // ================= GET /api/admin/users =================
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await api.get("/admin/users");
+        const list = res.data?.data || [];
+
+        const mapped = list.map((u) => ({
+          id: u.id,
+          displayName: u.displayName,
+          email: u.email,
+          role: u.roleName,
+          status: u.isVerified
+            ? (u.isActive ? "ACTIVE" : "BLOCKED")
+            : "PENDING",
+          createdAt: u.createdAt,
+        }));
+
+        setUsers(mapped);
+      } catch (err) {
+        console.error(err);
+        toast.error("Không thể tải danh sách người dùng!");
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  // ============ Create / Edit (local state, chưa call BE) ============
   const openCreate = () => {
     setMode("create");
     setEditingUser(null);
@@ -257,31 +233,14 @@ export default function Users() {
 
   const submitUser = (data) => {
     if (mode === "create") {
-      const newUser = {
-        id: Date.now(),
-        displayName: data.displayName,
-        email: data.email,
-        role: data.role,
-        status: "ACTIVE",
-        createdAt: new Date().toISOString(),
-      };
-      setUsers((prev) => [newUser, ...prev]);
-      toast.success("Tạo người dùng thành công!");
+      toast.info("API tạo user chưa gắn, mới cập nhật local state.");
     } else {
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.id === editingUser.id
-            ? { ...u, displayName: data.displayName, email: data.email, role: data.role }
-            : u
-        )
-      );
-      toast.success("Cập nhật người dùng thành công!");
+      toast.info("API update user chưa gắn, mới cập nhật local state.");
     }
-
     setModalOpen(false);
   };
 
-  // ================= Actions =================
+  // ============ Lock / Delete (local thôi, chưa call BE) ============
   const askLock = (user) => {
     setConfirm({
       open: true,
@@ -299,8 +258,8 @@ export default function Users() {
           : u
       )
     );
-    toast.success("Cập nhật trạng thái thành công!");
-    setConfirm({ ...confirm, open: false });
+    toast.success("Đã đổi trạng thái (local)!");
+    setConfirm((c) => ({ ...c, open: false }));
   };
 
   const askDelete = (user) => {
@@ -314,8 +273,8 @@ export default function Users() {
 
   const remove = (user) => {
     setUsers((prev) => prev.filter((u) => u.id !== user.id));
-    toast.success("Xóa thành công!");
-    setConfirm({ ...confirm, open: false });
+    toast.success("Đã xóa (local)!");
+    setConfirm((c) => ({ ...c, open: false }));
   };
 
   // ================= Filter =================
@@ -425,7 +384,7 @@ export default function Users() {
         title={confirm.title}
         desc={confirm.desc}
         onConfirm={confirm.onConfirm}
-        onCancel={() => setConfirm({ ...confirm, open: false })}
+        onCancel={() => setConfirm((c) => ({ ...c, open: false }))}
       />
     </div>
   );
