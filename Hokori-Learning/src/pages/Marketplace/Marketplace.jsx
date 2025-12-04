@@ -12,57 +12,79 @@ export default function Marketplace() {
   const navigate = useNavigate();
 
   // Redux data
-  const { list: courses, loading, error } = useSelector(
-    (state) => state.courses
-  );
+  const {
+    list: courses,
+    loading,
+    error,
+  } = useSelector((state) => state.courses);
 
+  // ================================
+  // ⭐ FILTERS STATE — MIN/MAX version
+  // ================================
   const [filters, setFilters] = useState({
     levels: [],
+    priceMin: 0,
     priceMax: 2000000,
     ratings: [],
-    teacher: "",
+    keyword: "",
   });
+
   const [sort, setSort] = useState("Phổ biến");
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 9;
 
-  // Fetch API data when component mounts
+  // Fetch API
   useEffect(() => {
     dispatch(fetchCourses());
   }, [dispatch]);
 
+  // RESET FILTERS
   const clearAll = () =>
-    setFilters({ levels: [], priceMax: 2000000, ratings: [], teacher: "" });
+    setFilters({
+      levels: [],
+      priceMin: 0,
+      priceMax: 2000000,
+      ratings: [],
+      keyword: "",
+    });
 
   // ============================
-  // ⭐ FILTER + SORT — đã chỉnh sửa an toàn
+  // ⭐ FILTER + SORT — FINAL VERSION
   // ============================
   const filtered = useMemo(() => {
     let items = [...(courses ?? [])];
 
-    // LEVEL FILTER (backend chưa có level → giữ nguyên)
-    if (filters.levels.length) {
+    // LEVEL FILTER
+    if (filters.levels.length > 0) {
       items = items.filter((c) =>
         c.level ? filters.levels.includes(c.level) : true
       );
     }
 
-    // RATING FILTER (backend chưa có rating)
-    if (filters.ratings.length) {
-      const min = Math.min(...filters.ratings);
-      items = items.filter((c) => (c.rating ?? 0) >= min);
+    // RATING FILTER
+    if (filters.ratings.length > 0) {
+      const ratingMin = Math.min(...filters.ratings);
+      items = items.filter((c) => (c.rating ?? 0) >= ratingMin);
     }
 
-    // PRICE FILTER (backend chưa có price)
-    const max = Number(filters.priceMax) || 2000000;
-    items = items.filter((c) => (c.price ?? 0) <= max);
+    // PRICE FILTER — MIN–MAX
+    const priceMin = Number(filters.priceMin) || 0;
+    const priceMax = Number(filters.priceMax) || 999999999;
 
-    // TEACHER SEARCH (backend chưa có teacher)
-    if (filters.teacher.trim()) {
-      const q = filters.teacher.toLowerCase();
-      items = items.filter((c) =>
-        (c.teacher ?? "").toLowerCase().includes(q)
-      );
+    items = items.filter((c) => {
+      const price = c.price ?? 0;
+      return price >= priceMin && price <= priceMax;
+    });
+
+    // KEYWORD SEARCH (course title + teacher)
+    if (filters.keyword.trim()) {
+      const q = filters.keyword.toLowerCase();
+
+      items = items.filter((c) => {
+        const title = (c.title ?? "").toLowerCase();
+        const teacher = (c.teacherName ?? c.teacher ?? "").toLowerCase();
+        return title.includes(q) || teacher.includes(q);
+      });
     }
 
     // SORTING
@@ -87,14 +109,16 @@ export default function Marketplace() {
   // Pagination
   // ============================
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const start = (page - 1) * PAGE_SIZE;
-  const pagedCourses = filtered.slice(start, start + PAGE_SIZE);
+  const startIndex = (page - 1) * PAGE_SIZE;
+  const pagedCourses = filtered.slice(startIndex, startIndex + PAGE_SIZE);
 
   useEffect(() => {
     setPage(1);
   }, [filters, sort]);
 
-  // Preselected level from URL
+  // ============================
+  // URL-level preselect
+  // ============================
   const [searchParams] = useSearchParams();
   const preselectedLevel = searchParams.get("level");
 
@@ -124,6 +148,7 @@ export default function Marketplace() {
       </p>
 
       <div className={styles.container}>
+        {/* SIDEBAR FILTERS */}
         <aside className={styles.sidebar}>
           <Filters
             filters={filters}
@@ -133,6 +158,7 @@ export default function Marketplace() {
           />
         </aside>
 
+        {/* CONTENT */}
         <section className={styles.content}>
           <div className={styles.topbar}>
             <p className={styles.count}>
@@ -153,13 +179,13 @@ export default function Marketplace() {
             </select>
           </div>
 
-          {/* Courses or Empty */}
+          {/* RESULTS */}
           <div className={styles.resultsArea}>
             {loading ? (
               <div className={styles.loading}>Đang tải...</div>
             ) : error ? (
               <div className={styles.empty}>Lỗi tải dữ liệu: {error}</div>
-            ) : pagedCourses.length ? (
+            ) : pagedCourses.length > 0 ? (
               <CourseGrid courses={pagedCourses} />
             ) : (
               <div className={styles.empty}>Không có khóa học nào</div>
@@ -168,6 +194,7 @@ export default function Marketplace() {
         </section>
       </div>
 
+      {/* PAGINATION */}
       <div className={styles.paginationContainer}>
         <Pagination
           page={page}

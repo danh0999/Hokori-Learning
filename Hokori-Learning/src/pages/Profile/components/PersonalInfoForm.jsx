@@ -29,7 +29,7 @@ const PersonalInfoForm = ({ user }) => {
 
       <div className={styles.infoGrid}>
         <div>
-          <p>Tên hiển thị</p>
+          <p>Tên tài khoản </p>
           <span>{user.username || "Chưa cập nhật"}</span>
         </div>
 
