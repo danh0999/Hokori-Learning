@@ -13,12 +13,21 @@ const Result = () => {
   const numericTestId = Number(testId);
 
   const [params] = useSearchParams();
-  const eventId = params.get("eventId"); // optional
+  let eventId = params.get("eventId");
+
+  // ==========================
+  // CLEAN eventId để tránh lỗi "null"
+  // ==========================
+  if (!eventId || eventId === "null" || eventId === "undefined") {
+    eventId = null;
+  }
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { result, loadingResult } = useSelector((state) => state.jlptLearner);
+  const { result, loadingResult, resultError } = useSelector(
+    (state) => state.jlptLearner
+  );
 
   useEffect(() => {
     if (numericTestId) {
@@ -26,6 +35,30 @@ const Result = () => {
     }
   }, [dispatch, numericTestId]);
 
+  // ===== ERROR STATE =====
+  if (resultError) {
+    return (
+      <div className={styles.resultWrapper}>
+        <div className={styles.resultCard}>
+          <h2>Lỗi tải kết quả</h2>
+          <p>Không thể tải kết quả kỳ thi. Vui lòng thử lại sau.</p>
+
+          {/* Fallback nếu eventId không hợp lệ */}
+          <button
+            className={styles.backBtn}
+            onClick={() => {
+              if (eventId) navigate(`/jlpt/events/${eventId}`);
+              else navigate("/jlpt");
+            }}
+          >
+            Quay về danh sách đề thi
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== LOADING =====
   if (loadingResult || !result) {
     return (
       <div className={styles.resultWrapper}>
@@ -36,22 +69,31 @@ const Result = () => {
     );
   }
 
-  const totalQuestions = result.totalQuestions ?? 0;
-  const correctCount = result.correctCount ?? 0;
-  const percent = Number(result.score) || 0;
+  // ===== SAFE ACCESS ====
+  const g = result.grammarVocab || {};
+  const r = result.reading || {};
+  const l = result.listening || {};
+
+  const totalQuestions =
+    (g.totalQuestions ?? 0) + (r.totalQuestions ?? 0) + (l.totalQuestions ?? 0);
+
+  const correctCount =
+    (g.correctCount ?? 0) + (r.correctCount ?? 0) + (l.correctCount ?? 0);
+
+  const totalScore = result.score ?? 0;
+  const percent = (totalScore / 180) * 100;
 
   const passScore = result.passScore ?? 0;
-  const passed = result.passed ?? false;
+  const passed = Boolean(result.passed);
 
   return (
     <div className={styles.resultWrapper}>
       <div className={styles.resultCard}>
         <h1 className={styles.title}>Kết quả bài thi JLPT</h1>
 
-        <p className={styles.subtitle}>
-          Dưới đây là kết quả tổng hợp của bạn trong toàn bộ bài thi.
-        </p>
+        <p className={styles.subtitle}>Dưới đây là kết quả tổng hợp của bạn.</p>
 
+        {/* ===== OVERALL SCORE BOX ===== */}
         <div className={styles.overallBox}>
           <div className={styles.chart}>
             <CircularProgressbar
@@ -68,16 +110,15 @@ const Result = () => {
           <div className={styles.overallInfo}>
             <h2>Tổng điểm quy đổi</h2>
             <p>
-              Bạn đạt <strong>{percent.toFixed(0)}</strong> / 100 điểm.
+              Bạn đạt <strong>{totalScore}</strong> / 180 điểm.
             </p>
 
             <p>
-              Tổng số câu hỏi:{" "}
-              <strong>{totalQuestions}</strong> – Số câu đúng:{" "}
+              Tổng số câu hỏi: <strong>{totalQuestions}</strong> – Số câu đúng:{" "}
               <strong>{correctCount}</strong>.
             </p>
 
-            {/* NEW — Pass / Fail */}
+            {/* PASS / FAIL */}
             <p style={{ marginTop: "0.5rem", fontWeight: 600 }}>
               {passed ? (
                 <span style={{ color: "#10b981" }}>
@@ -92,24 +133,60 @@ const Result = () => {
           </div>
         </div>
 
-        {/* ACTIONS */}
+        {/* ===== BREAKDOWN 3 PARTS ===== */}
+        <div className={styles.breakdownBox}>
+          <h2>Chi tiết từng phần</h2>
+
+          <div className={styles.breakdownGrid}>
+            <div className={styles.breakdownItem}>
+              <h3>Từ vựng & Ngữ pháp</h3>
+              <p>
+                {g.correctCount ?? 0} / {g.totalQuestions ?? 0} câu đúng
+              </p>
+              <p>
+                Điểm: <strong>{g.score ?? 0}</strong> / {g.maxScore ?? 60}
+              </p>
+            </div>
+
+            <div className={styles.breakdownItem}>
+              <h3>Đọc hiểu</h3>
+              <p>
+                {r.correctCount ?? 0} / {r.totalQuestions ?? 0} câu đúng
+              </p>
+              <p>
+                Điểm: <strong>{r.score ?? 0}</strong> / {r.maxScore ?? 60}
+              </p>
+            </div>
+
+            <div className={styles.breakdownItem}>
+              <h3>Nghe hiểu</h3>
+              <p>
+                {l.correctCount ?? 0} / {l.totalQuestions ?? 0} câu đúng
+              </p>
+              <p>
+                Điểm: <strong>{l.score ?? 0}</strong> / {l.maxScore ?? 60}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* ===== ACTION BUTTONS ===== */}
         <div className={styles.actions}>
           <button
             className={styles.retryBtn}
-            onClick={() =>
-              navigate(
-                `/jlpt/test/${numericTestId}${eventId ? `?eventId=${eventId}` : ""}`
-              )
-            }
+            onClick={() => navigate(`/jlpt/test/${numericTestId}/review`)}
           >
-            Làm lại bài thi
+            Xem kết quả chi tiết
           </button>
 
           <button
             className={styles.backBtn}
-            onClick={() => navigate("/jlpt")}
+            onClick={() => {
+              if (eventId) navigate(`/jlpt/events/${eventId}`);
+              else navigate("/jlpt");
+            }}
           >
-            Quay về danh sách đề thi
+            Quay về sự kiện
           </button>
         </div>
       </div>

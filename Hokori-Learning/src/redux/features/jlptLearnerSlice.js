@@ -3,6 +3,14 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../configs/axios";
 
 /* =========================================================
+   0) UTIL - CLEAN TEST ID
+========================================================= */
+const safeTestId = (id) => {
+  if (!id || id === "null" || id === "undefined") return null;
+  return Number(id);
+};
+
+/* =========================================================
    1) GET EVENT MỞ
 ========================================================= */
 export const fetchOpenEvents = createAsyncThunk(
@@ -41,14 +49,33 @@ export const fetchTestsByEvent = createAsyncThunk(
 );
 
 /* =========================================================
-   QUESTIONS
+   3) START TEST (NEW)
+========================================================= */
+export const startJlptTest = createAsyncThunk(
+  "jlptLearner/startJlptTest",
+  async (testId, { rejectWithValue }) => {
+    const safeId = safeTestId(testId);
+    if (!safeId) return rejectWithValue("Invalid test ID");
+
+    try {
+      const res = await api.post(`/learner/jlpt/tests/${safeId}/start`);
+      return res.data; // { startedAt, durationMin, questions }
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
+/* =========================================================
+   4) FETCH QUESTIONS (READING / LISTENING / GRAMMAR)
 ========================================================= */
 export const fetchGrammarVocab = createAsyncThunk(
   "jlptLearner/fetchGrammarVocab",
   async (testId, { rejectWithValue }) => {
+    const id = safeTestId(testId);
     try {
       const res = await api.get(
-        `/learner/jlpt/tests/${testId}/questions/grammar-vocab`
+        `/learner/jlpt/tests/${id}/questions/grammar-vocab`
       );
       return res.data;
     } catch (err) {
@@ -60,10 +87,9 @@ export const fetchGrammarVocab = createAsyncThunk(
 export const fetchReading = createAsyncThunk(
   "jlptLearner/fetchReading",
   async (testId, { rejectWithValue }) => {
+    const id = safeTestId(testId);
     try {
-      const res = await api.get(
-        `/learner/jlpt/tests/${testId}/questions/reading`
-      );
+      const res = await api.get(`/learner/jlpt/tests/${id}/questions/reading`);
       return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
@@ -74,9 +100,10 @@ export const fetchReading = createAsyncThunk(
 export const fetchListening = createAsyncThunk(
   "jlptLearner/fetchListening",
   async (testId, { rejectWithValue }) => {
+    const id = safeTestId(testId);
     try {
       const res = await api.get(
-        `/learner/jlpt/tests/${testId}/questions/listening`
+        `/learner/jlpt/tests/${id}/questions/listening`
       );
       return res.data;
     } catch (err) {
@@ -86,21 +113,25 @@ export const fetchListening = createAsyncThunk(
 );
 
 /* =========================================================
-   ACTIVE USERS
+   5) ACTIVE USERS
 ========================================================= */
 export const fetchActiveUsers = createAsyncThunk(
   "jlptLearner/fetchActiveUsers",
   async (testId, { rejectWithValue }) => {
+    const id = safeTestId(testId);
+
     try {
-      const res = await api.get(`/learner/jlpt/tests/${testId}/active-users`);
-
+      const res = await api.get(`/learner/jlpt/tests/${id}/active-users`);
       const data = res.data;
-      let count = 0;
 
-      if (typeof data === "number") count = data;
-      else if (data?.activeUsers !== undefined) count = data.activeUsers;
+      const count =
+        typeof data === "number"
+          ? data
+          : data?.activeUsers !== undefined
+          ? data.activeUsers
+          : 0;
 
-      return { testId, count };
+      return { testId: id, count };
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }
@@ -108,13 +139,15 @@ export const fetchActiveUsers = createAsyncThunk(
 );
 
 /* =========================================================
-   SUBMIT ANSWER
+   6) SUBMIT ANSWER
 ========================================================= */
 export const submitAnswer = createAsyncThunk(
   "jlptLearner/submitAnswer",
   async ({ testId, questionId, selectedOptionId }, { rejectWithValue }) => {
+    const id = safeTestId(testId);
+
     try {
-      await api.post(`/learner/jlpt/tests/${testId}/answers`, {
+      await api.post(`/learner/jlpt/tests/${id}/answers`, {
         questionId,
         selectedOptionId,
       });
@@ -127,13 +160,32 @@ export const submitAnswer = createAsyncThunk(
 );
 
 /* =========================================================
-   GET RESULT
+   7) SUBMIT TEST (NEW)
+========================================================= */
+export const submitJlptTest = createAsyncThunk(
+  "jlptLearner/submitJlptTest",
+  async (testId, { rejectWithValue }) => {
+    const id = safeTestId(testId);
+
+    try {
+      const res = await api.post(`/learner/jlpt/tests/${id}/submit`);
+      return res.data; // FULL RESULT
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
+/* =========================================================
+   8) GET RESULT
 ========================================================= */
 export const fetchMyJlptResult = createAsyncThunk(
   "jlptLearner/fetchMyJlptResult",
   async (testId, { rejectWithValue }) => {
+    const id = safeTestId(testId);
+
     try {
-      const res = await api.get(`/learner/jlpt/tests/${testId}/my-result`);
+      const res = await api.get(`/learner/jlpt/tests/${id}/my-result`);
       return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
@@ -142,7 +194,7 @@ export const fetchMyJlptResult = createAsyncThunk(
 );
 
 /* =========================================================
-   STATE
+   9) STATE
 ========================================================= */
 const initialState = {
   events: [],
@@ -170,7 +222,7 @@ const initialState = {
   // TIMER + RESTORE
   timeLeft: null,
   durationMin: null,
-  currentTestId: null, // 🔥 Thêm để restore chính xác
+  currentTestId: null,
 };
 
 /* =========================================================
@@ -186,11 +238,9 @@ const jlptLearnerSlice = createSlice({
       state.listening = [];
       state.answers = {};
       state.result = null;
-      // ❗ không reset timer ở đây
     },
 
     clearTestSession: (state) => {
-      // dùng khi EXIT hoặc NỘP BÀI
       state.grammarVocab = [];
       state.reading = [];
       state.listening = [];
@@ -206,7 +256,7 @@ const jlptLearnerSlice = createSlice({
     setTestTime: (state, action) => {
       state.timeLeft = action.payload.timeLeft;
       if (action.payload.durationMin) {
-        state.durationMin = action.payload.durationMin; // chỉ set lúc start
+        state.durationMin = action.payload.durationMin;
       }
     },
 
@@ -249,10 +299,41 @@ const jlptLearnerSlice = createSlice({
         state.testsError = action.payload;
       })
 
-      /* QUESTIONS */
-      .addCase(fetchGrammarVocab.pending, (state) => {
+      /* START TEST */
+      .addCase(startJlptTest.pending, (state) => {
         state.loadingQuestions = true;
+        state.questionsError = null;
       })
+      .addCase(startJlptTest.fulfilled, (state, action) => {
+        state.loadingQuestions = false;
+
+        const payload = action.payload;
+        if (!payload) return;
+
+        state.durationMin = payload.durationMin;
+        state.timeLeft = payload.durationMin * 60;
+
+        const questions = payload.questions || [];
+
+        state.grammarVocab = questions.filter(
+          (q) => q.section === "GRAMMAR" || q.section === "VOCAB"
+        );
+        state.reading = questions.filter((q) => q.section === "READING");
+        state.listening = questions.filter((q) => q.section === "LISTENING");
+
+        // Restore answers
+        questions.forEach((q) => {
+          if (q.selectedOptionId) {
+            state.answers[q.id] = q.selectedOptionId;
+          }
+        });
+      })
+      .addCase(startJlptTest.rejected, (state, action) => {
+        state.loadingQuestions = false;
+        state.questionsError = action.payload;
+      })
+
+      /* QUESTIONS */
       .addCase(fetchGrammarVocab.fulfilled, (state, action) => {
         state.grammarVocab = action.payload || [];
         state.loadingQuestions = false;
@@ -265,26 +346,33 @@ const jlptLearnerSlice = createSlice({
       })
 
       /* ACTIVE USERS */
-      /* ACTIVE USERS – FIX CRASH */
       .addCase(fetchActiveUsers.fulfilled, (state, action) => {
-        const payload = action.payload;
-
-        // Nếu payload không phải object => bỏ qua
-        if (!payload || typeof payload !== "object") return;
-
-        const testId = payload.testId;
-        const count = payload.count;
-
-        // Nếu testId không hợp lệ => bỏ qua
-        if (testId === undefined || testId === null) return;
-
+        const { testId, count } = action.payload || {};
+        if (!testId) return;
         state.activeUsers[testId] = count ?? 0;
       })
 
-      /* SUBMIT */
+      /* SUBMIT ANSWER */
       .addCase(submitAnswer.fulfilled, (state, action) => {
         const { questionId, selectedOptionId } = action.payload;
         state.answers[questionId] = selectedOptionId;
+      })
+
+      /* SUBMIT TEST */
+      .addCase(submitJlptTest.pending, (state) => {
+        state.loadingResult = true;
+        state.resultError = null;
+      })
+      .addCase(submitJlptTest.fulfilled, (state, action) => {
+        state.loadingResult = false;
+        state.result = action.payload;
+
+        // BE xóa session → FE clear answers
+        state.answers = {};
+      })
+      .addCase(submitJlptTest.rejected, (state, action) => {
+        state.loadingResult = false;
+        state.resultError = action.payload;
       })
 
       /* RESULT */
@@ -303,7 +391,9 @@ const jlptLearnerSlice = createSlice({
   },
 });
 
-/* EXPORT ACTIONS */
+/* =========================================================
+   EXPORT ACTIONS
+========================================================= */
 export const {
   clearTestData,
   clearTestSession,

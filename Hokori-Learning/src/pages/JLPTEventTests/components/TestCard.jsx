@@ -38,7 +38,7 @@ const TestCard = ({ test, onStart }) => {
         {typeof currentParticipants === "number" && (
           <div className={styles.infoItem}>
             <MdPeople />
-            <span>Người tham gia: {currentParticipants}</span>
+            <span>Số người đã tham gia: {currentParticipants}</span>
           </div>
         )}
       </div>
