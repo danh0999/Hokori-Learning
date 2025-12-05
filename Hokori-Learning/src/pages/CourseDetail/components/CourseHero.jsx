@@ -219,7 +219,7 @@ const redirectToFirstLesson = async () => {
 
           <div className="buttons">
     <button className="btn-primary" onClick={handleEnroll}>
-        {currentPrice === 0 ? "Enroll miễn phí" : "Mua khóa học ngay"}
+        {currentPrice === 0 ? "Enroll" : "Mua khóa học ngay"}
     </button>
 
     {/* Nếu free thì KHÔNG hiển thị giỏ hàng */}
