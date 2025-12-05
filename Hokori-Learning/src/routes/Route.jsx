@@ -66,6 +66,7 @@ import JlptTestBuilderPage from "../pages/Moderator/JlptEventsPage/JlptTestBuild
 import CourseReviewPage from "../pages/Moderator/Queues/CourseReviewPage/CourseReviewPage";
 import ModeratorDashboard from "../pages/Moderator/ModDashboard/ModeratorDashboard";
 import Unauthorized from "../pages/authen/components/Unauthorized/Unauthorized";
+import Review from "../pages/JLPTTest/Review";
 
 const routes = [
   // ============================
@@ -90,7 +91,10 @@ const routes = [
       { path: "contact", element: <Contact /> },
       { path: "information", element: <Information /> },
       { path: "policies", element: <Policies /> },
-      { path: "learner/flashcards/:sectionContentId", element: <FlashcardPage /> },
+      {
+        path: "learner/flashcards/:sectionContentId",
+        element: <FlashcardPage />,
+      },
 
       // Protected Routes (Learner/Teacher/Admin/Moderator)
       {
@@ -110,7 +114,6 @@ const routes = [
           { path: "ai-analyse", element: <AiAnalysePage /> },
           { path: "jlpt", element: <JLPTList /> },
 
-          
           { path: "jlpt/events/:eventId", element: <JLPTEventTests /> },
 
           // ==== FLOW 3 PHẦN THI ====
@@ -118,7 +121,7 @@ const routes = [
           { path: "jlpt/test/:testId/reading", element: <Reading /> },
           { path: "jlpt/test/:testId/listening", element: <Listening /> },
           { path: "jlpt/test/:testId/result", element: <Result /> },
-         
+          { path: "jlpt/test/:testId/review", element: <Review /> },
 
           {
             path: "course/:courseId/lesson/:lessonId",
@@ -153,6 +156,7 @@ const routes = [
           { path: "manage-documents", element: <ManageDocumentPage /> },
           { path: "revenue", element: <TeacherRevenue /> },
           { path: "profile", element: <TeacherProfilePage /> },
+          { path: "jlptevents", element: <JlptEventsPage /> },
 
           { path: "*", element: <ErrorPage /> },
         ],
@@ -173,6 +177,10 @@ const routes = [
       },
       { path: "create-course", element: <CreateCoursePage /> },
       { path: "create-quiz", element: <CreateQuizPage /> },
+      {
+        path: "jlptevents/:eventId/tests",
+        element: <JlptTestBuilderPage />,
+      },
     ],
   },
 

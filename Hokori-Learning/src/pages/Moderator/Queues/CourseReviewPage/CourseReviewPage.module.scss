@@ -122,8 +122,6 @@
   border-radius: 10px;
   background: #f9fafb;
   border: 1px solid #e5e7eb;
-  max-height: 380px;
-  overflow: auto;
 
   /* Đè mọi rule global gây chữ dọc / break-all */
   writing-mode: horizontal-tb !important;
@@ -467,4 +465,13 @@
 .aiErrorItem {
   word-break: normal;
   overflow-wrap: break-word;
+}
+/* CHỐNG GOOGLE TRANSLATE ÉP TEXT THÀNH CHỮ DỌC */
+.aiReviewBox,
+.aiReviewBox * {
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+  word-break: normal !important;
+  white-space: normal !important;
+  display: block !important; /* Ngăn Google Translate đổi inline-block thành vertical layout */
 }
