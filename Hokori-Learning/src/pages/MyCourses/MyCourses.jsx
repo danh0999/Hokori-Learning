@@ -2,31 +2,96 @@ import React, { useEffect, useState } from "react";
 import api from "../../configs/axios";
 import CourseCard from "./components/CourseCard";
 import styles from "./MyCourses.module.scss";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { buildFileUrl } from "../../utils/fileUrl";
+
 
 const MyCourses = () => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
-  // 🔹 Lấy danh sách khóa học học viên đã ghi danh
+  // 🔹 Lấy danh sách enrollment + enrich course info
   useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const res = await api.get("/learner/courses");
-        setCourses(res.data?.data || []);
-      } catch (err) {
-        console.error("Không thể tải danh sách khóa học:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCourses();
-  }, []);
+  const fetchCourses = async () => {
+    try {
+      // 1️⃣ Lấy danh sách enrollment
+      const enrollRes = await api.get("/learner/courses");
+      const enrollments = enrollRes.data || [];
 
-  // 🔹 Callback khi người học muốn tiếp tục khóa học
-  const handleContinue = (course) => {
-    console.log("Tiếp tục học:", course.title);
-    // TODO: điều hướng sang trang học
-    // navigate(`/courses/${course.id}`);
+      // 2️⃣ Duyệt từng course → lấy thông tin bằng TREE API
+      const detailed = await Promise.all(
+        enrollments.map(async (enroll) => {
+          try {
+            const treeRes = await api.get(`/courses/${enroll.courseId}/tree`);
+            const tree = treeRes.data;
+
+            // Tính tổng số lessons từ tree
+            let totalLessons = 0;
+            tree.chapters?.forEach((ch) => {
+              totalLessons += ch.lessons?.length || 0;
+            });
+
+            return {
+              // ---- Thông tin Course ----
+              id: tree.id,
+              courseId: enroll.courseId,
+              title: tree.title || "Khóa học",
+              level: tree.level || "N5",
+              teacher: tree.teacherName || "Giảng viên",
+              coverUrl: tree.coverImagePath
+              ? buildFileUrl(tree.coverImagePath)
+              : "https://cdn.pixabay.com/photo/2017/01/31/13/14/book-2024684_1280.png",
+
+              lessons: totalLessons,
+
+              // ---- Tiến độ ----
+              progress: enroll.progressPercent || 0,
+              completed: enroll.progressPercent >= 100,
+              lastStudy: enroll.lastAccessAt
+                ? new Date(enroll.lastAccessAt).toLocaleDateString()
+                : "Chưa học",
+
+              enrollmentId: enroll.enrollmentId,
+            };
+          } catch (err) {
+            console.error("Lỗi load course tree:", err);
+            return null;
+          }
+        })
+      );
+
+      setCourses(detailed.filter(Boolean));
+    } catch (err) {
+      console.error("Không thể tải danh sách khóa học:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchCourses();
+}, []);
+
+
+  // 🔹 Khi user nhấn “Tiếp tục học”
+  const handleContinue = async (course) => {
+    try {
+      const res = await api.get(`/learner/courses/${course.courseId}/lessons`);
+      const lessons = res.data ?? [];
+
+      if (!lessons.length) {
+        toast.error("Khóa học chưa có bài học.");
+        return;
+      }
+
+      const firstLesson = lessons.sort((a, b) => a.orderIndex - b.orderIndex)[0];
+      const lessonId = firstLesson.lessonId ?? firstLesson.id;
+
+      navigate(`/course/${course.courseId}/lesson/${lessonId}`);
+    } catch (err) {
+      console.error("Không thể điều hướng vào bài học:", err);
+    }
   };
 
   if (loading) {
@@ -44,13 +109,13 @@ const MyCourses = () => {
 
         {courses.length === 0 ? (
           <p className={styles.empty}>
-            Bạn chưa ghi danh khóa học nào.  
+            Bạn chưa ghi danh khóa học nào.{" "}
             <a href="/marketplace">Khám phá thêm khóa học →</a>
           </p>
         ) : (
           <div className={styles.grid}>
             {courses.map((c) => (
-              <CourseCard key={c.id} course={c} onContinue={handleContinue} />
+              <CourseCard key={c.enrollmentId} course={c} onContinue={handleContinue} />
             ))}
           </div>
         )}

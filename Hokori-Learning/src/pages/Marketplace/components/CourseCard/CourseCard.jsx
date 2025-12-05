@@ -8,6 +8,7 @@ import { FaShoppingCart } from "react-icons/fa";
 import { buildFileUrl } from "../../../../utils/fileUrl";
 
 
+
 const FALLBACK_THUMB = "https://placehold.co/600x400?text=Course+Image";
 
 export default function CourseCard({ course }) {

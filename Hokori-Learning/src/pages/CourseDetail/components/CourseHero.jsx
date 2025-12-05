@@ -5,6 +5,8 @@ import { useDispatch } from "react-redux";
 import { addItem } from "../../../redux/features/cartSlice";
 import { message } from "antd";
 import { buildFileUrl } from "../../../utils/fileUrl";
+import api from "../../../configs/axios"; // axios có token
+import { toast } from "react-toastify";
 
 const formatMoney = (value) => (Number(value) || 0).toLocaleString("vi-VN");
 
@@ -73,6 +75,62 @@ const CourseHero = ({ course }) => {
     dispatch(addItem(courseForCart));
     message.success("Đã thêm khóa học vào giỏ hàng!");
   };
+
+  const handleEnroll = async () => {
+  try {
+    // 1. Nếu giá > 0 → redirect checkout (sau này)
+    if (currentPrice > 0) {
+      // TODO: redirect checkout page
+      dispatch(addItem(courseForCart));
+      navigate("/cart");
+      return;
+    }
+
+    // 2. FREE COURSE → kiểm tra enrollment trước
+    try {
+      await api.get(`/learner/courses/${course.id}/enrollment`);
+      // Nếu trả về 200 → đã enroll
+      return redirectToFirstLesson();
+    } catch (err) {
+      if (err?.response?.status !== 403) throw err;
+      // 403 = chưa enroll → tiếp tục
+    }
+
+    // 3. Gọi enroll
+    await api.post(`/learner/courses/${course.id}/enroll`);
+    toast.success("Enroll thành công!");
+
+    // 4. Redirect đến bài học đầu tiên
+    return redirectToFirstLesson();
+  } catch (err) {
+    console.error(err);
+    toast.error("Không thể enroll khóa học.");
+  }
+};
+
+const redirectToFirstLesson = async () => {
+  try {
+    const lessonsRes = await api.get(`/learner/courses/${course.id}/lessons`);
+    const lessons = lessonsRes.data ?? [];
+
+    if (!lessons.length) {
+      toast.error("Khóa học chưa có bài học.");
+      return;
+    }
+
+    // Sắp xếp bài học theo orderIndex
+    const firstLesson = lessons.sort((a, b) => a.orderIndex - b.orderIndex)[0];
+    const lessonId = firstLesson.lessonId ?? firstLesson.id;
+
+    // Navigate vào bài học đầu tiên
+    navigate(`/course/${course.id}/lesson/${lessonId}`);
+  } catch (err) {
+    console.error(err);
+    toast.error("Không thể điều hướng vào bài học đầu tiên.");
+  }
+};
+
+
 
   return (
     <section className="hero-section">
@@ -160,13 +218,18 @@ const CourseHero = ({ course }) => {
           </div>
 
           <div className="buttons">
-            <button className="btn-primary" onClick={handleBuyNow}>
-              Mua khóa học ngay
-            </button>
-            <button className="btn-secondary" onClick={handleAddToCart}>
-              <i className="fa-solid fa-cart-shopping"></i> Thêm vào giỏ hàng
-            </button>
-          </div>
+    <button className="btn-primary" onClick={handleEnroll}>
+        {currentPrice === 0 ? "Enroll miễn phí" : "Mua khóa học ngay"}
+    </button>
+
+    {/* Nếu free thì KHÔNG hiển thị giỏ hàng */}
+    {currentPrice > 0 && (
+        <button className="btn-secondary" onClick={handleAddToCart}>
+            <i className="fa-solid fa-cart-shopping"></i> Thêm vào giỏ hàng
+        </button>
+    )}
+</div>
+
         </div>
       </div>
     </section>
