@@ -192,6 +192,42 @@ export const fetchMyJlptResult = createAsyncThunk(
     }
   }
 );
+/* =========================================================
+   10) GET ATTEMPT DETAIL
+========================================================= */
+/* =========================================================
+   10) GET ATTEMPT DETAIL
+========================================================= */
+export const fetchAttemptDetail = createAsyncThunk(
+  "jlptLearner/fetchAttemptDetail",
+  async ({ testId, attemptId }, { rejectWithValue }) => {
+    // Validate attemptId giống guide BE
+    if (
+      attemptId === null ||
+      attemptId === undefined ||
+      attemptId === "null" ||
+      attemptId === "undefined"
+    ) {
+      return rejectWithValue("Invalid attemptId: null/undefined");
+    }
+
+    const numAttemptId = Number(attemptId);
+    const numTestId = safeTestId(testId);
+
+    if (!numTestId || !numAttemptId || Number.isNaN(numAttemptId)) {
+      return rejectWithValue("Invalid testId or attemptId");
+    }
+
+    try {
+      const res = await api.get(
+        `/learner/jlpt/tests/${numTestId}/attempts/${numAttemptId}/detail`
+      );
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
 
 /* =========================================================
    9) STATE
@@ -223,6 +259,10 @@ const initialState = {
   timeLeft: null,
   durationMin: null,
   currentTestId: null,
+
+  attemptDetail: null,
+  loadingAttemptDetail: false,
+  attemptDetailError: null,
 };
 
 /* =========================================================
@@ -391,6 +431,18 @@ const jlptLearnerSlice = createSlice({
       .addCase(fetchMyJlptResult.rejected, (state, action) => {
         state.loadingResult = false;
         state.resultError = action.payload;
+      })
+      .addCase(fetchAttemptDetail.pending, (state) => {
+        state.loadingAttemptDetail = true;
+        state.attemptDetailError = null;
+      })
+      .addCase(fetchAttemptDetail.fulfilled, (state, action) => {
+        state.loadingAttemptDetail = false;
+        state.attemptDetail = action.payload;
+      })
+      .addCase(fetchAttemptDetail.rejected, (state, action) => {
+        state.loadingAttemptDetail = false;
+        state.attemptDetailError = action.payload;
       });
   },
 });

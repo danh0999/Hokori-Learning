@@ -11,17 +11,32 @@ import {
   clearResult,
 } from "../../redux/features/jlptLearnerSlice";
 
+function validateAttemptId(attemptId) {
+  if (attemptId === null || attemptId === undefined) return null;
+  if (attemptId === "null" || attemptId === "undefined") return null;
+
+  const numId = Number(attemptId);
+  if (isNaN(numId) || numId <= 0) return null;
+
+  return numId;
+}
+
 const Result = () => {
   const { testId } = useParams();
   const numericTestId = Number(testId);
 
   const [params] = useSearchParams();
   let eventId = params.get("eventId");
+  const attemptIdFromUrl = validateAttemptId(params.get("attemptId"));
 
   if (!eventId || eventId === "null" || eventId === "undefined") {
     eventId = null;
   }
+  const attemptIdFromStorage = validateAttemptId(
+    localStorage.getItem(`jlpt_lastAttemptId_${numericTestId}`)
+  );
 
+  const attemptId = attemptIdFromUrl || attemptIdFromStorage || null;
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -196,7 +211,17 @@ const Result = () => {
         <div className={styles.actions}>
           <button
             className={styles.retryBtn}
-            onClick={() => navigate(`/jlpt/test/${numericTestId}/review`)}
+            onClick={() => {
+              if (!attemptId) {
+                alert(
+                  "Không tìm được attempt để xem chi tiết. Vui lòng làm lại bài hoặc mở từ kết quả mới nhất."
+                );
+                return;
+              }
+              navigate(
+                `/jlpt/test/${numericTestId}/review?attemptId=${attemptId}`
+              );
+            }}
           >
             Xem kết quả chi tiết
           </button>

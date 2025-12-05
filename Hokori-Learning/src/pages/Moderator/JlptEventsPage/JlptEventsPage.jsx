@@ -1,7 +1,16 @@
 // src/pages/Moderator/JlptEventsPage/JlptEventsPage.jsx
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button, Card, Table, Tag, message, Typography, Space } from "antd";
+import { useNavigate, useLocation } from "react-router-dom";
+import {
+  Button,
+  Card,
+  Table,
+  Tag,
+  message,
+  Typography,
+  Space,
+  Alert,
+} from "antd";
 
 import api from "../../../configs/axios";
 import styles from "./JlptEventsPage.module.scss";
@@ -10,11 +19,19 @@ const { Title } = Typography;
 
 export default function JlptEventsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // nếu path bắt đầu bằng /teacher thì đang ở role teacher
+  const isTeacherRoute = location.pathname.startsWith("/teacher");
+  const basePath = isTeacherRoute ? "/teacher" : "/moderator";
 
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   // lưu số lượng test cho từng eventId
   const [testCountMap, setTestCountMap] = useState({});
+
+  const [teacherApprovalStatus, setTeacherApprovalStatus] = useState(null);
+  const [checkingTeacher, setCheckingTeacher] = useState(false);
 
   // Fetch events & test count
   const fetchEvents = async () => {
@@ -50,9 +67,44 @@ export default function JlptEventsPage() {
     }
   };
 
+  // Chỉ cho teacher đã APPROVED mới được load event JLPT
+  const validateTeacherAndFetch = async () => {
+    if (!isTeacherRoute) {
+      // Moderator thì bỏ qua check
+      fetchEvents();
+      return;
+    }
+
+    setCheckingTeacher(true);
+    try {
+      const res = await api.get("/profile/me");
+      const user = res.data?.data || res.data;
+
+      const approval = user?.teacher?.approvalStatus || null;
+      setTeacherApprovalStatus(approval);
+
+      if (approval !== "APPROVED") {
+        setEvents([]);
+        setTestCountMap({});
+        message.warning(
+          "Hồ sơ giáo viên của bạn chưa được phê duyệt nên chưa thể xem / tạo đề JLPT."
+        );
+        return;
+      }
+
+      // Đã approve thì load event
+      fetchEvents();
+    } catch (err) {
+      console.error(err);
+      message.error("Không kiểm tra được trạng thái giáo viên hiện tại");
+    } finally {
+      setCheckingTeacher(false);
+    }
+  };
   useEffect(() => {
-    fetchEvents();
-  }, []);
+    validateTeacherAndFetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTeacherRoute]);
 
   const columns = [
     {
@@ -106,7 +158,7 @@ export default function JlptEventsPage() {
             type={hasTest ? "default" : "primary"}
             className={styles.actionBtn}
             onClick={() =>
-              navigate(`/moderator/jlptevents/${record.id}/tests`, {
+              navigate(`${basePath}/jlptevents/${record.id}/tests`, {
                 state: { event: record },
               })
             }
@@ -125,12 +177,26 @@ export default function JlptEventsPage() {
           Sự kiện JLPT
         </Title>
 
-        <Button onClick={fetchEvents} loading={loading}>
+        <Button
+          onClick={validateTeacherAndFetch}
+          loading={loading || checkingTeacher}
+        >
           Refresh
         </Button>
       </Space>
 
       <Card className={styles.card}>
+        {isTeacherRoute &&
+          teacherApprovalStatus &&
+          teacherApprovalStatus !== "APPROVED" && (
+            <Alert
+              type="warning"
+              showIcon
+              style={{ marginBottom: 16 }}
+              message="Hồ sơ giáo viên chưa được phê duyệt"
+              description="Vui lòng hoàn thiện hồ sơ và chờ được duyệt trước khi tạo / chỉnh sửa đề JLPT. Bạn có thể xem trạng thái duyệt trong trang Hồ sơ giáo viên."
+            />
+          )}
         <Table
           rowKey="id"
           loading={loading}

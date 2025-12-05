@@ -33,6 +33,7 @@ import {
   Modal,
   Radio,
   Upload,
+  Result,
 } from "antd";
 import { ArrowLeftOutlined, PlusOutlined } from "@ant-design/icons";
 import { buildFileUrl } from "../../../../utils/fileUrl.js";
@@ -82,6 +83,8 @@ export default function JlptTestBuilderPage() {
   const eventFromState = location.state?.event || null;
   const eventLevel = eventFromState?.level || "N5";
 
+  const isTeacherRoute = location.pathname.startsWith("/teacher");
+  const basePath = isTeacherRoute ? "/teacher" : "/moderator";
   const {
     testsByEvent = {},
     questionsByTest = {},
@@ -105,6 +108,9 @@ export default function JlptTestBuilderPage() {
   const [currentAudio, setCurrentAudio] = useState(null);
   const [uploadingAudio, setUploadingAudio] = useState(false);
 
+  const [teacherApprovalStatus, setTeacherApprovalStatus] = useState(null);
+  const [checkingTeacher, setCheckingTeacher] = useState(isTeacherRoute);
+
   const [editQuestionForm] = Form.useForm();
   const [createQuestionForm] = Form.useForm();
 
@@ -114,12 +120,48 @@ export default function JlptTestBuilderPage() {
   const currentTest =
     tests.find((t) => t.id === selectedTestId) || tests[0] || null;
   const displayLevel = currentTest?.level || eventLevel;
+  const isTeacherNotApproved =
+    isTeacherRoute &&
+    teacherApprovalStatus &&
+    teacherApprovalStatus !== "APPROVED";
 
   // ===== EFFECTS =====
   useEffect(() => {
     if (!eventId) return;
-    dispatch(fetchTestsByEventThunk(eventId));
-  }, [dispatch, eventId]);
+
+    // Moderator: fetch thẳng
+    if (!isTeacherRoute) {
+      dispatch(fetchTestsByEventThunk(eventId));
+      return;
+    }
+
+    // Teacher: check approval trước
+    const checkAndFetch = async () => {
+      try {
+        setCheckingTeacher(true);
+        const res = await api.get("/auth/me");
+        const user = res.data?.data || res.data;
+        const approval = user?.teacher?.approvalStatus || null;
+
+        setTeacherApprovalStatus(approval);
+
+        if (approval === "APPROVED") {
+          dispatch(fetchTestsByEventThunk(eventId));
+        } else {
+          message.warning(
+            "Hồ sơ giáo viên của bạn chưa được phê duyệt nên không thể tạo / chỉnh sửa đề JLPT."
+          );
+        }
+      } catch (err) {
+        console.error("Check teacher approval failed", err);
+        message.error("Không kiểm tra được trạng thái giáo viên hiện tại");
+      } finally {
+        setCheckingTeacher(false);
+      }
+    };
+
+    checkAndFetch();
+  }, [dispatch, eventId, isTeacherRoute]);
 
   useEffect(() => {
     if (tests.length > 0 && !selectedTestId) {
@@ -152,7 +194,14 @@ export default function JlptTestBuilderPage() {
   }, [editingQuestion, editQuestionForm]);
 
   // ===== HANDLERS TEST =====
+
   const handleCreateTest = (values) => {
+    if (isTeacherNotApproved) {
+      message.error(
+        "Hồ sơ giáo viên của bạn chưa được phê duyệt nên không thể tạo JLPT Test."
+      );
+      return;
+    }
     const payload = {
       ...values,
       level: eventFromState?.level || values.level || "N5",
@@ -898,6 +947,68 @@ export default function JlptTestBuilderPage() {
   });
 
   // ===== RENDER =====
+  if (isTeacherRoute && checkingTeacher) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <Space align="center" className={styles.headerLeft}>
+            <Button
+              icon={<ArrowLeftOutlined />}
+              onClick={() => navigate(`${basePath}/jlptevents`)}
+            >
+              Back
+            </Button>
+            <div>
+              <Title level={3} style={{ margin: 0 }}>
+                JLPT Test Builder – Event #{eventId}
+              </Title>
+            </div>
+          </Space>
+        </div>
+
+        <Card className={styles.card}>Đang kiểm tra hồ sơ giáo viên...</Card>
+      </div>
+    );
+  }
+
+  // TEACHER: chưa được approve → cấm vào builder
+  if (isTeacherNotApproved) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <Space align="center" className={styles.headerLeft}>
+            <Button
+              icon={<ArrowLeftOutlined />}
+              onClick={() => navigate(`${basePath}/jlptevents`)}
+            >
+              Back
+            </Button>
+            <div>
+              <Title level={3} style={{ margin: 0 }}>
+                JLPT Test Builder – Event #{eventId}
+              </Title>
+            </div>
+          </Space>
+        </div>
+
+        <Card className={styles.card}>
+          <Result
+            status="warning"
+            title="Hồ sơ giáo viên chưa được phê duyệt"
+            subTitle="Bạn cần được phê duyệt hồ sơ trước khi tạo hoặc chỉnh sửa đề JLPT."
+            extra={
+              <Button
+                type="primary"
+                onClick={() => navigate("/teacher/profile")}
+              >
+                Đi đến hồ sơ giáo viên
+              </Button>
+            }
+          />
+        </Card>
+      </div>
+    );
+  }
   return (
     <div className={styles.container}>
       {/* Header */}
@@ -905,7 +1016,7 @@ export default function JlptTestBuilderPage() {
         <Space align="center" className={styles.headerLeft}>
           <Button
             icon={<ArrowLeftOutlined />}
-            onClick={() => navigate("/moderator/jlptevents")}
+            onClick={() => navigate(`${basePath}/jlptevents`)}
           >
             Back
           </Button>

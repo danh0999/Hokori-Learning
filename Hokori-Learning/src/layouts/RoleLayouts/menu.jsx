@@ -67,6 +67,7 @@ export const sidebarMenusByRole = {
       <BookOutlined />,
       "/teacher/manage-courses"
     ),
+    mk("jlptevents", "Sự kiện JLPT", <BookOutlined />, "/teacher/jlptevents"),
     mk("revenue", "Doanh thu", <DollarOutlined />, "/teacher/revenue"),
     mk("profile", "Hồ sơ cá nhân", <UserOutlined />, "/teacher/profile"),
     mk("logout", "Đăng xuất", <LogoutOutlined />, "logout-action"),
