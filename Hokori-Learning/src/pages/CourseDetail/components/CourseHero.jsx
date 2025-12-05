@@ -22,20 +22,24 @@ const CourseHero = ({ course }) => {
     subtitle,
     description,
     level,
-    priceInCents,
+    priceCents,
     discountedPriceCents,
     currency,
   } = course;
 
   // Giá hiện tại & giá gốc
-  const currentPrice = (discountedPriceCents ?? priceInCents ?? 0) / 100;
-  const originalPrice =
-    discountedPriceCents != null ? (priceInCents ?? 0) / 100 : null;
+  // Backend returns VND units in `priceCents` fields for this project.
+  // Treat discounted price as valid ONLY when > 0; otherwise use base price.
+  const hasDiscount = Number(discountedPriceCents) > 0;
+  const currentPrice = hasDiscount
+    ? Number(discountedPriceCents)
+    : Number(priceCents ?? 0);
 
-  const discountPercent =
-    discountedPriceCents != null && priceInCents
-      ? Math.round((1 - discountedPriceCents / priceInCents) * 100)
-      : null;
+  const originalPrice = hasDiscount ? Number(priceCents ?? 0) : null;
+
+  const discountPercent = hasDiscount && priceCents
+    ? Math.round((1 - Number(discountedPriceCents) / Number(priceCents)) * 100)
+    : null;
 
   // Mock dữ liệu rating / students nếu BE chưa có
   const rating = Number(course.rating) || 4.8;
