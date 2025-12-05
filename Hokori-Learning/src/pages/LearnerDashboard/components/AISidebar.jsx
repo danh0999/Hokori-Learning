@@ -24,7 +24,7 @@ const AISidebar = () => {
         <div className={styles.buttons}>
           {/* KIỂM TRA CHÍNH TẢ */}
           <Button
-            content="Kiểm tra chính tả"
+            content="Phân tích câu cùng AI"
             onClick={() => handleClick("GRAMMAR")}
             className={styles.aiButton}
             containerClassName={styles.aiButtonContainer}
@@ -32,19 +32,13 @@ const AISidebar = () => {
 
           {/* LUYỆN NÓI (KAIWA) */}
           <Button
-            content="Luyện nói"
+            content="Luyện nói cùng AI"
             onClick={() => handleClick("KAIWA")}
             className={styles.aiButton}
             containerClassName={styles.aiButtonContainer}
           />
 
-          {/* KIỂM TRA PHÁT ÂM */}
-          <Button
-            content="Kiểm tra phát âm"
-            onClick={() => handleClick("PRONUN")}
-            className={styles.aiButton}
-            containerClassName={styles.aiButtonContainer}
-          />
+   
         </div>
       </section>
 

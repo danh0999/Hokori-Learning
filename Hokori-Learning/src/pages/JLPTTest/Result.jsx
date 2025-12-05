@@ -6,7 +6,10 @@ import "react-circular-progressbar/dist/styles.css";
 
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchMyJlptResult } from "../../redux/features/jlptLearnerSlice";
+import {
+  fetchMyJlptResult,
+  clearResult,
+} from "../../redux/features/jlptLearnerSlice";
 
 const Result = () => {
   const { testId } = useParams();
@@ -15,9 +18,6 @@ const Result = () => {
   const [params] = useSearchParams();
   let eventId = params.get("eventId");
 
-  // ==========================
-  // CLEAN eventId để tránh lỗi "null"
-  // ==========================
   if (!eventId || eventId === "null" || eventId === "undefined") {
     eventId = null;
   }
@@ -29,23 +29,26 @@ const Result = () => {
     (state) => state.jlptLearner
   );
 
+  // =======================================
+  // FIX LỖI: reset result trước khi fetch mới
+  // =======================================
   useEffect(() => {
-    if (numericTestId) {
-      dispatch(fetchMyJlptResult(numericTestId));
-    }
+    dispatch(clearResult()); // <-- xoá kết quả cũ khỏi redux
+    dispatch(fetchMyJlptResult(numericTestId)); // fetch kết quả mới nhất
   }, [dispatch, numericTestId]);
 
   // ===== ERROR STATE =====
   if (resultError) {
     return (
-      <div className={styles.resultWrapper}>
-        <div className={styles.resultCard}>
-          <h2>Lỗi tải kết quả</h2>
-          <p>Không thể tải kết quả kỳ thi. Vui lòng thử lại sau.</p>
+      <div className={styles.errorState}>
+        <div className={styles.errorBox}>
+          <h2 className={styles.errorTitle}>Lỗi tải kết quả</h2>
+          <p className={styles.errorMessage}>
+            Không thể tải kết quả kỳ thi. Vui lòng thử lại sau.
+          </p>
 
-          {/* Fallback nếu eventId không hợp lệ */}
           <button
-            className={styles.backBtn}
+            className={styles.errorBtn}
             onClick={() => {
               if (eventId) navigate(`/jlpt/events/${eventId}`);
               else navigate("/jlpt");
@@ -70,9 +73,29 @@ const Result = () => {
   }
 
   // ===== SAFE ACCESS ====
-  const g = result.grammarVocab || {};
-  const r = result.reading || {};
-  const l = result.listening || {};
+  const g = {
+    ...result.grammarVocab,
+    score: Math.round(result?.grammarVocab?.score ?? 0),
+    correctCount: result?.grammarVocab?.correctCount ?? 0,
+    totalQuestions: result?.grammarVocab?.totalQuestions ?? 0,
+    maxScore: result?.grammarVocab?.maxScore ?? 60,
+  };
+
+  const r = {
+    ...result.reading,
+    score: Math.round(result?.reading?.score ?? 0),
+    correctCount: result?.reading?.correctCount ?? 0,
+    totalQuestions: result?.reading?.totalQuestions ?? 0,
+    maxScore: result?.reading?.maxScore ?? 60,
+  };
+
+  const l = {
+    ...result.listening,
+    score: Math.round(result?.listening?.score ?? 0),
+    correctCount: result?.listening?.correctCount ?? 0,
+    totalQuestions: result?.listening?.totalQuestions ?? 0,
+    maxScore: result?.listening?.maxScore ?? 60,
+  };
 
   const totalQuestions =
     (g.totalQuestions ?? 0) + (r.totalQuestions ?? 0) + (l.totalQuestions ?? 0);
@@ -80,8 +103,8 @@ const Result = () => {
   const correctCount =
     (g.correctCount ?? 0) + (r.correctCount ?? 0) + (l.correctCount ?? 0);
 
-  const totalScore = result.score ?? 0;
-  const percent = (totalScore / 180) * 100;
+  const totalScore = Math.round(result.score ?? 0);
+  const percent = Math.round((totalScore / 180) * 100);
 
   const passScore = result.passScore ?? 0;
   const passed = Boolean(result.passed);
@@ -118,7 +141,6 @@ const Result = () => {
               <strong>{correctCount}</strong>.
             </p>
 
-            {/* PASS / FAIL */}
             <p style={{ marginTop: "0.5rem", fontWeight: 600 }}>
               {passed ? (
                 <span style={{ color: "#10b981" }}>
@@ -141,30 +163,30 @@ const Result = () => {
             <div className={styles.breakdownItem}>
               <h3>Từ vựng & Ngữ pháp</h3>
               <p>
-                {g.correctCount ?? 0} / {g.totalQuestions ?? 0} câu đúng
+                {g.correctCount} / {g.totalQuestions} câu đúng
               </p>
               <p>
-                Điểm: <strong>{g.score ?? 0}</strong> / {g.maxScore ?? 60}
+                Điểm: <strong>{g.score}</strong> / {g.maxScore}
               </p>
             </div>
 
             <div className={styles.breakdownItem}>
               <h3>Đọc hiểu</h3>
               <p>
-                {r.correctCount ?? 0} / {r.totalQuestions ?? 0} câu đúng
+                {r.correctCount} / {r.totalQuestions} câu đúng
               </p>
               <p>
-                Điểm: <strong>{r.score ?? 0}</strong> / {r.maxScore ?? 60}
+                Điểm: <strong>{r.score}</strong> / {r.maxScore}
               </p>
             </div>
 
             <div className={styles.breakdownItem}>
               <h3>Nghe hiểu</h3>
               <p>
-                {l.correctCount ?? 0} / {l.totalQuestions ?? 0} câu đúng
+                {l.correctCount} / {l.totalQuestions} câu đúng
               </p>
               <p>
-                Điểm: <strong>{l.score ?? 0}</strong> / {l.maxScore ?? 60}
+                Điểm: <strong>{l.score}</strong> / {l.maxScore}
               </p>
             </div>
           </div>

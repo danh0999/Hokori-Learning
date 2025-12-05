@@ -252,6 +252,10 @@ const jlptLearnerSlice = createSlice({
       state.currentTestId = null;
       state.activeUsers = {};
     },
+    clearResult: (state) => {
+      state.result = null;
+      state.resultError = null;
+    },
 
     setTestTime: (state, action) => {
       state.timeLeft = action.payload.timeLeft;
@@ -400,6 +404,7 @@ export const {
   setTestTime,
   updateTimeLeft,
   setCurrentTestId,
+  clearResult,
 } = jlptLearnerSlice.actions;
 
 export default jlptLearnerSlice.reducer;
