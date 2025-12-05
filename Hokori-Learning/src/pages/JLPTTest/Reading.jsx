@@ -14,6 +14,7 @@ import {
   fetchActiveUsers,
   setTestTime,
   updateTimeLeft,
+  submitJlptTest,
 } from "../../redux/features/jlptLearnerSlice";
 import api from "../../configs/axios";
 
@@ -24,8 +25,9 @@ const Reading = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { reading, answers, loadingQuestions, activeUsers, timeLeft } =
-    useSelector((state) => state.jlptLearner);
+  const { reading, answers, loadingQuestions, timeLeft } = useSelector(
+    (state) => state.jlptLearner
+  );
 
   const readingQuestions = reading || [];
 
@@ -128,19 +130,18 @@ const Reading = () => {
 
   const currentQ = readingQuestions[currentIndex] || null;
 
-  const uiQuestion =
-    currentQ && {
-      question_id: currentQ.id,
-      order_index: currentIndex + 1,
-      content: currentQ.content,
-      audio: currentQ.audioUrl || null,
-      image: currentQ.imagePath || null,
-      options: currentQ.options.map((opt, i) => ({
-        option_id: opt.id,
-        label: String.fromCharCode(65 + i),
-        text: opt.content,
-      })),
-    };
+  const uiQuestion = currentQ && {
+    question_id: currentQ.id,
+    order_index: currentIndex + 1,
+    content: currentQ.content,
+    audio: currentQ.audioUrl || null,
+    image: currentQ.imagePath || null,
+    options: currentQ.options.map((opt, i) => ({
+      option_id: opt.id,
+      label: String.fromCharCode(65 + i),
+      text: opt.content,
+    })),
+  };
 
   /* ============================================================
       SELECT ANSWER (UI + BE)
@@ -184,15 +185,15 @@ const Reading = () => {
   /* ============================================================
       SUBMIT / MOVE TO LISTENING
   ============================================================ */
-  const handleModalConfirm = () => {
-    if (modalContext === "submit") {
-      navigate(`/jlpt/test/${numericTestId}/result`);
-    } else {
-      navigate(`/jlpt/test/${numericTestId}/listening`);
-    }
-  };
+const handleModalConfirm = async () => {
+  if (modalContext === "submit") {
+    await dispatch(submitJlptTest(numericTestId));
+    navigate(`/jlpt/test/${numericTestId}/result`);
+  } else {
+    navigate(`/jlpt/test/${numericTestId}/listening`);
+  }
+};
 
-  const activeCount = activeUsers?.[numericTestId] ?? 0;
 
   return (
     <>
@@ -205,25 +206,10 @@ const Reading = () => {
           <h1 className={styles.testTitle}>JLPT - Đọc hiểu</h1>
 
           <div className={styles.headerRight}>
-            <div className={styles.activeUsersBox}>
-              <i className="fa-solid fa-user-group" />
-              <span>{activeCount} người đang làm</span>
-            </div>
-
             <div className={styles.timerBox}>
               <i className="fa-regular fa-clock" />
               <span className={styles.timerText}>{formatTime(timeLeft)}</span>
             </div>
-
-            <button
-              className={styles.submitBtn}
-              onClick={() => {
-                setModalContext("submit");
-                setModalOpen(true);
-              }}
-            >
-              Nộp bài
-            </button>
           </div>
         </header>
 

@@ -16,6 +16,7 @@ import {
   setTestTime,
   updateTimeLeft,
   clearTestData,
+  submitJlptTest,
 } from "../../redux/features/jlptLearnerSlice";
 
 import api from "../../configs/axios";
@@ -37,8 +38,9 @@ const Listening = () => {
   const { testId } = useParams();
   const numericTestId = Number(testId);
 
-  const { listening, answers, loadingQuestions, activeUsers, timeLeft } =
-    useSelector((state) => state.jlptLearner);
+  const { listening, answers, loadingQuestions, timeLeft } = useSelector(
+    (state) => state.jlptLearner
+  );
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [localAnswers, setLocalAnswers] = useState({});
@@ -190,7 +192,8 @@ const Listening = () => {
 
   const prev = () => currentIndex > 0 && setCurrentIndex((i) => i - 1);
 
-  const finish = () => {
+  const finish = async () => {
+    await dispatch(submitJlptTest(numericTestId));
     navigate(`/jlpt/test/${numericTestId}/result`);
   };
 
@@ -213,7 +216,6 @@ const Listening = () => {
 
   const answeredCount = questions.filter((q) => localAnswers[q.id]).length;
   const progressPct = total ? Math.round((answeredCount / total) * 100) : 0;
-  const activeCount = activeUsers?.[numericTestId] ?? 0;
 
   const handleSelectAnswer = (qid, optId) => {
     setLocalAnswers((prev) => ({
@@ -242,11 +244,6 @@ const Listening = () => {
           <h1 className={styles.testTitle}>JLPT - Nghe hiểu</h1>
 
           <div className={styles.headerRight}>
-            <div className={styles.activeUsersBox}>
-              <i className="fa-solid fa-user-group" />
-              <span>Đang có {activeCount} người đang làm</span>
-            </div>
-
             <div className={styles.timerBox}>
               <span className={styles.timerText}>{formatTime(timeLeft)}</span>
             </div>

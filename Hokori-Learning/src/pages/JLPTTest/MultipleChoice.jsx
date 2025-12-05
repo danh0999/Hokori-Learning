@@ -15,6 +15,7 @@ import {
   setTestTime,
   updateTimeLeft, 
   fetchActiveUsers,
+  submitJlptTest,
 } from "../../redux/features/jlptLearnerSlice";
 
 import api from "../../configs/axios";
@@ -25,7 +26,7 @@ const MultipleChoice = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { grammarVocab, answers, loadingQuestions, activeUsers, timeLeft } =
+  const { grammarVocab, answers, loadingQuestions, timeLeft } =
     useSelector((state) => state.jlptLearner);
 
   const grammarQuestions = grammarVocab || [];
@@ -175,14 +176,17 @@ const MultipleChoice = () => {
   /* ============================================================
         SUBMIT / GO TO READING
      ============================================================ */
-  const handleModalConfirm = () =>
-    navigate(
-      modalContext === "submit"
-        ? `/jlpt/test/${numericTestId}/result`
-        : `/jlpt/test/${numericTestId}/reading`
-    );
+const handleModalConfirm = async () => {
+  if (modalContext === "submit") {
+    await dispatch(submitJlptTest(numericTestId));
+    navigate(`/jlpt/test/${numericTestId}/result`);
+  } else {
+    navigate(`/jlpt/test/${numericTestId}/reading`);
+  }
+};
 
-  const activeCount = activeUsers?.[numericTestId] ?? 0;
+
+  
 
   /* ============================================================
         UI RENDER
@@ -199,25 +203,13 @@ const MultipleChoice = () => {
           <h1 className={styles.testTitle}>JLPT - Từ vựng & Ngữ pháp</h1>
 
           <div className={styles.headerRight}>
-            <div className={styles.activeUsersBox}>
-              <i className="fa-solid fa-user-group" />
-              <span>Đang có {activeCount} người tham gia bài thi này</span>
-            </div>
-
+        
             <div className={styles.timerBox}>
               <i className="fa-regular fa-clock" />
               <span className={styles.timerText}>{formatTime(timeLeft)}</span>
             </div>
 
-            <button
-              className={styles.submitBtn}
-              onClick={() => {
-                setModalContext("submit");
-                setModalOpen(true);
-              }}
-            >
-              Nộp bài
-            </button>
+     
           </div>
         </header>
 
