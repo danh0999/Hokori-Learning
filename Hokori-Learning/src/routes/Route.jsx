@@ -22,9 +22,8 @@ import LessonPlayer from "../pages/LessonPlayer/LessonPlayer";
 import QuizPage from "../pages/QuizPage/QuizPage";
 import MyFlashcards from "../pages/Flashcards/MyFlashcards";
 import ProfilePage from "../pages/Profile/ProfilePage";
-
+import LearnerPolicies from "../pages/Policies/LearnerPolicies";
 import Information from "../pages/Information/Information";
-import Policies from "../pages/Policies/Policies";
 import AiKaiwaPage from "../pages/AiKaiwa/AiKaiwaPage";
 import AiAnalysePage from "../pages/AiAnalyse/AiAnalysePage";
 import JLPTEventTests from "../pages/JLPTEventTests/JLPTEventTests";
@@ -42,6 +41,7 @@ import CourseInformation from "../pages/Teacher/Courses/CourseInformation/Course
 import TeacherProfilePage from "../pages/Teacher/TeacherProfilePage/TeacherProfilePage";
 import CreateCoursePage from "../pages/Teacher/Courses/Create-Course/CreateCoursePage";
 import CreateQuizPage from "../pages/Teacher/ManageDocument/Quiz/CreateQuizPage/CreateQuizPage";
+import TeacherPolicies from "../pages/Teacher/TeacherPolicies/TeacherPolicies";
 import ManageDocumentPage from "../pages/Teacher/ManageDocument/ManageDocumentPage";
 import TeacherRevenue from "../pages/Teacher/Revenue/TeacherRevenue";
 
@@ -60,6 +60,7 @@ import JlptEvents from "../pages/Admin/pages/JlptEvents";
 import Withdrawals from "../pages/Admin/pages/Withdrawals";
 import TeacherCertificates from "../pages/Admin/pages/TeacherCertificates";
 import AiPackages from "../pages/Admin/pages/AiPackages";
+import AdPolicies from "../pages/Admin/pages/AdPolicies";
 
 // ===== Guards =====
 import ProtectedRoute from "./ProtectedRoute";
@@ -68,6 +69,7 @@ import CourseReviewPage from "../pages/Moderator/Queues/CourseReviewPage/CourseR
 import ModeratorDashboard from "../pages/Moderator/ModDashboard/ModeratorDashboard";
 import Unauthorized from "../pages/authen/components/Unauthorized/Unauthorized";
 import Review from "../pages/JLPTTest/Review";
+import ModeratorPolicies from "../pages/Moderator/ModPolicies/ModPolicies";
 
 const routes = [
   // ============================
@@ -91,7 +93,6 @@ const routes = [
       { path: "about", element: <AboutPage /> },
       { path: "contact", element: <Contact /> },
       { path: "information", element: <Information /> },
-      { path: "policies", element: <Policies /> },
       {
         path: "learner/flashcards/:sectionContentId",
         element: <FlashcardPage />,
@@ -117,6 +118,7 @@ const routes = [
           { path: "ai-kaiwa", element: <AiKaiwaPage /> },
           { path: "ai-analyse", element: <AiAnalysePage /> },
           { path: "jlpt", element: <JLPTList /> },
+          { path: "policies", element: <LearnerPolicies /> },
 
           { path: "jlpt/events/:eventId", element: <JLPTEventTests /> },
 
@@ -160,6 +162,7 @@ const routes = [
           { path: "manage-documents", element: <ManageDocumentPage /> },
           { path: "revenue", element: <TeacherRevenue /> },
           { path: "profile", element: <TeacherProfilePage /> },
+          { path: "policies", element: <TeacherPolicies /> },
           { path: "jlptevents", element: <JlptEventsPage /> },
 
           { path: "*", element: <ErrorPage /> },
@@ -206,6 +209,7 @@ const routes = [
             element: <CourseReviewPage />,
           },
           { path: "jlptevents", element: <JlptEventsPage /> },
+          { path: "policies", element: <ModeratorPolicies /> },
           { path: "*", element: <ErrorPage /> },
         ],
       },
@@ -235,7 +239,7 @@ const routes = [
           { path: "revenue", element: <Revenue /> },
           { path: "withdrawals", element: <Withdrawals /> },
           { path: "complaints", element: <Complaints /> },
-          { path: "policies", element: <Policies /> },
+          { path: "adpolicies", element: <AdPolicies /> },
           { path: "system-logs", element: <SystemLogs /> },
 
           { path: "*", element: <ErrorPage /> },

@@ -22,9 +22,8 @@ import {
   BookOutlined,
   ClockCircleOutlined,
 } from "@ant-design/icons";
-// TODO: import API thật sau
-// import { getTeacherCourseProgress, getLearnerProgressDetail } from "../../../../api/teacherProgress";
 import styles from "./CourseProgressTab.module.scss";
+import api from "../../../../../configs/axios";
 
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
@@ -53,56 +52,61 @@ export default function CourseProgressTab({ courseId, isActive }) {
   useEffect(() => {
     if (!courseId || !isActive) return;
 
-    const fetchData = async () => {
+    const fetchStatistics = async () => {
       setLoading(true);
       try {
-        // const res = await getTeacherCourseProgress(courseId);
-        // setCourseStats(res.data.course);
-        // setLearners(res.data.learners);
+        const res = await api.get(
+          `teacher/courses/${courseId}/learners/statistics`
+        );
 
-        // MOCK tạm
+        const payload = res.data?.data;
+        if (!payload) return;
+
+        const stats = payload.courseStatistics;
+        const rawLearners = payload.learners || [];
+
+        // ----- map statistics -----
         setCourseStats({
-          id: courseId,
-          title: "N5 Grammar & Vocab Full Course",
-          subtitle: "Nền tảng vững chắc cho JLPT N5",
-          level: "N5",
-          enrollCount: 32,
-          avgProgressPercent: 64,
-          completedCount: 10,
-          inProgressCount: 18,
-          notStartedCount: 4,
+          id: payload.courseId,
+          title: payload.courseTitle,
+          enrollCount: stats.totalEnrollments,
+          avgProgressPercent: stats.averageProgressPercent,
+          completedCount: stats.completedLearners,
+          inProgressCount: stats.activeLearners,
+          notStartedCount: rawLearners.filter((l) => l.progressPercent === 0)
+            .length,
+          minProgressPercent: stats.minProgressPercent,
+          maxProgressPercent: stats.maxProgressPercent,
         });
 
-        setLearners([
-          {
-            learnerId: 1,
-            name: "Nguyen Van A",
-            email: "a@example.com",
-            enrolledAt: "2025-12-01T10:00:00",
-            progressPercent: 80,
-            completedLessons: 20,
-            totalLessons: 25,
-            lastActivity: "2025-12-04T14:30:00",
-            status: "IN_PROGRESS",
-          },
-          {
-            learnerId: 2,
-            name: "Tran Thi B",
-            email: "b@example.com",
-            enrolledAt: "2025-12-02T09:15:00",
-            progressPercent: 100,
-            completedLessons: 25,
-            totalLessons: 25,
-            lastActivity: "2025-12-03T18:10:00",
-            status: "COMPLETED",
-          },
-        ]);
+        // ----- map learners -----
+        setLearners(
+          rawLearners.map((l) => {
+            let status = "IN_PROGRESS";
+            if (l.progressPercent === 0) status = "NOT_STARTED";
+            if (l.progressPercent === 100) status = "COMPLETED";
+
+            return {
+              learnerId: l.learnerId,
+              name: l.learnerName,
+              email: l.learnerEmail,
+              progressPercent: l.progressPercent,
+              enrolledAt: l.enrolledAt,
+              startedAt: l.startedAt,
+              completedAt: l.completedAt,
+              lastActivity: l.lastAccessAt,
+              status,
+            };
+          })
+        );
+      } catch (err) {
+        console.error("Failed to load statistics:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    fetchStatistics();
   }, [courseId, isActive]);
 
   const filteredLearners = useMemo(
@@ -126,35 +130,14 @@ export default function CourseProgressTab({ courseId, isActive }) {
     setDrawerOpen(true);
     setLoadingDetail(true);
     try {
+      // TODO: khi BE có API detail thì gọi thật
       // const res = await getLearnerProgressDetail(courseId, record.learnerId);
       // setLearnerDetail(res.data);
 
-      // MOCK
+      // mock tạm cho drawer, không ảnh hưởng tới phần gọi API statistics
       setLearnerDetail({
         courseProgressPercent: record.progressPercent,
-        chapters: [
-          {
-            chapterId: 1,
-            title: "Chapter 1: Basic Grammar",
-            progressPercent: 90,
-            lessons: [
-              {
-                lessonId: 11,
-                title: "Lesson 1: Particles",
-                progressPercent: 100,
-                completedContents: 5,
-                totalContents: 5,
-              },
-              {
-                lessonId: 12,
-                title: "Lesson 2: Verb basic",
-                progressPercent: 80,
-                completedContents: 4,
-                totalContents: 5,
-              },
-            ],
-          },
-        ],
+        chapters: [],
       });
     } finally {
       setLoadingDetail(false);
@@ -183,7 +166,8 @@ export default function CourseProgressTab({ courseId, isActive }) {
       title: "Enrolled at",
       dataIndex: "enrolledAt",
       key: "enrolledAt",
-      render: (v) => <Text>{new Date(v).toLocaleDateString("vi-VN")}</Text>,
+      render: (v) =>
+        v ? <Text>{new Date(v).toLocaleDateString("vi-VN")}</Text> : "-",
     },
     {
       title: "Progress",
@@ -196,24 +180,18 @@ export default function CourseProgressTab({ courseId, isActive }) {
       ),
     },
     {
-      title: "Lessons",
-      key: "lessons",
-      render: (_, r) => (
-        <Text>
-          {r.completedLessons}/{r.totalLessons}
-        </Text>
-      ),
-    },
-    {
       title: "Last activity",
       dataIndex: "lastActivity",
       key: "lastActivity",
-      render: (v) => (
-        <Space>
-          <ClockCircleOutlined />
-          <Text type="secondary">{new Date(v).toLocaleString("vi-VN")}</Text>
-        </Space>
-      ),
+      render: (v) =>
+        v ? (
+          <Space>
+            <ClockCircleOutlined />
+            <Text type="secondary">{new Date(v).toLocaleString("vi-VN")}</Text>
+          </Space>
+        ) : (
+          "-"
+        ),
     },
     {
       title: "Status",
@@ -249,9 +227,13 @@ export default function CourseProgressTab({ courseId, isActive }) {
                 <Title level={4} className={styles.courseTitle}>
                   {courseStats.title}
                 </Title>
-                <Text type="secondary">{courseStats.subtitle}</Text>
+                {courseStats.subtitle && (
+                  <Text type="secondary">{courseStats.subtitle}</Text>
+                )}
                 <div className={styles.metaRow}>
-                  <Tag color="gold">{courseStats.level}</Tag>
+                  {courseStats.level && (
+                    <Tag color="gold">{courseStats.level}</Tag>
+                  )}
                   <Tag>{courseStats.enrollCount} learners</Tag>
                 </div>
               </div>
@@ -287,6 +269,20 @@ export default function CourseProgressTab({ courseId, isActive }) {
                   title="Not started"
                   value={courseStats.notStartedCount}
                   prefix={<UserOutlined />}
+                />
+              </Col>
+              <Col span={8}>
+                <Statistic
+                  title="Min progress"
+                  value={courseStats.minProgressPercent}
+                  suffix="%"
+                />
+              </Col>
+              <Col span={8}>
+                <Statistic
+                  title="Max progress"
+                  value={courseStats.maxProgressPercent}
+                  suffix="%"
                 />
               </Col>
             </Row>
@@ -363,58 +359,71 @@ export default function CourseProgressTab({ courseId, isActive }) {
                 type="circle"
                 percent={learnerDetail.courseProgressPercent}
               />
-              <div className={styles.detailStats}>
-                <Text type="secondary">
-                  Enrolled at:{" "}
-                  {new Date(selectedLearner.enrolledAt).toLocaleString("vi-VN")}
-                </Text>
-                <br />
-                <Text type="secondary">
-                  Last activity:{" "}
-                  {new Date(selectedLearner.lastActivity).toLocaleString(
-                    "vi-VN"
-                  )}
-                </Text>
-              </div>
+              {selectedLearner && (
+                <div className={styles.detailStats}>
+                  <Text type="secondary">
+                    Enrolled at:{" "}
+                    {selectedLearner.enrolledAt
+                      ? new Date(selectedLearner.enrolledAt).toLocaleString(
+                          "vi-VN"
+                        )
+                      : "-"}
+                  </Text>
+                  <br />
+                  <Text type="secondary">
+                    Last activity:{" "}
+                    {selectedLearner.lastActivity
+                      ? new Date(selectedLearner.lastActivity).toLocaleString(
+                          "vi-VN"
+                        )
+                      : "-"}
+                  </Text>
+                </div>
+              )}
             </div>
 
-            <Title level={5} style={{ marginTop: 24 }}>
-              Progress by chapter
-            </Title>
-            <Collapse accordion>
-              {learnerDetail.chapters.map((ch) => (
-                <Panel
-                  key={ch.chapterId}
-                  header={
-                    <div className={styles.chapterHeader}>
-                      <span>{ch.title}</span>
-                      <Progress
-                        percent={ch.progressPercent}
-                        size="small"
-                        style={{ width: 160 }}
-                      />
-                    </div>
-                  }
-                >
-                  {ch.lessons.map((lesson) => (
-                    <div key={lesson.lessonId} className={styles.lessonRow}>
-                      <div className={styles.lessonInfo}>
-                        <Text strong>{lesson.title}</Text>
-                        <Text type="secondary">
-                          {lesson.completedContents}/{lesson.totalContents}{" "}
-                          contents
-                        </Text>
-                      </div>
-                      <Progress
-                        percent={lesson.progressPercent}
-                        size="small"
-                        style={{ width: 150 }}
-                      />
-                    </div>
+            {/* phần chapter/lesson detail hiện giờ đang mock rỗng */}
+            {learnerDetail.chapters?.length > 0 && (
+              <>
+                <Title level={5} style={{ marginTop: 24 }}>
+                  Progress by chapter
+                </Title>
+                <Collapse accordion>
+                  {learnerDetail.chapters.map((ch) => (
+                    <Panel
+                      key={ch.chapterId}
+                      header={
+                        <div className={styles.chapterHeader}>
+                          <span>{ch.title}</span>
+                          <Progress
+                            percent={ch.progressPercent}
+                            size="small"
+                            style={{ width: 160 }}
+                          />
+                        </div>
+                      }
+                    >
+                      {ch.lessons.map((lesson) => (
+                        <div key={lesson.lessonId} className={styles.lessonRow}>
+                          <div className={styles.lessonInfo}>
+                            <Text strong>{lesson.title}</Text>
+                            <Text type="secondary">
+                              {lesson.completedContents}/{lesson.totalContents}{" "}
+                              contents
+                            </Text>
+                          </div>
+                          <Progress
+                            percent={lesson.progressPercent}
+                            size="small"
+                            style={{ width: 150 }}
+                          />
+                        </div>
+                      ))}
+                    </Panel>
                   ))}
-                </Panel>
-              ))}
-            </Collapse>
+                </Collapse>
+              </>
+            )}
           </>
         )}
       </Drawer>
