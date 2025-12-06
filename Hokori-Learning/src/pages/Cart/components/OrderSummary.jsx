@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";      
+import { useNavigate } from "react-router-dom";
 import styles from "./OrderSummary.module.scss";
+import { checkout } from "../../../services/paymentService";
 
 const OrderSummary = ({ courses }) => {
   const navigate = useNavigate();                    
@@ -20,25 +21,39 @@ const OrderSummary = ({ courses }) => {
 
   const final = total - discount;
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (courses.length === 0) {
       alert("Giỏ hàng trống!");
       return;
     }
 
-    // LƯU ĐƠN HÀNG TẠM để trang Payment lấy lại
-    localStorage.setItem(
-      "pendingOrder",
-      JSON.stringify({
-        items: courses,
-        total,
-        discount,
-        final,
-      })
-    );
+    try {
+      // Chỉ thanh toán các item đang được chọn
+      const selectedIds = courses
+        .filter((c) => c.selected)
+        .map((c) => c.id);
 
-    // ĐIỀU HƯỚNG SANG TRANG THANH TOÁN
-    navigate("/payment");     
+      if (selectedIds.length === 0) {
+        alert("Vui lòng chọn khóa học để thanh toán");
+        return;
+      }
+
+      // Gọi API checkout theo đặc tả .md
+      const result = await checkout(null, selectedIds);
+
+      const link = result?.data?.paymentLink || null;
+      const desc = result?.data?.description || "";
+
+      if (link === null) {
+        alert("Đăng ký thành công! " + desc);
+        navigate("/my-courses");
+      } else {
+        window.location.href = link;
+      }
+    } catch (err) {
+      const msg = err?.message || "Không thể khởi tạo thanh toán";
+      alert(msg);
+    }
   };
 
   return (
