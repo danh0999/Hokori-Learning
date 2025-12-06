@@ -77,18 +77,39 @@ const MyCourses = () => {
   // 🔹 Khi user nhấn “Tiếp tục học”
   const handleContinue = async (course) => {
     try {
+      // 1) Lấy danh sách lessons của course
       const res = await api.get(`/learner/courses/${course.courseId}/lessons`);
-      const lessons = res.data ?? [];
+      const lessons = (res.data ?? []).sort((a, b) => a.orderIndex - b.orderIndex);
 
       if (!lessons.length) {
         toast.error("Khóa học chưa có bài học.");
         return;
       }
 
-      const firstLesson = lessons.sort((a, b) => a.orderIndex - b.orderIndex)[0];
-      const lessonId = firstLesson.lessonId ?? firstLesson.id;
+      // 2) Tìm lesson đầu tiên chưa hoàn thành; nếu tất cả hoàn thành, chọn lesson đầu tiên
+      const incompleteLesson = lessons.find((l) => !l.isCompleted);
+      const targetLesson = incompleteLesson || lessons[0];
+      const lessonId = targetLesson.lessonId ?? targetLesson.id;
 
-      navigate(`/course/${course.courseId}/lesson/${lessonId}`);
+      // 3) Lấy contents của lesson mục tiêu để xác định content đang học hoặc tiếp theo
+      const contentsRes = await api.get(`/learner/lessons/${lessonId}/contents`);
+      const contents = (contentsRes.data ?? []).sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
+
+      // 4) Ưu tiên content đang xem dở (lastPositionSec > 0 và chưa hoàn thành)
+      const inProgressContent = contents.find(
+        (c) => (c.lastPositionSec ?? 0) > 0 && !c.isCompleted
+      );
+
+      // 5) Nếu không có, chọn content đầu tiên chưa hoàn thành; nếu tất cả xong, không kèm contentId
+      const nextContent = contents.find((c) => !c.isCompleted);
+      const targetContent = inProgressContent || nextContent || null;
+
+      if (targetContent) {
+        navigate(`/course/${course.courseId}/lesson/${lessonId}?contentId=${targetContent.contentId}`);
+      } else {
+        // Tất cả content trong lesson đã hoàn thành → vào lesson không query contentId
+        navigate(`/course/${course.courseId}/lesson/${lessonId}`);
+      }
     } catch (err) {
       console.error("Không thể điều hướng vào bài học:", err);
     }
