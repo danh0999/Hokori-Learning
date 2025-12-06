@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from "react";
 import s from "./Dashboard.module.scss";
-import { Line, Bar, Pie } from "react-chartjs-2";
+import { Pie } from "react-chartjs-2";
 import { Chart, registerables } from "chart.js";
 
+// axios client dùng chung của project (đổi path theo project của bà)
+import api from "../../../configs/axios.js";
+
 // React Icons
-import { FaUsers, FaChalkboardTeacher, FaMoneyBillWave } from "react-icons/fa";
-import { MdPendingActions } from "react-icons/md";
-import { AiOutlineFileSearch, AiOutlineRobot } from "react-icons/ai";
+import { FaUsers } from "react-icons/fa";
+import { MdVerifiedUser, MdOutlinePendingActions } from "react-icons/md";
+import { RiUserFollowFill, RiUserUnfollowFill } from "react-icons/ri";
+import { HiOutlineUserGroup } from "react-icons/hi";
 
 Chart.register(...registerables);
 
@@ -22,128 +26,166 @@ Chart.register({
 });
 
 export default function AdminDashboard() {
-  // ======================
-  // MOCK DATA (SKELETON)
-  // ======================
+  const [dashboard, setDashboard] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  /**
-   * TODO(API):
-   * GET /admin/dashboard/stats
-   * Dữ liệu thật sẽ trả về object stats như dưới
-   */
-  const [stats] = useState({
-    totalUsers: 0,
-    totalTeachers: 0,
-    monthRevenue: 0,
-    pendingWithdrawals: 0,
-    pendingCertificates: 0,
-    aiPackageSales: 0,
-  });
+  // ====== CALL API /api/admin/dashboard ======
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-  /**
-   * TODO(API):
-   * GET /admin/dashboard/revenue-chart
-   */
-  const [revenueChart] = useState({
-    labels: ["T1", "T2", "T3", "T4", "T5", "T6"],
-    values: [5, 10, 20, 15, 30, 25],
-  });
+        const res = await api.get("admin/dashboard");
+        // BE trả: { success, message, data, ... }
+        setDashboard(res.data.data);
+      } catch (err) {
+        console.error("Fetch admin dashboard error:", err);
+        setError("Không tải được dữ liệu dashboard. Thử lại sau nhé.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  /**
-   * TODO(API):
-   * GET /admin/dashboard/users-chart
-   */
-  const [userChart] = useState({
-    labels: ["T1", "T2", "T3", "T4", "T5", "T6"],
-    values: [200, 250, 300, 400, 380, 500],
-  });
+    fetchDashboard();
+  }, []);
 
-  /**
-   * TODO(API):
-   * GET /admin/dashboard/roles-chart
-   */
-  const [roleChart] = useState({
-    labels: ["Learner", "Teacher", "Moderator", "Admin"],
-    values: [11200, 320, 12, 4],
-  });
+  const overview = dashboard?.overview ?? {};
+  const lastUpdated = dashboard?.lastUpdated
+    ? new Date(dashboard.lastUpdated).toLocaleString("vi-VN")
+    : "-";
 
-  /**
-   * TODO(API):
-   * GET /admin/dashboard/top-teachers
-   */
-  const [topTeachers] = useState([
-    { id: 1, name: "Nguyễn Văn A", revenue: 12000000 },
-    { id: 2, name: "Trần Thị B", revenue: 9500000 },
-  ]);
+  // ====== CHART DATA MAPPING ======
+  const roleChartData = dashboard
+    ? {
+        labels: Object.keys(dashboard.roleDistribution),
+        values: Object.values(dashboard.roleDistribution),
+      }
+    : { labels: [], values: [] };
 
-  /**
-   * TODO(API):
-   * GET /admin/dashboard/recent-transactions
-   */
-  const [recentTx] = useState([
-    { id: 1, content: "Mua gói AI Pro", date: "2025-11-10 08:30" },
-    { id: 2, content: "Đăng ký JLPT N3", date: "2025-11-10 10:00" },
-  ]);
+  const jlptChartData = dashboard
+    ? {
+        labels: Object.keys(dashboard.jlptDistribution),
+        values: Object.values(dashboard.jlptDistribution),
+      }
+    : { labels: [], values: [] };
+
+  const recentUsers = dashboard?.recentUsers ?? [];
 
   return (
     <div className={s.page}>
-      <h1 className={s.title}>Tổng quan hệ thống</h1>
-
-      {/* ================= TOP CARDS ================= */}
-      <div className={s.statGrid}>
-
-        <Stat label="Tổng người dùng" value={stats.totalUsers} icon={<FaUsers />} />
-        <Stat label="Giáo viên" value={stats.totalTeachers} icon={<FaChalkboardTeacher />} />
-        <Stat label="Doanh thu tháng" value={stats.monthRevenue + " đ"} icon={<FaMoneyBillWave />} />
-        <Stat label="Đơn rút tiền chờ" value={stats.pendingWithdrawals} icon={<MdPendingActions />} />
-        <Stat label="Chứng chỉ chờ duyệt" value={stats.pendingCertificates} icon={<AiOutlineFileSearch />} />
-        <Stat label="Gói AI bán" value={stats.aiPackageSales} icon={<AiOutlineRobot />} />
-
+      <div className={s.headerRow}>
+        <h1 className={s.title}>Admin Dashboard</h1>
+        <span className={s.lastUpdated}>
+          Cập nhật lần cuối: <strong>{lastUpdated}</strong>
+        </span>
       </div>
 
-      {/* ================= CHARTS ================= */}
-      <div className={s.chartGrid}>
-        <ChartCard title="Doanh thu theo tháng">
-          <Line data={lineChart(revenueChart)} options={{ responsive: true, animation: false }} />
-        </ChartCard>
+      {/* ====== LOADING / ERROR ====== */}
+      {loading && <p>Đang tải dữ liệu...</p>}
+      {error && !loading && <p className={s.error}>{error}</p>}
 
-        <ChartCard title="Người dùng mới">
-          <Bar data={barChart(userChart)} options={{ responsive: true, animation: false }} />
-        </ChartCard>
+      {!loading && !error && dashboard && (
+        <>
+          {/* ================= TOP CARDS ================= */}
+          <div className={s.statGrid}>
+            <Stat
+              label="Tổng người dùng"
+              value={overview.totalUsers}
+              icon={<FaUsers />}
+            />
+            <Stat
+              label="Người dùng đang hoạt động"
+              value={overview.activeUsers}
+              icon={<RiUserFollowFill />}
+            />
+            <Stat
+              label="Người dùng không hoạt động"
+              value={overview.inactiveUsers}
+              icon={<RiUserUnfollowFill />}
+            />
+            <Stat
+              label="Đã xác thực"
+              value={overview.verifiedUsers}
+              icon={<MdVerifiedUser />}
+            />
+            <Stat
+              label="Chưa xác thực"
+              value={overview.unverifiedUsers}
+              icon={<MdOutlinePendingActions />}
+            />
+            <Stat
+              label="Số vai trò"
+              value={overview.totalRoles}
+              icon={<HiOutlineUserGroup />}
+            />
+          </div>
 
-        <ChartCard title="Tỷ lệ vai trò">
-          <Pie data={pieChart(roleChart)} options={{ responsive: true, animation: false }} />
-        </ChartCard>
-      </div>
+          {/* ================= CHARTS ================= */}
+          <div className={s.chartGrid}>
+            <ChartCard title="Phân bố vai trò người dùng">
+              <Pie
+                data={pieChart(roleChartData)}
+                options={{ responsive: true, animation: false }}
+              />
+            </ChartCard>
 
-      {/* ================= LOWER SECTIONS ================= */}
-      <div className={s.bottomGrid}>
+            <ChartCard title="Phân bố level JLPT">
+              <Pie
+                data={pieChart(jlptChartData)}
+                options={{ responsive: true, animation: false }}
+              />
+            </ChartCard>
+          </div>
 
-        <div className={s.box}>
-          <h3>Top giáo viên doanh thu cao</h3>
-          <ul className={s.list}>
-            {topTeachers.map((t) => (
-              <li key={t.id}>
-                <span>{t.name}</span>
-                <strong>{t.revenue.toLocaleString()} đ</strong>
-              </li>
-            ))}
-          </ul>
-        </div>
+          {/* ================= RECENT USERS ================= */}
+          <div className={s.bottomGrid}>
+            <div className={s.box}>
+              <div className={s.boxHeader}>
+                <h3>Người dùng mới đăng ký</h3>
+                <span className={s.boxSub}>
+                  Hiển thị {recentUsers.length} user gần nhất
+                </span>
+              </div>
 
-        <div className={s.box}>
-          <h3>Hoạt động gần đây</h3>
-          <ul className={s.list}>
-            {recentTx.map((tx) => (
-              <li key={tx.id}>
-                <span>{tx.content}</span>
-                <small>{tx.date}</small>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-      </div>
+              <div className={s.tableWrapper}>
+                <table className={s.table}>
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Display name</th>
+                      <th>Username</th>
+                      <th>Email</th>
+                      <th>Role</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentUsers.map((u) => (
+                      <tr key={u.id}>
+                        <td>{u.id}</td>
+                        <td>{u.displayName || "-"}</td>
+                        <td>{u.username || "-"}</td>
+                        <td>{u.email}</td>
+                        <td>
+                          <span className={s.roleBadge}>{u.roleName}</span>
+                        </td>
+                      </tr>
+                    ))}
+                    {recentUsers.length === 0 && (
+                      <tr>
+                        <td colSpan={5} style={{ textAlign: "center" }}>
+                          Chưa có user nào gần đây
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -162,43 +204,35 @@ const Stat = ({ label, value, icon }) => (
 
 const ChartCard = ({ title, children }) => (
   <div className={s.chartCard}>
-    <h3>{title}</h3>
+    <div className={s.chartHeader}>
+      <h3>{title}</h3>
+    </div>
     {children}
   </div>
 );
 
 /* ================= CHART HELPERS ================= */
 
-const lineChart = (data) => ({
-  labels: data.labels,
-  datasets: [
-    {
-      label: "Doanh thu",
-      data: data.values,
-      borderColor: "#2563eb",
-      backgroundColor: "rgba(37,99,235,0.2)",
-      tension: 0.35,
-    },
-  ],
-});
+const pieChart = (data) => {
+  const palette = [
+    "#3b82f6",
+    "#10b981",
+    "#f59e0b",
+    "#ef4444",
+    "#6366f1",
+    "#ec4899",
+    "#22c55e",
+  ];
 
-const barChart = (data) => ({
-  labels: data.labels,
-  datasets: [
-    {
-      label: "Số lượng",
-      data: data.values,
-      backgroundColor: "#60a5fa",
-    },
-  ],
-});
-
-const pieChart = (data) => ({
-  labels: data.labels,
-  datasets: [
-    {
-      data: data.values,
-      backgroundColor: ["#3b82f6", "#10b981", "#f59e0b", "#ef4444"],
-    },
-  ],
-});
+  return {
+    labels: data.labels,
+    datasets: [
+      {
+        data: data.values,
+        backgroundColor: data.labels.map(
+          (_, idx) => palette[idx % palette.length]
+        ),
+      },
+    ],
+  };
+};
