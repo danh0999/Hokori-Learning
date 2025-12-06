@@ -18,7 +18,6 @@ const BASE_URL = PROD;
 // const BASE_URL = LOCAL;
 // const BASE_URL = FE_NGROK;
 
-
 /* ===========================================================
    INIT AXIOS INSTANCE
 =========================================================== */
@@ -26,7 +25,6 @@ const api = axios.create({
   baseURL: BASE_URL,
   withCredentials: false,
 });
-
 
 /* ===========================================================
    REQUEST INTERCEPTOR
@@ -60,7 +58,6 @@ api.interceptors.request.use(
   },
   (err) => Promise.reject(err)
 );
-
 
 /* ===========================================================
    RESPONSE INTERCEPTOR

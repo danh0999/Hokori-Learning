@@ -265,6 +265,8 @@ const quizSlice = createSlice({
     clearCurrentQuiz(state) {
       state.currentQuiz = null;
       state.error = null;
+      state.loading = false;
+      state.saving = false;
     },
   },
   extraReducers: (builder) => {
