@@ -48,6 +48,25 @@ const getError = (err) =>
   err.message ||
   "Something went wrong";
 
+/* -----------------------------
+   👉 Helper format duration
+   totalSec (number) => "30 phút", "1 giờ 20 phút"
+----------------------------- */
+const formatDuration = (totalSec) => {
+  if (!totalSec || totalSec <= 0) return null;
+  const minutes = Math.round(totalSec / 60);
+
+  if (minutes < 60) {
+    return `${minutes} phút`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const remain = minutes % 60;
+
+  if (!remain) return `${hours} giờ`;
+  return `${hours} giờ ${remain} phút`;
+};
+
 export default function CourseCurriculumView({
   courseMeta,
   courseTree,
@@ -80,6 +99,21 @@ export default function CourseCurriculumView({
     courseMeta?.coverImageUrl ||
     courseMeta?.imageUrl ||
     null;
+
+  // 👉 tổng số lesson + tổng duration toàn course
+  const totalLessons = chapters.reduce(
+    (sum, ch) => sum + (ch.lessons?.length || 0),
+    0
+  );
+  const totalDurationSec = chapters.reduce((sum, ch) => {
+    return (
+      sum +
+      (ch.lessons || []).reduce(
+        (lsSum, les) => lsSum + (les.totalDurationSec || 0),
+        0
+      )
+    );
+  }, 0);
 
   /* -----------------------------
      Icon cho từng loại content
@@ -526,9 +560,10 @@ export default function CourseCurriculumView({
             <Text strong>{courseMeta?.title}</Text>
             <br />
             <Text type="secondary">
-              {chapters.length} chapter(s) ·{" "}
-              {chapters.reduce((sum, ch) => sum + (ch.lessons?.length || 0), 0)}{" "}
-              lesson(s)
+              {chapters.length} chapter(s) · {totalLessons} lesson(s)
+              {totalDurationSec > 0 && (
+                <> · ~{formatDuration(totalDurationSec)}</>
+              )}
             </Text>
           </div>
         </Space>
@@ -548,186 +583,198 @@ export default function CourseCurriculumView({
           >
             <List
               dataSource={ch.lessons || []}
-              renderItem={(lesson) => (
-                <List.Item key={lesson.id} className={styles.lessonItem}>
-                  <div className={styles.lessonMain}>
-                    {/* Header lesson */}
-                    <div className={styles.lessonHeader}>
-                      <div className={styles.lessonHeaderLeft}>
-                        <div className={styles.lessonTitle}>{lesson.title}</div>
-                        <div className={styles.lessonMeta}>
-                          {(lesson.sections || []).length} section(s)
+              renderItem={(lesson) => {
+                const lessonDurationLabel = formatDuration(
+                  lesson.totalDurationSec
+                ); // 👉 duration từng lesson
+
+                return (
+                  <List.Item key={lesson.id} className={styles.lessonItem}>
+                    <div className={styles.lessonMain}>
+                      {/* Header lesson */}
+                      <div className={styles.lessonHeader}>
+                        <div className={styles.lessonHeaderLeft}>
+                          <div className={styles.lessonTitle}>
+                            {lesson.title}
+                          </div>
+                          <div className={styles.lessonMeta}>
+                            {(lesson.sections || []).length} section(s)
+                            {lessonDurationLabel && (
+                              <> · ~{lessonDurationLabel}</>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      <Space className={styles.lessonHeaderActions}>
-                        {onEditLesson && (
+                        <Space className={styles.lessonHeaderActions}>
+                          {onEditLesson && (
+                            <Button
+                              size="small"
+                              icon={<EditOutlined />}
+                              onClick={() => onEditLesson(lesson)}
+                            >
+                              Edit
+                            </Button>
+                          )}
+
                           <Button
                             size="small"
-                            icon={<EditOutlined />}
-                            onClick={() => onEditLesson(lesson)}
+                            className={styles.quizButton}
+                            onClick={() => handleViewQuiz(lesson)}
                           >
-                            Edit
+                            Quiz
                           </Button>
-                        )}
+                        </Space>
+                      </div>
 
-                        <Button
-                          size="small"
-                          className={styles.quizButton}
-                          onClick={() => handleViewQuiz(lesson)}
-                        >
-                          Quiz
-                        </Button>
-                      </Space>
-                    </div>
+                      {/* Quiz preview inline */}
+                      {renderQuizInline(lesson.id)}
 
-                    {/* Quiz preview inline */}
-                    {renderQuizInline(lesson.id)}
-
-                    {/* Section list */}
-                    {(lesson.sections || []).map((sec) => {
-                      const contents = sec.contents || [];
-                      const assetContent = contents.find(
-                        (c) => c.contentFormat === "ASSET"
-                      );
-                      const richTextContent = contents.find(
-                        (c) => c.contentFormat === "RICH_TEXT"
-                      );
-                      const otherContents = contents.filter(
-                        (c) => !["ASSET", "RICH_TEXT"].includes(c.contentFormat)
-                      );
-                      const isOpen = openSectionIds.includes(sec.id);
-
-                      const buildAssetPreview = () => {
-                        if (!assetContent) return null;
-                        const url = buildFileUrl(
-                          assetContent.filePath || assetContent.assetPath
+                      {/* Section list */}
+                      {(lesson.sections || []).map((sec) => {
+                        const contents = sec.contents || [];
+                        const assetContent = contents.find(
+                          (c) => c.contentFormat === "ASSET"
                         );
-                        if (!url) return null;
+                        const richTextContent = contents.find(
+                          (c) => c.contentFormat === "RICH_TEXT"
+                        );
+                        const otherContents = contents.filter(
+                          (c) =>
+                            !["ASSET", "RICH_TEXT"].includes(c.contentFormat)
+                        );
+                        const isOpen = openSectionIds.includes(sec.id);
 
-                        const isVideo = /\.(mp4|mov|webm|mkv)$/i.test(url);
-                        const isImage = /\.(jpe?g|png|gif|webp)$/i.test(url);
+                        const buildAssetPreview = () => {
+                          if (!assetContent) return null;
+                          const url = buildFileUrl(
+                            assetContent.filePath || assetContent.assetPath
+                          );
+                          if (!url) return null;
+
+                          const isVideo = /\.(mp4|mov|webm|mkv)$/i.test(url);
+                          const isImage = /\.(jpe?g|png|gif|webp)$/i.test(url);
+
+                          return (
+                            <div className={styles.inlinePreviewBox}>
+                              <Text strong className={styles.previewTitle}>
+                                Nội dung chính
+                              </Text>
+                              {isVideo ? (
+                                <video
+                                  src={url}
+                                  controls
+                                  className={styles.previewVideo}
+                                />
+                              ) : isImage ? (
+                                <img
+                                  src={url}
+                                  alt="Asset"
+                                  className={styles.previewImage}
+                                />
+                              ) : (
+                                <a href={url} target="_blank" rel="noreferrer">
+                                  <FileOutlined /> Open file
+                                </a>
+                              )}
+                            </div>
+                          );
+                        };
+
+                        const buildRichPreview = () => {
+                          if (!richTextContent) return null;
+                          return (
+                            <div className={styles.inlinePreviewBox}>
+                              <Text strong className={styles.previewTitle}>
+                                Description
+                              </Text>
+                              <div className={styles.previewRich}>
+                                {richTextContent.richText || (
+                                  <Text type="secondary">(Empty)</Text>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        };
 
                         return (
-                          <div className={styles.inlinePreviewBox}>
-                            <Text strong className={styles.previewTitle}>
-                              Nội dung chính
-                            </Text>
-                            {isVideo ? (
-                              <video
-                                src={url}
-                                controls
-                                className={styles.previewVideo}
-                              />
-                            ) : isImage ? (
-                              <img
-                                src={url}
-                                alt="Asset"
-                                className={styles.previewImage}
-                              />
-                            ) : (
-                              <a href={url} target="_blank" rel="noreferrer">
-                                <FileOutlined /> Open file
-                              </a>
+                          <div key={sec.id} className={styles.sectionBlock}>
+                            {/* Section header → click để mở/đóng */}
+                            <div
+                              className={styles.sectionHeader}
+                              onClick={() =>
+                                setOpenSectionIds((prev) =>
+                                  prev.includes(sec.id)
+                                    ? prev.filter((id) => id !== sec.id)
+                                    : [...prev, sec.id]
+                                )
+                              }
+                              style={{ cursor: "pointer" }}
+                            >
+                              <Space>
+                                {isOpen ? <DownOutlined /> : <RightOutlined />}
+                                <span>{sec.title}</span>
+                              </Space>
+                              <Tag size="small">{sec.studyType}</Tag>
+                            </div>
+
+                            {/* Chỉ render nội dung khi section mở */}
+                            {isOpen && (
+                              <>
+                                {(assetContent || richTextContent) && (
+                                  <div className={styles.sectionContentGroup}>
+                                    {buildAssetPreview()}
+                                    {buildRichPreview()}
+                                  </div>
+                                )}
+
+                                {otherContents.length > 0 && (
+                                  <List
+                                    size="small"
+                                    dataSource={otherContents}
+                                    renderItem={(c) => (
+                                      <React.Fragment key={c.id}>
+                                        <List.Item
+                                          className={
+                                            selectedContent?.id === c.id
+                                              ? styles.contentItemActive
+                                              : styles.contentItem
+                                          }
+                                          onClick={() => handleSelectContent(c)}
+                                        >
+                                          <Space>
+                                            {renderContentIcon(c)}
+                                            <span>
+                                              {c.contentFormat}
+                                              {c.primaryContent
+                                                ? " (primary)"
+                                                : ""}
+                                            </span>
+                                          </Space>
+                                        </List.Item>
+
+                                        {selectedContent?.id === c.id && (
+                                          <div
+                                            className={
+                                              styles.contentInlineWrapper
+                                            }
+                                          >
+                                            {renderContentInlinePreview(
+                                              selectedContent
+                                            )}
+                                          </div>
+                                        )}
+                                      </React.Fragment>
+                                    )}
+                                  />
+                                )}
+                              </>
                             )}
                           </div>
                         );
-                      };
-
-                      const buildRichPreview = () => {
-                        if (!richTextContent) return null;
-                        return (
-                          <div className={styles.inlinePreviewBox}>
-                            <Text strong className={styles.previewTitle}>
-                              Description
-                            </Text>
-                            <div className={styles.previewRich}>
-                              {richTextContent.richText || (
-                                <Text type="secondary">(Empty)</Text>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      };
-
-                      return (
-                        <div key={sec.id} className={styles.sectionBlock}>
-                          {/* Section header → click để mở/đóng */}
-                          <div
-                            className={styles.sectionHeader}
-                            onClick={() =>
-                              setOpenSectionIds((prev) =>
-                                prev.includes(sec.id)
-                                  ? prev.filter((id) => id !== sec.id)
-                                  : [...prev, sec.id]
-                              )
-                            }
-                            style={{ cursor: "pointer" }}
-                          >
-                            <Space>
-                              {isOpen ? <DownOutlined /> : <RightOutlined />}
-                              <span>{sec.title}</span>
-                            </Space>
-                            <Tag size="small">{sec.studyType}</Tag>
-                          </div>
-
-                          {/* Chỉ render nội dung khi section mở */}
-                          {isOpen && (
-                            <>
-                              {(assetContent || richTextContent) && (
-                                <div className={styles.sectionContentGroup}>
-                                  {buildAssetPreview()}
-                                  {buildRichPreview()}
-                                </div>
-                              )}
-
-                              {otherContents.length > 0 && (
-                                <List
-                                  size="small"
-                                  dataSource={otherContents}
-                                  renderItem={(c) => (
-                                    <React.Fragment key={c.id}>
-                                      <List.Item
-                                        className={
-                                          selectedContent?.id === c.id
-                                            ? styles.contentItemActive
-                                            : styles.contentItem
-                                        }
-                                        onClick={() => handleSelectContent(c)}
-                                      >
-                                        <Space>
-                                          {renderContentIcon(c)}
-                                          <span>
-                                            {c.contentFormat}
-                                            {c.primaryContent
-                                              ? " (primary)"
-                                              : ""}
-                                          </span>
-                                        </Space>
-                                      </List.Item>
-
-                                      {selectedContent?.id === c.id && (
-                                        <div
-                                          className={
-                                            styles.contentInlineWrapper
-                                          }
-                                        >
-                                          {renderContentInlinePreview(
-                                            selectedContent
-                                          )}
-                                        </div>
-                                      )}
-                                    </React.Fragment>
-                                  )}
-                                />
-                              )}
-                            </>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </List.Item>
-              )}
+                      })}
+                    </div>
+                  </List.Item>
+                );
+              }}
             />
           </Panel>
         ))}

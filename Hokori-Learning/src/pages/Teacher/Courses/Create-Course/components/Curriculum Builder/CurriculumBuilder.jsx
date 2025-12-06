@@ -73,10 +73,16 @@ export default function CurriculumBuilder({
   // Lesson actions
   // =======================
   const handleAddLesson = async (chapterId) => {
+    const chapter = chapters.find((c) => c.id === chapterId);
+    const orderIndex = chapter?.lessons?.length || 0;
     await dispatch(
       createLessonThunk({
         chapterId,
-        data: { title: "New lesson", orderIndex: 0, totalDurationSec: 0 },
+        data: {
+          title: "New lesson",
+          orderIndex,
+          totalDurationSec: 0,
+        },
       })
     ).unwrap();
     await dispatch(fetchCourseTree(courseId));
@@ -106,6 +112,7 @@ export default function CurriculumBuilder({
           data: { title: trimmed },
         })
       ).unwrap();
+      await dispatch(fetchCourseTree(courseId));
 
       setLessonTitleDrafts((prev) => {
         const next = { ...prev };
@@ -129,7 +136,14 @@ export default function CurriculumBuilder({
       (sum, s) => sum + (s.contents?.length || 0),
       0
     );
-    return `${sectionCount} section(s) · ${contentCount} content item(s)`;
+
+    const totalSec = lesson.totalDurationSec || 0;
+    const durationMin =
+      totalSec > 0 ? Math.max(1, Math.round(totalSec / 60)) : 0;
+
+    return `${sectionCount} section(s) · ${contentCount} content item(s)${
+      durationMin ? ` · ~${durationMin} phút` : ""
+    }`;
   };
 
   if (loadingTree && !chapters.length) {

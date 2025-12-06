@@ -91,14 +91,14 @@ export const sidebarMenusByRole = {
       <DatabaseOutlined />,
       "/admin/withdrawals"
     ),
-    mk("complaints", "Khiếu nại", <ProfileOutlined />, "/admin/complaints"),
+    // mk("complaints", "Khiếu nại", <ProfileOutlined />, "/admin/complaints"),
     // mk(
     //   "policies",
     //   "Chính sách",
     //   <SafetyCertificateOutlined />,
     //   "/admin/policies"
     // ),
-    mk("system-logs", "System Log", <SettingOutlined />, "/admin/system-logs"),
+    // mk("system-logs", "System Log", <SettingOutlined />, "/admin/system-logs"),
     mk("logout", "Đăng xuất", <LogoutOutlined />, "logout-action"),
   ],
   moderator: [

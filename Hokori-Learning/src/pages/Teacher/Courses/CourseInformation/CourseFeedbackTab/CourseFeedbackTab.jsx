@@ -12,22 +12,53 @@ function formatDate(value) {
   return d.toLocaleString();
 }
 
+// render hàng sao cho rating
+function renderStars(value, starClass) {
+  const score = Number(value) || 0;
+  const full = Math.round(score); // cho đơn giản, làm tròn
+  const max = 5;
+
+  return (
+    <>
+      {Array.from({ length: full }).map((_, i) => (
+        <span key={`f-${i}`} className={starClass}>
+          ★
+        </span>
+      ))}
+      {Array.from({ length: max - full }).map((_, i) => (
+        <span key={`e-${i}`} className={`${starClass} ${styles.starEmpty}`}>
+          ★
+        </span>
+      ))}
+    </>
+  );
+}
+
 export default function CourseFeedbackTab({ courseId, isActive }) {
-  const [loading, setLoading] = useState(false);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [loadingRatings, setLoadingRatings] = useState(false);
   const [sending, setSending] = useState(false);
 
+  // ===== COMMENT (Q&A) =====
   const [comments, setComments] = useState([]);
   const [pageInfo, setPageInfo] = useState({ page: 0, size: 20, total: 0 });
-
   const [newContent, setNewContent] = useState("");
-
-  // id của comment đang được reply (có thể là root hoặc reply)
   const [replyingId, setReplyingId] = useState(null);
   const [replyText, setReplyText] = useState("");
 
+  // ===== FEEDBACK (RATING) =====
+  const [ratingSummary, setRatingSummary] = useState({
+    ratingAvg: 0,
+    ratingCount: 0,
+  });
+  const [feedbacks, setFeedbacks] = useState([]);
+
+  // ==========================
+  // CALL API COMMENT
+  // ==========================
   const fetchComments = async (page = 0) => {
     if (!courseId) return;
-    setLoading(true);
+    setLoadingComments(true);
     try {
       const res = await api.get(`courses-public/${courseId}/comments`, {
         params: { page, size: 20 },
@@ -43,20 +74,57 @@ export default function CourseFeedbackTab({ courseId, isActive }) {
       });
     } catch (err) {
       console.error(err);
-      message.error("Không thể tải feedback của học viên.");
+      message.error("Không thể tải comment của học viên.");
     } finally {
-      setLoading(false);
+      setLoadingComments(false);
     }
   };
 
-  // chỉ load khi tab Feedback đang active
+  // ==========================
+  // CALL API FEEDBACK (RATING)
+  // ==========================
+  const fetchRatingSummary = async () => {
+    if (!courseId) return;
+    try {
+      const res = await api.get(`courses/${courseId}/feedbacks/summary`);
+      const data = res.data?.data ?? res.data;
+      setRatingSummary({
+        ratingAvg: data?.ratingAvg ?? 0,
+        ratingCount: data?.ratingCount ?? 0,
+      });
+    } catch (err) {
+      console.error(err);
+      message.error("Không thể tải điểm đánh giá khoá học.");
+    }
+  };
+
+  const fetchFeedbacks = async () => {
+    if (!courseId) return;
+    setLoadingRatings(true);
+    try {
+      const res = await api.get(`courses/${courseId}/feedbacks`);
+      const data = res.data?.data ?? res.data;
+      setFeedbacks(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+      message.error("Không thể tải danh sách feedback rating.");
+    } finally {
+      setLoadingRatings(false);
+    }
+  };
+
+  // Chỉ load khi tab active
   useEffect(() => {
     if (!courseId || !isActive) return;
     fetchComments(0);
+    fetchRatingSummary();
+    fetchFeedbacks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseId, isActive]);
 
-  // Teacher tạo comment root cho khoá học
+  // ==========================
+  // COMMENT HANDLERS (TEACHER)
+  // ==========================
   const handleCreateRootComment = async () => {
     const trimmed = newContent.trim();
     if (!trimmed) return;
@@ -77,7 +145,6 @@ export default function CourseFeedbackTab({ courseId, isActive }) {
     }
   };
 
-  // Teacher reply vào 1 comment (root hoặc reply)
   const handleSendReply = async (parentId) => {
     const trimmed = replyText.trim();
     if (!trimmed) return;
@@ -109,7 +176,6 @@ export default function CourseFeedbackTab({ courseId, isActive }) {
     }
   };
 
-  // render box reply chung cho cả root & reply
   const renderReplyBox = (parentId) => {
     if (replyingId !== parentId) return null;
     return (
@@ -144,119 +210,181 @@ export default function CourseFeedbackTab({ courseId, isActive }) {
     );
   };
 
+  // ==========================
+  // RENDER
+  // ==========================
   return (
     <div className={styles.feedbackWrap}>
+      {/* Header chung */}
       <div className={styles.feedbackHeader}>
         <div>
-          <h3 className={styles.feedbackTitle}>Feedback từ học viên</h3>
+          <h3 className={styles.feedbackTitle}>
+            Đánh giá & Feedback từ học viên
+          </h3>
           <p className={styles.feedbackSubtitle}>
-            Xem comment của learner và trả lời trực tiếp.
+            Xem điểm rating khoá học, feedback chi tiết và trả lời comment từ
+            learner.
           </p>
         </div>
         <span className={styles.feedbackCount}>
           {pageInfo.total
             ? `${pageInfo.total} comment(s)`
-            : "Chưa có feedback nào"}
+            : "Chưa có comment nào"}
         </span>
       </div>
 
-      {/* Teacher comment root */}
-      <div className={styles.feedbackNew}>
-        <TextArea
-          rows={3}
-          placeholder="Viết ghi chú / phản hồi chung cho khoá học (comment của teacher)…"
-          value={newContent}
-          onChange={(e) => setNewContent(e.target.value)}
-        />
-        <div className={styles.feedbackNewActions}>
-          <Button
-            type="primary"
-            size="small"
-            onClick={handleCreateRootComment}
-            loading={sending}
-            disabled={!newContent.trim()}
-          >
-            Gửi comment
-          </Button>
-        </div>
-      </div>
+      <div className={styles.feedbackLayout}>
+        {/* ========== CỘT 1: RATING FEEDBACK ========== */}
+        <section className={styles.ratingColumn}>
+          <div className={styles.ratingCard}>
+            <div className={styles.ratingHeader}>
+              <h4>Điểm đánh giá khoá học</h4>
+              <span className={styles.ratingCount}>
+                {ratingSummary.ratingCount} lượt đánh giá
+              </span>
+            </div>
 
-      {/* List comment learner */}
-      {loading ? (
-        <div className={styles.feedbackLoading}>
-          <Spin />
-        </div>
-      ) : !comments.length ? (
-        <Empty description="Chưa có comment nào cho khoá học này." />
-      ) : (
-        <List
-          className={styles.feedbackList}
-          dataSource={comments}
-          renderItem={(c) => (
-            <List.Item key={c.id} className={styles.feedbackItem}>
-              <div className={styles.feedbackItemMain}>
-                {/* Comment root */}
-                <div className={styles.feedbackItemHeader}>
-                  <span className={styles.feedbackAuthor}>
-                    {c.authorName || c.createdByName || "Learner"}
-                  </span>
-                  <span className={styles.feedbackMeta}>
-                    {formatDate(c.createdAt)}
-                  </span>
+            <div className={styles.ratingSummaryRow}>
+              <div className={styles.ratingScore}>
+                <span className={styles.ratingNumber}>
+                  {(ratingSummary.ratingAvg || 0).toFixed(1)}
+                </span>
+                <div className={styles.ratingStars}>
+                  {renderStars(ratingSummary.ratingAvg, styles.star)}
                 </div>
-                <div className={styles.feedbackContent}>{c.content}</div>
-
-                <div className={styles.feedbackActions}>
-                  <Button
-                    type="link"
-                    size="small"
-                    onClick={() => toggleReplyBox(c.id)}
-                  >
-                    Trả lời
-                  </Button>
-                </div>
-
-                {/* reply box cho comment root */}
-                {renderReplyBox(c.id)}
-
-                {/* Replies */}
-                {Array.isArray(c.replies) && c.replies.length > 0 && (
-                  <div className={styles.feedbackReplies}>
-                    {c.replies.map((r) => (
-                      <div key={r.id} className={styles.feedbackReplyItem}>
-                        <div className={styles.feedbackItemHeader}>
-                          <span className={styles.feedbackAuthor}>
-                            {r.authorName || r.createdByName || "Teacher"}
-                          </span>
-                          <span className={styles.feedbackMeta}>
-                            {formatDate(r.createdAt)}
-                          </span>
-                        </div>
-                        <div className={styles.feedbackContent}>
-                          {r.content}
-                        </div>
-
-                        <div className={styles.feedbackActions}>
-                          <Button
-                            type="link"
-                            size="small"
-                            onClick={() => toggleReplyBox(r.id)}
-                          >
-                            Trả lời
-                          </Button>
-                        </div>
-
-                        {/* reply box cho từng reply */}
-                        {renderReplyBox(r.id)}
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
-            </List.Item>
+            </div>
+          </div>
+
+          <div className={styles.ratingListCard}>
+            <div className={styles.ratingListHeader}>
+              <h4>Feedback chi tiết</h4>
+            </div>
+
+            {loadingRatings ? (
+              <div className={styles.feedbackLoading}>
+                <Spin />
+              </div>
+            ) : !feedbacks.length ? (
+              <Empty description="Chưa có feedback rating nào." />
+            ) : (
+              <div className={styles.ratingList}>
+                {feedbacks.map((fb) => (
+                  <div key={fb.id} className={styles.ratingItem}>
+                    <div className={styles.ratingItemHeader}>
+                      <div className={styles.ratingItemInfo}>
+                        <div className={styles.ratingItemName}>
+                          {fb.learnerName || "Learner"}
+                        </div>
+                        <div className={styles.ratingItemStars}>
+                          {renderStars(fb.rating, styles.starSmall)}
+                        </div>
+                      </div>
+                      <span className={styles.ratingItemDate}>
+                        {formatDate(fb.createdAt)}
+                      </span>
+                    </div>
+                    {fb.comment && (
+                      <div className={styles.ratingItemComment}>
+                        {fb.comment}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* ========== CỘT 2: COMMENT / TRẢ LỜI ========== */}
+        <section className={styles.commentColumn}>
+          {/* Teacher comment root */}
+          <div className={styles.feedbackNew}>
+            <TextArea
+              rows={3}
+              placeholder="Viết ghi chú / phản hồi chung cho khoá học (comment của teacher)…"
+              value={newContent}
+              onChange={(e) => setNewContent(e.target.value)}
+            />
+            <div className={styles.feedbackNewActions}>
+              <Button
+                type="primary"
+                size="small"
+                onClick={handleCreateRootComment}
+                loading={sending}
+                disabled={!newContent.trim()}
+              >
+                Gửi comment
+              </Button>
+            </div>
+          </div>
+
+          {/* List comment learner */}
+          {loadingComments ? (
+            <div className={styles.feedbackLoading}>
+              <Spin />
+            </div>
+          ) : !comments.length ? (
+            <Empty description="Chưa có comment nào cho khoá học này." />
+          ) : (
+            <List
+              className={styles.feedbackList}
+              dataSource={comments}
+              renderItem={(c) => (
+                <List.Item key={c.id} className={styles.feedbackItem}>
+                  <div className={styles.feedbackItemMain}>
+                    <div className={styles.feedbackItemHeader}>
+                      <span className={styles.feedbackAuthor}>
+                        {c.authorName || c.createdByName || "Learner"}
+                      </span>
+                      <span className={styles.feedbackMeta}>
+                        {formatDate(c.createdAt)}
+                      </span>
+                    </div>
+                    <div className={styles.feedbackContent}>{c.content}</div>
+
+                    <div className={styles.feedbackActions}>
+                      <Button
+                        type="link"
+                        size="small"
+                        onClick={() => toggleReplyBox(c.id)}
+                      >
+                        Trả lời
+                      </Button>
+                    </div>
+
+                    {/* reply box cho comment root */}
+                    {renderReplyBox(c.id)}
+
+                    {/* Replies */}
+                    {Array.isArray(c.replies) && c.replies.length > 0 && (
+                      <div className={styles.feedbackReplies}>
+                        {c.replies.map((r) => (
+                          <div key={r.id} className={styles.feedbackReplyItem}>
+                            <div className={styles.feedbackItemHeader}>
+                              <span className={styles.feedbackAuthor}>
+                                {r.authorName || r.createdByName || "Teacher"}
+                              </span>
+                              <span className={styles.feedbackMeta}>
+                                {formatDate(r.createdAt)}
+                              </span>
+                            </div>
+
+                            <div className={styles.feedbackContent}>
+                              {r.content}
+                            </div>
+                            {/* Không cho reply vào reply nữa vì BE chỉ hỗ trợ 1 cấp */}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </List.Item>
+              )}
+            />
           )}
-        />
-      )}
+        </section>
+      </div>
     </div>
   );
 }
