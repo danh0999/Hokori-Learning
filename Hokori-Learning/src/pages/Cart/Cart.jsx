@@ -30,13 +30,18 @@ const CartPage = () => {
 
   // Chuẩn hóa data: cart item -> course
   const normalizedItems = (items || []).map((item) => {
+    const priceCents = item.priceCents ?? item.totalPrice * 100;
+    const thumbnail = item.courseThumbnail || item.thumbnail || null;
     return {
       cartItemId: item.itemId,
       id: item.courseId,
-      title: "Khóa học #" + item.courseId, // tạm placeholder
-      price: item.totalPrice / item.quantity,
+      title: item.courseName || `Khóa học #${item.courseId}`,
+      priceCents,
+      price: Math.round((priceCents || 0) / 100),
       quantity: item.quantity,
       selected: item.selected,
+      teacherName: item.teacherName || "Giảng viên",
+      thumbnail,
     };
   });
 
@@ -69,6 +74,7 @@ const CartPage = () => {
                 <CartItem
                   key={course.cartItemId}
                   course={course}
+                  cartItemId={course.cartItemId}
                   onRemove={() => handleRemove(course.cartItemId)}
                 />
               ))}
