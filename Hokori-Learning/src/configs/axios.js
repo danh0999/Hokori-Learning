@@ -5,7 +5,7 @@ import axios from "axios";
 =========================================================== */
 
 // Railway (production)
-const PROD = "https://hokoribe-production.up.railway.app/api";
+const PROD = "https://api.hokori-backend.org/api";
 
 // Local dev
 const LOCAL = "http://localhost:8080/api";
