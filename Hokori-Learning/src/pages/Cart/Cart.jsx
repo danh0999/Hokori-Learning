@@ -12,7 +12,7 @@ import {
 
 const CartPage = () => {
   const dispatch = useDispatch();
-  const { items, status, error } = useSelector((state) => state.cart);
+  const { items, status, error, cartId } = useSelector((state) => state.cart);
 
   useEffect(() => {
     if (status === "idle") {
@@ -78,7 +78,7 @@ const CartPage = () => {
               </button>
             </div>
 
-            <OrderSummary courses={normalizedItems} />
+            <OrderSummary courses={normalizedItems} cartId={cartId} />
           </div>
         )}
 

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import styles from "./OrderSummary.module.scss";
 import { checkout } from "../../../services/paymentService";
 
-const OrderSummary = ({ courses }) => {
+const OrderSummary = ({ courses, cartId }) => {
   const navigate = useNavigate();                    
 
   const total = courses.reduce((sum, c) => sum + c.price, 0);
@@ -39,7 +39,7 @@ const OrderSummary = ({ courses }) => {
       }
 
       // Gọi API checkout theo đặc tả .md
-      const result = await checkout(null, selectedIds);
+      const result = await checkout(cartId, selectedIds);
 
       const link = result?.data?.paymentLink || null;
       const desc = result?.data?.description || "";

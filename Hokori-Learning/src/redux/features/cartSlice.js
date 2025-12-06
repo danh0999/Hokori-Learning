@@ -7,6 +7,7 @@ const initialState = {
   items: [],
   status: "idle",
   error: null,
+  cartId: null,
 };
 
 /* ======================================================
@@ -174,16 +175,20 @@ const cartSlice = createSlice({
 
       if (!res || !res.data) {
         state.items = [];
+        state.cartId = null;
         return;
       }
 
       const items = res.data.items;
+      const cid = res.data.id ?? res.data.cartId ?? null;
 
       if (Array.isArray(items)) {
         state.items = items;
       } else {
         state.items = [];
       }
+
+      state.cartId = cid;
     };
 
     builder
