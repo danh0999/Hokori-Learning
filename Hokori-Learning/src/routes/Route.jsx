@@ -33,6 +33,7 @@ import Reading from "../pages/JLPTTest/Reading";
 import Listening from "../pages/JLPTTest/Listening";
 import Result from "../pages/JLPTTest/Result";
 import FlashcardPage from "../pages/FlashcardPage/FlashcardPage";
+import LearningTreePage from "../pages/LearningTreePage/LearningTreePage";
 
 // ===== Teacher =====
 import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
@@ -95,6 +96,9 @@ const routes = [
         path: "learner/flashcards/:sectionContentId",
         element: <FlashcardPage />,
       },
+       {path:"/my-courses/:courseId/learn", element:<LearningTreePage />},
+  
+  
 
       // Protected Routes (Learner/Teacher/Admin/Moderator)
       {

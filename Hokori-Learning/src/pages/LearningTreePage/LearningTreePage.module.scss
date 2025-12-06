@@ -1,0 +1,257 @@
+.page {
+  min-height: 100vh;
+  padding: 32px 0 48px;
+  background: #f5f7fb;
+  font-family: inherit;
+}
+
+.loading,
+.error {
+  max-width: 1120px;
+  margin: 80px auto;
+  text-align: center;
+  font-size: 1rem;
+  color: #555;
+}
+
+.error {
+  color: #d32f2f;
+}
+
+/* ===========================
+   Course Header
+   =========================== */
+.courseHeader {
+  max-width: 1120px;
+  margin: 0 auto 24px;
+  padding: 20px 24px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.cover {
+  width: 160px;
+  height: 100px;
+  border-radius: 12px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #e5e7eb;
+}
+
+.courseInfo {
+  flex: 1;
+
+  h1 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #111827;
+  }
+
+  p {
+    font-size: 0.95rem;
+    color: #6b7280;
+    margin-bottom: 12px;
+  }
+}
+
+.progressBar {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: inherit;
+  background: #2563eb;
+  transition: width 0.3s ease;
+}
+
+.progressText {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #374151;
+}
+
+/* ===========================
+   Tree
+   =========================== */
+.tree {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Chapter */
+.chapter {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 3px 14px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+.chapterHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 18px;
+  cursor: pointer;
+  border-bottom: 1px solid #edf2f7;
+
+  &:hover {
+    background: #f9fafb;
+  }
+
+  h2 {
+    flex: 1;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #111827;
+  }
+}
+
+.toggle {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.chapterProgress {
+  font-size: 0.85rem;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+/* Lessons */
+.lessons {
+  padding: 6px 0 12px;
+}
+
+.lesson {
+  border-top: 1px solid #f3f4f6;
+
+  &:first-of-type {
+    border-top: none;
+  }
+}
+
+.lessonHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  cursor: pointer;
+
+  &:hover {
+    background: #f9fafb;
+  }
+
+  h3 {
+    flex: 1;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #111827;
+  }
+}
+
+.completed {
+  font-size: 0.85rem;
+  color: #16a34a;
+}
+
+/* Sections & contents */
+.sections {
+  padding: 4px 0 10px 38px;
+}
+
+.section {
+  padding: 6px 0;
+
+  h4 {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #374151;
+    margin: 4px 0 4px;
+  }
+}
+
+.contents {
+  list-style: none;
+  margin: 0;
+  padding: 0 16px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.05s ease;
+
+  &:hover {
+    background: #eff6ff;
+    transform: translateX(1px);
+  }
+}
+
+.done {
+  background: #ecfdf3;
+
+  &:hover {
+    background: #dcfce7;
+  }
+}
+
+.icon {
+  width: 22px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.resume {
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+/* ===========================
+   Responsive
+   =========================== */
+@media (max-width: 768px) {
+  .courseHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cover {
+    width: 100%;
+    height: 160px;
+  }
+
+  .sections {
+    padding-left: 26px;
+  }
+
+  .lessonHeader {
+    padding-inline: 16px;
+  }
+}

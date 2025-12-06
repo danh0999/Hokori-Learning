@@ -4,6 +4,8 @@ import { useParams } from "react-router-dom";
 import api from "../../configs/axios";
 import styles from "./FlashcardPage.module.scss";
 import { IoChevronBack, IoChevronForward } from "react-icons/io5";
+import { updateContentProgress } from "../../services/learningProgressService";
+
 
 export default function FlashcardPage() {
   const { sectionContentId } = useParams();
@@ -72,6 +74,18 @@ export default function FlashcardPage() {
     }
   };
 
+  const markCourseContentCompleted = async () => {
+  try {
+    await updateContentProgress(sectionContentId, {
+      isCompleted: true,
+    });
+  } catch (err) {
+    // silent fail – không ảnh hưởng UX
+    console.error("Lỗi cập nhật progress course:", err);
+  }
+};
+
+
   /* ============================================================
      HANDLERS
   ============================================================ */
@@ -94,7 +108,10 @@ export default function FlashcardPage() {
 
     // Tăng tiến độ local để vẽ progress bar
     setLearnedCount((prev) => Math.min(prev + 1, cards.length));
-
+     // ✅ NẾU LÀ THẺ CUỐI → MARK COURSE CONTENT COMPLETED
+    if (isLast) {
+      markCourseContentCompleted();
+    }
     // Chuyển thẻ tiếp theo (nếu có)
     if (!isLast) {
       setCurrent((i) => i + 1);

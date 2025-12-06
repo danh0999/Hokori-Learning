@@ -104,12 +104,9 @@ const MyCourses = () => {
       const nextContent = contents.find((c) => !c.isCompleted);
       const targetContent = inProgressContent || nextContent || null;
 
-      if (targetContent) {
-        navigate(`/course/${course.courseId}/lesson/${lessonId}?contentId=${targetContent.contentId}`);
-      } else {
-        // Tất cả content trong lesson đã hoàn thành → vào lesson không query contentId
-        navigate(`/course/${course.courseId}/lesson/${lessonId}`);
-      }
+      // Điều hướng tới trang LearningTreePage của course để học tiếp
+      // Route được định nghĩa: `/my-courses/:courseId/learn`
+      navigate(`/my-courses/${course.courseId}/learn`);
     } catch (err) {
       console.error("Không thể điều hướng vào bài học:", err);
     }

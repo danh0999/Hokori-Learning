@@ -105,10 +105,11 @@ const flashcardContentId = flashcardContent?.id;
       {/* === NỘI DUNG BÀI HỌC === */}
       <section className={styles.lesson}>
         <div className={styles.container}>
-              <VideoPanel
-      videoUrl={videoUrl}
-      title={lessonData?.title}
-      duration={lessonData?.totalDurationSec}
+        <VideoPanel
+        videoUrl={videoUrl}
+        title={lessonData?.title}
+        duration={lessonData?.totalDurationSec}
+        content={primaryContent}
       />
 
           <div className={styles.header}>
@@ -122,7 +123,7 @@ const flashcardContentId = flashcardContent?.id;
           />
 
           <LessonContent data={lessonData?.sections} />
-          <ActionBar />
+          <ActionBar primaryContentId={primaryContent?.contentId} />
 
           {/* === Quiz hiển thị khi vào /lesson/:id/quiz/... === */}
           <Outlet />
