@@ -69,6 +69,12 @@ export const sidebarMenusByRole = {
     ),
     mk("jlptevents", "Sự kiện JLPT", <BookOutlined />, "/teacher/jlptevents"),
     mk("revenue", "Doanh thu", <DollarOutlined />, "/teacher/revenue"),
+    mk(
+      "policies",
+      "Chính sách",
+      <SafetyCertificateOutlined />,
+      "/teacher/policies"
+    ),
     mk("profile", "Hồ sơ cá nhân", <UserOutlined />, "/teacher/profile"),
     mk("logout", "Đăng xuất", <LogoutOutlined />, "logout-action"),
   ],
@@ -92,12 +98,12 @@ export const sidebarMenusByRole = {
       "/admin/withdrawals"
     ),
     // mk("complaints", "Khiếu nại", <ProfileOutlined />, "/admin/complaints"),
-    // mk(
-    //   "policies",
-    //   "Chính sách",
-    //   <SafetyCertificateOutlined />,
-    //   "/admin/policies"
-    // ),
+    mk(
+      "adpolicies",
+      "Chính sách",
+      <SafetyCertificateOutlined />,
+      "/admin/adpolicies"
+    ),
     // mk("system-logs", "System Log", <SettingOutlined />, "/admin/system-logs"),
     mk("logout", "Đăng xuất", <LogoutOutlined />, "logout-action"),
   ],
@@ -110,6 +116,12 @@ export const sidebarMenusByRole = {
       "Cờ vi phạm",
       <SafetyCertificateOutlined />,
       "/moderator/flags"
+    ),
+    mk(
+      "policies",
+      "Chính sách",
+      <SafetyCertificateOutlined />,
+      "/moderator/policies"
     ),
     mk("logout", "Đăng xuất", <LogoutOutlined />, "logout-action"),
   ],
