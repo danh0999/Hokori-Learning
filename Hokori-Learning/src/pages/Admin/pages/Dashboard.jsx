@@ -51,7 +51,7 @@ export default function AdminDashboard() {
     fetchDashboard();
   }, []);
 
-  const overview = dashboard?.overview ?? {};
+  // const overview = dashboard?.overview ?? {};
   const lastUpdated = dashboard?.lastUpdated
     ? new Date(dashboard.lastUpdated).toLocaleString("vi-VN")
     : "-";
@@ -88,7 +88,7 @@ export default function AdminDashboard() {
 
       {!loading && !error && dashboard && (
         <>
-          {/* ================= TOP CARDS ================= */}
+          {/* ================= TOP CARDS =================
           <div className={s.statGrid}>
             <Stat
               label="Tổng người dùng"
@@ -120,7 +120,7 @@ export default function AdminDashboard() {
               value={overview.totalRoles}
               icon={<HiOutlineUserGroup />}
             />
-          </div>
+          </div> */}
 
           {/* ================= CHARTS ================= */}
           <div className={s.chartGrid}>
