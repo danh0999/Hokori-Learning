@@ -84,6 +84,14 @@ export const Header = () => {
     try {
       await logoutFirebase();
       dispatch(logout());
+
+      // ============================
+      // RESET AI ANALYSE LOCAL STATE
+      // ============================
+      localStorage.removeItem("ai_sentence");
+      localStorage.removeItem("ai_level");
+      localStorage.removeItem("ai_result");
+
       navigate("/");
     } catch (err) {
       console.error("Logout failed:", err);

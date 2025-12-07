@@ -1,16 +1,23 @@
-// src/pages/AiKaiwaPage/components/HeroSection.jsx
+// src/pages/AiAnalysePage/components/HeroSection.jsx
 import React from "react";
 import styles from "./HeroSection.module.scss";
 import { FaWandMagicSparkles } from "react-icons/fa6";
+
 const HeroSection = () => {
   return (
     <section className={styles.hero}>
-      <div className={styles.inner}>
-        <div className={styles.icon}><FaWandMagicSparkles /></div>
+      <div className={styles.row}>
+        <div className={styles.icon}>
+          <FaWandMagicSparkles />
+        </div>
+
         <div>
-          <h1 className={styles.title}> Phân tích câu tiếng Nhật bằng AI</h1>
+          <h1 className={styles.title}>Phân tích câu tiếng Nhật bằng AI</h1>
+
           <p className={styles.subtitle}>
-           AI sẽ phân tích từ vựng, ngữ pháp và độ khó JLPT của câu bạn nhập.
+            AI giúp phân tích từ vựng, ngữ pháp, cấu trúc câu và cung cấp ví dụ
+            liên quan theo chuẩn JLPT. Giao diện trực quan – hỗ trợ học sâu và ghi
+            nhớ lâu.
           </p>
         </div>
       </div>

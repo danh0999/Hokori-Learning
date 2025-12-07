@@ -5,7 +5,7 @@ import api from "../../configs/axios";
 
 // === Redux for AI Modal ===
 import { useSelector, useDispatch } from "react-redux";
-import AiPackageModal from "./components/AiPackageModal.jsx";
+import AiPackageModal from "../AiPackage/components/AiPackageModal.jsx";
 import { closeModal, purchaseAiPackage } from "../../redux/features/aiPackageSlice";
 
 // === Components ===

@@ -9,10 +9,13 @@ const SentenceInput = ({
   onChangeSentence,
   level,
   onChangeLevel,
-  onAnalyse
+  onAnalyse,
+  
 }) => {
+  const len = sentence?.length || 0;
+
   return (
-    <div className={styles.leftCard}>
+    <div className={styles.card}>
       <h3>Câu cần phân tích</h3>
 
       <textarea
@@ -21,19 +24,25 @@ const SentenceInput = ({
         placeholder="VD: 私は日本語を勉強しています"
       />
 
+      <div className={styles.charCount}>{len}/50 ký tự</div>
+
       <div className={styles.row}>
         <div className={styles.col}>
-          <label>Cấp độ JLPT</label>
+          <label>JLPT</label>
           <select value={level} onChange={(e) => onChangeLevel(e.target.value)}>
-            {JLPT.map((jlpt) => (
-              <option key={jlpt}>{jlpt}</option>
+            {JLPT.map((lv) => (
+              <option key={lv}>{lv}</option>
             ))}
           </select>
         </div>
 
-        <button className={styles.analyseBtn} onClick={onAnalyse}>
-          Phân tích câu với AI
-        </button>
+        <div className={styles.buttons}>
+        
+
+          <button className={styles.primaryBtn} onClick={onAnalyse}>
+            Phân tích với AI
+          </button>
+        </div>
       </div>
     </div>
   );

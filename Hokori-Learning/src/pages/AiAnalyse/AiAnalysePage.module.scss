@@ -1,14 +1,28 @@
 .page {
-  padding: 40px 0 80px;
-  background: #f8fafc;
-  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: #f5f7fb;
+  padding: 40px 0;
 }
 
-.content {
-  width: 1200px;
+.container {
+  width: 100%;
+  max-width: 1200px; /* tùy, nhưng không nên 800 */
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 32px;
-  margin-top: 40px;
+}
+
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* Mỗi thẻ card */
+.section {
+  background: #ffffff;
+
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
 }
