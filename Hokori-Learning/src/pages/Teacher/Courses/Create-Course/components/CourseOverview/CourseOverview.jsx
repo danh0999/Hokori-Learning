@@ -52,20 +52,22 @@ export default function CourseOverview({ courseId, onNext }) {
   );
 
   // Fill form
-  useEffect(() => {
-    if (!currentCourseMeta) return;
+  // ❌ bỏ: const isMetaInitialized = useRef(false);
 
-    // Chỉ fill form LẦN ĐẦU khi có currentCourseMeta
-    if (!isMetaInitialized.current) {
-      form.setFieldsValue({
-        title: currentCourseMeta.title,
-        subtitle: currentCourseMeta.subtitle,
-        description: currentCourseMeta.description,
-        level: currentCourseMeta.level || "N5",
-      });
-      isMetaInitialized.current = true;
+  useEffect(() => {
+    if (!currentCourseMeta) {
+      // không có meta thì reset form cho sạch
+      form.resetFields();
+      return;
     }
-  }, [currentCourseMeta, form]);
+
+    form.setFieldsValue({
+      title: currentCourseMeta.title || "",
+      subtitle: currentCourseMeta.subtitle || "",
+      description: currentCourseMeta.description || "",
+      level: currentCourseMeta.level || "N5",
+    });
+  }, [currentCourseMeta?.id, form]); // 👈 chú ý dependency theo id
 
   // Save basics
   const handleFinish = async (values) => {

@@ -183,6 +183,32 @@ export const submitTeacherProfile = createAsyncThunk(
   }
 );
 
+// ================== UPLOAD AVATAR (/profile/me/avatar) ==================
+export const uploadTeacherAvatar = createAsyncThunk(
+  "teacherProfile/uploadAvatar",
+  async (file, { rejectWithValue }) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await api.post("profile/me/avatar", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      // BE trả { avatarUrl: "..." } hoặc { data: { avatarUrl: "..." } }
+      const raw = res?.data || {};
+      const avatarUrl =
+        raw.avatarUrl || raw.data?.avatarUrl || raw.data || null;
+
+      return avatarUrl;
+    } catch (err) {
+      return rejectWithValue(
+        err?.response?.data || { message: "Upload avatar failed" }
+      );
+    }
+  }
+);
+
 /* ================== SLICE ================== */
 
 const initialState = {
@@ -207,6 +233,9 @@ const initialState = {
   updatingTeacher: false,
   updateUserError: null,
   updateTeacherError: null,
+
+  uploadingAvatar: false,
+  uploadAvatarError: null,
 };
 
 const teacherprofileSlice = createSlice({
@@ -377,6 +406,33 @@ const teacherprofileSlice = createSlice({
       .addCase(submitTeacherProfile.rejected, (state, action) => {
         state.submitting = false;
         state.submitError = action.payload || action.error;
+      })
+
+      // ==== upload avatar ====
+      .addCase(uploadTeacherAvatar.pending, (state) => {
+        state.uploadingAvatar = true;
+        state.uploadAvatarError = null;
+      })
+      .addCase(uploadTeacherAvatar.fulfilled, (state, action) => {
+        state.uploadingAvatar = false;
+        const newUrl = action.payload;
+
+        if (!newUrl) return;
+
+        // nếu state.data tồn tại thì cập nhật user.avatarUrl
+        if (state.data) {
+          if (!state.data.user) {
+            state.data.user = {};
+          }
+          state.data.user.avatarUrl = newUrl;
+
+          // nếu bạn có lưu avatarUrl ở level root (state.data.avatarUrl) thì update luôn
+          state.data.avatarUrl = newUrl;
+        }
+      })
+      .addCase(uploadTeacherAvatar.rejected, (state, action) => {
+        state.uploadingAvatar = false;
+        state.uploadAvatarError = action.payload || action.error;
       });
   },
 });
@@ -411,5 +467,8 @@ export const selectTeacherProfileSubmitting = (state) =>
 export const selectUpdatingUser = (state) => state.teacherProfile?.updatingUser;
 export const selectUpdatingTeacher = (state) =>
   state.teacherProfile?.updatingTeacher;
+
+export const selectUploadingAvatar = (state) =>
+  state.teacherProfile?.uploadingAvatar;
 
 export default teacherprofileSlice.reducer;

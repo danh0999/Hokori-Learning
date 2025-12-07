@@ -16,6 +16,7 @@ import {
   updateCourseThunk,
   submitforapprovalCourseThunk,
   unpublishCourseThunk,
+  clearTeacherCourseState,
 } from "../../../../redux/features/teacherCourseSlice.js";
 
 import styles from "./styles.module.scss";
@@ -70,6 +71,16 @@ export default function CourseInformation() {
       console.error("Reload course tree on save failed", e);
     }
   };
+
+  useEffect(() => {
+    // reset trước khi load course mới
+    dispatch(clearTeacherCourseState());
+
+    if (courseId) {
+      dispatch(fetchCourseTree(courseId));
+    }
+  }, [courseId, dispatch]);
+
   // ====== LOAD COURSE DATA ======
   useEffect(() => {
     if (!courseId) return;
@@ -201,7 +212,11 @@ export default function CourseInformation() {
               key: "basic",
               label: "Basic",
               children: (
-                <CourseOverview courseId={courseId} loading={loadingMeta} />
+                <CourseOverview
+                  key={courseId}
+                  courseId={courseId}
+                  loading={loadingMeta}
+                />
               ),
             },
             {
