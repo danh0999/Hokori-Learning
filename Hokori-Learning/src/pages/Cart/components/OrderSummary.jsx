@@ -1,100 +1,140 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import styles from "./OrderSummary.module.scss";
 import { checkout } from "../../../services/paymentService";
 
-const OrderSummary = ({ courses, cartId }) => {
-  const navigate = useNavigate();                    
+const OrderSummary = ({ courses = [], cartId }) => {
+  const navigate = useNavigate();
 
-  const total = courses.reduce((sum, c) => sum + c.price, 0);
-  const [discount, setDiscount] = useState(0);
+  // Chỉ tính các item đang selected
+  const selectedCourses = useMemo(
+    () => courses.filter((c) => c.selected),
+    [courses]
+  );
+
+  const subtotal = useMemo(
+    () =>
+      selectedCourses.reduce((sum, c) => {
+        const price = Number(c.price) || 0; // đã là tổng tiền của dòng
+        return sum + price;
+      }, 0),
+    [selectedCourses]
+  );
+
   const [code, setCode] = useState("");
+  const [discountRate, setDiscountRate] = useState(0); // ví dụ 0.1 = 10%
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const discount = subtotal * discountRate;
+  const finalTotal = Math.max(subtotal - discount, 0);
 
   const handleApply = () => {
-    if (code.trim().toUpperCase() === "HOKORI10") {
-      setDiscount(total * 0.1);
-    } else {
-      setDiscount(0);
-      alert("Mã giảm giá không hợp lệ!");
-    }
-  };
+    const normalized = code.trim().toUpperCase();
 
-  const final = total - discount;
-
-  const handleCheckout = async () => {
-    if (courses.length === 0) {
-      alert("Giỏ hàng trống!");
+    if (!normalized) {
+      setDiscountRate(0);
       return;
     }
 
-    try {
-      // Chỉ thanh toán các item đang được chọn
-      const selectedIds = courses
-        .filter((c) => c.selected)
-        .map((c) => c.id);
+    if (normalized === "HOKORI10") {
+      setDiscountRate(0.1);
+      alert("Áp dụng mã giảm giá 10% thành công!");
+    } else {
+      setDiscountRate(0);
+      alert("Mã giảm giá không hợp lệ.");
+    }
+  };
 
-      if (selectedIds.length === 0) {
-        alert("Vui lòng chọn khóa học để thanh toán");
+  const handleCheckout = async () => {
+    if (!selectedCourses.length) {
+      alert("Vui lòng chọn ít nhất 1 khoá học để thanh toán.");
+      return;
+    }
+
+    if (!cartId) {
+      alert("Giỏ hàng không hợp lệ, vui lòng tải lại trang.");
+      return;
+    }
+
+    const selectedIds = selectedCourses.map((c) => c.id);
+
+    try {
+      setIsSubmitting(true);
+
+      const result = await checkout(cartId, selectedIds);
+      // API spec: { success, message, data: { paymentLink, description, ... } }
+      const paymentData = result?.data || {};
+      const paymentLink =
+        paymentData.paymentLink ?? result?.paymentLink ?? null;
+
+      // Nếu không có paymentLink → BE đã tự enroll & clear cart (khóa học free chẳng hạn)
+      if (!paymentLink) {
+        alert(
+          result?.message ||
+            "Thanh toán thành công, bạn sẽ được chuyển tới khoá học."
+        );
+        navigate("/my-courses");
         return;
       }
 
-      // Gọi API checkout theo đặc tả .md
-      const result = await checkout(cartId, selectedIds);
-
-      const link = result?.data?.paymentLink || null;
-      const desc = result?.data?.description || "";
-
-      if (link === null) {
-        alert("Đăng ký thành công! " + desc);
-        navigate("/my-courses");
-      } else {
-        window.location.href = link;
-      }
+      // Có link PayOS → redirect sang PayOS
+      window.location.href = paymentLink;
     } catch (err) {
-      const msg = err?.message || "Không thể khởi tạo thanh toán";
-      alert(msg);
+      console.error("Checkout error:", err);
+      alert(err.message || "Không thể tạo thanh toán, vui lòng thử lại sau.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className={styles.summary}>
-      <h3>Tổng đơn hàng</h3>
+      <h2>Tóm tắt thanh toán</h2>
 
-      <div className={styles.pricing}>
-        <div>
-          <span>Tổng giá trị ({courses.length} khóa học)</span>
-          <span>₫{total.toLocaleString()}</span>
-        </div>
+      <div className={styles.row}>
+        <span>Số khoá học được chọn</span>
+        <span>{selectedCourses.length}</span>
+      </div>
 
-        <div>
-          <span>Giảm giá</span>
-          <span className={styles.discount}>
-            -₫{discount.toLocaleString()}
-          </span>
-        </div>
+      <div className={styles.row}>
+        <span>Tạm tính</span>
+        <span>₫{subtotal.toLocaleString()}</span>
+      </div>
 
-        <hr />
+      <div className={styles.row}>
+        <span>Giảm giá</span>
+        <span>- ₫{discount.toLocaleString()}</span>
+      </div>
 
-        <div className={styles.total}>
-          <span>Tổng thanh toán</span>
-          <span>₫{final.toLocaleString()}</span>
-        </div>
+      <div className={`${styles.row} ${styles.totalRow}`}>
+        <span>Thành tiền</span>
+        <span>₫{finalTotal.toLocaleString()}</span>
       </div>
 
       <div className={styles.coupon}>
-        <label>Mã giảm giá</label>
-        <div>
+        <label htmlFor="coupon">Mã giảm giá</label>
+        <div className={styles.couponInput}>
           <input
+            id="coupon"
+            type="text"
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            placeholder="Nhập mã giảm giá"
+            placeholder="Nhập mã giảm giá (ví dụ: HOKORI10)"
           />
-          <button onClick={handleApply}>Áp dụng</button>
+          <button type="button" onClick={handleApply}>
+            Áp dụng
+          </button>
         </div>
       </div>
 
-      <button className={styles.checkout} onClick={handleCheckout}>
-        Tiến hành thanh toán
+      <button
+        type="button"
+        className={styles.checkout}
+        onClick={handleCheckout}
+        disabled={isSubmitting || !selectedCourses.length}
+      >
+        {isSubmitting ? "Đang tạo thanh toán..." : "Tiến hành thanh toán"}
       </button>
     </div>
   );
