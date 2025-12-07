@@ -1,0 +1,81 @@
+.center {
+  min-height: 100vh;
+  background: #f9fafb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card {
+  background: #fff;
+  width: 100%;
+  max-width: 460px;
+  padding: 48px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+}
+
+.success,
+.fail {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  font-size: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.success {
+  background: #ecfdf5;
+  color: #10b981;
+}
+
+.fail {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.summary {
+  margin-top: 24px;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.courseList {
+  margin-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.course {
+  padding: 6px 0;
+}
+
+.actions {
+  margin-top: 32px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+button {
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+}
+
+.secondary {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.retry {
+  margin-top: 20px;
+  background: #f59e0b;
+}

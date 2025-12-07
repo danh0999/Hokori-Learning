@@ -33,7 +33,12 @@ import Listening from "../pages/JLPTTest/Listening";
 import Result from "../pages/JLPTTest/Result";
 import FlashcardPage from "../pages/FlashcardPage/FlashcardPage";
 import LearningTreePage from "../pages/LearningTreePage/LearningTreePage";
+<<<<<<< Updated upstream
 import AiSucceedPage from "../pages/AiPackage/PaymentSuccess";
+=======
+import PaymentResultPage from "../pages/PaymentResultPage/PaymentResultPage";
+
+>>>>>>> Stashed changes
 // ===== Teacher =====
 import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
 import ManageCourses from "../pages/Teacher/Courses/ManageCourses";
@@ -99,7 +104,11 @@ const routes = [
       },
        {path:"/my-courses/:courseId/learn", element:<LearningTreePage />},
   
-  
+      {
+      path: "payment/result",
+      element: <PaymentResultPage />,
+    },
+
 
       // Protected Routes (Learner/Teacher/Admin/Moderator)
       {
