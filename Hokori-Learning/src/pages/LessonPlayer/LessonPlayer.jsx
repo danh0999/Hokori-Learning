@@ -86,6 +86,57 @@ const flashcardContent = lessonData?.sections
 
 const flashcardContentId = flashcardContent?.id;
 
+const currentIndex = lessons.findIndex(
+  l => Number(l.lessonId) === Number(lessonId)
+);
+
+const prevLesson = lessons[currentIndex - 1];
+const nextLesson = lessons[currentIndex + 1];
+
+const handlePrev = () => {
+  if (prevLesson) {
+    navigate(`/course/${courseId}/lesson/${prevLesson.lessonId}`);
+  }
+};
+
+const handleNext = () => {
+  if (nextLesson) {
+    navigate(`/course/${courseId}/lesson/${nextLesson.lessonId}`);
+  } else {
+    navigate(`/my-courses/${courseId}/learn`);
+  }
+};
+
+const handleCompleteLesson = async () => {
+  if (!lessonData?.sections) return;
+
+  try {
+    const contents = lessonData.sections
+      .flatMap(sec => sec.contents)
+      .filter(c => c.isTrackable && c.contentId);
+
+    await Promise.all(
+      contents.map(c =>
+        api.patch(`/learner/contents/${c.contentId}/progress`, {
+          isCompleted: true,
+          lastPositionSec: c.durationSec ?? 0,
+        })
+      )
+    );
+
+    const res = await api.get(`/learner/courses/${courseId}/lessons`);
+    setLessons(res.data ?? []);
+
+    if (nextLesson) {
+      navigate(`/course/${courseId}/lesson/${nextLesson.lessonId}`);
+    } else {
+      navigate(`/my-courses/${courseId}/learn`);
+    }
+  } catch (err) {
+    console.error("Complete lesson failed", err);
+  }
+};
+
 
 
 
@@ -123,7 +174,12 @@ const flashcardContentId = flashcardContent?.id;
           />
 
           <LessonContent data={lessonData?.sections} />
-          <ActionBar primaryContentId={primaryContent?.contentId} />
+          <ActionBar
+            onPrev={handlePrev}
+            onNext={handleNext}
+            onComplete={handleCompleteLesson}
+          />
+
 
           {/* === Quiz hiển thị khi vào /lesson/:id/quiz/... === */}
           <Outlet />
