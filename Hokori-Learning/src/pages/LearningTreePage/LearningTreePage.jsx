@@ -73,25 +73,41 @@ export default function LearningTreePage() {
 
   return (
     <main className={styles.page}>
-      {/* ===== Course Header ===== */}
       <section className={styles.courseHeader}>
-        <img
-          src={buildFileUrl(data.coverImagePath) || "/placeholder-course.png"}
-          alt={data.courseTitle}
-          className={styles.cover}
-        />
-        <div className={styles.courseInfo}>
-          <h1>{data.courseTitle}</h1>
-          <p>{data.courseSubtitle}</p>
-          <div className={styles.progressBar}>
-            <div
-              className={styles.progressFill}
-              style={{ width: `${data.progressPercent}%` }}
+        <div className={styles.headerBackground}>
+          <img
+            src={buildFileUrl(data.coverImagePath) || "/placeholder-course.png"}
+            alt={data.courseTitle}
+            className={styles.headerImage}
+          />
+          <div className={styles.headerOverlay} />
+        </div>
+
+        <div className={styles.headerContent}>
+          <div className={styles.coverImage}>
+            <img
+              src={buildFileUrl(data.coverImagePath) || "/placeholder-course.png"}
+              alt={data.courseTitle}
             />
           </div>
-          <span className={styles.progressText}>
-            Hoàn thành {data.progressPercent}%
-          </span>
+
+          <div className={styles.courseInfo}>
+            <h1 className={styles.courseTitle}>{data.courseTitle}</h1>
+            <p className={styles.courseSubtitle}>{data.courseSubtitle}</p>
+
+            <div className={styles.progressSection}>
+              <div className={styles.progressHeader}>
+                <span className={styles.progressLabel}>Your Progress</span>
+                <span className={styles.progressPercent}>{data.progressPercent}%</span>
+              </div>
+              <div className={styles.progressBar}>
+                <div
+                  className={styles.progressFill}
+                  style={{ width: `${data.progressPercent}%` }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
