@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../configs/axios";
 import styles from "./LearningTreePage.module.scss";
+import { buildFileUrl } from "../../utils/fileUrl";
 
 // ================================
 // LearningTreePage
@@ -75,7 +76,7 @@ export default function LearningTreePage() {
       {/* ===== Course Header ===== */}
       <section className={styles.courseHeader}>
         <img
-          src={data.coverImagePath || "/placeholder-course.png"}
+          src={buildFileUrl(data.coverImagePath) || "/placeholder-course.png"}
           alt={data.courseTitle}
           className={styles.cover}
         />
