@@ -11,6 +11,8 @@ import {
   selectTeacherProfileSubmitting,
   selectTeacherCertificates,
   selectTeacherCertificatesStatus,
+  selectUploadingAvatar,
+  uploadTeacherAvatar,
 } from "../../../redux/features/teacherprofileSlice.js";
 import {
   Card,
@@ -22,11 +24,33 @@ import {
   Popconfirm,
   message,
   List,
+  Avatar,
+  Upload,
 } from "antd";
-import { IdcardOutlined, EditOutlined } from "@ant-design/icons";
+import {
+  IdcardOutlined,
+  EditOutlined,
+  CameraOutlined,
+} from "@ant-design/icons";
 import styles from "./styles.module.scss";
 import ModalCertificates from "./components/ModalQualifications.jsx";
 import ProfileEditModal from "./components/ProfileEditModal.jsx";
+import api from "../../../configs/axios.js";
+
+// Helper: build URL tuyệt đối cho avatar
+const buildAvatarUrl = (avatarUrl) => {
+  if (!avatarUrl) return null;
+
+  // Nếu BE đã trả absolute URL thì dùng luôn
+  if (avatarUrl.startsWith("http")) return avatarUrl;
+
+  const apiBase = api.defaults.baseURL || "";
+
+  // Nếu baseURL kết thúc bằng /api hoặc /api/ thì bỏ /api đi
+  const rootBase = apiBase.replace(/\/api\/?$/, "");
+
+  return rootBase + avatarUrl; // vd: http://localhost:8080 + /files/avatars/...
+};
 
 const statusMap = {
   DRAFT: { color: "default", text: "Draft" },
@@ -44,6 +68,7 @@ export default function TeacherProfilePage() {
   const submitting = useSelector(selectTeacherProfileSubmitting);
   const certificates = useSelector(selectTeacherCertificates);
   const certStatus = useSelector(selectTeacherCertificatesStatus);
+  const uploadingAvatar = useSelector(selectUploadingAvatar);
 
   const [openCertModal, setOpenCertModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
@@ -57,6 +82,9 @@ export default function TeacherProfilePage() {
   const teacher = profile?.teacher || {};
   const hasCertificate = (certificates?.length || 0) > 0;
   const hasValidBio = (teacher?.bio || "").trim().length >= 50;
+
+  const avatarUrl = user.avatarUrl;
+  const fullAvatarUrl = buildAvatarUrl(avatarUrl);
 
   const canSubmit = hasCertificate && hasValidBio;
 
@@ -130,7 +158,7 @@ export default function TeacherProfilePage() {
   return (
     <div className={styles.wrapper}>
       <div className={styles.headerRow}>
-        <h1 className={styles.title}>Teacher Profile</h1>
+        <h1 className={styles.title}>Hồ sơ </h1>
         <Space>
           {showSubmit && (
             <Popconfirm
@@ -187,13 +215,49 @@ export default function TeacherProfilePage() {
           />
         ) : (
           <>
-            {/* Header hiển thị tên & headline + status */}
+            {/* Header hiển thị avatar + tên + status */}
             <div className={styles.topInfo}>
-              <div>
-                <div className={styles.displayName}>
-                  {user.displayName || "—"}
+              <div className={styles.avatarBlock}>
+                <Upload
+                  showUploadList={false}
+                  accept="image/*"
+                  beforeUpload={(file) => {
+                    // gọi thunk upload
+                    dispatch(uploadTeacherAvatar(file));
+                    return false; // chặn Upload tự upload
+                  }}
+                >
+                  <div className={styles.avatarWrapper}>
+                    <Avatar
+                      size={96}
+                      src={fullAvatarUrl}
+                      className={styles.avatar}
+                    >
+                      {user.displayName?.[0] || user.username?.[0] || "T"}
+                    </Avatar>
+
+                    <div className={styles.avatarOverlay}>
+                      {uploadingAvatar ? (
+                        "Đang upload..."
+                      ) : (
+                        <>
+                          <CameraOutlined />
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </Upload>
+
+                <div className={styles.nameBlock}>
+                  <div className={styles.displayName}>
+                    {user.displayName || "—"}
+                  </div>
+                  {teacher.headline && (
+                    <div className={styles.headline}>{teacher.headline}</div>
+                  )}
                 </div>
               </div>
+
               <div className={styles.status}>{statusTag}</div>
             </div>
 

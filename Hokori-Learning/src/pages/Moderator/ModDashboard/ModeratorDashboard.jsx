@@ -20,7 +20,7 @@ import { buildFileUrl } from "../../../utils/fileUrl.js"; // chỉnh path nếu 
 const { Title, Text } = Typography;
 const { Search } = Input;
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 9;
 const COMMENT_PAGE_SIZE = 5;
 
 const ModeratorDashboard = () => {
@@ -164,17 +164,17 @@ const ModeratorDashboard = () => {
         nodeType: "course",
         nodeData: course,
         children: chapters.map((ch) => ({
-          title: `Chapter: ${ch.title}`,
+          title: `${ch.title}`,
           key: `chapter-${ch.id}`,
           nodeType: "chapter",
           nodeData: ch,
           children: (ch.lessons || []).map((les) => ({
-            title: `Lesson: ${les.title}`,
+            title: ` ${les.title}`,
             key: `lesson-${les.id}`,
             nodeType: "lesson",
             nodeData: les,
             children: (les.sections || []).map((sec) => ({
-              title: `Section: ${sec.title} (${sec.studyType})`,
+              title: ` ${sec.title} `,
               key: `section-${sec.id}`,
               nodeType: "section",
               nodeData: sec,
@@ -196,9 +196,7 @@ const ModeratorDashboard = () => {
     if (!selectedNode) {
       return (
         <div style={{ padding: 12 }}>
-          <Text type="secondary">
-            Chọn một chapter / lesson / section bên trái để xem preview.
-          </Text>
+          <Text type="secondary">Chọn một phần bên trái để xem preview.</Text>
         </div>
       );
     }
@@ -210,23 +208,23 @@ const ModeratorDashboard = () => {
         <div style={{ padding: 12 }}>
           <Title level={5}>{data.title}</Title>
           <p>
-            <b>Level:</b> {data.level}
+            <b>Cấp độ:</b> {data.level}
           </p>
           <p>
-            <b>Price:</b> {data.priceCents / 100} {data.currency}
+            <b>Giá:</b> {data.priceCents} {data.currency}
           </p>
           <p>
-            <b>Status:</b> {data.status}
+            <b>Trạng thái:</b> {data.status}
           </p>
           <p>
-            <b>Teacher:</b> {data.teacherName}
+            <b>Giáo viên:</b> {data.teacherName}
           </p>
           <p>
-            <b>Subtitle:</b> {data.subtitle}
+            <b>Phụ đề:</b> {data.subtitle}
           </p>
           {data.description && (
             <p>
-              <b>Description:</b> {data.description}
+              <b>Mô tả:</b> {data.description}
             </p>
           )}
         </div>
@@ -239,7 +237,7 @@ const ModeratorDashboard = () => {
           <Title level={5}>Chapter: {data.title}</Title>
           {data.summary && (
             <p>
-              <b>Summary:</b> {data.summary}
+              <b>Tóm tắt:</b> {data.summary}
             </p>
           )}
           <p>
@@ -252,9 +250,9 @@ const ModeratorDashboard = () => {
     if (nodeType === "lesson") {
       return (
         <div style={{ padding: 12 }}>
-          <Title level={5}>Lesson: {data.title}</Title>
+          <Title level={5}>Bài học: {data.title}</Title>
           <p>
-            <b>Số section:</b> {(data.sections || []).length}
+            <b>Số phần:</b> {(data.sections || []).length}
           </p>
         </div>
       );
@@ -321,11 +319,9 @@ const ModeratorDashboard = () => {
 
       return (
         <div style={{ padding: 12 }}>
-          <Title level={5}>
-            Section: {data.title} {data.studyType && `(${data.studyType})`}
-          </Title>
+          <Title level={5}>{data.title}</Title>
           <p>
-            <b>Study type:</b> {data.studyType}
+            <b>{data.studyType}</b>
           </p>
 
           {assetBlock && (
@@ -497,7 +493,7 @@ const ModeratorDashboard = () => {
         align="center"
       >
         <Title level={3} style={{ marginBottom: 0 }}>
-          Moderator – Public Courses
+          Moderator – Những khóa học công khai
         </Title>
         <Tag color="blue">
           Page {page + 1} • {Array.isArray(courses) ? courses.length : 0} /{" "}
@@ -556,7 +552,7 @@ const ModeratorDashboard = () => {
                   cover={
                     <div
                       style={{
-                        height: 180,
+                        height: 250,
                         overflow: "hidden",
                         background: "#f5f5f5",
                         display: "flex",
@@ -583,21 +579,21 @@ const ModeratorDashboard = () => {
                   }
                 >
                   <div style={{ flex: 1 }}>
-                    <div style={{ marginBottom: 8 }}>
+                    <div style={{ marginBottom: 1 }}>
                       <Text strong>{course.title}</Text>
                     </div>
 
                     <p>
-                      <b>Level:</b> {course.level || "—"}
+                      <b>Trình độ:</b> {course.level || "—"}
                     </p>
                     <p>
-                      <b>Price:</b> {course.priceCents / 100} {course.currency}
+                      <b>Giá:</b> {course.priceCents} {course.currency}
                     </p>
                     <p>
-                      <b>Status:</b> {course.status}
+                      <b>Trạng thái:</b> {course.status}
                     </p>
                     <p>
-                      <b>Teacher:</b> {course.teacherName}
+                      <b>Giáo viên:</b> {course.teacherName}
                     </p>
                   </div>
 
@@ -607,7 +603,7 @@ const ModeratorDashboard = () => {
                       size="small"
                       onClick={() => fetchCourseTree(course.id, course.title)}
                     >
-                      View detail
+                      Xem chi tiết
                     </Button>
                   </div>
                 </Card>
@@ -630,11 +626,11 @@ const ModeratorDashboard = () => {
                 disabled={page === 0}
                 onClick={() => page > 0 && fetchCourses(page - 1)}
               >
-                Prev
+                Trước
               </Button>
 
               <span>
-                Page <b>{page + 1}</b> / {totalPages}
+                Trang <b>{page + 1}</b> / {totalPages}
               </span>
 
               <Button
@@ -642,7 +638,7 @@ const ModeratorDashboard = () => {
                 disabled={page + 1 >= totalPages}
                 onClick={() => page + 1 < totalPages && fetchCourses(page + 1)}
               >
-                Next
+                Tiếp
               </Button>
             </div>
           )}
@@ -651,7 +647,7 @@ const ModeratorDashboard = () => {
 
       {/* DRAWER: TREE + PREVIEW + COMMENTS */}
       <Drawer
-        title={`Course detail: ${selectedCourseTitle || ""}`}
+        title={`Chi tiết khóa học: ${selectedCourseTitle || ""}`}
         open={openDrawer}
         width={1000}
         onClose={() => setOpenDrawer(false)}
@@ -668,11 +664,7 @@ const ModeratorDashboard = () => {
               gap: 16,
             }}
           >
-            <Card
-              title="Course structure"
-              size="small"
-              bodyStyle={{ padding: 8 }}
-            >
+            <Card title="Khóa học" size="small" bodyStyle={{ padding: 8 }}>
               <div style={{ maxHeight: "70vh", overflow: "auto" }}>
                 <Tree
                   treeData={buildTreeData(courseTree)}
@@ -683,7 +675,7 @@ const ModeratorDashboard = () => {
             </Card>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <Card title="Preview" size="small">
+              <Card title="Xem trước" size="small">
                 {renderContentPreview()}
               </Card>
 

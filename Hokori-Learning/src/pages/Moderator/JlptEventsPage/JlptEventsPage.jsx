@@ -38,7 +38,9 @@ export default function JlptEventsPage() {
     setLoading(true);
     try {
       const res = await api.get("jlpt/events");
-      const list = res.data || [];
+      let list = res.data || [];
+      list = [...list].sort((a, b) => Number(b.id) - Number(a.id));
+
       setEvents(list);
 
       // Lấy số lượng test cho từng event

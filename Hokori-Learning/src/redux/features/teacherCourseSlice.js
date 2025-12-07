@@ -507,7 +507,7 @@ const teacherCourseSlice = createSlice({
         state.saving = false;
         const updated = action.payload;
 
-        // MERGE: giữ lại các field cũ (description, subtitle, v.v.)
+        // merge meta
         state.currentCourseMeta = {
           ...(state.currentCourseMeta || {}),
           ...(updated || {}),
@@ -515,10 +515,8 @@ const teacherCourseSlice = createSlice({
 
         const idx = state.list.findIndex((c) => c.id === updated.id);
         if (idx !== -1) {
-          state.list[idx] = {
-            ...state.list[idx],
-            ...(updated || {}),
-          };
+          // 🟢 Giữ nguyên vị trí cũ — update đúng vị trí đó
+          state.list[idx] = { ...state.list[idx], ...(updated || {}) };
         }
       })
       .addCase(updateCourseThunk.rejected, (state, action) => {
