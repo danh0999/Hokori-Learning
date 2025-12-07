@@ -33,12 +33,10 @@ import Listening from "../pages/JLPTTest/Listening";
 import Result from "../pages/JLPTTest/Result";
 import FlashcardPage from "../pages/FlashcardPage/FlashcardPage";
 import LearningTreePage from "../pages/LearningTreePage/LearningTreePage";
-<<<<<<< Updated upstream
 import AiSucceedPage from "../pages/AiPackage/PaymentSuccess";
-=======
 import PaymentResultPage from "../pages/PaymentResultPage/PaymentResultPage";
 
->>>>>>> Stashed changes
+
 // ===== Teacher =====
 import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
 import ManageCourses from "../pages/Teacher/Courses/ManageCourses";
@@ -102,7 +100,7 @@ const routes = [
         path: "learner/flashcards/:sectionContentId",
         element: <FlashcardPage />,
       },
-       {path:"/my-courses/:courseId/learn", element:<LearningTreePage />},
+       {path:"my-courses/:courseId/learn", element:<LearningTreePage />},
   
       {
       path: "payment/result",
@@ -129,7 +127,7 @@ const routes = [
           { path: "jlpt", element: <JLPTList /> },
           { path: "policies", element: <LearnerPolicies /> },
         
-          {path :"/payment/ai-package/success", element:<AiSucceedPage />},
+          {path :"payment/ai-package/success", element:<AiSucceedPage />},
           { path: "jlpt/events/:eventId", element: <JLPTEventTests /> },
 
           // ==== FLOW 3 PHẦN THI ====
