@@ -1,80 +1,29 @@
-.section {
-  margin-top: 3rem;
+/* src/pages/Cart/components/RecommendedCourses.module.scss */
 
-  h2 {
-    font-size: 1.4rem;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 1.5rem;
-  }
+.section {
+  margin-top: 32px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
 }
 
 .grid {
-  display: inline-flex;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 1.25rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
 }
 
-.card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
-  transition: all 0.25s ease;
-  cursor: pointer;
-
-  &:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow);
-
-    .info h3 {
-      color: var(--accent);
-    }
-  }
-}
-
-.thumbnail {
-  height: 120px;
-  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #1e3a8a;
-  font-weight: 500;
-  font-size: 0.85rem;
-}
-
-.info {
-  padding: 1rem;
-
-  h3 {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 0.25rem;
-    transition: color 0.2s ease;
-  }
-
-  p {
-    font-size: 0.8rem;
-    color: var(--muted);
-    margin-bottom: 0.5rem;
-  }
-
-  .price {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    span {
-      font-size: 0.875rem;
-      color: var(--text);
-    }
-
-    .old {
-      text-decoration: line-through;
-      color: #94a3b8;
-      font-size: 0.75rem;
-    }
-  }
+.loading {
+  font-size: 14px;
+  color: #6b7280;
 }

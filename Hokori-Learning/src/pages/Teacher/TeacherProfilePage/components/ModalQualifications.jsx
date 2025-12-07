@@ -10,6 +10,7 @@ import {
   List,
   Popconfirm,
   Alert,
+  Image,
 } from "antd";
 import dayjs from "dayjs";
 import { useDispatch, useSelector } from "react-redux";
@@ -22,29 +23,71 @@ import {
   selectDeletingCertificate,
 } from "../../../../redux/features/teacherprofileSlice.js";
 import { toast } from "react-toastify";
+import api from "../../../../configs/axios";
 
 export default function ModalCertificates({ open, onClose, locked = false }) {
   const [form] = Form.useForm();
   const dispatch = useDispatch();
+
   const certificates = useSelector(selectTeacherCertificates);
   const saving = useSelector(selectSavingCertificate);
   const deleting = useSelector(selectDeletingCertificate);
 
   const [editingId, setEditingId] = useState(null);
 
+  // metadata file BE trả về sau khi upload
+  const [uploadedMeta, setUploadedMeta] = useState(null);
+  // URL để preview (có thể là local URL hoặc fileUrl BE trả về)
+  const [previewUrl, setPreviewUrl] = useState(null);
+
   useEffect(() => {
     if (open) {
       dispatch(fetchTeacherCertificates());
       setEditingId(null);
       form.resetFields();
+      setUploadedMeta(null);
+      setPreviewUrl(null);
     }
   }, [dispatch, open, form]);
 
-  const normalizePayload = (values) => {
+  // ============ UPLOAD FILE → LẤY METADATA + PREVIEW ============
+  const handleUploadFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // preview local trước
+    const localUrl = URL.createObjectURL(file);
+    setPreviewUrl(localUrl);
+
+    const fd = new FormData();
+    fd.append("file", file);
+
+    try {
+      const res = await api.post("/teacher/approval/certificates/upload", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      // BE trả fileUrl, filename, mimeType, fileSizeBytes, storageProvider
+      setUploadedMeta(res.data);
+
+      // dùng luôn fileUrl BE trả về cho preview (ổn định hơn)
+      if (res.data?.fileUrl) {
+        setPreviewUrl(res.data.fileUrl);
+      }
+
+      toast.success("Upload ảnh chứng chỉ thành công!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Upload ảnh chứng chỉ thất bại!");
+    }
+  };
+
+  // ============ BUILD BODY JSON CHO ADD/UPDATE ============
+  const buildJsonPayload = (values) => {
     return {
       id: editingId || undefined,
       title: values.title,
-      credentialId: values.credentialId,
+      credentialId: values.credentialId || null,
       issueDate: values.issueDate
         ? values.issueDate.format("YYYY-MM-DD")
         : null,
@@ -52,9 +95,16 @@ export default function ModalCertificates({ open, onClose, locked = false }) {
         ? values.expiryDate.format("YYYY-MM-DD")
         : null,
       note: values.note || null,
+
+      fileUrl: uploadedMeta?.fileUrl || null,
+      filename: uploadedMeta?.filename || null,
+      mimeType: uploadedMeta?.mimeType || null,
+      fileSizeBytes: uploadedMeta?.fileSizeBytes || null,
+      storageProvider: uploadedMeta?.storageProvider || null,
     };
   };
 
+  // ============ SUBMIT ============
   const onSubmit = async () => {
     if (locked) {
       message.warning(
@@ -65,7 +115,8 @@ export default function ModalCertificates({ open, onClose, locked = false }) {
 
     try {
       const values = await form.validateFields();
-      const payload = normalizePayload(values);
+      const payload = buildJsonPayload(values);
+
       const res = await dispatch(upsertTeacherCertificate(payload));
       if (res.meta.requestStatus === "fulfilled") {
         toast.success(
@@ -73,6 +124,8 @@ export default function ModalCertificates({ open, onClose, locked = false }) {
         );
         setEditingId(null);
         form.resetFields();
+        setUploadedMeta(null);
+        setPreviewUrl(null);
         dispatch(fetchTeacherCertificates());
       } else {
         toast.error(res?.payload?.message || "Lưu chứng chỉ thất bại");
@@ -82,6 +135,7 @@ export default function ModalCertificates({ open, onClose, locked = false }) {
     }
   };
 
+  // ============ DELETE ============
   const onDelete = async (id) => {
     if (locked) {
       message.warning(
@@ -98,6 +152,7 @@ export default function ModalCertificates({ open, onClose, locked = false }) {
     }
   };
 
+  // ============ EDIT ============
   const onEdit = (item) => {
     if (locked) {
       toast.warning(
@@ -114,11 +169,28 @@ export default function ModalCertificates({ open, onClose, locked = false }) {
       expiryDate: item.expiryDate ? dayjs(item.expiryDate) : null,
       note: item.note,
     });
+
+    // nếu chứng chỉ đã có ảnh thì load metadata + preview
+    if (item.fileUrl) {
+      setUploadedMeta({
+        fileUrl: item.fileUrl,
+        filename: item.filename,
+        mimeType: item.mimeType,
+        fileSizeBytes: item.fileSizeBytes,
+        storageProvider: item.storageProvider,
+      });
+      setPreviewUrl(item.fileUrl);
+    } else {
+      setUploadedMeta(null);
+      setPreviewUrl(null);
+    }
   };
 
   const handleCancel = () => {
     setEditingId(null);
     form.resetFields();
+    setUploadedMeta(null);
+    setPreviewUrl(null);
     onClose?.();
   };
 
@@ -171,11 +243,38 @@ export default function ModalCertificates({ open, onClose, locked = false }) {
         <Form.Item name="note" label="Ghi chú">
           <Input.TextArea rows={3} disabled={locked} />
         </Form.Item>
+
+        <Form.Item label="Ảnh chứng chỉ (jpg, png, pdf)">
+          <input
+            type="file"
+            accept="image/*,.pdf"
+            disabled={locked}
+            onChange={handleUploadFile}
+          />
+          {previewUrl && (
+            <div style={{ marginTop: 12 }}>
+              <Image
+                src={previewUrl}
+                width={240}
+                style={{ borderRadius: 8 }}
+                // antd Image có sẵn preview popup
+              />
+            </div>
+          )}
+          {uploadedMeta?.filename && (
+            <p style={{ marginTop: 8, color: "#1677ff" }}>
+              File đã upload: <strong>{uploadedMeta.filename}</strong>
+            </p>
+          )}
+        </Form.Item>
+
         <Space>
           <Button
             onClick={() => {
               setEditingId(null);
               form.resetFields();
+              setUploadedMeta(null);
+              setPreviewUrl(null);
             }}
             disabled={locked}
           >
@@ -201,7 +300,7 @@ export default function ModalCertificates({ open, onClose, locked = false }) {
             <List.Item
               actions={
                 locked
-                  ? [] // không cho sửa/xoá khi PENDING
+                  ? []
                   : [
                       <Button
                         type="link"

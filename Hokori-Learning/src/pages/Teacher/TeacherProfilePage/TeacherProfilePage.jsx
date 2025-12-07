@@ -369,6 +369,21 @@ export default function TeacherProfilePage() {
                           </>
                         }
                       />
+
+                      {/* HIỂN THỊ ẢNH PREVIEW NẾU TỒN TẠI */}
+                      {item.fileUrl && (
+                        <Image
+                          src={item.fileUrl}
+                          width={90}
+                          height={90}
+                          style={{
+                            borderRadius: 8,
+                            objectFit: "cover",
+                            border: "1px solid #efefef",
+                          }}
+                          // Antd Image tự có popup preview
+                        />
+                      )}
                     </List.Item>
                   )}
                 />

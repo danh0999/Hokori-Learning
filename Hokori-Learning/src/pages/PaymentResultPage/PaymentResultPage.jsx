@@ -1,88 +1,79 @@
-// src/pages/PaymentResult/PaymentResultPage.jsx
-import React, { useEffect, useState, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import api from "../../configs/axios";
+// src/pages/Payment/PaymentResultPage.jsx
+import React, { useEffect, useState } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+
+import { getPaymentByOrderCode } from "../../services/paymentService";
+import { fetchCart } from "../../redux/features/cartSlice";
 import styles from "./PaymentResultPage.module.scss";
 
-const POLL_INTERVAL = 3000; // 3s
-const MAX_POLL = 10; // ~30s
+const STATUS_LABELS = {
+  PENDING: "Đang chờ thanh toán",
+  PAID: "Thanh toán thành công",
+  CANCELLED: "Đã hủy thanh toán",
+  FAILED: "Thanh toán thất bại",
+  EXPIRED: "Thanh toán đã hết hạn",
+};
 
-export default function PaymentResultPage() {
-  const location = useLocation();
+const PaymentResultPage = () => {
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  const orderCode = new URLSearchParams(location.search).get("orderCode");
+  const orderCode = searchParams.get("orderCode");
+  const statusFromQuery = (searchParams.get("status") || "").toUpperCase();
 
   const [loading, setLoading] = useState(true);
   const [payment, setPayment] = useState(null);
   const [error, setError] = useState(null);
+  const [finalStatus, setFinalStatus] = useState(statusFromQuery || "PENDING");
 
-  const pollCountRef = useRef(0);
-  const timerRef = useRef(null);
-
-  /* ============================
-     FETCH PAYMENT STATUS
-  ============================ */
-  const fetchStatus = async () => {
-    try {
-      const res = await api.get(
-        `/payment/order/${orderCode}`
-      );
-
-      setPayment(res.data);
-      setLoading(false);
-
-      if (res.data.status === "PENDING") {
-        if (pollCountRef.current < MAX_POLL) {
-          pollCountRef.current += 1;
-          timerRef.current = setTimeout(fetchStatus, POLL_INTERVAL);
-        }
-      }
-    } catch (err) {
-      setError("Không thể kiểm tra trạng thái thanh toán");
-      setLoading(false);
-    }
-  };
+  // === Helper: check success ===
+  const isSuccess = finalStatus === "PAID";
 
   useEffect(() => {
     if (!orderCode) {
-      setError("Thiếu mã đơn hàng");
       setLoading(false);
+      setError("Thiếu mã đơn hàng (orderCode) trong URL.");
       return;
     }
 
-    fetchStatus();
+    const fetchData = async () => {
+      try {
+        const data = await getPaymentByOrderCode(orderCode);
+        setPayment(data);
 
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+        // Ưu tiên status từ BE, fallback về status trong query
+        const status = (
+          data?.status ||
+          statusFromQuery ||
+          "PENDING"
+        ).toUpperCase();
+        setFinalStatus(status);
+
+        // ✅ Nếu đã thanh toán thành công thì fetch lại cart
+        // BE đã xử lý clear các item được thanh toán & enroll vào My Courses
+        if (status === "PAID") {
+          dispatch(fetchCart());
+        }
+      } catch (err) {
+        setError(err.message || "Không thể tải thông tin thanh toán");
+      } finally {
+        setLoading(false);
+      }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderCode]);
 
-  /* ============================
-     RETRY ENROLLMENT
-  ============================ */
-  const handleRetryEnrollment = async () => {
-    try {
-      await api.post(
-        `/payment/${payment.paymentId}/retry-enrollment`
-      );
-      fetchStatus();
-    } catch (err) {
-      alert("Không thể xử lý lại đăng ký khóa học");
-    }
-  };
+    fetchData();
+  }, [orderCode, statusFromQuery, dispatch]);
 
-  /* ============================
-     RENDER STATES
-  ============================ */
+  // ====== UI ======
 
   if (loading) {
     return (
-      <div className={styles.center}>
+      <div className={styles.wrapper}>
         <div className={styles.card}>
-          <h2>Đang xác nhận thanh toán...</h2>
-          <p>Vui lòng chờ trong giây lát</p>
+          <h2>Đang kiểm tra trạng thái thanh toán...</h2>
+          <p>Vui lòng chờ trong giây lát.</p>
         </div>
       </div>
     );
@@ -90,99 +81,87 @@ export default function PaymentResultPage() {
 
   if (error) {
     return (
-      <div className={styles.center}>
-        <div className={styles.card}>
-          <h2>Lỗi</h2>
+      <div className={styles.wrapper}>
+        <div className={`${styles.card} ${styles.failed}`}>
+          <h2>Không thể xác nhận thanh toán</h2>
           <p>{error}</p>
-          <button onClick={() => navigate("/")}>Về trang chủ</button>
+          <div className={styles.actions}>
+            <button onClick={() => navigate("/cart")}>Quay lại giỏ hàng</button>
+            <button onClick={() => navigate("/")}>Về trang chủ</button>
+          </div>
         </div>
       </div>
     );
   }
 
-  /* ============================
-     STATUS UI
-  ============================ */
+  const amountVnd = payment?.amountCents
+    ? Math.round(payment.amountCents / 100)
+    : 0;
 
-  const { status, courses = [], amount, paidAt } = payment;
+  const statusLabel = STATUS_LABELS[finalStatus] || finalStatus;
 
   return (
-    <div className={styles.center}>
-      <div className={styles.card}>
-        {/* ICON */}
-        {status === "PAID" && <div className={styles.success}>✓</div>}
-        {(status === "FAILED" || status === "EXPIRED") && (
-          <div className={styles.fail}>!</div>
-        )}
+    <div className={styles.wrapper}>
+      <div
+        className={`${styles.card} ${
+          isSuccess ? styles.success : styles.failed
+        }`}
+      >
+        <h2>
+          {isSuccess ? "Thanh toán thành công!" : "Thanh toán không thành công"}
+        </h2>
 
-        {/* TITLE */}
-        {status === "PAID" && <h1>Thanh toán thành công</h1>}
-        {status === "FAILED" && <h1>Thanh toán thất bại</h1>}
-        {status === "EXPIRED" && <h1>Giao dịch đã hết hạn</h1>}
-        {status === "PENDING" && <h1>Đang xử lý thanh toán</h1>}
+        <p className={styles.status}>
+          Trạng thái: <strong>{statusLabel}</strong>
+        </p>
 
-        {/* DESCRIPTION */}
-        {status === "PAID" && (
-          <p>Các khóa học đã được thêm vào tài khoản của bạn.</p>
-        )}
-        {status !== "PAID" && (
-          <p>Bạn có thể quay lại giỏ hàng để thử lại.</p>
-        )}
-
-        {/* ORDER INFO */}
-        {status === "PAID" && (
-          <div className={styles.summary}>
-            <p>
-              <strong>Tổng tiền:</strong>{" "}
-              {(amount / 100).toLocaleString("vi-VN")}đ
-            </p>
-            <p>
-              <strong>Thời gian:</strong>{" "}
-              {paidAt ? new Date(paidAt).toLocaleString() : ""}
-            </p>
-
-            <div className={styles.courseList}>
-              {courses.map((c) => (
-                <div key={c.courseId} className={styles.course}>
-                  {c.title}
-                </div>
-              ))}
-            </div>
+        <div className={styles.info}>
+          <div>
+            <span>Mã đơn hàng (orderCode)</span>
+            <strong>{payment?.orderCode || orderCode}</strong>
           </div>
-        )}
 
-        {/* ACTIONS */}
-        <div className={styles.actions}>
-          {status === "PAID" && (
-            <button onClick={() => navigate("/my-courses")}>
-              Vào khóa học của tôi
-            </button>
+          <div>
+            <span>Số tiền</span>
+            <strong>₫{amountVnd.toLocaleString()}</strong>
+          </div>
+
+          {payment?.description && (
+            <div>
+              <span>Ghi chú</span>
+              <p>{payment.description}</p>
+            </div>
           )}
 
-          {(status === "FAILED" || status === "EXPIRED") && (
-            <button onClick={() => navigate("/cart")}>
-              Quay lại giỏ hàng
-            </button>
-          )}
-
-          <button
-            className={styles.secondary}
-            onClick={() => navigate("/")}
-          >
-            Trang chủ
-          </button>
+          {Array.isArray(payment?.courseIds) &&
+            payment.courseIds.length > 0 && (
+              <div>
+                <span>Khoá học đã thanh toán (courseIds)</span>
+                <p>{payment.courseIds.join(", ")}</p>
+              </div>
+            )}
         </div>
 
-        {/* RETRY ENROLLMENT */}
-        {status === "PAID" && courses.length === 0 && (
-          <button
-            className={styles.retry}
-            onClick={handleRetryEnrollment}
-          >
-            Thử lại việc đăng ký khóa học
-          </button>
-        )}
+        <div className={styles.actions}>
+          {isSuccess ? (
+            <>
+              <button onClick={() => navigate("/my-courses")}>
+                Hoàn tất & tới khóa học của tôi
+              </button>
+              <button onClick={() => navigate("/")}>Về trang chủ</button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => navigate("/cart")}>
+                Quay lại giỏ hàng
+              </button>
+              <button onClick={() => navigate("/")}>Về trang chủ</button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
-}
+};
+
+export default PaymentResultPage;

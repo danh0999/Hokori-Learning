@@ -12,7 +12,7 @@ import Login from "../pages/authen/login/login";
 import Register from "../pages/authen/register/register";
 import Marketplace from "../pages/Marketplace/Marketplace";
 import AboutPage from "../pages/About/AboutPage";
-import PaymentPage from "../pages/Payment/PaymentPage";
+// import PaymentPage from "../pages/Payment/PaymentPage";
 import { Contact } from "../pages/Contact/Contact";
 import CourseDetail from "../pages/CourseDetail/CourseDetail";
 import MyCourses from "../pages/MyCourses/MyCourses";
@@ -35,7 +35,6 @@ import FlashcardPage from "../pages/FlashcardPage/FlashcardPage";
 import LearningTreePage from "../pages/LearningTreePage/LearningTreePage";
 import AiSucceedPage from "../pages/AiPackage/PaymentSuccess";
 import PaymentResultPage from "../pages/PaymentResultPage/PaymentResultPage";
-
 
 // ===== Teacher =====
 import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
@@ -100,13 +99,12 @@ const routes = [
         path: "learner/flashcards/:sectionContentId",
         element: <FlashcardPage />,
       },
-       {path:"my-courses/:courseId/learn", element:<LearningTreePage />},
-  
-      {
-      path: "payment/result",
-      element: <PaymentResultPage />,
-    },
+      { path: "my-courses/:courseId/learn", element: <LearningTreePage /> },
 
+      {
+        path: "payment/result",
+        element: <PaymentResultPage />,
+      },
 
       // Protected Routes (Learner/Teacher/Admin/Moderator)
       {
@@ -116,7 +114,6 @@ const routes = [
           />
         ),
         children: [
-          { path: "payment", element: <PaymentPage /> },
           { path: "learner-dashboard", element: <LearnerDashboard /> },
           { path: "my-courses", element: <MyCourses /> },
           { path: "my-flashcards", element: <MyFlashcards /> },
@@ -126,8 +123,8 @@ const routes = [
           { path: "ai-analyse", element: <AiAnalysePage /> },
           { path: "jlpt", element: <JLPTList /> },
           { path: "policies", element: <LearnerPolicies /> },
-        
-          {path :"payment/ai-package/success", element:<AiSucceedPage />},
+
+          { path: "payment/ai-package/success", element: <AiSucceedPage /> },
           { path: "jlpt/events/:eventId", element: <JLPTEventTests /> },
 
           // ==== FLOW 3 PHẦN THI ====
