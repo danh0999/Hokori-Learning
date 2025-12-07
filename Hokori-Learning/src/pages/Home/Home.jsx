@@ -8,7 +8,7 @@ import { Faqs } from "../Home/components/Faqs/Faqs";
 import ScrollToTopButton from "../../components/SrcollToTopButton/ScrollToTopButton";
 import AiPackageIntro from "./components/AiPackageIntro/AiPackageIntro";
 
-import AiPackageModal from "../LearnerDashboard/components/AiPackageModal";
+import AiPackageModal from "../AiPackage/components/AiPackageModal";
 
 const Home = () => {
   const [showAiModal, setShowAiModal] = useState(false);

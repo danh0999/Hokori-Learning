@@ -1,16 +1,61 @@
-import React from "react";
+// src/pages/LearnerDashboard/components/AISidebar.jsx
+import React, { useEffect } from "react";
 import styles from "./AISidebar.module.scss";
 import { FaRobot, FaChartLine, FaLightbulb } from "react-icons/fa6";
 import { Button } from "../../../components/Button/Button";
-import { useDispatch } from "react-redux";
-import { checkAIPermission } from "../../../redux/features/aiPackageSlice.js";
+
+import { useDispatch, useSelector } from "react-redux";
+import {
+  checkAIPermission,
+  fetchMyAiPackage,
+  fetchAiQuota,
+} from "../../../redux/features/aiPackageSlice.js";
+
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const AISidebar = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  // Handler chính để kiểm tra quyền sử dụng AI
-  const handleClick = (serviceCode) => {
-    dispatch(checkAIPermission(serviceCode));
+  const { myPackage } = useSelector((state) => state.aiPackage);
+
+  const hasActivePackage =
+    myPackage && myPackage.hasPackage && !myPackage.isExpired;
+
+  // Load gói AI + quota khi sidebar mount
+  useEffect(() => {
+    dispatch(fetchMyAiPackage());
+    dispatch(fetchAiQuota());
+  }, [dispatch]);
+
+  const goToServicePage = (serviceCode) => {
+    if (serviceCode === "GRAMMAR") navigate("/ai-analyse");
+    if (serviceCode === "KAIWA") navigate("/ai-kaiwa");
+    if (serviceCode === "PRONUN") navigate("/ai/pronunciation");
+  };
+
+  const handleClick = async (serviceCode) => {
+    try {
+      // CASE 1: ĐÃ MUA GÓI → VÀO THẲNG TOOL
+      if (hasActivePackage) {
+        goToServicePage(serviceCode);
+        return;
+      }
+
+      // CASE 2: CHƯA MUA → CHECK QUOTA (free / trial)
+      const result = await dispatch(checkAIPermission(serviceCode)).unwrap();
+
+      if (result?.hasQuota) {
+        goToServicePage(serviceCode);
+        return;
+      }
+
+      // CASE 3: Hết quota → slice sẽ bật showModal, AiPackageModal xuất hiện
+    } catch (error) {
+      console.error("Lỗi kiểm tra quyền AI:", error);
+      toast.error("Không kiểm tra được quyền sử dụng AI. Vui lòng thử lại.");
+    }
   };
 
   return (
@@ -22,7 +67,7 @@ const AISidebar = () => {
         </h3>
 
         <div className={styles.buttons}>
-          {/* KIỂM TRA CHÍNH TẢ */}
+          {/* PHÂN TÍCH CÂU (GRAMMAR) */}
           <Button
             content="Phân tích câu cùng AI"
             onClick={() => handleClick("GRAMMAR")}
@@ -30,15 +75,13 @@ const AISidebar = () => {
             containerClassName={styles.aiButtonContainer}
           />
 
-          {/* LUYỆN NÓI (KAIWA) */}
+          {/* KAIWA */}
           <Button
             content="Luyện nói cùng AI"
             onClick={() => handleClick("KAIWA")}
             className={styles.aiButton}
             containerClassName={styles.aiButtonContainer}
           />
-
-   
         </div>
       </section>
 

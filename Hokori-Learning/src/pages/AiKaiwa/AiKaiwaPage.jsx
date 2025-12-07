@@ -17,7 +17,7 @@ const AiKaiwaPage = () => {
   const [audioBlob, setAudioBlob] = useState(null);
 
   const [targetText, setTargetText] =
-    useState("VD: 私は日本語を勉強しています");
+    useState("私は日本語を勉強しています");
   const [level, setLevel] = useState(KAIWA_DEFAULTS.LEVEL);
 
   const [loading, setLoading] = useState(false);

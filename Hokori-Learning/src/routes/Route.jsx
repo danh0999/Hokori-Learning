@@ -33,7 +33,7 @@ import Listening from "../pages/JLPTTest/Listening";
 import Result from "../pages/JLPTTest/Result";
 import FlashcardPage from "../pages/FlashcardPage/FlashcardPage";
 import LearningTreePage from "../pages/LearningTreePage/LearningTreePage";
-
+import AiSucceedPage from "../pages/AiPackage/PaymentSuccess";
 // ===== Teacher =====
 import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
 import ManageCourses from "../pages/Teacher/Courses/ManageCourses";
@@ -119,7 +119,8 @@ const routes = [
           { path: "ai-analyse", element: <AiAnalysePage /> },
           { path: "jlpt", element: <JLPTList /> },
           { path: "policies", element: <LearnerPolicies /> },
-
+        
+          {path :"/payment/ai-package/success", element:<AiSucceedPage />},
           { path: "jlpt/events/:eventId", element: <JLPTEventTests /> },
 
           // ==== FLOW 3 PHẦN THI ====

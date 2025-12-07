@@ -1,0 +1,192 @@
+/* =======================
+   OVERLAY
+======================= */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+/* =======================
+   MODAL BOX
+======================= */
+.modal {
+  background: #fff;
+  padding: 2.2rem;
+  width: 750px;
+  max-width: 95%;
+  border-radius: 22px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+  animation: fadeUp 0.3s ease;
+  font-family: "Inter";
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(25px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =======================
+   PACKAGE LIST
+======================= */
+.packageList {
+  margin-top: 1.5rem;
+  display: flex;
+  gap: 1.2rem;
+
+  @media (max-width: 650px) {
+    flex-direction: column;
+  }
+}
+
+/* =======================
+   CARD DEFAULT
+======================= */
+.card {
+  flex: 1;
+  border: 1px solid #e5e7eb;
+  padding: 1.4rem 1rem;
+  border-radius: 18px;
+  background: #fafafa;
+  text-align: center;
+  transition: all 0.25s ease;
+  cursor: default;
+
+  h3 {
+    font-size: 1.25rem;
+    margin-bottom: 6px;
+  }
+
+  ul {
+    margin: 0.8rem 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.9rem;
+    color: #555;
+
+    li {
+      margin: 4px 0;
+    }
+  }
+
+  &:hover {
+    transform: scale(1.03);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    background: #ffffff;
+  }
+}
+
+/* =======================
+   CARD ACTIVE – Gói đang sử dụng
+======================= */
+.activeCard {
+  border: 2px solid #10b981; /* xanh lá */
+  background: #ecfdf5 !important;
+
+  &:hover {
+    transform: scale(1.03);
+    background: #daf9e8 !important;
+  }
+}
+
+/* =======================
+   CARD DISABLED – Không thể mua
+======================= */
+.disabledCard {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+
+  &:hover {
+    transform: none;
+    box-shadow: none;
+    background: #fafafa;
+  }
+}
+
+/* =======================
+   PRO PACKAGE STYLE
+======================= */
+.pro {
+  border: 2px solid #2563eb;
+  background: #f0f7ff;
+  position: relative;
+
+  &:hover {
+    background: #e8f2ff;
+    border-color: #1e50d4;
+    transform: scale(1.05);
+  }
+}
+
+/* BEST badge */
+.best {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: #2563eb;
+  color: #fff;
+  padding: 5px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.25);
+}
+
+/* =======================
+   PRICE
+======================= */
+.price {
+  margin: 1rem 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* =======================
+   CLOSE BUTTON
+======================= */
+.close {
+  margin-top: 1.5rem;
+  background: none;
+  border: none;
+  font-size: 1rem;
+  color: #444;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: 0.2s;
+
+  &:hover {
+    background: #f3f4f6;
+    color: #000;
+  }
+}
+
+/* =======================
+   ACTIVE NOTICE (User đang dùng gói)
+======================= */
+.activeNotice {
+  padding: 12px 14px;
+  background: #fefce8;
+  border: 1px solid #fcd34d;
+  border-radius: 12px;
+  color: #854d0e;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+
+  strong {
+    font-weight: 600;
+  }
+}

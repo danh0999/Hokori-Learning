@@ -34,6 +34,9 @@ api.interceptors.request.use(
     // Bypass ngrok warning
     config.headers["ngrok-skip-browser-warning"] = "true";
     config.headers["Accept"] = "application/json";
+    if (!config.headers["Content-Type"]) {
+      config.headers["Content-Type"] = "application/json";
+    }
 
     /* -----------------------------------------
        LẤY TOKEN CHUẨN HOÁ
