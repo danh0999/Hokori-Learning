@@ -101,8 +101,8 @@ const routes = [
       },
       { path: "my-courses/:courseId/learn", element: <LearningTreePage /> },
 
-      { path: "payment/result", element: <PaymentResultPage /> }, // nếu còn dùng
-      { path: "payment/success", element: <PaymentResultPage /> }, // 👈 THÊM
+      { path: "payment/result", element: <PaymentResultPage /> },
+      { path: "payment/success", element: <PaymentResultPage /> },
       { path: "payment/cancel", element: <PaymentResultPage /> },
 
       // Protected Routes (Learner/Teacher/Admin/Moderator)
