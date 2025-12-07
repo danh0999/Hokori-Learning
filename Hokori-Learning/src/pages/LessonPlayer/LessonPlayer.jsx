@@ -112,17 +112,29 @@ const handleCompleteLesson = async () => {
 
   try {
     const contents = lessonData.sections
-      .flatMap(sec => sec.contents)
-      .filter(c => c.isTrackable && c.contentId);
+      .flatMap((sec) => sec.contents)
+      // Mark ALL contents that have a progress endpoint
+      .map((c) => ({
+        contentId: c.contentId ?? c.id,
+        lastPositionSec: c.durationSec ?? 0,
+      }))
+      .filter((c) => !!c.contentId);
 
-    await Promise.all(
-      contents.map(c =>
+    if (contents.length === 0) {
+      // No contents to update — nothing to complete
+      return;
+    }
+
+    const results = await Promise.allSettled(
+      contents.map((c) =>
         api.patch(`/learner/contents/${c.contentId}/progress`, {
           isCompleted: true,
-          lastPositionSec: c.durationSec ?? 0,
+          lastPositionSec: c.lastPositionSec,
         })
       )
     );
+
+    // Optional: if some failed, you could log or show a toast; keep UI moving
 
     const res = await api.get(`/learner/courses/${courseId}/lessons`);
     setLessons(res.data ?? []);
