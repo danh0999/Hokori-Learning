@@ -3,8 +3,10 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../configs/axios";
 
 /* ============================================================
-   1) GET LIST PACKAGES
+   API CALLS
 ============================================================ */
+
+// 1) Get list packages
 export const fetchAiPackages = createAsyncThunk(
   "ai/packages/fetchAll",
   async (_, { rejectWithValue }) => {
@@ -17,9 +19,7 @@ export const fetchAiPackages = createAsyncThunk(
   }
 );
 
-/* ============================================================
-   2) GET MY PACKAGE
-============================================================ */
+// 2) Get my current package
 export const fetchMyAiPackage = createAsyncThunk(
   "ai/packages/fetchMyPackage",
   async (_, { rejectWithValue }) => {
@@ -32,9 +32,7 @@ export const fetchMyAiPackage = createAsyncThunk(
   }
 );
 
-/* ============================================================
-   3) GET QUOTA (tổng & còn lại cho từng dịch vụ)
-============================================================ */
+// 3) Fetch quota
 export const fetchAiQuota = createAsyncThunk(
   "ai/packages/fetchQuota",
   async (_, { rejectWithValue }) => {
@@ -47,26 +45,28 @@ export const fetchAiQuota = createAsyncThunk(
   }
 );
 
-/* ============================================================
-   4) CHECK PERMISSION CHO 1 SERVICE (AISidebar dùng)
-   - Nếu không còn quota → slice mở modal mua gói
-============================================================ */
+// 4) Check permission before using AI service
 export const checkAIPermission = createAsyncThunk(
   "ai/packages/checkPermission",
-  async (serviceCode, { rejectWithValue }) => {
+  async (serviceCode, { getState, rejectWithValue }) => {
     try {
-      const res = await api.get("/ai/packages/quota");
-      const quotas = res?.data?.data?.quotas || {};
+      const state = getState().aiPackage;
+      let quotas = state.quota;
+
+      if (!quotas || Object.keys(quotas).length === 0) {
+        const res = await api.get("/ai/packages/quota");
+        quotas = res?.data?.data?.quotas || {};
+      }
+
       const q = quotas[serviceCode] || {
         remainingQuota: 0,
-        totalQuota: 0,
         hasQuota: false,
       };
 
       return {
         serviceCode,
-        hasQuota: q.hasQuota,
-        remainingQuota: q.remainingQuota,
+        hasQuota: !!q.hasQuota,
+        remainingQuota: q.remainingQuota ?? 0,
       };
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
@@ -74,11 +74,7 @@ export const checkAIPermission = createAsyncThunk(
   }
 );
 
-/* ============================================================
-   5) CHECKOUT / PURCHASE GÓI AI
-   - FREE: paymentLink = null → kích hoạt ngay
-   - PAID: paymentLink != null → redirect PayOS
-============================================================ */
+// 5) Checkout AI package
 export const purchaseAiPackage = createAsyncThunk(
   "ai/packages/checkout",
   async (packageId, { rejectWithValue }) => {
@@ -93,10 +89,7 @@ export const purchaseAiPackage = createAsyncThunk(
   }
 );
 
-/* ============================================================
-   6) CONSUME SERVICE QUOTA (TRỪ QUOTA)
-   - Đặt tên KHÔNG bắt đầu bằng "use" để tránh rule-of-hooks
-============================================================ */
+// 6) Consume service quota
 export const consumeAiServiceQuota = createAsyncThunk(
   "ai/packages/consumeService",
   async ({ serviceType, amount = 1 }, { rejectWithValue }) => {
@@ -115,27 +108,23 @@ export const consumeAiServiceQuota = createAsyncThunk(
 /* ============================================================
    SLICE
 ============================================================ */
+
 const initialState = {
-  // UI modal
   showModal: false,
   serviceNeed: null,
 
-  // list packages
   packages: [],
   packagesStatus: "idle",
   packagesError: null,
 
-  // my package
   myPackage: null,
   myPackageStatus: "idle",
   myPackageError: null,
 
-  // quota map: { GRAMMAR: {...}, KAIWA: {...}, ... }
   quota: {},
   quotaStatus: "idle",
   quotaError: null,
 
-  // checkout
   checkoutStatus: "idle",
   checkoutError: null,
   lastCheckout: null,
@@ -145,17 +134,33 @@ const aiPackageSlice = createSlice({
   name: "aiPackage",
   initialState,
   reducers: {
+    // <-- IMPORTANT for Home → open modal
+    openModal(state) {
+      state.showModal = true;
+    },
+
     closeModal(state) {
       state.showModal = false;
       state.serviceNeed = null;
     },
+
+    resetAiPackageState() {
+      return {
+        ...initialState,
+        packages: [],
+        quota: {},
+        myPackage: null,
+      };
+    },
   },
+
   extraReducers: (builder) => {
-    /* ========== fetchAiPackages ========== */
+    /* ============================================================
+       FETCH AI PACKAGES
+    ============================================================ */
     builder
       .addCase(fetchAiPackages.pending, (state) => {
         state.packagesStatus = "loading";
-        state.packagesError = null;
       })
       .addCase(fetchAiPackages.fulfilled, (state, action) => {
         state.packagesStatus = "succeeded";
@@ -163,14 +168,15 @@ const aiPackageSlice = createSlice({
       })
       .addCase(fetchAiPackages.rejected, (state, action) => {
         state.packagesStatus = "failed";
-        state.packagesError = action.payload || action.error;
+        state.packagesError = action.payload;
       });
 
-    /* ========== fetchMyAiPackage ========== */
+    /* ============================================================
+       FETCH MY PACKAGE
+    ============================================================ */
     builder
       .addCase(fetchMyAiPackage.pending, (state) => {
         state.myPackageStatus = "loading";
-        state.myPackageError = null;
       })
       .addCase(fetchMyAiPackage.fulfilled, (state, action) => {
         state.myPackageStatus = "succeeded";
@@ -178,14 +184,15 @@ const aiPackageSlice = createSlice({
       })
       .addCase(fetchMyAiPackage.rejected, (state, action) => {
         state.myPackageStatus = "failed";
-        state.myPackageError = action.payload || action.error;
+        state.myPackageError = action.payload;
       });
 
-    /* ========== fetchAiQuota ========== */
+    /* ============================================================
+       FETCH QUOTA
+    ============================================================ */
     builder
       .addCase(fetchAiQuota.pending, (state) => {
         state.quotaStatus = "loading";
-        state.quotaError = null;
       })
       .addCase(fetchAiQuota.fulfilled, (state, action) => {
         state.quotaStatus = "succeeded";
@@ -193,10 +200,12 @@ const aiPackageSlice = createSlice({
       })
       .addCase(fetchAiQuota.rejected, (state, action) => {
         state.quotaStatus = "failed";
-        state.quotaError = action.payload || action.error;
+        state.quotaError = action.payload;
       });
 
-    /* ========== checkAIPermission ========== */
+    /* ============================================================
+       CHECK PERMISSION
+    ============================================================ */
     builder.addCase(checkAIPermission.fulfilled, (state, action) => {
       const { hasQuota, serviceCode } = action.payload;
       if (!hasQuota) {
@@ -205,11 +214,12 @@ const aiPackageSlice = createSlice({
       }
     });
 
-    /* ========== purchaseAiPackage (checkout) ========== */
+    /* ============================================================
+       CHECKOUT PACKAGE
+    ============================================================ */
     builder
       .addCase(purchaseAiPackage.pending, (state) => {
         state.checkoutStatus = "loading";
-        state.checkoutError = null;
       })
       .addCase(purchaseAiPackage.fulfilled, (state, action) => {
         state.checkoutStatus = "succeeded";
@@ -217,13 +227,16 @@ const aiPackageSlice = createSlice({
       })
       .addCase(purchaseAiPackage.rejected, (state, action) => {
         state.checkoutStatus = "failed";
-        state.checkoutError = action.payload || action.error;
+        state.checkoutError = action.payload;
       });
 
-    /* ========== consumeAiServiceQuota ========== */
-    // Nếu muốn, có thể update state.quota ở đây từ payload
+    /* ============================================================
+       CONSUME QUOTA
+    ============================================================ */
+    // Có thể update quota ở đây nếu BE trả quota mới
   },
 });
 
-export const { closeModal } = aiPackageSlice.actions;
+export const { openModal, closeModal, resetAiPackageState } =
+  aiPackageSlice.actions;
 export default aiPackageSlice.reducer;

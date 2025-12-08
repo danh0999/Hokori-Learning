@@ -13,12 +13,16 @@ import {
 } from "../../../redux/features/aiPackageSlice";
 import { toast } from "react-toastify";
 
-export default function AiPackageModal({ onClose }) {
+export default function AiPackageModal() {
   const dispatch = useDispatch();
 
-  const { packages, packagesStatus, myPackage, checkoutStatus } = useSelector(
-    (state) => state.aiPackage
-  );
+  const {
+    showModal,
+    packages,
+    packagesStatus,
+    myPackage,
+    checkoutStatus,
+  } = useSelector((state) => state.aiPackage);
 
   const loadingCheckout = checkoutStatus === "loading";
 
@@ -28,83 +32,89 @@ export default function AiPackageModal({ onClose }) {
   const activePackageId =
     hasActivePackage && (myPackage.packageId || myPackage.id || null);
 
-  /* ===============================
-      AUTO LOAD PACKAGES WHEN OPEN
-  =============================== */
+  /* ============================================================
+     Fetch fresh data khi modal mở
+  ============================================================ */
   useEffect(() => {
-    if (!packages || packages.length === 0) {
+    if (showModal) {
+      dispatch(fetchMyAiPackage());
+      dispatch(fetchAiQuota());
       dispatch(fetchAiPackages());
     }
-  }, [dispatch, packages]);
+  }, [showModal, dispatch]);
 
-  /* ===============================
-      HÀM ĐÓNG THỰC SỰ
-      - Nếu parent truyền onClose -> dùng local state
-      - Nếu không -> dùng Redux closeModal()
-  =============================== */
-  const doClose = () => {
-    if (typeof onClose === "function") {
-      onClose();
-    } else {
-      dispatch(closeModal());
-    }
-  };
-
-  /* ===============================
-      HANDLE CLOSE (button + overlay)
-  =============================== */
-  const handleClose = () => {
-    // Nếu đang checkout mà người dùng đóng thì hỏi lại cho chắc
-    if (loadingCheckout) {
-      const ok = window.confirm(
-        "Thanh toán đang được xử lý. Bạn chắc chắn muốn đóng?"
-      );
-      if (!ok) return;
-    }
-    doClose();
-  };
-
-  /* ===============================
-      HANDLE CHECKOUT
-      RULE: đang có gói active -> KHÔNG cho mua thêm
-  =============================== */
-  const handleCheckout = (pkg) => {
-    if (loadingCheckout) return;
-
-    // Business rule: đã có gói đang hoạt động -> không mua thêm
+  const handleCheckout = async (pkgId) => {
     if (hasActivePackage) {
       toast.info(
-        `Bạn đang sử dụng gói ${myPackage.packageName}.\nVui lòng dùng hết hoặc đợi gói hết hạn để mua gói mới.`
+        `Bạn đang sử dụng gói ${myPackage.packageName}. Vui lòng đợi hết hạn để mua gói mới.`
       );
       return;
     }
 
-    const packageId = pkg.id;
+    try {
+      const checkout = await dispatch(purchaseAiPackage(pkgId)).unwrap();
 
-    dispatch(purchaseAiPackage(packageId))
-      .unwrap()
-      .then((checkout) => {
-        // Gói FREE / kích hoạt ngay
-        if (!checkout?.paymentLink) {
-          toast.success("Gói AI đã được kích hoạt!");
-          dispatch(fetchMyAiPackage());
-          dispatch(fetchAiQuota());
-          doClose();
-          return;
-        }
+      if (!checkout.paymentLink) {
+        toast.success("Gói AI được kích hoạt thành công!");
 
-        // Gói trả phí -> redirect PayOS
+        dispatch(fetchMyAiPackage());
+        dispatch(fetchAiQuota());
+        dispatch(closeModal());
+      } else {
         window.location.href = checkout.paymentLink;
-      })
-      .catch(() => toast.error("Không thể thực hiện thanh toán."));
+      }
+    } catch {
+      toast.error("Không thể tạo đơn thanh toán. Vui lòng thử lại.");
+    }
   };
 
+  const renderPackageCard = (pkg, highlight = false) => {
+    const isActive = activePackageId === pkg.id;
+
+    const cardClass = [
+      styles.card,
+      highlight ? styles.pro : "",
+      isActive ? styles.activeCard : "",
+      hasActivePackage && !isActive ? styles.disabledCard : "",
+    ].join(" ");
+
+    return (
+      <div key={pkg.id} className={cardClass}>
+        {highlight && <span className={styles.best}>BEST</span>}
+
+        <h3>{pkg.name}</h3>
+        <p>{pkg.durationDays} ngày sử dụng</p>
+
+        <ul>
+          <li>{pkg.grammarQuota} lượt kiểm tra chính tả</li>
+          <li>{pkg.kaiwaQuota} lượt Kaiwa</li>
+          <li>{pkg.pronunQuota} lượt phát âm</li>
+        </ul>
+
+        <div className={styles.price}>
+          {(pkg.priceCents / 100).toLocaleString("vi-VN")}đ
+        </div>
+
+        {!hasActivePackage ? (
+          <Button
+            content={`Mua ${pkg.name}`}
+            onClick={() => handleCheckout(pkg.id)}
+            disabled={loadingCheckout}
+          />
+        ) : isActive ? (
+          <Button content="Đang sử dụng" disabled />
+        ) : (
+          <Button content="Không khả dụng" disabled />
+        )}
+      </div>
+    );
+  };
+
+  if (!showModal) return null;
+
   return (
-    <div className={styles.overlay} onClick={handleClose}>
-      <div
-        className={styles.modal}
-        onClick={(e) => e.stopPropagation()} // chặn bubble
-      >
+    <div className={styles.overlay}>
+      <div className={styles.modal}>
         <h2>Mua gói AI để sử dụng đầy đủ tính năng</h2>
 
         {hasActivePackage && (
@@ -118,64 +128,23 @@ export default function AiPackageModal({ onClose }) {
 
         <div className={styles.packageList}>
           {packagesStatus === "loading" && (
-            <p>Đang tải danh sách gói AI...</p>
+            <p className={styles.loading}>Đang tải gói AI...</p>
           )}
 
-          {packagesStatus === "succeeded" && packages?.length === 0 && (
-            <p>Không có gói nào khả dụng.</p>
+          {packagesStatus === "failed" && (
+            <p className={styles.error}>
+              Không thể tải danh sách gói AI. Vui lòng thử lại sau.
+            </p>
           )}
 
-          {packagesStatus !== "loading" &&
+          {packagesStatus === "succeeded" &&
             packages &&
-            packages.length > 0 &&
-            packages.map((pkg) => {
-              const isActive = activePackageId === pkg.id;
-
-              return (
-                <div
-                  key={pkg.id}
-                  className={`${styles.card} ${
-                    pkg.displayOrder === 2 ? styles.pro : ""
-                  }`}
-                >
-                  {pkg.displayOrder === 2 && (
-                    <span className={styles.best}>BEST</span>
-                  )}
-
-                  <h3>{pkg.name}</h3>
-                  <p>{pkg.durationDays} ngày sử dụng</p>
-
-                  <ul>
-                    <li>{pkg.grammarQuota} lượt kiểm tra chính tả</li>
-                    <li>{pkg.kaiwaQuota} lượt Kaiwa</li>
-                    <li>{pkg.pronunQuota} lượt phát âm</li>
-                  </ul>
-
-                  <div className={styles.price}>
-                    {pkg.priceCents.toLocaleString("vi-VN")}đ
-                  </div>
-
-                  {hasActivePackage ? (
-                    isActive ? (
-                      <Button content="Đang sử dụng" disabled />
-                    ) : (
-                      <Button content="Không khả dụng" disabled />
-                    )
-                  ) : (
-                    <Button
-                      content={
-                        loadingCheckout ? "Đang xử lý..." : `Mua ${pkg.name}`
-                      }
-                      onClick={() => handleCheckout(pkg)}
-                      disabled={loadingCheckout}
-                    />
-                  )}
-                </div>
-              );
-            })}
+            packages.map((pkg, idx) =>
+              renderPackageCard(pkg, idx === 1)
+            )}
         </div>
 
-        <button onClick={handleClose} className={styles.close}>
+        <button className={styles.close} onClick={() => dispatch(closeModal())}>
           Đóng
         </button>
       </div>

@@ -39,8 +39,14 @@ export default function AiPackageCard({
 
       {isActive ? (
         <Button content="Đang sử dụng" disabled />
+      ) : hasActivePackage ? (
+        // Đã có gói khác đang active → không cho mua gói này
+        <Button content="Không khả dụng" disabled />
       ) : (
-        <Button content={`Mua ${pkg.name}`} onClick={() => onPurchase(pkg.id)} />
+        <Button
+          content={`Mua ${pkg.name}`}
+          onClick={() => onPurchase(pkg.id)}
+        />
       )}
     </div>
   );

@@ -5,20 +5,13 @@ import { toast } from "react-toastify";
 
 /* ======================================================
    Helper: build absolute URL cho file (avatar, ... )
-   - Nếu backend trả "http://..." → dùng luôn
-   - Nếu backend trả "/files/..." → ghép vào host (bỏ /api)
 ====================================================== */
 const buildFileUrl = (path) => {
   if (!path) return null;
   if (path.startsWith("http")) return path;
 
-  // baseURL hiện tại của axios, ví dụ: "https://xxx.ngrok-free.dev/api/"
   const apiBase = api.defaults.baseURL || "";
-
-  // Bỏ phần "/api" hoặc "/api/" ở cuối
   const host = apiBase.replace(/\/api\/?$/, "");
-
-  // Kết quả: "https://xxx.ngrok-free.dev" + "/files/avatars/..." = OK
   return `${host}${path}`;
 };
 
@@ -31,7 +24,7 @@ export const fetchMe = createAsyncThunk(
     try {
       const res = await api.get("profile/me");
       return res.data?.data || {};
-    } catch {
+    } catch (err) {
       return thunkAPI.rejectWithValue("Không thể tải hồ sơ người dùng.");
     }
   }
@@ -90,15 +83,10 @@ export const uploadAvatar = createAsyncThunk(
       });
 
       const rawAvatar = res.data?.avatarUrl || res.data?.avatar_url;
-      console.log("UPLOAD RESPONSE RAW:", res.data);
-      console.log("Avatar returned by BE:", rawAvatar);
-
       toast.success(" Cập nhật ảnh đại diện thành công!");
 
-      // Trả về path raw, để reducer convert sang absolute URL
-      return rawAvatar;
+      return rawAvatar; // raw path
     } catch (err) {
-      console.log("Upload avatar error:", err);
       toast.error(" Không thể cập nhật avatar.");
       return thunkAPI.rejectWithValue("Upload avatar failed");
     }
@@ -118,7 +106,16 @@ const initialState = {
 const profileSlice = createSlice({
   name: "profile",
   initialState,
-  reducers: {},
+  reducers: {
+    // NEW: RESET PROFILE (CẦN THIẾT CHO LOGOUT)
+    resetProfile: (state) => {
+      state.data = null;
+      state.loading = false;
+      state.saving = false;
+      state.error = null;
+    },
+  },
+
   extraReducers: (builder) => {
     builder
       /* ----- FETCH PROFILE ----- */
@@ -127,8 +124,8 @@ const profileSlice = createSlice({
       })
       .addCase(fetchMe.fulfilled, (state, action) => {
         state.loading = false;
-        const u = action.payload || {};
 
+        const u = action.payload || {};
         const rawAvatar = u.avatarUrl || u.avatar_url;
 
         state.data = {
@@ -161,13 +158,11 @@ const profileSlice = createSlice({
       .addCase(updateMe.fulfilled, (state, action) => {
         state.saving = false;
         const updated = action.payload || {};
-
         const rawAvatar = updated.avatarUrl || updated.avatar_url;
 
         state.data = {
           ...(state.data || {}),
           ...updated,
-          // đảm bảo avatarUrl sau update vẫn là absolute URL
           avatarUrl:
             rawAvatar !== undefined
               ? buildFileUrl(rawAvatar)
@@ -181,7 +176,7 @@ const profileSlice = createSlice({
 
       /* ----- UPLOAD AVATAR ----- */
       .addCase(uploadAvatar.fulfilled, (state, action) => {
-        const rawAvatar = action.payload; // "/files/avatars/25/xxx.jpg"
+        const rawAvatar = action.payload;
         state.data = {
           ...(state.data || {}),
           avatarUrl: buildFileUrl(rawAvatar),
@@ -190,4 +185,5 @@ const profileSlice = createSlice({
   },
 });
 
+export const { resetProfile } = profileSlice.actions;
 export default profileSlice.reducer;

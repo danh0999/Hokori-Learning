@@ -9,7 +9,7 @@ import { toast } from "react-toastify";
 
 export default function useAiService() {
   const dispatch = useDispatch();
-  const { myPackage } = useSelector((state) => state.aiPackage);
+  const { myPackage, quota } = useSelector((state) => state.aiPackage);
 
   // Helper: đang có gói active hay không
   const hasActivePackage =
@@ -26,17 +26,25 @@ export default function useAiService() {
       if (hasActivePackage) {
         const res = await apiCall();
         // tuỳ BE: nếu cần gọi API trừ quota thủ công
-        dispatch(consumeAiServiceQuota({ serviceType: serviceCode, amount: 1 }));
+        dispatch(
+          consumeAiServiceQuota({ serviceType: serviceCode, amount: 1 })
+        );
         return res;
       }
 
       // ========== CASE B: CHƯA CÓ GÓI → CHECK QUOTA FREE/TRIAL ==========
-      const quotas = await dispatch(fetchAiQuota()).unwrap();
-      const q = quotas?.[serviceCode] || { hasQuota: false };
+      let quotasMap = quota;
+      if (!quotasMap || Object.keys(quotasMap).length === 0) {
+        quotasMap = await dispatch(fetchAiQuota()).unwrap();
+      }
+
+      const q = quotasMap?.[serviceCode] || { hasQuota: false };
 
       if (q.hasQuota) {
         const res = await apiCall();
-        dispatch(consumeAiServiceQuota({ serviceType: serviceCode, amount: 1 }));
+        dispatch(
+          consumeAiServiceQuota({ serviceType: serviceCode, amount: 1 })
+        );
         return res;
       }
 

@@ -19,6 +19,9 @@ const AiPackagePage = () => {
     (state) => state.aiPackage
   );
 
+  const hasActivePackage =
+    myPackage && myPackage.hasPackage && !myPackage.isExpired;
+
   useEffect(() => {
     dispatch(fetchAiPackages());
     dispatch(fetchMyAiPackage());
@@ -26,12 +29,22 @@ const AiPackagePage = () => {
   }, [dispatch]);
 
   const handlePurchase = (packageId) => {
+    // RULE: chỉ được có 1 gói active, không upgrade/downgrade
+    if (hasActivePackage) {
+      toast.info(
+        `Bạn đang sử dụng gói ${myPackage.packageName}. Vui lòng dùng hết hoặc đợi gói hết hạn để mua gói mới.`
+      );
+      return;
+    }
+
     dispatch(purchaseAiPackage(packageId))
       .unwrap()
       .then((checkout) => {
         if (!checkout?.paymentLink) {
           // FREE PACKAGE
-          toast.success(checkout?.description || "Gói AI đã được kích hoạt!");
+          toast.success(
+            checkout?.description || "Gói AI đã được kích hoạt!"
+          );
           dispatch(fetchMyAiPackage());
           dispatch(fetchAiQuota());
         } else {
@@ -40,14 +53,15 @@ const AiPackagePage = () => {
         }
       })
       .catch((err) => {
-        const msg = err?.message || err?.status || "Thanh toán gói AI thất bại";
+        const msg =
+          err?.message || err?.status || "Thanh toán gói AI thất bại";
         toast.error(msg);
       });
   };
 
   const renderMyPackage = () => {
     if (myPackageStatus === "loading")
-      return <p>Đang tải gói AI hiện tại...</p>;
+      return <p>Đang tải gói AI hiện tại.</p>;
     if (!myPackage || !myPackage.hasPackage)
       return <p>Bạn chưa có gói AI nào đang hoạt động.</p>;
 
@@ -76,7 +90,7 @@ const AiPackagePage = () => {
 
   const renderPackageList = () => {
     if (packagesStatus === "loading")
-      return <p>Đang tải danh sách gói AI...</p>;
+      return <p>Đang tải danh sách gói AI.</p>;
     if (!packages || packages.length === 0)
       return <p>Hiện chưa có gói AI nào.</p>;
 

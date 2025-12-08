@@ -25,8 +25,15 @@ const AISidebar = () => {
 
   // Load gói AI + quota khi sidebar mount
   useEffect(() => {
-    dispatch(fetchMyAiPackage());
-    dispatch(fetchAiQuota());
+    const load = async () => {
+      try {
+        await dispatch(fetchMyAiPackage()).unwrap();
+        await dispatch(fetchAiQuota()).unwrap();
+      } catch (err) {
+        console.error("Lỗi load AI package/quota:", err);
+      }
+    };
+    load();
   }, [dispatch]);
 
   const goToServicePage = (serviceCode) => {
@@ -82,44 +89,39 @@ const AISidebar = () => {
             className={styles.aiButton}
             containerClassName={styles.aiButtonContainer}
           />
+
+          {/* PRONUN */}
+          <Button
+            content="Kiểm tra phát âm"
+            onClick={() => handleClick("PRONUN")}
+            className={styles.aiButton}
+            containerClassName={styles.aiButtonContainer}
+          />
         </div>
       </section>
 
-      {/* =============== Thống kê học tập =============== */}
-      <section>
+      {/* =============== Thống kê / Gợi ý (decorative, giữ UI) =============== */}
+      <section className={styles.section}>
         <h3>
-          <FaChartLine /> Thống kê học tập
+          <FaChartLine /> Tổng quan học tập
         </h3>
-        <ul>
-          <li>
-            <span>Ngày học liên tiếp</span>
-            <span>7 ngày</span>
-          </li>
-          <li>
-            <span>Tổng thời gian học</span>
-            <span>24h 30m</span>
-          </li>
-          <li>
-            <span>Điểm trung bình</span>
-            <span>8.5/10</span>
-          </li>
-          <li>
-            <span>Tiến độ tổng thể</span>
-            <span>58%</span>
-          </li>
-        </ul>
+        <div className={styles.stats}>
+          <div>
+            <strong>Chuỗi ngày học</strong>
+            <p>Đang maintain streak của bạn</p>
+          </div>
+          <div>
+            <strong>JLPT Progress</strong>
+            <p>Tiến độ ôn thi JLPT N?</p>
+          </div>
+        </div>
       </section>
 
-      {/* =============== Gợi ý ôn tập =============== */}
-      <section>
+      <section className={styles.section}>
         <h3>
-          <FaLightbulb /> Gợi ý ôn tập
+          <FaLightbulb /> Gợi ý luyện tập
         </h3>
-        <div className={styles.hints}>
-          <div>
-            <strong>Kanji N4 - Bài 5</strong>
-            <p>Bạn chưa ôn tập từ 3 ngày trước</p>
-          </div>
+        <div className={styles.suggestions}>
           <div>
             <strong>Ngữ pháp て-form</strong>
             <p>AI phát hiện bạn cần luyện thêm</p>
