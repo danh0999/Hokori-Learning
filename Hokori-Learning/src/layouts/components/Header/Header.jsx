@@ -8,8 +8,11 @@ import { logoutFirebase } from "../../../redux/features/auth";
 import { UserOutlined } from "@ant-design/icons";
 import { Avatar, Dropdown, Space } from "antd";
 import { FiShoppingCart, FiBell } from "react-icons/fi";
+import { resetAiPackageState } from "../../../redux/features/aiPackageSlice";
 
 import { fetchCart } from "../../../redux/features/cartSlice";
+import { resetProfile, fetchMe } from "../../../redux/features/profileSlice";
+
 import styles from "./styles.module.scss";
 
 const {
@@ -37,13 +40,22 @@ export const Header = () => {
   const dispatch = useDispatch();
 
   // ============================
-  //  LẤY USER & PROFILE
+  // LẤY USER & PROFILE
   // ============================
-  const user = useSelector((state) => state.user); // token, role, email
-  const profile = useSelector((state) => state.profile.data); // avatar, name,...
+  const user = useSelector((state) => state.user);
+  const profile = useSelector((state) => state.profile.data);
 
   const cartItems = useSelector((state) => state.cart.items);
   const cartCount = cartItems?.length || 0;
+
+  // ============================
+  // FETCH PROFILE KHI LOGIN
+  // ============================
+  useEffect(() => {
+    if (user?.accessToken) {
+      dispatch(fetchMe());
+    }
+  }, [user, dispatch]);
 
   // ============================
   // AUTO FETCH CART WHEN LOGIN
@@ -83,11 +95,11 @@ export const Header = () => {
   const handleLogout = async () => {
     try {
       await logoutFirebase();
-      dispatch(logout());
 
-      // ============================
-      // RESET AI ANALYSE LOCAL STATE
-      // ============================
+      dispatch(logout());
+      dispatch(resetProfile()); // FIX QUAN TRỌNG
+      dispatch(resetAiPackageState());
+
       localStorage.removeItem("ai_sentence");
       localStorage.removeItem("ai_level");
       localStorage.removeItem("ai_result");
@@ -217,7 +229,6 @@ export const Header = () => {
 
         {/* ===== USER ACTIONS ===== */}
         <div className={actions}>
-          {/* Chưa đăng nhập */}
           {!user ? (
             <>
               <button className={loginBtn} onClick={() => navigate("/login")}>
