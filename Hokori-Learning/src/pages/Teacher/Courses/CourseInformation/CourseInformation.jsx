@@ -17,16 +17,42 @@ import {
   submitforapprovalCourseThunk,
   unpublishCourseThunk,
   clearTeacherCourseState,
+  // 🔽 thêm 2 hàm mới
+  fetchFlagReasonThunk,
+  resubmitFlaggedCourseThunk,
 } from "../../../../redux/features/teacherCourseSlice.js";
 
 import styles from "./styles.module.scss";
 
 const statusColor = {
   DRAFT: "default",
-  REVIEW: "warning",
+  PENDING_APPROVAL: "gold",
   PUBLISHED: "success",
   REJECTED: "error",
+  FLAGGED: "warning",
+  ARCHIVED: "default",
+  // fallback cho tên cũ nếu BE/DB còn dùng
+  REVIEW: "gold",
 };
+
+const statusLabel = {
+  DRAFT: "Draft",
+  PENDING_APPROVAL: "Pending approval",
+  PUBLISHED: "Published",
+  REJECTED: "Rejected",
+  FLAGGED: "Flagged",
+  ARCHIVED: "Archived",
+  REVIEW: "Pending approval",
+};
+
+function formatDateTime(isoString) {
+  if (!isoString) return "";
+  try {
+    return new Date(isoString).toLocaleString();
+  } catch {
+    return isoString;
+  }
+}
 
 export default function CourseInformation() {
   const { id } = useParams();
@@ -40,7 +66,11 @@ export default function CourseInformation() {
     loadingMeta,
     loadingTree,
     saving,
+    // 🔽 lấy thêm 2 state mới
+    flagInfo,
+    loadingFlagInfo,
   } = useSelector((state) => state.teacherCourse);
+
   const [activeKey, setActiveKey] = useState("basic");
   // ====== LOCAL STATE: lesson editor drawer ======
   const [lessonDrawerOpen, setLessonDrawerOpen] = useState(false);
@@ -87,6 +117,18 @@ export default function CourseInformation() {
     dispatch(fetchCourseTree(courseId)); // /detail: vừa meta vừa tree
   }, [courseId, dispatch]);
 
+  const status = currentCourseMeta?.status || "DRAFT";
+  const isRejected = status === "REJECTED";
+  const isFlagged = status === "FLAGGED";
+
+  // ====== FETCH FLAG REASON KHI STATUS = FLAGGED ======
+  useEffect(() => {
+    if (!courseId) return;
+    if (isFlagged) {
+      dispatch(fetchFlagReasonThunk(courseId));
+    }
+  }, [courseId, isFlagged, dispatch]);
+
   // ====== ACTIONS ======
   const handleSaveDraft = async () => {
     if (!courseId || !currentCourseMeta) return;
@@ -110,10 +152,16 @@ export default function CourseInformation() {
   const handleSubmitForReview = async () => {
     if (!courseId) return;
 
+    const previousStatus = status;
+
     const action = await dispatch(submitforapprovalCourseThunk(courseId));
 
     if (submitforapprovalCourseThunk.fulfilled.match(action)) {
-      message.success("Submitted for review / published");
+      if (previousStatus === "REJECTED") {
+        message.success("Course resubmitted for approval.");
+      } else {
+        message.success("Submitted for review / approval.");
+      }
       dispatch(fetchCourseTree(courseId));
     } else {
       message.error("Submit failed, please try again");
@@ -126,13 +174,34 @@ export default function CourseInformation() {
     const action = await dispatch(unpublishCourseThunk(courseId));
     if (unpublishCourseThunk.fulfilled.match(action)) {
       message.success("Unpublished");
+      dispatch(fetchCourseTree(courseId));
     } else {
       message.error("Unpublish failed, please try again");
     }
   };
 
+  const handleResubmitFlagged = async () => {
+    if (!courseId) return;
+
+    const action = await dispatch(resubmitFlaggedCourseThunk(courseId));
+
+    if (resubmitFlaggedCourseThunk.fulfilled.match(action)) {
+      message.success("Course resubmitted for moderation.");
+      dispatch(fetchCourseTree(courseId));
+    } else {
+      message.error(action.payload || "Resubmit failed, please try again.");
+    }
+  };
+
   // ====== VALIDATION ĐỂ ENABLE SUBMIT ======
   const canSubmit = useMemo(() => {
+    const isRejectedLocal = currentCourseMeta?.status === "REJECTED";
+    const isFlaggedLocal = currentCourseMeta?.status === "FLAGGED";
+
+    // Khi bị REJECTED hoặc FLAGGED → cho resubmit, không check cứng description nữa
+    if (isRejectedLocal || isFlaggedLocal) return true;
+
+    // Rule bình thường cho submit lần đầu
     const basicsDone =
       !!currentCourseMeta?.title &&
       !!currentCourseMeta?.description &&
@@ -148,7 +217,15 @@ export default function CourseInformation() {
     return basicsDone && hasLessons && pricingDone;
   }, [currentCourseMeta, currentCourseTree]);
 
-  const status = currentCourseMeta?.status || "DRAFT";
+  const submitButtonLabel =
+    status === "PENDING_APPROVAL"
+      ? "Waiting for approval"
+      : status === "REJECTED"
+      ? "Resubmit for approval"
+      : "Submit for review";
+
+  const disableSubmitButton =
+    !canSubmit || saving || status === "PENDING_APPROVAL";
 
   if (!courseId) {
     return (
@@ -160,6 +237,8 @@ export default function CourseInformation() {
       </div>
     );
   }
+
+  const hasRejectionInfo = !!currentCourseMeta?.rejectionReason;
 
   return (
     <div className={styles.wrap}>
@@ -179,28 +258,142 @@ export default function CourseInformation() {
         </div>
 
         <Space wrap>
-          <Tag color={statusColor[status] || "default"}>{status}</Tag>
+          <Tag color={statusColor[status] || "default"}>
+            {statusLabel[status] || status}
+          </Tag>
 
           <Button onClick={handleSaveDraft} loading={saving || loadingMeta}>
-            {status === "PUBLISHED" ? "Save changes" : "Save draft"}
+            {status === "PUBLISHED" ? "Save changes" : "Save "}
           </Button>
 
           {status === "PUBLISHED" ? (
             <Button danger onClick={handleUnpublish} loading={saving}>
               Unpublish
             </Button>
+          ) : isFlagged ? (
+            <Button
+              type="primary"
+              disabled={disableSubmitButton}
+              onClick={handleResubmitFlagged}
+              loading={saving}
+            >
+              Resubmit after fixing
+            </Button>
           ) : (
             <Button
               type="primary"
-              disabled={!canSubmit}
+              disabled={disableSubmitButton}
               onClick={handleSubmitForReview}
-              loading={saving}
+              loading={saving && status !== "PENDING_APPROVAL"}
             >
-              Submit for review
+              {submitButtonLabel}
             </Button>
           )}
         </Space>
       </div>
+
+      {/* REJECTION INFO BLOCK */}
+      {isRejected && hasRejectionInfo && (
+        <Card className={styles.rejectedCard}>
+          <div className={styles.rejectedHeader}>
+            <Tag color="error">Rejected</Tag>
+            <span className={styles.rejectedTitle}>
+              This course was rejected by the moderator
+            </span>
+          </div>
+
+          <div className={styles.rejectedBody}>
+            <div className={styles.rejectedReasonLabel}>Reason:</div>
+            <div className={styles.rejectedReasonText}>
+              {currentCourseMeta.rejectionReason}
+            </div>
+
+            <div className={styles.rejectedMeta}>
+              {currentCourseMeta.rejectedByUserName && (
+                <span>
+                  Moderator:{" "}
+                  <strong>{currentCourseMeta.rejectedByUserName}</strong>
+                </span>
+              )}
+              {currentCourseMeta.rejectedAt && (
+                <span>
+                  Rejected at:{" "}
+                  <strong>
+                    {formatDateTime(currentCourseMeta.rejectedAt)}
+                  </strong>
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className={styles.rejectedActions}>
+            <Space>
+              <Button onClick={() => setActiveKey("basic")}>
+                Edit basic info
+              </Button>
+              <Button
+                type="primary"
+                onClick={handleSubmitForReview}
+                disabled={disableSubmitButton}
+                loading={saving && status !== "PENDING_APPROVAL"}
+              >
+                Resubmit for approval
+              </Button>
+            </Space>
+          </div>
+        </Card>
+      )}
+
+      {/* FLAGGED INFO BLOCK */}
+      {isFlagged && (
+        <Card className={styles.flaggedCard}>
+          <div className={styles.flaggedHeader}>
+            <Tag color="warning">Flagged</Tag>
+            <span className={styles.flaggedTitle}>
+              This course was reported by learners and flagged by moderator
+            </span>
+          </div>
+
+          <div className={styles.flaggedBody}>
+            <div className={styles.flaggedReasonLabel}>Flag summary:</div>
+            <div className={styles.flaggedReasonText}>
+              {loadingFlagInfo
+                ? "Loading flag details..."
+                : flagInfo?.flaggedReason || "No detailed reason."}
+            </div>
+
+            <div className={styles.flaggedMeta}>
+              {flagInfo?.flagCount > 0 && (
+                <span>
+                  Total reports: <strong>{flagInfo.flagCount}</strong>
+                </span>
+              )}
+              {flagInfo?.latestFlagAt && (
+                <span>
+                  Latest at:{" "}
+                  <strong>{formatDateTime(flagInfo.latestFlagAt)}</strong>
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className={styles.flaggedActions}>
+            <Space>
+              <Button onClick={() => setActiveKey("curriculum")}>
+                Edit content
+              </Button>
+              <Button
+                type="primary"
+                onClick={handleResubmitFlagged}
+                disabled={disableSubmitButton}
+                loading={saving}
+              >
+                Resubmit after fixing
+              </Button>
+            </Space>
+          </div>
+        </Card>
+      )}
 
       {/* BODY TABS */}
       <Card>

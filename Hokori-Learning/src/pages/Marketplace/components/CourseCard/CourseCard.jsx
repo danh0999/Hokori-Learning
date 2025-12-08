@@ -1,13 +1,13 @@
-﻿import React from "react";
+﻿// src/pages/Marketplace/components/CourseGrid/CourseCard.jsx
+import React from "react";
 import styles from "./CourseCard.module.scss";
 import { Button } from "../../../../components/Button/Button";
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { addToCart } from "../../../../redux/features/cartSlice";
 import { FaShoppingCart } from "react-icons/fa";
 import { buildFileUrl } from "../../../../utils/fileUrl";
-
-
+import api from "../../../../configs/axios";
 
 const FALLBACK_THUMB = "https://placehold.co/600x400?text=Course+Image";
 
@@ -15,97 +15,187 @@ export default function CourseCard({ course }) {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  // ===============================
-  //  FIELD TRẢ VỀ TỪ BACKEND
-  // ===============================
+  const user = useSelector((state) => state.user);
+  const isLoggedIn = !!user;
+
+  // Lấy items từ cart trong Redux
+  const cartItems = useSelector((state) => state.cart?.items || []);
+
   const {
     id,
     title,
     subtitle,
     description,
+    level,
     priceCents,
+    discountedPriceCents,
     coverImagePath,
-    userId,        // ID giáo viên — dùng để fetch tên giáo viên sau này
-    teacherName,   // Nếu sau này BE / FE map tên giáo viên vào course object
+    teacherName,
+    enrollCount,
+    isEnrolled, // BE trả
   } = course;
 
+  // Kiểm tra course này đã nằm trong giỏ chưa
+  const isInCart = cartItems.some(
+    (item) => item.courseId === id || item.id === id
+  );
+  if (!course) return null;
   // ===============================
-  //  UI FALLBACKS
+  //  PRICE & THUMBNAIL
   // ===============================
+  const thumbnail = coverImagePath
+    ? buildFileUrl(coverImagePath)
+    : FALLBACK_THUMB;
 
-  // Thumbnail có thể cần BASE_URL từ env
-  const displayThumbnail = coverImagePath
-  ? buildFileUrl(coverImagePath)
-  : FALLBACK_THUMB;
+  const desc = subtitle || description || "Nội dung đang được cập nhật";
 
+  // BE trả priceCents là tiền VND → không chia 100
+  const effectivePrice =
+    discountedPriceCents && discountedPriceCents > 0
+      ? discountedPriceCents
+      : priceCents || 0;
 
-  // Mô tả ưu tiên subtitle > description
-  const displayDescription =
-    subtitle || description || "Nội dung đang được cập nhật";
+  const isFree = effectivePrice === 0;
 
-  // Giá
-  const displayPrice = (priceCents ?? 0).toLocaleString("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  });
+  const displayPrice = isFree
+    ? "Miễn phí"
+    : Number(effectivePrice).toLocaleString("vi-VN") + " VND";
 
-  // Giáo viên
-  const displayTeacher = teacherName || "Giáo viên đang cập nhật";
+  const originalPrice =
+    !isFree &&
+    discountedPriceCents &&
+    priceCents &&
+    discountedPriceCents < priceCents
+      ? Number(priceCents).toLocaleString("vi-VN") + " VND"
+      : null;
+
+  const teacher = teacherName || "Giáo viên đang cập nhật";
 
   // ===============================
-  //  HANDLERS
+  //  LEARN ACCESS LOGIC
   // ===============================
-  const handleNavigate = () => navigate(`/course/${id}`);
+  const canLearn = isEnrolled || (isFree && isLoggedIn);
 
-  const handleAddToCart = () => dispatch(addToCart(course));
+  const handleNavigateCourse = () => navigate(`/course/${id}`);
 
+  const handleLearn = async () => {
+    try {
+      // Nếu đã enroll → vào học luôn
+      if (isEnrolled) {
+        navigate(`/my-courses/${id}/learn`);
+        return;
+      }
+
+      // FREE + logged in → tự động enroll
+      if (isFree && isLoggedIn) {
+        await api.post(`/learner/courses/${id}/enroll`);
+        navigate(`/my-courses/${id}/learn`);
+        return;
+      }
+
+      // FREE nhưng guest → login
+      if (isFree && !isLoggedIn) {
+        navigate("/login");
+        return;
+      }
+    } catch (error) {
+      console.error("Enroll failed:", error);
+      alert("Không thể enroll vào khóa học miễn phí. Vui lòng thử lại.");
+    }
+  };
+
+  const handleLoginForFree = () => navigate("/login");
+
+  const handleAddToCart = () => {
+    // Đã sở hữu, miễn phí, hoặc đã nằm trong giỏ → không thêm nữa
+    if (canLearn || isFree || isInCart) return;
+    dispatch(addToCart(course));
+  };
+
+  // ===============================
+  //  UI
+  // ===============================
   return (
     <div className={styles.card}>
-      {/* Thumbnail */}
-      <div className={styles.thumb} onClick={handleNavigate}>
-        <img
-          src={displayThumbnail}
-          alt={title}
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-        />
+      <div className={styles.thumb} onClick={handleNavigateCourse}>
+        <img src={thumbnail} alt={title} />
+
+        {isEnrolled && <div className={styles.badgeOwned}>ĐÃ SỞ HỮU</div>}
+        {isFree && !isEnrolled && <div className={styles.badgeFree}>FREE</div>}
       </div>
 
       <div className={styles.body}>
-        {/* Title */}
-        <h3 className={styles.title} onClick={handleNavigate}>
+        <h3 className={styles.title} onClick={handleNavigateCourse}>
           {title}
         </h3>
 
-        {/* Description */}
-        <p className={styles.subtitle}>{displayDescription}</p>
+        <p className={styles.subtitle}>{desc}</p>
 
-        {/* Giá */}
-        <p className={styles.price}>{displayPrice}</p>
-
-        {/* Giáo viên */}
-        <div className={styles.teacher}>
-          <span className={styles.name}>{displayTeacher}</span>
+        <div className={styles.meta}>
+          {level && <span className={styles.chip}>Trình độ {level}</span>}
+          {typeof enrollCount === "number" && (
+            <span className={styles.chip}>{enrollCount} học viên</span>
+          )}
         </div>
 
-        {/* Actions */}
+        <div className={styles.priceRow}>
+          <span
+            className={`${styles.priceCurrent} ${
+              isFree ? styles.priceFree : ""
+            }`}
+          >
+            {displayPrice}
+          </span>
+          {originalPrice && (
+            <span className={styles.priceOld}>{originalPrice}</span>
+          )}
+        </div>
+
+        <div className={styles.teacher}>
+          <span className={styles.teacherName}>{teacher}</span>
+        </div>
+
         <div className={styles.actions}>
+          {/* nút xem thông tin course */}
           <Button
             content="Thông tin"
-            onClick={handleNavigate}
-            containerClassName={styles.actionItem}
+            onClick={handleNavigateCourse}
             className={styles.actionButton}
           />
 
-          <Button
-            content={
-              <>
-                <FaShoppingCart /> Thêm vào giỏ
-              </>
-            }
-            onClick={handleAddToCart}
-            containerClassName={styles.actionItem}
-            className={`${styles.actionButton} ${styles.cartButton}`}
-          />
+          {/* FREE + logged in → học luôn */}
+          {canLearn ? (
+            <Button
+              content="Vào học"
+              onClick={handleLearn}
+              className={`${styles.actionButton} ${styles.learnButton}`}
+            />
+          ) : isFree && !isLoggedIn ? (
+            // FREE nhưng guest → yêu cầu login
+            <Button
+              content="Đăng nhập để học miễn phí"
+              onClick={handleLoginForFree}
+              className={`${styles.actionButton} ${styles.loginButton}`}
+            />
+          ) : (
+            // Course trả phí → add to cart
+            <Button
+              content={
+                isInCart ? (
+                  "Đã thêm vào giỏ"
+                ) : (
+                  <>
+                    <FaShoppingCart /> Thêm vào giỏ
+                  </>
+                )
+              }
+              onClick={handleAddToCart}
+              disabled={isInCart}
+              className={`${styles.actionButton} ${styles.cartButton} ${
+                isInCart ? styles.cartButtonDisabled : ""
+              }`}
+            />
+          )}
         </div>
       </div>
     </div>

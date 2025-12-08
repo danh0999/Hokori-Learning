@@ -7,42 +7,82 @@ import CourseOverview from "./components/CourseOverview";
 import CourseFeedback from "./components/CourseFeedback";
 
 import { useSelector, useDispatch } from "react-redux";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
-import { fetchCourseTree } from "../../redux/features/courseSlice";
+import {
+  fetchCourseTree,
+  fetchTrialTree,
+} from "../../redux/features/courseSlice";
 
 const CourseDetail = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const { current, loading, error } = useSelector((state) => state.courses);
 
   useEffect(() => {
     if (id) {
-      dispatch(fetchCourseTree(id)); // GỌI API /api/courses/{id}/tree
+      dispatch(fetchCourseTree(id)); // /courses/{id}/tree
     }
   }, [id, dispatch]);
 
-  if (loading) return <div className="loading">Đang tải...</div>;
+  const handleTrialLearn = async () => {
+    if (!id) return;
 
+    try {
+      // 1. Lấy trial tree
+      const trial = await dispatch(fetchTrialTree(id)).unwrap();
+
+      const trialChapter = trial.chapters?.[0];
+      if (!trialChapter) {
+        alert("Khóa học này chưa cấu hình chương học thử.");
+        return;
+      }
+
+      const firstLesson = trialChapter.lessons?.[0];
+      if (!firstLesson) {
+        alert("Chưa có bài học nào trong chương học thử.");
+        return;
+      }
+
+      const lessonId = firstLesson.id;
+
+      // 2. Điều hướng sang trang trial lesson
+      navigate(`/course/${id}/trial-lesson/${lessonId}`);
+    } catch (err) {
+      console.error("Học thử thất bại:", err);
+      alert(
+        err?.message || "Không thể tải nội dung học thử, vui lòng thử lại sau."
+      );
+    }
+  };
+
+  if (loading) return <div className="loading">Đang tải...</div>;
   if (error)
     return <div className="error">Lỗi tải dữ liệu: {String(error)}</div>;
-
   if (!current)
     return <div className="loading">Không tìm thấy dữ liệu khóa học</div>;
 
-  const course = current; // đây là object tree trả từ BE
+  const course = current;
 
   return (
     <main className="course-detail">
       {/* HERO */}
-      <CourseHero course={course} />
+      <CourseHero course={course} onTrialLearn={handleTrialLearn} />
 
-      {/* OVERVIEW / CURRICULUM */}
-      <CourseOverview course={course} />
+      {/* MAIN CONTENT: Overview + Feedback song song */}
+      <section className="course-main">
+        <div className="course-main__grid container">
+          <div className="course-main__left">
+            <CourseOverview course={course} />
+          </div>
 
-      {/* FEEDBACK */}
-      <CourseFeedback course={course} />
+          <aside className="course-main__right">
+            <CourseFeedback course={course} />
+          </aside>
+        </div>
+      </section>
     </main>
   );
 };

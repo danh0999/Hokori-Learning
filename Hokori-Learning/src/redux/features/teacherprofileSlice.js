@@ -39,14 +39,23 @@ export const fetchTeacherProfile = createAsyncThunk(
     try {
       const [userRes, teacherRes] = await Promise.all([
         api.get("profile/me"),
-        api.get("profile/me/teacher"),
+        api.get("profile/me/teacher").catch(() => null), // phòng trường hợp 404
       ]);
 
-      // ---- SỬA TẠI ĐÂY ----
-      const rawUser = userRes?.data?.data || {};
+      // user luôn lấy từ /profile/me
+      const rawUser = userRes?.data?.data || userRes?.data || {};
 
-      const teacherWrapper = teacherRes?.data?.data || {};
-      const teacherRaw = teacherWrapper.teacher || teacherWrapper || {};
+      // ƯU TIÊN: lấy teacher từ /profile/me/teacher
+      let teacherRaw = {};
+      const wrapper = teacherRes?.data?.data;
+      if (wrapper) {
+        teacherRaw = wrapper.teacher || wrapper || {};
+      }
+
+      // Nếu /profile/me/teacher rỗng → fallback dùng teacher trong /profile/me
+      if (!teacherRaw || Object.keys(teacherRaw).length === 0) {
+        teacherRaw = rawUser.teacher || {};
+      }
 
       const userPart = extractUserPart(rawUser);
       const teacherPart = extractTeacherPart(teacherRaw);

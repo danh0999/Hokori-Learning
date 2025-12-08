@@ -81,6 +81,8 @@ const LoginForm = () => {
         role: safeRoles?.[0] || null, // để các chỗ cũ còn dùng được
         accessToken,
         refreshToken,
+        googlePhotoURL: profile?.photoURL,
+        firebaseUid: profile?.uid,
       };
       dispatch(login(payload));
       if (accessToken) localStorage.setItem("token", accessToken);

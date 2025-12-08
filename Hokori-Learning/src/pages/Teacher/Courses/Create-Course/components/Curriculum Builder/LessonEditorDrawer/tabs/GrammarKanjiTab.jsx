@@ -11,6 +11,7 @@ import {
   createContentThunk,
   updateContentThunk,
   updateSectionThunk,
+  deleteContentThunk, // ✅ thêm
 } from "../../../../../../../../redux/features/teacherCourseSlice.js";
 
 import styles from "../styles.module.scss";
@@ -50,15 +51,15 @@ export default function GrammarKanjiTab({
   const [videoState, setVideoState] = useState({
     file: null,
     previewUrl: null,
-    contentId: null,
-    descId: null,
+    contentId: null, // content ASSET hiện tại
+    descId: null, // content RICH_TEXT hiện tại
+    removeExisting: false, // ✅ đánh dấu khi user muốn xoá video cũ
   });
   const [videoDurationSec, setVideoDurationSec] = useState(0);
   const [saving, setSaving] = useState(false);
 
   // ============================
   // INIT FORM + VIDEO PREVIEW
-  // chỉ chạy khi lessonId / type đổi → tránh reset khi tree đổi vì vocab
   // ============================
   useEffect(() => {
     if (!lesson) return;
@@ -78,9 +79,10 @@ export default function GrammarKanjiTab({
       previewUrl: buildFileUrl(info?.assetContent?.filePath),
       contentId: info?.assetContent?.id || null,
       descId: info?.descContent?.id || null,
+      removeExisting: false, // ✅ reset flag khi đổi lesson / type
     });
     setVideoDurationSec(0);
-  }, [lesson?.id, type, form]); // ❗ không phụ thuộc sectionForType / info.*
+  }, [lesson?.id, type, form]);
 
   // ============================
   // HANDLE chọn video
@@ -91,7 +93,13 @@ export default function GrammarKanjiTab({
       if (prev.previewUrl && prev.previewUrl.startsWith("blob:")) {
         URL.revokeObjectURL(prev.previewUrl);
       }
-      return { ...prev, file, previewUrl: url };
+      return {
+        ...prev,
+        file,
+        previewUrl: url,
+        // ✅ nếu trước đó user bấm remove thì chọn file mới coi như replace luôn, không xoá content
+        removeExisting: false,
+      };
     });
     onSuccess?.("ok");
   };
@@ -140,9 +148,28 @@ export default function GrammarKanjiTab({
         return;
       }
 
-      // 3. Xử lý VIDEO (ASSET content) — chỉ nếu user chọn file mới
+      // 3. XỬ LÝ ASSET (video / hình / audio)
+      // -------------------------------------------------
+      // BE validate: mỗi GRAMMAR section chỉ có 1 primary content
+      // => ở đây luôn đảm bảo 1 content ASSET với primaryContent = true
+
+      let currentContentId = videoState.contentId;
       let filePath = info?.assetContent?.filePath || null;
 
+      // 3.1 Trường hợp user REMOVE video cũ và KHÔNG upload file mới
+      if (videoState.removeExisting && currentContentId && !videoState.file) {
+        await dispatch(
+          deleteContentThunk({
+            sectionId: section.id,
+            contentId: currentContentId,
+          })
+        ).unwrap();
+
+        currentContentId = null;
+        filePath = null;
+      }
+
+      // 3.2 Trường hợp user có chọn file mới
       if (videoState.file) {
         const uploadRes = await dispatch(
           uploadSectionFileThunk({
@@ -160,21 +187,23 @@ export default function GrammarKanjiTab({
         if (filePath) {
           const baseData = {
             contentFormat: "ASSET",
-            primaryContent: true,
+            primaryContent: true, // ✅ luôn là primary cho section này
             filePath,
             richText: null,
             quizId: null,
             flashcardSetId: null,
           };
 
-          if (videoState.contentId) {
+          if (currentContentId) {
+            // ✅ Scenario 3 - Option 2: update content với filePath mới
             await dispatch(
               updateContentThunk({
-                contentId: videoState.contentId,
+                contentId: currentContentId,
                 data: baseData,
               })
             ).unwrap();
           } else {
+            // ✅ Scenario 2: chưa có ASSET → tạo mới với primaryContent = true
             const created = await dispatch(
               createContentThunk({
                 sectionId: section.id,
@@ -185,8 +214,15 @@ export default function GrammarKanjiTab({
               })
             ).unwrap();
             const c = created.content || created;
-            setVideoState((prev) => ({ ...prev, contentId: c.id }));
+            currentContentId = c.id;
           }
+
+          // update lại local state
+          setVideoState((prev) => ({
+            ...prev,
+            contentId: currentContentId,
+            removeExisting: false,
+          }));
         }
       }
 
@@ -223,7 +259,7 @@ export default function GrammarKanjiTab({
         }
       }
 
-      // 5. Báo duration cho parent (LessonEditorDrawer)
+      // 5. Duration cho parent (LessonEditorDrawer)
       if (typeof onDurationComputed === "function") {
         const descSec = description.trim() ? DESC_BASE_SEC : 0;
         const totalSec = (videoDurationSec || 0) + descSec;
@@ -291,7 +327,7 @@ export default function GrammarKanjiTab({
         <Form.Item label={type === "GRAMMAR" ? "Grammar video" : "Kanji video"}>
           {videoState.previewUrl ? (
             <div className={styles.videoBox}>
-              <Text strong>Current video</Text>
+              <Text strong>Current media</Text>
               <br />
               <a href={videoState.previewUrl} target="_blank" rel="noreferrer">
                 {videoState.previewUrl}
@@ -303,7 +339,7 @@ export default function GrammarKanjiTab({
                     showUploadList={false}
                     customRequest={handleSelectVideo}
                   >
-                    <Button>Change video</Button>
+                    <Button>Change file</Button>
                   </Upload>
                   <Button
                     danger
@@ -312,6 +348,8 @@ export default function GrammarKanjiTab({
                         ...prev,
                         file: null,
                         previewUrl: null,
+                        // ✅ đánh dấu xoá content ASSET hiện tại
+                        removeExisting: !!prev.contentId,
                       }))
                     }
                   >
@@ -330,7 +368,7 @@ export default function GrammarKanjiTab({
                 <InboxOutlined />
               </p>
               <p className="ant-upload-text">
-                Click hoặc kéo thả file video vào đây
+                Click hoặc kéo thả file media (video / ảnh / audio) vào đây
               </p>
             </Upload.Dragger>
           )}

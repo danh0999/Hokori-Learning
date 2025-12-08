@@ -26,6 +26,7 @@ import {
   List,
   Avatar,
   Upload,
+  Image,
 } from "antd";
 import {
   IdcardOutlined,
@@ -51,6 +52,16 @@ const buildAvatarUrl = (avatarUrl) => {
 
   return rootBase + avatarUrl; // vd: http://localhost:8080 + /files/avatars/...
 };
+// Helper: build URL tuyệt đối cho file chứng chỉ
+const buildFileUrl = (fileUrl) => {
+  if (!fileUrl) return null;
+  if (fileUrl.startsWith("http")) return fileUrl;
+
+  const apiBase = api.defaults.baseURL || "";
+  const rootBase = apiBase.replace(/\/api\/?$/, "");
+
+  return rootBase + fileUrl;
+};
 
 const statusMap = {
   DRAFT: { color: "default", text: "Draft" },
@@ -62,6 +73,7 @@ const statusMap = {
 export default function TeacherProfilePage() {
   const dispatch = useDispatch();
   const profile = useSelector(selectTeacherProfile);
+  const authUser = useSelector((state) => state.user || null);
   const status = useSelector(selectTeacherProfileStatus);
   const error = useSelector(selectTeacherProfileError);
   const isApproved = useSelector(selectTeacherApproved);
@@ -83,7 +95,10 @@ export default function TeacherProfilePage() {
   const hasCertificate = (certificates?.length || 0) > 0;
   const hasValidBio = (teacher?.bio || "").trim().length >= 50;
 
-  const avatarUrl = user.avatarUrl;
+  const avatarFromProfile = user.avatarUrl;
+  const avatarFromGoogle =
+    authUser?.googlePhotoURL || authUser?.photoURL || null;
+  const avatarUrl = avatarFromProfile || avatarFromGoogle;
   const fullAvatarUrl = buildAvatarUrl(avatarUrl);
 
   const canSubmit = hasCertificate && hasValidBio;
@@ -252,9 +267,6 @@ export default function TeacherProfilePage() {
                   <div className={styles.displayName}>
                     {user.displayName || "—"}
                   </div>
-                  {teacher.headline && (
-                    <div className={styles.headline}>{teacher.headline}</div>
-                  )}
                 </div>
               </div>
 
@@ -284,7 +296,7 @@ export default function TeacherProfilePage() {
               <div className={styles.field}>
                 <label>Tình trạng xác minh</label>
                 <div>
-                  {teacher.isApproved ? "Đã xác minh" : "Chưa xác minh"}
+                  {teacher.approvalStatus ? "Đã xác minh" : "Chưa xác minh"}
                 </div>
               </div>
             </div>
@@ -351,41 +363,60 @@ export default function TeacherProfilePage() {
                 <List
                   dataSource={certificates}
                   locale={{ emptyText: "Chưa có chứng chỉ nào" }}
-                  renderItem={(item) => (
-                    <List.Item>
-                      <List.Item.Meta
-                        title={item.title}
-                        description={
-                          <>
-                            {item.credentialId && (
-                              <div>Mã: {item.credentialId}</div>
-                            )}
-                            {item.issueDate && (
-                              <div>Ngày cấp: {item.issueDate}</div>
-                            )}
-                            {item.expiryDate && (
-                              <div>Hết hạn: {item.expiryDate}</div>
-                            )}
-                          </>
-                        }
-                      />
+                  renderItem={(item) => {
+                    const certImageUrl = buildFileUrl(item.fileUrl);
 
-                      {/* HIỂN THỊ ẢNH PREVIEW NẾU TỒN TẠI */}
-                      {item.fileUrl && (
-                        <Image
-                          src={item.fileUrl}
-                          width={90}
-                          height={90}
-                          style={{
-                            borderRadius: 8,
-                            objectFit: "cover",
-                            border: "1px solid #efefef",
-                          }}
-                          // Antd Image tự có popup preview
+                    return (
+                      <List.Item>
+                        <List.Item.Meta
+                          title={item.title}
+                          description={
+                            <>
+                              {item.credentialId && (
+                                <div>Mã: {item.credentialId}</div>
+                              )}
+                              {item.issueDate && (
+                                <div>Ngày cấp: {item.issueDate}</div>
+                              )}
+                              {item.expiryDate && (
+                                <div>Hết hạn: {item.expiryDate}</div>
+                              )}
+                            </>
+                          }
                         />
-                      )}
-                    </List.Item>
-                  )}
+
+                        {certImageUrl && (
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "flex-end",
+                              gap: 8,
+                            }}
+                          >
+                            <Image
+                              src={certImageUrl}
+                              width={90}
+                              height={90}
+                              style={{
+                                borderRadius: 8,
+                                objectFit: "cover",
+                                border: "1px solid #efefef",
+                              }}
+                            />
+                            <Button
+                              size="small"
+                              onClick={() =>
+                                window.open(certImageUrl, "_blank")
+                              }
+                            >
+                              Xem
+                            </Button>
+                          </div>
+                        )}
+                      </List.Item>
+                    );
+                  }}
                 />
               )}
             </div>

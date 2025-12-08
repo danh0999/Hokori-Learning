@@ -7,6 +7,7 @@ import { logout } from "../../../redux/features/userSlice.js";
 import { logoutFirebase } from "../../../redux/features/auth.js"; // ✅ import hàm logout Firebase
 import { userDropdownMenu } from "../menu.jsx";
 import styles from "./styles.module.scss";
+import NotificationBell from "../../../components/NotificationBell/NotificationBell.jsx";
 
 const { Header } = Layout;
 
@@ -36,7 +37,7 @@ export default function RoleHeader({ role = "teacher", user }) {
   };
 
   return (
-    <Header className={styles.headerBar}>
+    <Header className={`${styles.headerBar} notification-dark`}>
       {/* Brand */}
       <div className={styles.logo} onClick={() => navigate(`/${role}`)}>
         <div className={styles.logoBox}>
@@ -49,18 +50,7 @@ export default function RoleHeader({ role = "teacher", user }) {
 
       {/* Right zone */}
       <Space size={16} className={styles.rightZone}>
-        <Dropdown
-          menu={{ items: userDropdownMenu, onClick: onUserMenuClick }}
-          trigger={["click"]}
-        >
-          <div className={styles.avatarWrap}>
-            <Avatar
-              shape="square"
-              src={user?.photoURL}
-              icon={<UserOutlined />}
-            />
-          </div>
-        </Dropdown>
+        <NotificationBell />
       </Space>
     </Header>
   );

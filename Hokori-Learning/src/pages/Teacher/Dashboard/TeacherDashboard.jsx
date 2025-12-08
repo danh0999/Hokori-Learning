@@ -216,19 +216,6 @@ export default function TeacherDashboard() {
         <Col xs={24} sm={12} md={6}>
           <Card className={styles.kpiCard}>
             <div className={styles.kpiIcon}>
-              <DollarOutlined />
-            </div>
-            <Statistic
-              title="Doanh thu "
-              value={data.monthlyRevenue}
-              suffix="Đ"
-            />
-          </Card>
-        </Col>
-
-        <Col xs={24} sm={12} md={6}>
-          <Card className={styles.kpiCard}>
-            <div className={styles.kpiIcon}>
               <MessageOutlined />
             </div>
             <Statistic title="Bình luận" value={data.newComments} />

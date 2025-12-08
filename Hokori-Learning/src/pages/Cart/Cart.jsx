@@ -11,10 +11,26 @@ import {
   removeFromCart,
   clearCartOnServer,
 } from "../../redux/features/cartSlice";
+import api from "../../configs/axios";
+
+// Helper build file URL từ filePath BE trả về
+const API_BASE_URL =
+  api.defaults.baseURL?.replace(/\/api\/?$/, "") ||
+  import.meta.env.VITE_API_BASE_URL?.replace(/\/api\/?$/, "") ||
+  "";
+
+const buildFileUrl = (filePath) => {
+  if (!filePath) return null;
+  if (/^https?:\/\//i.test(filePath)) return filePath; // đã là full URL
+  // /files/... là route BE serve file
+  return `${API_BASE_URL}/files/${filePath}`.replace(/([^:]\/)\/+/g, "$1");
+};
 
 const CartPage = () => {
   const dispatch = useDispatch();
-  const { items, status, error, cartId } = useSelector((state) => state.cart);
+  const { items, status, error, cartId, selectedSubtotal } = useSelector(
+    (state) => state.cart
+  );
 
   // ====== Load cart khi vào trang ======
   useEffect(() => {
@@ -37,14 +53,28 @@ const CartPage = () => {
 
   // ====== Chuẩn hoá data từ BE sang format FE dùng ======
   const normalizedItems = (items || []).map((item) => {
-    // BE trả: itemId, courseId, quantity, totalPrice (VND), selected, courseThumbnail, courseName, teacherName,...
-    const priceFromServer = item.totalPrice ?? item.price ?? 0; // VND (đã là tổng tiền 1 dòng)
+    // BE mới trả: itemId, courseId, quantity, totalPrice, selected,
+    // courseSlug, courseTitle, coverImagePath, teacherName,...
+    const priceFromServer = item.totalPrice ?? item.price ?? 0; // VND (tổng tiền 1 dòng)
     const priceCentsFromServer =
       item.priceCents ?? item.totalPriceCents ?? priceFromServer * 100;
 
-    const title = item.courseName || item.title || `Khóa học #${item.courseId}`;
+    const title =
+      item.courseTitle ||
+      item.courseName ||
+      item.title ||
+      `Khóa học #${item.courseId}`;
 
-    const thumbnail = item.courseThumbnail || item.thumbnail || null;
+    // Ưu tiên coverImagePath BE trả, sau đó tới các field cũ
+    const rawThumbnail =
+      item.coverImagePath ||
+      item.courseThumbnail ||
+      item.thumbnail ||
+      item.imagePath ||
+      item.image ||
+      null;
+
+    const thumbnail = buildFileUrl(rawThumbnail);
 
     return {
       cartItemId: item.itemId,
@@ -106,7 +136,11 @@ const CartPage = () => {
             </div>
 
             {/* ==== Cột phải: Order summary & checkout ==== */}
-            <OrderSummary courses={normalizedItems} cartId={cartId} />
+            <OrderSummary
+              courses={normalizedItems}
+              cartId={cartId}
+              selectedSubtotal={selectedSubtotal}
+            />
           </div>
         )}
 

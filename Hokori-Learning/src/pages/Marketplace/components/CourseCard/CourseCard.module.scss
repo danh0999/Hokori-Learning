@@ -1,199 +1,193 @@
-﻿.card {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #fff;
+﻿/* src/pages/Marketplace/components/CourseGrid/CourseCard.module.scss */
+
+.card {
+  background: #ffffff;
+  border-radius: 18px;
   overflow: hidden;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+  border: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-  transition: box-shadow 0.2s, transform 0.1s;
+  transition: transform 0.16s ease, box-shadow 0.16s ease,
+    border-color 0.16s ease;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.1);
+    border-color: #d1d5db;
+  }
 }
 
-.card:hover {
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
-  transform: translateY(-2px);
-}
-
+/* Thumbnail */
 .thumb {
-  height: 150px;
-  background: #d1d5db;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-weight: 600;
-  font-size: 14px;
+  position: relative;
+  width: 100%;
+  height: 220px;
+  background: #e5e7eb;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    bject-fit: contain; /* 👈 Quan trọng nhất */
+    object-position: center;
+    display: block;
+  }
 }
 
+/* Badges */
+.badgeOwned,
+.badgeFree {
+  position: absolute;
+  top: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.badgeOwned {
+  left: 10px;
+  background: rgba(34, 197, 94, 0.14);
+  color: #15803d;
+}
+
+.badgeFree {
+  right: 10px;
+  background: rgba(59, 130, 246, 0.16);
+  color: #1d4ed8;
+}
+
+/* Body */
 .body {
-  padding: 14px;
+  padding: 14px 14px 16px;
   display: flex;
   flex-direction: column;
-  flex-grow: 1;
+  gap: 6px;
 }
 
+/* Title & description */
 .title {
-  margin: 0 0 6px;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: #111827;
+  margin: 0;
+  line-height: 1.35;
 }
 
-.teacher {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 8px;
-}
-
-.teacher img {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-}
-
-.name {
+.subtitle {
+  margin: 2px 0 0;
   font-size: 13px;
   color: #6b7280;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* 2 dòng */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.check {
-  font-size: 12px;
-  color: #9ca3af;
-}
-
+/* Meta chips */
 .meta {
+  margin-top: 4px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.badge {
-  background: #f3f4f6;
-  padding: 2px 6px;
-  font-size: 12px;
-  border-radius: 4px;
-  color: #374151;
-}
-
-.price {
-  font-weight: 600;
-  font-size: 15px;
-  color: #111827;
-}
-
-.stats {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: #6b7280;
-  margin-bottom: 8px;
-}
-
-.muted {
-  color: #9ca3af;
-}
-
-.chips {
-  display: flex;
-  gap: 6px;
   flex-wrap: wrap;
-  margin-bottom: 12px;
+  gap: 6px;
 }
 
 .chip {
-  background: #f3f4f6;
-  color: #374151;
   font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #6b7280;
 }
 
-.actions {
-  margin-top: auto;
+/* Price */
+.priceRow {
+  margin-top: 6px;
   display: flex;
+  align-items: baseline;
   gap: 8px;
 }
 
-.actionItem {
-  flex: 1;
-  margin: 0 !important;
+.priceCurrent {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.priceFree {
+  color: #16a34a;
+}
+
+.priceOld {
+  font-size: 12px;
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+
+/* Teacher */
+.teacher {
+  margin-top: 2px;
+}
+
+.teacherName {
+  font-size: 13px;
+  color: #4b5563;
+}
+
+/* Actions (buttons) */
+.actions {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .actionButton {
   width: 100%;
+  font-size: 13px;
+  font-weight: 600;
 }
 
-/* === Nút “Thêm vào giỏ hàng” (kiểu secondary trắng viền xám) === */
-.cartButton {
-  background: #fff;
-  border: 1px solid #d1d5db;
-  color: #374151;
-  font-weight: 500;
-  transition: background 0.2s ease;
+/* Nút primary/secondary tuỳ flow */
+.learnButton {
+  background: #22c55e !important;
+  color: #ffffff !important;
 
   &:hover {
-    background: #f9fafb;
-  }
-
-  i {
-    margin-right: 6px;
+    background: #16a34a !important;
   }
 }
-.actions {
-  margin-top: auto;
-  display: flex;
-  gap: 8px;
-}
 
-.actionItem {
-  flex: 1;
-  margin: 0 !important;
-}
-
-/* === Nút cơ bản dùng chung === */
-.actionButton,
-.cartButton {
-  width: 100%;
-  height: 42px;
-  font-size: 14px;
-  
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  line-height: 1.2;
-  box-sizing: border-box;
-}
-
-/* === Nút “Xem chi tiết khóa học” (Primary) === */
-.actionButton {
-  background: #2563eb;
-  color: #fff;
-  border: none;
+.loginButton {
+  background: #e0edff !important;
+  color: #1d4ed8 !important;
 
   &:hover {
-    background: #1d4ed8;
+    background: #c7d2fe !important;
   }
 }
 
-/* === Nút “Thêm vào giỏ hàng” (Secondary) === */
 .cartButton {
-  background: #fff;
-  border: 1px solid #d1d5db;
-  color: #374151;
+  background: #2563eb !important;
+  color: #ffffff !important;
 
   &:hover {
-    background: #f9fafb;
+    background: #1d4ed8 !important;
+  }
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+  .thumb {
+    height: 150px;
   }
 
-  svg,
-  i {
-    margin-right: 6px;
+  .body {
+    padding: 12px 12px 14px;
   }
 }
