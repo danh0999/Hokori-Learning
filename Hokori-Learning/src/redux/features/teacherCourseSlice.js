@@ -73,10 +73,15 @@ export const uploadCourseCoverThunk = createAsyncThunk(
 
       const res = await api.post(
         `teacher/courses/${courseId}/cover-image`,
-        formData
+        formData,
+        {
+          // ⚠️ override Content-Type cho request này
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
 
-      // BE thường sẽ trả về Course đã được cập nhật coverImagePath
       return res.data;
     } catch (err) {
       return rejectWithValue(getError(err));
@@ -126,6 +131,33 @@ export const unpublishCourseThunk = createAsyncThunk(
     try {
       const res = await api.put(`teacher/courses/${courseId}/unpublish`);
       return res.data;
+    } catch (err) {
+      return rejectWithValue(getError(err));
+    }
+  }
+);
+// GET teacher/courses/{id}/flag-reason
+export const fetchFlagReasonThunk = createAsyncThunk(
+  "teacherCourse/fetchFlagReason",
+  async (courseId, { rejectWithValue }) => {
+    try {
+      const res = await api.get(`teacher/courses/${courseId}/flag-reason`);
+      const body = res.data;
+      return body?.data ?? body;
+    } catch (err) {
+      return rejectWithValue(getError(err));
+    }
+  }
+);
+
+// PUT teacher/courses/{id}/resubmit  (course FLAGGED → PENDING_APPROVAL)
+export const resubmitFlaggedCourseThunk = createAsyncThunk(
+  "teacherCourse/resubmitFlaggedCourse",
+  async (courseId, { rejectWithValue }) => {
+    try {
+      const res = await api.put(`teacher/courses/${courseId}/resubmit`);
+      const body = res.data;
+      return body?.data ?? body;
     } catch (err) {
       return rejectWithValue(getError(err));
     }
@@ -339,7 +371,13 @@ export const uploadSectionFileThunk = createAsyncThunk(
 
       const res = await api.post(
         `teacher/courses/sections/${sectionId}/files`,
-        formData
+        formData,
+        {
+          // ⚠️ override Content-Type cho request upload
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
 
       return { sectionId, ...res.data };
@@ -428,7 +466,8 @@ const initialState = {
   loadingMeta: false,
   loadingTree: false,
   saving: false,
-
+  flagInfo: null,
+  loadingFlagInfo: false,
   error: null,
 };
 
@@ -585,6 +624,30 @@ const teacherCourseSlice = createSlice({
         if (idx !== -1) state.list[idx] = updated;
       })
       .addCase(unpublishCourseThunk.fulfilled, (state, action) => {
+        const updated = action.payload;
+        state.currentCourseMeta = updated;
+        const idx = state.list.findIndex((c) => c.id === updated.id);
+        if (idx !== -1) state.list[idx] = updated;
+      })
+
+      // 🔽 FLAG REASON
+      .addCase(fetchFlagReasonThunk.pending, (state) => {
+        state.loadingFlagInfo = true;
+        state.flagInfo = null;
+        state.error = null;
+      })
+      .addCase(fetchFlagReasonThunk.fulfilled, (state, action) => {
+        state.loadingFlagInfo = false;
+        state.flagInfo = action.payload;
+      })
+      .addCase(fetchFlagReasonThunk.rejected, (state, action) => {
+        state.loadingFlagInfo = false;
+        state.flagInfo = null;
+        state.error = action.payload;
+      })
+
+      // 🔽 RESUBMIT FLAGGED
+      .addCase(resubmitFlaggedCourseThunk.fulfilled, (state, action) => {
         const updated = action.payload;
         state.currentCourseMeta = updated;
         const idx = state.list.findIndex((c) => c.id === updated.id);

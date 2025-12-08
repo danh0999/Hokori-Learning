@@ -34,8 +34,22 @@ api.interceptors.request.use(
     // Bypass ngrok warning
     config.headers["ngrok-skip-browser-warning"] = "true";
     config.headers["Accept"] = "application/json";
-    if (!config.headers["Content-Type"]) {
-      config.headers["Content-Type"] = "application/json";
+
+    /* -------------------------------------------------
+       FIX QUAN TRỌNG: KHÔNG SET Content-Type CHO FormData
+    ---------------------------------------------------- */
+    const isFormData = config.data instanceof FormData;
+
+    if (isFormData) {
+      // ❗ Nếu là FormData → để browser tự set boundary
+      if (config.headers["Content-Type"]) {
+        delete config.headers["Content-Type"];
+      }
+    } else {
+      // ❗ Chỉ set nếu request không tự set Content-Type
+      if (!config.headers["Content-Type"]) {
+        config.headers["Content-Type"] = "application/json";
+      }
     }
 
     /* -----------------------------------------

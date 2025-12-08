@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import styles from "./OrderSummary.module.scss";
 import { checkout } from "../../../services/paymentService";
 
-const OrderSummary = ({ courses = [], cartId }) => {
+const OrderSummary = ({ courses = [], cartId, selectedSubtotal }) => {
   const navigate = useNavigate();
 
   // Chỉ tính các item đang selected
@@ -13,14 +13,21 @@ const OrderSummary = ({ courses = [], cartId }) => {
     [courses]
   );
 
-  const subtotal = useMemo(
+  // Subtotal từ BE (ưu tiên) hoặc tính local fallback
+  const computedSubtotal = useMemo(
     () =>
       selectedCourses.reduce((sum, c) => {
-        const price = Number(c.price) || 0; // đã là tổng tiền của dòng
+        const price = Number(c.price) || 0;
         return sum + price;
       }, 0),
     [selectedCourses]
   );
+
+  // nếu BE gửi selectedSubtotal thì dùng, không thì dùng computedSubtotal
+  const subtotal =
+    typeof selectedSubtotal === "number"
+      ? selectedSubtotal
+      : Number(selectedSubtotal || 0) || computedSubtotal;
 
   const [code, setCode] = useState("");
   const [discountRate, setDiscountRate] = useState(0); // ví dụ 0.1 = 10%

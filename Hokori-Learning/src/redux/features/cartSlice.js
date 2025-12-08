@@ -8,6 +8,7 @@ const initialState = {
   status: "idle",
   error: null,
   cartId: null,
+  selectedSubtotal: 0,
 };
 
 /* ======================================================
@@ -171,24 +172,27 @@ const cartSlice = createSlice({
     const setItemsFromPayload = (state, action) => {
       state.status = "succeeded";
 
-      const res = action.payload;
+      const res = action.payload; // { success, message, data, meta, timestamp }
 
       if (!res || !res.data) {
         state.items = [];
         state.cartId = null;
+        state.selectedSubtotal = 0;
         return;
       }
 
-      const items = res.data.items;
-      const cid = res.data.id ?? res.data.cartId ?? null;
+      const data = res.data; // { cartId, items, selectedSubtotal }
 
-      if (Array.isArray(items)) {
-        state.items = items;
-      } else {
-        state.items = [];
-      }
+      const items = data.items;
+      const cid = data.cartId ?? data.id ?? null;
+      const selectedSubtotal = data.selectedSubtotal;
 
+      state.items = Array.isArray(items) ? items : [];
       state.cartId = cid;
+      state.selectedSubtotal =
+        typeof selectedSubtotal === "number"
+          ? selectedSubtotal
+          : Number(selectedSubtotal) || 0;
     };
 
     builder

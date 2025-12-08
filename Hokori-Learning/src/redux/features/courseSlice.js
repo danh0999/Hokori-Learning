@@ -44,6 +44,60 @@ export const fetchCourseTree = createAsyncThunk(
 );
 
 // ========================================================================
+//  FETCH TRIAL TREE — GET /api/courses/{id}/trial-tree
+// ========================================================================
+export const fetchTrialTree = createAsyncThunk(
+  "courses/fetchTrialTree",
+  async (id, { rejectWithValue }) => {
+    try {
+      const res = await api.get(`courses/${id}/trial-tree`);
+      return res.data;
+    } catch (err) {
+      console.error("❌ Error fetching trial tree:", err);
+      return rejectWithValue(
+        err.response?.data?.message || "Không thể tải nội dung học thử."
+      );
+    }
+  }
+);
+
+// ========================================================================
+//  FETCH TRIAL LESSON DETAIL — GET /api/courses/lessons/{lessonId}/trial-detail
+// ========================================================================
+export const fetchTrialLessonDetail = createAsyncThunk(
+  "courses/fetchTrialLessonDetail",
+  async (lessonId, { rejectWithValue }) => {
+    try {
+      const res = await api.get(`courses/lessons/${lessonId}/trial-detail`);
+      return res.data;
+    } catch (err) {
+      console.error("❌ Error fetching trial lesson detail:", err);
+      return rejectWithValue(
+        err.response?.data?.message || "Không thể tải bài học thử."
+      );
+    }
+  }
+);
+
+// ========================================================================
+//  FETCH TRIAL LESSON CONTENTS — GET /api/courses/lessons/{lessonId}/trial-contents
+// ========================================================================
+export const fetchTrialLessonContents = createAsyncThunk(
+  "courses/fetchTrialLessonContents",
+  async (lessonId, { rejectWithValue }) => {
+    try {
+      const res = await api.get(`courses/lessons/${lessonId}/trial-contents`);
+      return res.data;
+    } catch (err) {
+      console.error("❌ Error fetching trial contents:", err);
+      return rejectWithValue(
+        err.response?.data?.message || "Không thể tải nội dung học thử."
+      );
+    }
+  }
+);
+
+// ========================================================================
 //  SLICE
 // ========================================================================
 const courseSlice = createSlice({
@@ -53,6 +107,9 @@ const courseSlice = createSlice({
     current: null,
     loading: false,
     error: null,
+    trialTree: null,
+    trialLesson: null,
+    trialContents: [],
   },
 
   reducers: {
@@ -92,6 +149,56 @@ const courseSlice = createSlice({
         state.current = action.payload; // full detail
       })
       .addCase(fetchCourseTree.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // ===========================
+      // TRIAL TREE
+      // ===========================
+      .addCase(fetchTrialTree.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.trialTree = null;
+      })
+      .addCase(fetchTrialTree.fulfilled, (state, action) => {
+        state.loading = false;
+        state.trialTree = action.payload;
+      })
+      .addCase(fetchTrialTree.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // ===========================
+      // TRIAL LESSON DETAIL
+      // ===========================
+      .addCase(fetchTrialLessonDetail.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.trialLesson = null;
+      })
+      .addCase(fetchTrialLessonDetail.fulfilled, (state, action) => {
+        state.loading = false;
+        state.trialLesson = action.payload;
+      })
+      .addCase(fetchTrialLessonDetail.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // ===========================
+      // TRIAL LESSON CONTENTS
+      // ===========================
+      .addCase(fetchTrialLessonContents.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.trialContents = [];
+      })
+      .addCase(fetchTrialLessonContents.fulfilled, (state, action) => {
+        state.loading = false;
+        state.trialContents = action.payload;
+      })
+      .addCase(fetchTrialLessonContents.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

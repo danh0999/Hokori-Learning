@@ -85,6 +85,7 @@ export default function JlptTestBuilderPage() {
 
   const isTeacherRoute = location.pathname.startsWith("/teacher");
   const basePath = isTeacherRoute ? "/teacher" : "/moderator";
+
   const {
     testsByEvent = {},
     questionsByTest = {},
@@ -110,11 +111,11 @@ export default function JlptTestBuilderPage() {
 
   const [teacherApprovalStatus, setTeacherApprovalStatus] = useState(null);
   const [checkingTeacher, setCheckingTeacher] = useState(isTeacherRoute);
-
   const [editQuestionForm] = Form.useForm();
   const [createQuestionForm] = Form.useForm();
 
   const tests = testsByEvent[eventId] || [];
+
   const questions = selectedTestId ? questionsByTest[selectedTestId] || [] : [];
 
   const currentTest =
@@ -248,7 +249,10 @@ export default function JlptTestBuilderPage() {
       if (res.meta.requestStatus === "fulfilled") {
         message.success("Đã xoá JLPT Test");
         setEditingTest(null);
-        setSelectedTestId(null);
+        if (selectedTestId === testId) {
+          setSelectedTestId(null);
+        }
+        // Gọi lại API để chắc chắn sync với BE
         dispatch(fetchTestsByEventThunk(eventId));
       }
     });
@@ -608,6 +612,7 @@ export default function JlptTestBuilderPage() {
 
     return null;
   })();
+
   useEffect(() => {
     // Chỉ xử lý khi đang ở tab Listening
     if (activeTab === "LISTENING" && testAudio?.filePath) {
@@ -616,6 +621,29 @@ export default function JlptTestBuilderPage() {
       });
     }
   }, [activeTab, testAudio?.filePath, createQuestionForm, selectedTestId]);
+
+  // NEW: Validate đủ câu hỏi cho các tab & hoàn tất
+  const handleFinishBuildTest = () => {
+    if (!selectedTestId) {
+      message.warning("Hãy chọn một JLPT Test trước khi hoàn tất.");
+      return;
+    }
+
+    const missingTypes = QUESTION_TYPES.filter(
+      (type) => (byType[type] || []).length === 0
+    );
+
+    if (missingTypes.length > 0) {
+      const labels = missingTypes.map((t) => QUESTION_TYPE_LABEL[t]).join(", ");
+      message.error(
+        `Đề JLPT hiện còn thiếu câu hỏi cho các phần: ${labels}. Vui lòng bổ sung trước khi hoàn tất.`
+      );
+      return;
+    }
+
+    message.success("Đề JLPT đã đầy đủ câu hỏi cho 4 kỹ năng.");
+    navigate(`${basePath}/jlptevents`);
+  };
 
   // ===== TABS =====
   const tabItems = QUESTION_TYPES.map((type) => {
@@ -1046,6 +1074,14 @@ export default function JlptTestBuilderPage() {
             disabled={!selectedTestId}
           >
             Bulk Import câu hỏi
+          </Button>
+          {/* NEW: nút Hoàn tất */}
+          <Button
+            type="primary"
+            onClick={handleFinishBuildTest}
+            disabled={!selectedTestId || loadingQuestions}
+          >
+            Hoàn tất
           </Button>
         </Space>
       </div>

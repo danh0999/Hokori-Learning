@@ -17,6 +17,8 @@ import aiPackageReducer from "./features/aiPackageSlice.js";
 import jlptLearnerReducer from "./features/jlptLearnerSlice.js";
 
 import quizAttemptreducer from "./features/quizAttemptSlice.js";
+import moderatorCourseReducer from "./features/moderatorCourseSlice.js";
+import notificationReducer from "./features/notificationSlice.js";
 
 const rootReducer = combineReducers({
   user: userReducer,
@@ -36,6 +38,8 @@ const rootReducer = combineReducers({
   progress: progressSlice,
   wallet: walletReducer,
   jlptModerator: jlptModeratorReducer,
+  moderatorCourse: moderatorCourseReducer,
+  notifications: notificationReducer,
 });
 
 export default rootReducer;

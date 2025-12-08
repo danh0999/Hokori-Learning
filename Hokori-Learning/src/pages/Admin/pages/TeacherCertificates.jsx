@@ -3,7 +3,16 @@ import React, { useEffect, useState } from "react";
 import s from "./TeacherCertificates.module.scss";
 import { toast } from "react-toastify";
 import api from "../../../configs/axios.js";
+// Helper: build absolute URL cho file chứng chỉ
+const buildFileUrl = (fileUrl) => {
+  if (!fileUrl) return null;
+  if (fileUrl.startsWith("http")) return fileUrl;
 
+  const apiBase = api.defaults.baseURL || "";
+  const rootBase = apiBase.replace(/\/api\/?$/, "");
+
+  return rootBase + fileUrl; // ví dụ: https://api.hokori-backend.org + /files/certificates/4/xxx.jpg
+};
 // =====================================================
 // 📌 Modal xem chứng chỉ chi tiết
 // =====================================================
@@ -76,6 +85,28 @@ const ViewModal = ({ open, data, onClose }) => {
                       <p>
                         <strong>Ghi chú:</strong> {item.note}
                       </p>
+                    )}
+                    {item.fileUrl && (
+                      <div className={s.certImageBlock}>
+                        <img
+                          src={buildFileUrl(item.fileUrl)}
+                          alt={item.title || "Certificate image"}
+                          className={s.certImage}
+                        />
+                        <button
+                          type="button"
+                          className={s.btnSmall}
+                          onClick={() =>
+                            window.open(
+                              buildFileUrl(item.fileUrl),
+                              "_blank",
+                              "noopener"
+                            )
+                          }
+                        >
+                          Xem ảnh
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))}

@@ -14,6 +14,7 @@ import { fetchCart } from "../../../redux/features/cartSlice";
 import { resetProfile, fetchMe } from "../../../redux/features/profileSlice";
 
 import styles from "./styles.module.scss";
+import NotificationBell from "../../../components/NotificationBell/NotificationBell";
 
 const {
   header,
@@ -132,7 +133,7 @@ export const Header = () => {
   ];
 
   return (
-    <header className={header}>
+    <header className={`${header} notification-light`}>
       <div className={container}>
         {/* ===== LOGO ===== */}
         <div className={logo} onClick={() => navigate("/")}>
@@ -294,32 +295,7 @@ export const Header = () => {
               </div>
 
               {/* Notification */}
-              <div
-                style={{
-                  position: "relative",
-                  cursor: "pointer",
-                  transition: "transform 0.2s ease",
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.transform = "scale(1.1)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.transform = "scale(1.0)")
-                }
-              >
-                <FiBell size={21} color="#444" />
-                <span
-                  style={{
-                    position: "absolute",
-                    top: -2,
-                    right: -2,
-                    width: "8px",
-                    height: "8px",
-                    backgroundColor: "#ef4444",
-                    borderRadius: "50%",
-                  }}
-                />
-              </div>
+              <NotificationBell />
 
               {/* Avatar */}
               <Dropdown

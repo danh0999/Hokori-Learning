@@ -18,6 +18,7 @@ import {
   selectTeacherProfile,
   selectUpdatingUser,
   selectUpdatingTeacher,
+  fetchTeacherProfile,
 } from "../../../../redux/features/teacherprofileSlice.js";
 import { toast } from "react-toastify";
 
@@ -87,6 +88,7 @@ export default function ProfileEditModal({ open, onClose }) {
       const okTeacher = resTeacher.meta.requestStatus === "fulfilled";
 
       if (okUser && okTeacher) {
+        await dispatch(fetchTeacherProfile());
         toast.success("Cập nhật hồ sơ thành công!");
         onClose?.();
       } else {

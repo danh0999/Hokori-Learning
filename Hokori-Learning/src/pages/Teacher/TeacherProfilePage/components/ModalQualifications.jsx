@@ -25,6 +25,16 @@ import {
 import { toast } from "react-toastify";
 import api from "../../../../configs/axios";
 
+// Helper: build absolute URL cho file chứng chỉ
+const buildFileUrl = (fileUrl) => {
+  if (!fileUrl) return null;
+  if (fileUrl.startsWith("http")) return fileUrl;
+
+  const apiBase = api.defaults.baseURL || "";
+  const rootBase = apiBase.replace(/\/?$/, ""); // bỏ đuôi /api nếu có
+
+  return rootBase + fileUrl;
+};
 export default function ModalCertificates({ open, onClose, locked = false }) {
   const [form] = Form.useForm();
   const dispatch = useDispatch();
@@ -67,12 +77,12 @@ export default function ModalCertificates({ open, onClose, locked = false }) {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      // BE trả fileUrl, filename, mimeType, fileSizeBytes, storageProvider
-      setUploadedMeta(res.data);
+      // BE trả trong res.data.data
+      const meta = res.data?.data;
+      setUploadedMeta(meta);
 
-      // dùng luôn fileUrl BE trả về cho preview (ổn định hơn)
-      if (res.data?.fileUrl) {
-        setPreviewUrl(res.data.fileUrl);
+      if (meta?.fileUrl) {
+        setPreviewUrl(buildFileUrl(meta.fileUrl));
       }
 
       toast.success("Upload ảnh chứng chỉ thành công!");
@@ -97,7 +107,7 @@ export default function ModalCertificates({ open, onClose, locked = false }) {
       note: values.note || null,
 
       fileUrl: uploadedMeta?.fileUrl || null,
-      filename: uploadedMeta?.filename || null,
+      fileName: uploadedMeta?.fileName || null,
       mimeType: uploadedMeta?.mimeType || null,
       fileSizeBytes: uploadedMeta?.fileSizeBytes || null,
       storageProvider: uploadedMeta?.storageProvider || null,
@@ -174,7 +184,7 @@ export default function ModalCertificates({ open, onClose, locked = false }) {
     if (item.fileUrl) {
       setUploadedMeta({
         fileUrl: item.fileUrl,
-        filename: item.filename,
+        fileName: item.fileName,
         mimeType: item.mimeType,
         fileSizeBytes: item.fileSizeBytes,
         storageProvider: item.storageProvider,

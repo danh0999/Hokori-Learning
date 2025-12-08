@@ -72,6 +72,8 @@ import ModeratorDashboard from "../pages/Moderator/ModDashboard/ModeratorDashboa
 import Unauthorized from "../pages/authen/components/Unauthorized/Unauthorized";
 import Review from "../pages/JLPTTest/Review";
 import ModeratorPolicies from "../pages/Moderator/ModPolicies/ModPolicies";
+import CourseTrialLesson from "../pages/CourseDetail/CourseTrialLesson/CourseTrialLesson";
+import FlaggedCoursesPage from "../pages/Moderator/FlaggedCoursesPage/FlaggedCoursesPage";
 
 const routes = [
   // ============================
@@ -92,6 +94,10 @@ const routes = [
       { index: true, element: <Home /> },
       { path: "marketplace", element: <Marketplace /> },
       { path: "course/:id", element: <CourseDetail /> },
+      {
+        path: "course/:id/trial-lesson/:lessonId",
+        element: <CourseTrialLesson />,
+      },
       { path: "about", element: <AboutPage /> },
       { path: "contact", element: <Contact /> },
       { path: "information", element: <Information /> },
@@ -140,6 +146,12 @@ const routes = [
           {
             path: "course/:courseId/lesson/:lessonId/quiz/:quizId",
             element: <QuizPage />,
+          },
+
+          //===flow trail chaper====
+          {
+            path: "course/:id/trial-lesson/:lessonId",
+            element: <CourseTrialLesson />,
           },
         ],
       },
@@ -212,6 +224,7 @@ const routes = [
             path: "courses/:courseId/review",
             element: <CourseReviewPage />,
           },
+          { path: "flags", element: <FlaggedCoursesPage /> },
           { path: "jlptevents", element: <JlptEventsPage /> },
           { path: "policies", element: <ModeratorPolicies /> },
           { path: "*", element: <ErrorPage /> },

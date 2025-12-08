@@ -1,0 +1,111 @@
+.notification-bell {
+  cursor: pointer;
+  .notification-bell__icon {
+    font-size: 20px;
+  }
+}
+
+.notification-dropdown {
+  width: 360px;
+  max-height: 420px;
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+
+  &__header {
+    padding: 0 16px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #f0f0f0;
+    font-weight: 600;
+  }
+
+  &__loading,
+  &__empty {
+    padding: 16px;
+    text-align: center;
+    font-size: 13px;
+    color: #888;
+  }
+
+  &__list {
+    padding: 8px 0;
+    overflow-y: auto;
+  }
+
+  &__item {
+    display: flex;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+
+    &:hover {
+      background: #f5f5f5;
+    }
+
+    &--unread {
+      background: #e6f7ff;
+      .notification-dropdown__title {
+        font-weight: 600;
+      }
+    }
+  }
+
+  &__icon {
+    margin-right: 8px;
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  &__content {
+    flex: 1;
+  }
+
+  &__title {
+    font-size: 13px;
+  }
+
+  &__message {
+    font-size: 12px;
+    color: #555;
+    margin-top: 2px;
+    white-space: pre-line; // để xuống dòng lý do từ BE
+  }
+
+  &__time {
+    font-size: 11px;
+    color: #999;
+    margin-top: 2px;
+  }
+}
+/* ================================
+   AUTO THEME FOR NOTIFICATION ICON
+   ================================ */
+
+/* RoleHeader – nền tối → icon sáng */
+.notification-dark .notification-bell__icon {
+  color: #ffffff !important;
+}
+
+/* Header – nền sáng → icon tối */
+.notification-light .notification-bell__icon {
+  color: #1f1f1f !important;
+}
+
+/* Badge dot cũng tự đổi cho đẹp */
+.notification-dark .ant-badge-count {
+  background: #ff7875 !important;
+}
+
+.notification-light .ant-badge-count {
+  background: #f5222d !important;
+}
+
+/* Hover đẹp hơn trên nền tối */
+.notification-dark .notification-bell:hover {
+  filter: brightness(1.2);
+}

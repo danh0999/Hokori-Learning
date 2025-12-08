@@ -209,21 +209,26 @@ const jlptModeratorSlice = createSlice({
       })
 
       // delete test
+      // delete test
       .addCase(deleteJlptTestThunk.fulfilled, (state, action) => {
         const deletedTestId = action.payload;
 
-        Object.keys(state.testsByEvent).forEach((eventId) => {
+        // Xoá test khỏi từng event
+        Object.keys(state.testsByEvent || {}).forEach((eventId) => {
           const list = state.testsByEvent[eventId] || [];
           state.testsByEvent[eventId] = list.filter(
-            (t) => t.id !== deletedTestId
+            (t) => String(t.id) !== String(deletedTestId)
           );
         });
 
-        if (state.questionsByTest[deletedTestId]) {
+        // Xoá cache câu hỏi & audio của test đó (check null trước)
+        if (state.questionsByTest) {
           delete state.questionsByTest[deletedTestId];
+          delete state.questionsByTest[String(deletedTestId)];
         }
-        if (state.audioByTest[deletedTestId]) {
+        if (state.audioByTest) {
           delete state.audioByTest[deletedTestId];
+          delete state.audioByTest[String(deletedTestId)];
         }
       })
 
@@ -259,6 +264,8 @@ const jlptModeratorSlice = createSlice({
         const updated = action.payload;
         const testId = updated.testId;
 
+        if (!testId || !state.questionsByTest[testId]) return;
+
         state.questionsByTest[testId] = state.questionsByTest[testId].map((q) =>
           q.id === updated.id ? updated : q
         );
@@ -267,6 +274,8 @@ const jlptModeratorSlice = createSlice({
       // delete question
       .addCase(deleteJlptQuestionThunk.fulfilled, (state, action) => {
         const { testId, questionId } = action.payload;
+
+        if (!state.questionsByTest[testId]) return;
 
         state.questionsByTest[testId] = state.questionsByTest[testId].filter(
           (q) => q.id !== questionId
