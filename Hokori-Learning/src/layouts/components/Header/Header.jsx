@@ -174,10 +174,18 @@ export const Header = () => {
                 <NavLink to="/marketplace" className={dropdownItem}>
                   Tất cả khóa học
                 </NavLink>
-                <NavLink to="/my-courses" className={dropdownItem}>
+                <NavLink
+                  to={user ? "/my-courses" : "/login?redirect=/my-courses"}
+                  className={dropdownItem}
+                >
                   Khóa học của tôi
                 </NavLink>
-                <NavLink to="/my-flashcards" className={dropdownItem}>
+                <NavLink
+                  to={
+                    user ? "/my-flashcards" : "/login?redirect=/my-flashcards"
+                  }
+                  className={dropdownItem}
+                >
                   Flashcard của tôi
                 </NavLink>
               </div>
@@ -245,7 +253,10 @@ export const Header = () => {
             <Space size={24} align="center">
               {/* Cart */}
               <div
-                onClick={() => navigate("/cart")}
+                onClick={() => {
+                  if (!user) return navigate("/login?redirect=/cart");
+                  navigate("/cart");
+                }}
                 style={{
                   position: "relative",
                   cursor: "pointer",

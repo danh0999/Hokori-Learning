@@ -16,13 +16,9 @@ import { toast } from "react-toastify";
 export default function AiPackageModal() {
   const dispatch = useDispatch();
 
-  const {
-    showModal,
-    packages,
-    packagesStatus,
-    myPackage,
-    checkoutStatus,
-  } = useSelector((state) => state.aiPackage);
+  const user = useSelector((state) => state.user);
+  const { showModal, packages, packagesStatus, myPackage, checkoutStatus } =
+    useSelector((state) => state.aiPackage);
 
   const loadingCheckout = checkoutStatus === "loading";
 
@@ -33,16 +29,64 @@ export default function AiPackageModal() {
     hasActivePackage && (myPackage.packageId || myPackage.id || null);
 
   /* ============================================================
-     Fetch fresh data khi modal mở
+     Hooks phải gọi KHÔNG điều kiện → đúng quy tắc React
+     Chỉ fetch khi showModal === true và user đã login
   ============================================================ */
   useEffect(() => {
-    if (showModal) {
+    if (showModal && user) {
       dispatch(fetchMyAiPackage());
       dispatch(fetchAiQuota());
       dispatch(fetchAiPackages());
     }
-  }, [showModal, dispatch]);
+  }, [showModal, user, dispatch]);
 
+  /* ============================================================
+     Nếu modal chưa mở → return luôn (CHUẨN)
+  ============================================================ */
+  if (!showModal) return null;
+
+  /* ============================================================
+     Nếu chưa đăng nhập → modal thông báo đăng nhập
+  ============================================================ */
+  if (!user) {
+    return (
+      <div className={styles.overlay}>
+        <div className={styles.modal}>
+          <div className={styles.loginRequiredWrapper}>
+            <h2 className={styles.loginRequiredTitle}>
+              Bạn cần đăng nhập để xem và mua gói AI
+            </h2>
+
+            <p className={styles.loginRequiredSub}>
+              Đăng nhập để sử dụng đầy đủ các tính năng AI Hokori.
+            </p>
+
+            <div className={styles.loginRequiredActions}>
+              <button
+                className={styles.loginRequiredBtn}
+                onClick={() =>
+                  (window.location.href = "/login?redirect=/ai-packages")
+                }
+              >
+                Đăng nhập ngay
+              </button>
+
+              <button
+                className={styles.loginRequiredClose}
+                onClick={() => dispatch(closeModal())}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ============================================================
+     Checkout xử lý thanh toán
+  ============================================================ */
   const handleCheckout = async (pkgId) => {
     if (hasActivePackage) {
       toast.info(
@@ -68,6 +112,9 @@ export default function AiPackageModal() {
     }
   };
 
+  /* ============================================================
+     Render từng gói AI
+  ============================================================ */
   const renderPackageCard = (pkg, highlight = false) => {
     const isActive = activePackageId === pkg.id;
 
@@ -110,8 +157,9 @@ export default function AiPackageModal() {
     );
   };
 
-  if (!showModal) return null;
-
+  /* ============================================================
+     Render modal khi user đã login
+  ============================================================ */
   return (
     <div className={styles.overlay}>
       <div className={styles.modal}>
@@ -139,9 +187,7 @@ export default function AiPackageModal() {
 
           {packagesStatus === "succeeded" &&
             packages &&
-            packages.map((pkg, idx) =>
-              renderPackageCard(pkg, idx === 1)
-            )}
+            packages.map((pkg, idx) => renderPackageCard(pkg, idx === 1))}
         </div>
 
         <button className={styles.close} onClick={() => dispatch(closeModal())}>

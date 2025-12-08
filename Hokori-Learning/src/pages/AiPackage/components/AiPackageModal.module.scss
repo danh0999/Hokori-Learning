@@ -190,3 +190,74 @@
     font-weight: 600;
   }
 }
+/* =======================
+   LOGIN REQUIRED (User chưa đăng nhập)
+======================= */
+
+.loginRequiredWrapper {
+  text-align: center;
+  padding: 1.2rem 0 0 0;
+  animation: fadeUp 0.25s ease-out;
+
+  /* 2 dòng quan trọng để gọn lại */
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+/* Title */
+.loginRequiredTitle {
+  font-size: 1.3rem; /* giảm nhẹ để hài hòa */
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+/* Subtitle */
+.loginRequiredSub {
+  font-size: 0.92rem;
+  color: #6b7280;
+  line-height: 1.45;
+  margin-bottom: 1.6rem;
+}
+
+/* Wrapper for buttons */
+.loginRequiredActions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Main CTA button: Đăng nhập ngay */
+.loginRequiredBtn {
+  width: 100%;
+  background: #2563eb;
+  color: #fff;
+  padding: 11px 0;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: 0.22s ease;
+
+  &:hover {
+    background: #1e4fc7;
+    transform: translateY(-1px);
+  }
+}
+
+/* Secondary button: Đóng */
+.loginRequiredClose {
+  background: transparent;
+  border: none;
+  font-size: 0.9rem;
+  color: #475569;
+  cursor: pointer;
+  padding: 5px;
+  transition: 0.15s ease;
+
+  &:hover {
+    color: #1e293b;
+  }
+}
