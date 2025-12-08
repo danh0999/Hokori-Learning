@@ -103,5 +103,23 @@
         background: #1d4ed8;
       }
     }
+
+    .certificateBtn {
+  width: 100%;
+  background: linear-gradient(135deg, #f59e0b, #facc15);
+  color: #1f2937;
+  font-weight: 600;
+  padding: 10px;
+  border-radius: 8px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    font-size: 18px;
+  }
+}
+
   }
 }

@@ -1,19 +1,41 @@
 import React from "react";
 import styles from "./CourseCard.module.scss";
 import { FaHeart, FaRegHeart } from "react-icons/fa6";
+import { FaCertificate } from "react-icons/fa";
 import ProgressBar from "../../LearnerDashboard/components/ProgressBar";
 
 /**
  * CourseCard — thẻ khóa học trong trang "Khóa học của tôi"
  *
  * Props:
- *  - course: { id, title, level, teacher, lessons, lastStudy, progress, favorite, completed }
- *  - onContinue(course): callback khi nhấn nút "Tiếp tục học"
+ *  - course: {
+ *      id,
+ *      title,
+ *      level,
+ *      teacher,
+ *      lessons,
+ *      lastStudy,
+ *      progress,
+ *      favorite,
+ *      completed
+ *    }
+ *  - onContinue(course): callback khi nhấn "Tiếp tục học"
+ *  - onViewCertificate(course): callback khi nhấn "Xem chứng chỉ"
  */
-const CourseCard = ({ course, onContinue }) => {
+const CourseCard = ({ course, onContinue, onViewCertificate }) => {
+  const isCompleted = course.completed === true;
+
+  const handleAction = () => {
+    if (isCompleted) {
+      onViewCertificate && onViewCertificate(course);
+    } else {
+      onContinue && onContinue(course);
+    }
+  };
+
   return (
     <div className={styles.card}>
-      {/* Ảnh cover (có thể thay src từ course.coverUrl sau) */}
+      {/* Cover */}
       <div className={styles.cover}>
         <img
           src={
@@ -24,9 +46,9 @@ const CourseCard = ({ course, onContinue }) => {
         />
       </div>
 
-      {/* Nội dung */}
+      {/* Body */}
       <div className={styles.body}>
-        {/* Header: Level + Favorite */}
+        {/* Header */}
         <div className={styles.top}>
           <span className={styles.level}>{course.level}</span>
           {course.favorite ? (
@@ -36,11 +58,11 @@ const CourseCard = ({ course, onContinue }) => {
           )}
         </div>
 
-        {/* Thông tin chính */}
+        {/* Title */}
         <h3 className={styles.title}>{course.title}</h3>
         <p className={styles.teacher}>{course.teacher}</p>
 
-        {/* Tiến độ */}
+        {/* Progress */}
         <div className={styles.progress}>
           <ProgressBar
             value={course.progress || 0}
@@ -50,22 +72,33 @@ const CourseCard = ({ course, onContinue }) => {
           />
         </div>
 
-        {/* Meta info */}
+        {/* Meta */}
         <div className={styles.meta}>
           <span>{course.lessons} bài học</span>
           <span>
-            {course.completed
+            {isCompleted
               ? `Hoàn thành: ${course.lastStudy}`
               : `Học gần nhất: ${course.lastStudy}`}
           </span>
         </div>
 
-        {/* Nút hành động */}
+        {/* Action button */}
         <button
-          className={styles.actionBtn}
-          onClick={() => onContinue && onContinue(course)}
+          className={
+            isCompleted
+              ? styles.certificateBtn
+              : styles.actionBtn
+          }
+          onClick={handleAction}
         >
-          {course.completed ? "Xem chứng chỉ" : "Tiếp tục học"}
+          {isCompleted ? (
+            <>
+              <FaCertificate />
+              Xem chứng chỉ
+            </>
+          ) : (
+            "Tiếp tục học"
+          )}
         </button>
       </div>
     </div>

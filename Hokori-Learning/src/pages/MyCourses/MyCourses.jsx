@@ -5,7 +5,9 @@ import styles from "./MyCourses.module.scss";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { buildFileUrl } from "../../utils/fileUrl";
-
+import {
+  ensureCertificateByCourse,
+} from "../../services/certificateService";
 
 const MyCourses = () => {
   const [courses, setCourses] = useState([]);
@@ -120,26 +122,50 @@ const MyCourses = () => {
     );
   }
 
-  return (
-    <main className={styles.main}>
-      <div className={styles.container}>
-        <h1 className={styles.pageTitle}>Khóa học của tôi</h1>
+  const handleViewCertificate = async (course) => {
+  try {
+    const res = await ensureCertificateByCourse(course.courseId);
+    const certificateId = res.data.data.id;
 
-        {courses.length === 0 ? (
-          <p className={styles.empty}>
-            Bạn chưa ghi danh khóa học nào.{" "}
-            <a href="/marketplace">Khám phá thêm khóa học →</a>
-          </p>
-        ) : (
-          <div className={styles.grid}>
-            {courses.map((c) => (
-              <CourseCard key={c.enrollmentId} course={c} onContinue={handleContinue} />
-            ))}
-          </div>
-        )}
+    navigate(`/certificates/${certificateId}`);
+  } catch (err) {
+    toast.error("Không thể tạo hoặc lấy chứng chỉ");
+  }
+};
+
+
+  return (
+  <main className={styles.main}>
+    <div className={styles.container}>
+      {/* ===== Page Header ===== */}
+      <div className={styles.pageHeader}>
+        <h1 className={styles.heading}>Khóa học của tôi</h1>
+        <p className={styles.subheading}>
+          Danh sách các khóa học bạn đã ghi danh
+        </p>
       </div>
-    </main>
-  );
+
+      {/* ===== Course Grid / Empty State ===== */}
+      {courses.length === 0 ? (
+        <p className={styles.empty}>
+          Bạn chưa ghi danh khóa học nào.{" "}
+          <a href="/marketplace">Khám phá thêm khóa học →</a>
+        </p>
+      ) : (
+        <div className={styles.grid}>
+          {courses.map((course) => (
+            <CourseCard
+              key={course.courseId}
+              course={course}
+              onContinue={handleContinue}
+              onViewCertificate={handleViewCertificate}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  </main>
+);
 };
 
 export default MyCourses;

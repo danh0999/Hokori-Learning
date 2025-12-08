@@ -1,0 +1,128 @@
+.page {
+  padding: 48px 16px;
+  background: #f9fafb;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading,
+.error {
+  max-width: 600px;
+  margin: 80px auto;
+  text-align: center;
+  color: #374151;
+
+  button {
+    margin-top: 16px;
+    padding: 10px 20px;
+    background: #2563eb;
+    color: #fff;
+    border-radius: 8px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+
+    &:hover {
+      background: #1d4ed8;
+    }
+  }
+}
+
+.certificate {
+  position: relative;
+  max-width: 960px;
+  width: 100%;
+  border-radius: 20px;
+  overflow: hidden;
+  background-color: #ffffff;
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+  border: 6px solid #facc15;
+}
+
+.overlay {
+  background: rgba(255, 255, 255, 0.92);
+  padding: 64px 40px;
+  text-align: center;
+}
+
+/* Title */
+.title {
+  font-size: 34px;
+  font-weight: 800;
+  color: #92400e;
+  letter-spacing: 1px;
+  margin-bottom: 28px;
+}
+
+/* Text blocks */
+.subtitle {
+  font-size: 16px;
+  color: #4b5563;
+  margin: 6px 0;
+}
+
+.learnerName {
+  font-size: 30px;
+  font-weight: 800;
+  color: #111827;
+  margin: 10px 0;
+}
+
+.courseTitle {
+  font-size: 26px;
+  font-weight: 700;
+  color: #1d4ed8;
+  margin: 12px 0 20px;
+}
+
+.date {
+  display: block;
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 36px;
+}
+
+.footer {
+  padding-top: 16px;
+  border-top: 1px dashed #d1d5db;
+  font-size: 13px;
+  color: #374151;
+  letter-spacing: 0.5px;
+}
+
+/* Decorative medal */
+.certificate::before {
+  content: "🎓";
+  font-size: 52px;
+  position: absolute;
+  /* Place the hat inside the bordered area */
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffffff;
+  padding: 0 14px;
+  z-index: 2; /* ensure it sits above the border */
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .overlay {
+    padding: 40px 20px;
+  }
+
+  .title {
+    font-size: 26px;
+  }
+
+  .learnerName {
+    font-size: 22px;
+  }
+
+  .courseTitle {
+    font-size: 20px;
+  }
+}
