@@ -21,8 +21,10 @@ export default function ProtectedRoute({ allow = [] }) {
   const { rolesUpper, token } = normalizeUser(storeUser);
 
   // Chưa đăng nhập -> về login, giữ lại URL cũ
-  if (!token)
-    return <Navigate to="/login" replace state={{ from: location }} />;
+  if (!token) {
+    const redirectPath = encodeURIComponent(location.pathname + location.search);
+ return <Navigate to={`/login?redirect=${redirectPath}`} replace />;
+  }
 
   // Không truyền allow => chỉ cần đăng nhập
   if (!allow?.length) return <Outlet />;
