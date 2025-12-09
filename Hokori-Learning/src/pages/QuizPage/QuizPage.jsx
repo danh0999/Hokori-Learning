@@ -13,6 +13,7 @@ import {
   fetchQuizInfoThunk,
   startAttemptThunk,
   loadAllQuestionsThunk,
+  fetchNextQuestionThunk,
   answerQuestionThunk,
   submitAttemptThunk,
   resetQuizAttempt,
@@ -66,9 +67,9 @@ const QuizPage = () => {
           startedAttempt?.attemptId || startedAttempt?.id || attemptId;
         if (!id) return;
 
-        // 3) Load toàn bộ câu hỏi
+        // 3) Nạp câu hỏi đầu tiên bằng /next
         await dispatch(
-          loadAllQuestionsThunk({ lessonId, attemptId: id })
+          fetchNextQuestionThunk({ lessonId, attemptId: id })
         );
       } catch (err) {
         console.error("Init quiz error:", err);
@@ -115,10 +116,13 @@ const QuizPage = () => {
   };
 
   const handleClickQuestionNumber = (index) => {
-    setActiveIndex(index);
-    const el = document.getElementById(`question-${index}`);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    // chỉ cho phép nhảy tới câu đã nạp
+    if (index < questions.length) {
+      setActiveIndex(index);
+      const el = document.getElementById(`question-${index}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
     }
   };
 
@@ -134,6 +138,8 @@ const QuizPage = () => {
     if (submitAttemptThunk.fulfilled.match(action)) {
       // ở đây bạn có thể điều hướng sang trang kết quả riêng:
       // navigate(`/course/${courseId}/lesson/${lessonId}/quiz/${quizId}/result`);
+      // Ẩn modal để người học có thể xem lại câu hỏi
+      setShowSubmitModal(false);
     }
   };
 
@@ -177,32 +183,76 @@ const QuizPage = () => {
       <main className={styles.main}>
         <div className={styles.layoutTwoCol}>
           <div className={styles.content}>
-          {questions.map((q, idx) => (
+          {questions.length > 0 ? (
             <div
-              key={q.questionId}
-              id={`question-${idx}`}
+              key={questions[activeIndex]?.questionId}
+              id={`question-${activeIndex}`}
               className={styles.questionWrapper}
             >
               <QuestionCard
-                question={q}
-                index={idx}
-                total={totalQuestions}
-                selectedOptionId={answers[q.questionId]}
+                question={questions[activeIndex]}
+                index={activeIndex}
+                total={quizInfo?.totalQuestions || totalQuestions}
+                selectedOptionId={
+                  answers[questions[activeIndex].questionId]
+                }
                 onSelectAnswer={(optionId) =>
-                  handleSelectAnswer(q.questionId, optionId)
+                  handleSelectAnswer(
+                    questions[activeIndex].questionId,
+                    optionId
+                  )
                 }
               />
-            </div>
-          ))}
 
-          {questions.length === 0 && (
+              <div className={styles.navButtons}>
+                <button
+                  type="button"
+                  className={styles.prevBtn}
+                  onClick={() => setActiveIndex((i) => (i > 0 ? i - 1 : i))}
+                  disabled={activeIndex === 0}
+                >
+                  Câu trước
+                </button>
+                <button
+                  type="button"
+                  className={styles.nextBtn}
+                  onClick={async () => {
+                    // nếu đã nạp sẵn câu tiếp theo
+                    if (activeIndex < questions.length - 1) {
+                      setActiveIndex((i) => i + 1);
+                      return;
+                    }
+                    // cần gọi API /next để nạp thêm
+                    if (!lessonId || !attemptId) return;
+                    const action = await dispatch(
+                      fetchNextQuestionThunk({ lessonId, attemptId })
+                    );
+                    if (
+                      fetchNextQuestionThunk.fulfilled.match(action) &&
+                      action.payload.question
+                    ) {
+                      setActiveIndex((i) => i + 1);
+                    }
+                  }}
+                  disabled={
+                    // disable nếu đã ở câu cuối cùng theo totalQuestions
+                    quizInfo?.totalQuestions
+                      ? activeIndex >= quizInfo.totalQuestions - 1
+                      : false
+                  }
+                >
+                  Câu tiếp
+                </button>
+              </div>
+            </div>
+          ) : (
             <p className={styles.emptyQuestions}>Chưa có câu hỏi.</p>
           )}
           </div>
 
           <aside className={styles.sidebarSticky}>
             <Sidebar
-              total={totalQuestions}
+              total={quizInfo?.totalQuestions || totalQuestions}
               activeIndex={activeIndex}
               answers={answers}
               questions={questions}

@@ -88,6 +88,25 @@ export const loadAllQuestionsThunk = createAsyncThunk(
 );
 
 /**
+ * 3b) Lấy câu hỏi kế tiếp một lần
+ * GET /api/learner/lessons/{lessonId}/quiz/attempts/{attemptId}/next
+ */
+export const fetchNextQuestionThunk = createAsyncThunk(
+  "quizAttempt/fetchNextQuestion",
+  async ({ lessonId, attemptId }, { rejectWithValue }) => {
+    try {
+      const res = await api.get(
+        `/learner/lessons/${lessonId}/quiz/attempts/${attemptId}/next`
+      );
+      const data = unwrap(res); // question hoặc null
+      return { question: data || null };
+    } catch (err) {
+      return rejectWithValue(getError(err));
+    }
+  }
+);
+
+/**
  * 4) Lưu đáp án 1 câu (auto-save)
  * POST /api/learner/lessons/{lessonId}/quiz/attempts/{attemptId}/questions/{questionId}/answer
  * body: { optionId }
@@ -213,6 +232,29 @@ const quizAttemptSlice = createSlice({
         state.questions = action.payload.questions || [];
       })
       .addCase(loadAllQuestionsThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+
+    // fetchNextQuestion (không tải toàn bộ, nạp dần)
+    builder
+      .addCase(fetchNextQuestionThunk.pending, (state) => {
+        // chỉ hiển thị loading khi chưa có câu hỏi nào
+        if (state.questions.length === 0) state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchNextQuestionThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        const q = action.payload.question;
+        if (!q) return; // hết câu hỏi
+        const exists = state.questions.some(
+          (item) => item.questionId === q.questionId
+        );
+        if (!exists) {
+          state.questions.push(q);
+        }
+      })
+      .addCase(fetchNextQuestionThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });
