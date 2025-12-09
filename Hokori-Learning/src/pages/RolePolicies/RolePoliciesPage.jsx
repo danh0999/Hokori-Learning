@@ -6,14 +6,22 @@ export default function RolePoliciesPage({ roleName, title, subtitle }) {
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [viewingPolicy, setViewingPolicy] = useState(null);
+
+  // Format nội dung BE trả về (vì không có HTML)
+  const formatContent = (text) => {
+    if (!text) return "";
+
+    return text
+      .replace(/\n/g, "<br/>")        // xuống dòng BE trả
+      .replace(/- /g, "• ");          // bullet đẹp hơn
+  };
 
   const fetchPolicies = async () => {
     setLoading(true);
     setError("");
+
     try {
-      // baseURL axios đã có /api nên chỉ cần "public/..."
-      const res = await api.get(`public/policies/role/${roleName}`);
+      const res = await api.get(`/public/policies/role/${roleName}`);
       setPolicies(res.data?.data || []);
     } catch (err) {
       console.error(err);
@@ -36,71 +44,33 @@ export default function RolePoliciesPage({ roleName, title, subtitle }) {
         {subtitle && <p className={s.subtitle}>{subtitle}</p>}
       </header>
 
-      {/* LIST */}
+      {/* CONTENT */}
       <section className={s.contentSection}>
         {error && <div className={s.errorBox}>{error}</div>}
 
         {loading ? (
           <div className={s.loading}>Đang tải chính sách...</div>
         ) : policies.length === 0 ? (
-          <div className={s.empty}>
-            Hiện chưa có chính sách công khai cho role này.
-          </div>
+          <div className={s.empty}>Hiện chưa có chính sách.</div>
         ) : (
-          <div className={s.policyList}>
-            {policies.map((p) => (
-              <article key={p.id} className={s.policyCard}>
-                <h3 className={s.policyTitle}>{p.title}</h3>
-                <p className={s.policySnippet}>
-                  {p.content?.slice(0, 180) || ""}{" "}
-                  {p.content && p.content.length > 180 ? "…" : ""}
-                </p>
-                <button
-                  type="button"
-                  className={s.viewBtn}
-                  onClick={() => setViewingPolicy(p)}
-                >
-                  Xem chi tiết
-                </button>
+          <div className={s.policyListFull}>
+            {policies.map((p, index) => (
+              <article key={p.id} className={s.policyBlock}>
+                <h2 className={s.policyHeading}>
+                  {index + 1}. {p.title}
+                </h2>
+
+                <div
+                  className={s.policyContent}
+                  dangerouslySetInnerHTML={{
+                    __html: formatContent(p.content),
+                  }}
+                />
               </article>
             ))}
           </div>
         )}
       </section>
-
-      {/* MODAL XEM CHI TIẾT */}
-      {viewingPolicy && (
-        <div className={s.modalOverlay}>
-          <div className={s.modal}>
-            <div className={s.modalHeader}>
-              <h2 className={s.modalTitle}>Chi tiết chính sách</h2>
-            </div>
-
-            <div className={s.modalBody}>
-              <h3 className={s.modalPolicyTitle}>{viewingPolicy.title}</h3>
-              <div
-                className={s.modalContent}
-                dangerouslySetInnerHTML={{
-                  __html: (viewingPolicy.content || "").replace(
-                    /\n/g,
-                    "<br />"
-                  ),
-                }}
-              />
-            </div>
-
-            <div className={s.modalFooter}>
-              <button
-                type="button"
-                className={s.closeBtn}
-                onClick={() => setViewingPolicy(null)}
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

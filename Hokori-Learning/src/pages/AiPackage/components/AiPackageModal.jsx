@@ -115,47 +115,55 @@ export default function AiPackageModal() {
   /* ============================================================
      Render từng gói AI
   ============================================================ */
-  const renderPackageCard = (pkg, highlight = false) => {
-    const isActive = activePackageId === pkg.id;
+ const renderPackageCard = (pkg, highlight = false) => {
+  const isActive = activePackageId === pkg.id;
 
-    const cardClass = [
-      styles.card,
-      highlight ? styles.pro : "",
-      isActive ? styles.activeCard : "",
-      hasActivePackage && !isActive ? styles.disabledCard : "",
-    ].join(" ");
+  const cardClass = [
+    styles.card,
+    highlight ? styles.pro : "",
+    isActive ? styles.activeCard : "",
+    hasActivePackage && !isActive ? styles.disabledCard : "",
+  ].join(" ");
 
-    return (
-      <div key={pkg.id} className={cardClass}>
-        {highlight && <span className={styles.best}>BEST</span>}
+  return (
+    <div key={pkg.id} className={cardClass}>
+      {highlight && <span className={styles.best}>BEST</span>}
 
-        <h3>{pkg.name}</h3>
-        <p>{pkg.durationDays} ngày sử dụng</p>
+      <h3>{pkg.name}</h3>
+      <p className={styles.duration}>{pkg.durationDays} ngày sử dụng</p>
 
-        <ul>
-          <li>{pkg.grammarQuota} lượt kiểm tra chính tả</li>
-          <li>{pkg.kaiwaQuota} lượt Kaiwa</li>
-          <li>{pkg.pronunQuota} lượt phát âm</li>
-        </ul>
+      {/* 🔹 MÔ TẢ GÓI AI */}
+      {pkg.description && (
+        <p className={styles.description}>
+          {pkg.description}
+        </p>
+      )}
 
-        <div className={styles.price}>
-          {(pkg.priceCents / 100).toLocaleString("vi-VN")}đ
-        </div>
+      <ul>
+        <li>{pkg.grammarQuota} lượt kiểm tra chính tả</li>
+        <li>{pkg.kaiwaQuota} lượt Kaiwa</li>
+        <li>{pkg.pronunQuota} lượt phát âm</li>
+      </ul>
 
-        {!hasActivePackage ? (
-          <Button
-            content={`Mua ${pkg.name}`}
-            onClick={() => handleCheckout(pkg.id)}
-            disabled={loadingCheckout}
-          />
-        ) : isActive ? (
-          <Button content="Đang sử dụng" disabled />
-        ) : (
-          <Button content="Không khả dụng" disabled />
-        )}
+      <div className={styles.price}>
+        {(pkg.priceCents / 100).toLocaleString("vi-VN")}đ
       </div>
-    );
-  };
+
+      {!hasActivePackage ? (
+        <Button
+          content={`Mua ${pkg.name}`}
+          onClick={() => handleCheckout(pkg.id)}
+          disabled={loadingCheckout}
+        />
+      ) : isActive ? (
+        <Button content="Đang sử dụng" disabled />
+      ) : (
+        <Button content="Không khả dụng" disabled />
+      )}
+    </div>
+  );
+};
+
 
   /* ============================================================
      Render modal khi user đã login

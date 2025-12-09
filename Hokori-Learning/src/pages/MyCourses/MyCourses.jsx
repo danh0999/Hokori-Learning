@@ -5,6 +5,9 @@ import styles from "./MyCourses.module.scss";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { buildFileUrl } from "../../utils/fileUrl";
+import {
+  ensureCertificateByCourse,
+} from "../../services/certificateService";
 
 const MyCourses = () => {
   const [courses, setCourses] = useState([]);
@@ -127,6 +130,18 @@ const MyCourses = () => {
     );
   }
 
+  const handleViewCertificate = async (course) => {
+  try {
+    const res = await ensureCertificateByCourse(course.courseId);
+    const certificateId = res.data.data.id;
+
+    navigate(`/certificates/${certificateId}`);
+  } catch  {
+    toast.error("Không thể tạo hoặc lấy chứng chỉ");
+  }
+};
+
+
   return (
     <main className={styles.main}>
       <div className={styles.container}>
@@ -148,9 +163,30 @@ const MyCourses = () => {
             ))}
           </div>
         )}
+
       </div>
-    </main>
-  );
+
+      {/* ===== Course Grid / Empty State ===== */}
+      {courses.length === 0 ? (
+        <p className={styles.empty}>
+          Bạn chưa ghi danh khóa học nào.{" "}
+          <a href="/marketplace">Khám phá thêm khóa học →</a>
+        </p>
+      ) : (
+        <div className={styles.grid}>
+          {courses.map((course) => (
+            <CourseCard
+              key={course.courseId}
+              course={course}
+              onContinue={handleContinue}
+              onViewCertificate={handleViewCertificate}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  </main>
+);
 };
 
 export default MyCourses;

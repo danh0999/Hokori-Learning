@@ -35,6 +35,7 @@ import FlashcardPage from "../pages/FlashcardPage/FlashcardPage";
 import LearningTreePage from "../pages/LearningTreePage/LearningTreePage";
 import AiSucceedPage from "../pages/AiPackage/PaymentSuccess";
 import PaymentResultPage from "../pages/PaymentResultPage/PaymentResultPage";
+import CertificateDetail from "../pages/Certificate/CertificateDetail";
 
 // ===== Teacher =====
 import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
@@ -107,6 +108,8 @@ const routes = [
       { path: "payment/result", element: <PaymentResultPage /> },
       { path: "payment/success", element: <PaymentResultPage /> },
       { path: "payment/cancel", element: <PaymentResultPage /> },
+      { path: "certificates/:certificateId", element: <CertificateDetail /> },
+
 
       // Protected Routes (Learner/Teacher/Admin/Moderator)
       {

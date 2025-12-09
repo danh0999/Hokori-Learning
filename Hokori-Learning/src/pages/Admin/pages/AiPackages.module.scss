@@ -2,7 +2,7 @@
    PAGE LAYOUT
 ========================== */
 .page {
-  padding: 1.5rem;
+  padding: 1.75rem 2rem;
   font-family: "Inter", sans-serif;
 }
 
@@ -10,63 +10,91 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.75rem;
 }
 
 .title {
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: #111827;
 }
 
 /* ==========================
    BUTTONS
 ========================== */
+
 .btnPrimary {
   background: #2563eb;
   color: #fff;
-  padding: 0.55rem 1rem;
-  border-radius: 0.45rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: 0.5rem;
   border: none;
   font-weight: 500;
   cursor: pointer;
+  transition: 0.2s ease;
 
   &:hover {
-    background: #1e4ecf;
+    background: #1d4ed8;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: scale(0.97);
   }
 }
 
 .btnSmall {
   background: #f3f4f6;
-  padding: 0.35rem 0.75rem;
-  border-radius: 0.45rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.4rem;
   border: 1px solid #d1d5db;
   cursor: pointer;
+  font-size: 0.85rem;
+  transition: 0.2s ease;
 
   &:hover {
     background: #e5e7eb;
   }
 }
 
-.btnGhost {
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
-  padding: 0.55rem 1rem;
-  border-radius: 0.45rem;
+.btnSmallDanger {
+  background: #fee2e2;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.4rem;
+  border: 1px solid #fecaca;
   cursor: pointer;
+  font-size: 0.85rem;
+  color: #b91c1c;
+  transition: 0.2s ease;
 
   &:hover {
-    background: #e5e7eb;
+    background: #fecaca;
+  }
+}
+
+.btnGhost {
+  background: #f9fafb;
+  border: 1px solid #d1d5db;
+  padding: 0.55rem 1.1rem;
+  border-radius: 0.45rem;
+  cursor: pointer;
+  transition: 0.2s ease;
+
+  &:hover {
+    background: #f3f4f6;
   }
 }
 
 /* ==========================
    TABLE
 ========================== */
+
 .tableWrap {
-  background: #fff;
-  padding: 1rem;
-  border-radius: 0.85rem;
-  box-shadow: 0 2px 7px rgba(0,0,0,0.08);
+  background: #ffffff;
+  padding: 1.25rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  border: 1px solid #f3f4f6;
 }
 
 .table {
@@ -76,16 +104,24 @@
 
 .table th {
   text-align: left;
-  padding: 0.75rem;
+  padding: 0.85rem;
   font-weight: 600;
   color: #374151;
   border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  font-size: 0.9rem;
 }
 
 .table td {
-  padding: 0.75rem;
+  padding: 0.85rem;
   border-bottom: 1px solid #f3f4f6;
   vertical-align: top;
+  color: #111827;
+  font-size: 0.9rem;
+}
+
+.table tr:hover td {
+  background: #f9fafb;
 }
 
 .actions {
@@ -97,24 +133,26 @@
    BADGE STATUS
 ========================== */
 .statusBadge {
-  padding: 0.3rem 0.65rem;
-  border-radius: 0.45rem;
-  font-size: 0.8rem;
-  font-weight: 500;
+  padding: 0.35rem 0.7rem;
+  border-radius: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
 .active {
   background: #dcfce7;
   color: #15803d;
+  border: 1px solid #bbf7d0;
 }
 
 .inactive {
   background: #fee2e2;
   color: #b91c1c;
+  border: 1px solid #fecaca;
 }
 
 /* ==========================
-   MODAL UI
+   MODAL OVERLAY
 ========================== */
 .modalOverlay {
   position: fixed;
@@ -124,20 +162,37 @@
   justify-content: center;
   align-items: center;
   z-index: 5000;
+  backdrop-filter: blur(3px);
 }
 
+/* ==========================
+   MODAL BOX
+========================== */
 .modal {
-  width: 780px;
-  background: #fff;
-  padding: 2rem;
+  width: 790px;
+  background: #ffffff;
+  padding: 2rem 2.2rem;
   border-radius: 1rem;
-  box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.18);
+  animation: fadeUp 0.25s ease;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .modalTitle {
-  font-size: 1.3rem;
-  font-weight: 600;
-  margin-bottom: 1.5rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-bottom: 1.6rem;
+  color: #111827;
 }
 
 .modalActions {
@@ -145,7 +200,7 @@
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  margin-top: 1rem;
+  margin-top: 1.2rem;
 }
 
 /* ==========================
@@ -154,7 +209,7 @@
 .form {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.25rem 2rem;
+  gap: 1.4rem 2rem;
 }
 
 .col {
@@ -168,29 +223,34 @@
   font-size: 0.95rem;
   display: flex;
   flex-direction: column;
+  color: #374151;
 }
 
 .input {
   margin-top: 0.35rem;
-  padding: 0.55rem 0.75rem;
+  padding: 0.6rem 0.75rem;
   border-radius: 0.45rem;
   border: 1px solid #d1d5db;
+  transition: 0.2s;
 
   &:focus {
     border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
   }
 }
 
 .textarea {
   margin-top: 0.35rem;
-  padding: 0.6rem 0.75rem;
-  min-height: 90px;
+  padding: 0.65rem 0.75rem;
+  min-height: 95px;
   resize: none;
   border-radius: 0.45rem;
   border: 1px solid #d1d5db;
+  transition: 0.2s;
 
   &:focus {
     border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
   }
 }
 
@@ -203,15 +263,16 @@
 }
 
 .errorText {
-  margin-top: 0.3rem;
+  margin-top: 0.35rem;
   color: #dc2626;
   font-size: 0.8rem;
 }
 
 /* ==========================
-   SERVICES
+   SERVICES TITLE
 ========================== */
 .serviceTitle {
   font-weight: 600;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.3rem;
+  color: #111827;
 }
