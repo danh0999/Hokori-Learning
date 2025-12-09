@@ -8,7 +8,10 @@ import { logoutFirebase } from "../../../redux/features/auth";
 import { UserOutlined } from "@ant-design/icons";
 import { Avatar, Dropdown, Space } from "antd";
 import { FiShoppingCart, FiBell } from "react-icons/fi";
-import { resetAiPackageState } from "../../../redux/features/aiPackageSlice";
+import {
+  resetAiPackageState,
+  openModal,
+} from "../../../redux/features/aiPackageSlice";
 
 import { fetchCart } from "../../../redux/features/cartSlice";
 import { resetProfile, fetchMe } from "../../../redux/features/profileSlice";
@@ -45,6 +48,10 @@ export const Header = () => {
   // ============================
   const user = useSelector((state) => state.user);
   const profile = useSelector((state) => state.profile.data);
+  const aiPackage = useSelector((state) => state.aiPackage.myPackage);
+
+  const hasAiPackage =
+    aiPackage && aiPackage.hasPackage && !aiPackage.isExpired;
 
   const cartItems = useSelector((state) => state.cart.items);
   const cartCount = cartItems?.length || 0;
@@ -68,22 +75,26 @@ export const Header = () => {
   }, [user, profile, dispatch]);
 
   // ============================
-  // DROPDOWN CONTROL
+  // DROPDOWNS
   // ============================
   const [openDropdown, setOpenDropdown] = useState(null);
   const courseDropdownRef = useRef(null);
   const aboutDropdownRef = useRef(null);
+  const aiDropdownRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
+      // Nếu click vào bất kỳ dropdown nào → không đóng
       if (
-        courseDropdownRef.current &&
-        !courseDropdownRef.current.contains(e.target) &&
-        aboutDropdownRef.current &&
-        !aboutDropdownRef.current.contains(e.target)
+        (courseDropdownRef.current &&
+          courseDropdownRef.current.contains(e.target)) ||
+        (aboutDropdownRef.current &&
+          aboutDropdownRef.current.contains(e.target)) ||
+        (aiDropdownRef.current && aiDropdownRef.current.contains(e.target))
       ) {
-        setOpenDropdown(null);
+        return;
       }
+      setOpenDropdown(null);
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -98,7 +109,7 @@ export const Header = () => {
       await logoutFirebase();
 
       dispatch(logout());
-      dispatch(resetProfile()); // FIX QUAN TRỌNG
+      dispatch(resetProfile());
       dispatch(resetAiPackageState());
 
       localStorage.removeItem("ai_sentence");
@@ -109,6 +120,20 @@ export const Header = () => {
     } catch (err) {
       console.error("Logout failed:", err);
     }
+  };
+
+  // ============================
+  // HANDLE AI TOOL OPEN
+  // ============================
+  const handleOpenAiTool = (path) => {
+    if (!user) return navigate(`/login?redirect=${path}`);
+
+    if (!hasAiPackage) {
+      dispatch(openModal());
+      return;
+    }
+
+    navigate(path);
   };
 
   // ============================
@@ -193,12 +218,48 @@ export const Header = () => {
             )}
           </div>
 
+          {/* JLPT */}
           <NavLink
             to="/JLPT"
             className={({ isActive }) => (isActive ? active : "")}
           >
             Thi thử JLPT
           </NavLink>
+
+          {/* Dropdown Công cụ AI */}
+          <div className={dropdown} ref={aiDropdownRef}>
+            <button
+              className={dropdownToggle}
+              onClick={() =>
+                setOpenDropdown(openDropdown === "ai" ? null : "ai")
+              }
+            >
+              Công cụ AI{" "}
+              <span
+                className={`${arrow} ${openDropdown === "ai" ? rotate : ""}`}
+              >
+                ▾
+              </span>
+            </button>
+
+            {openDropdown === "ai" && (
+              <div className={dropdownMenu}>
+                <div
+                  className={dropdownItem}
+                  onClick={() => handleOpenAiTool("/ai-analyse")}
+                >
+                  Phân tích câu
+                </div>
+
+                <div
+                  className={dropdownItem}
+                  onClick={() => handleOpenAiTool("/ai-kaiwa")}
+                >
+                  Luyện nói (AI Kaiwa)
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Dropdown Về Hokori */}
           <div className={dropdown} ref={aboutDropdownRef}>
@@ -224,16 +285,16 @@ export const Header = () => {
                 <NavLink to="/policies" className={dropdownItem}>
                   Chính sách & Điều khoản
                 </NavLink>
+
+                <NavLink
+                  to="/contact"
+                  className={({ isActive }) => (isActive ? active : "")}
+                >
+                  Liên hệ
+                </NavLink>
               </div>
             )}
           </div>
-
-          <NavLink
-            to="/contact"
-            className={({ isActive }) => (isActive ? active : "")}
-          >
-            Liên hệ
-          </NavLink>
         </nav>
 
         {/* ===== USER ACTIONS ===== */}
