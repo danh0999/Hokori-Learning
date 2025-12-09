@@ -12,11 +12,9 @@ export default function Marketplace() {
   const navigate = useNavigate();
 
   // Redux data
-  const {
-    list: courses,
-    loading,
-    error,
-  } = useSelector((state) => state.courses);
+  const { list: courses, loading, error } = useSelector(
+    (state) => state.courses
+  );
 
   // ================================
   // ⭐ FILTERS STATE — MIN/MAX version
@@ -67,16 +65,21 @@ export default function Marketplace() {
       items = items.filter((c) => (c.rating ?? 0) >= ratingMin);
     }
 
-    // PRICE FILTER — MIN–MAX
+    // ⭐ PRICE FILTER — USE REAL PRICE FIELDS
     const priceMin = Number(filters.priceMin) || 0;
     const priceMax = Number(filters.priceMax) || 999999999;
 
     items = items.filter((c) => {
-      const price = c.price ?? 0;
-      return price >= priceMin && price <= priceMax;
+      // Lấy đúng giá như CourseCard
+      const effectivePrice =
+        c.discountedPriceCents && c.discountedPriceCents > 0
+          ? c.discountedPriceCents
+          : c.priceCents ?? 0;
+
+      return effectivePrice >= priceMin && effectivePrice <= priceMax;
     });
 
-    // KEYWORD SEARCH (course title + teacher)
+    // 🔍 KEYWORD SEARCH (title + teacher)
     if (filters.keyword.trim()) {
       const q = filters.keyword.toLowerCase();
 
@@ -87,18 +90,34 @@ export default function Marketplace() {
       });
     }
 
-    // SORTING
+    // SORT
     switch (sort) {
       case "Giá tăng":
-        items.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+        items.sort(
+          (a, b) =>
+            ((a.discountedPriceCents && a.discountedPriceCents > 0
+              ? a.discountedPriceCents
+              : a.priceCents) ?? 0) -
+            ((b.discountedPriceCents && b.discountedPriceCents > 0
+              ? b.discountedPriceCents
+              : b.priceCents) ?? 0)
+        );
         break;
+
       case "Giá giảm":
-        items.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+        items.sort(
+          (a, b) =>
+            ((b.discountedPriceCents && b.discountedPriceCents > 0
+              ? b.discountedPriceCents
+              : b.priceCents) ?? 0) -
+            ((a.discountedPriceCents && a.discountedPriceCents > 0
+              ? a.discountedPriceCents
+              : a.priceCents) ?? 0)
+        );
         break;
+
       case "Đánh giá cao":
         items.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
-        break;
-      default:
         break;
     }
 
@@ -117,7 +136,7 @@ export default function Marketplace() {
   }, [filters, sort]);
 
   // ============================
-  // URL-level preselect
+  // URL Pre-select
   // ============================
   const [searchParams] = useSearchParams();
   const preselectedLevel = searchParams.get("level");
@@ -148,7 +167,7 @@ export default function Marketplace() {
       </p>
 
       <div className={styles.container}>
-        {/* SIDEBAR FILTERS */}
+        {/* Filters */}
         <aside className={styles.sidebar}>
           <Filters
             filters={filters}
@@ -158,7 +177,7 @@ export default function Marketplace() {
           />
         </aside>
 
-        {/* CONTENT */}
+        {/* Content */}
         <section className={styles.content}>
           <div className={styles.topbar}>
             <p className={styles.count}>
@@ -166,20 +185,8 @@ export default function Marketplace() {
                 ? `${filtered.length} khóa học được tìm thấy`
                 : ""}
             </p>
-
-            <select
-              className={styles.sort}
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-            >
-              <option>Phổ biến</option>
-              <option>Giá tăng</option>
-              <option>Giá giảm</option>
-              <option>Đánh giá cao</option>
-            </select>
           </div>
 
-          {/* RESULTS */}
           <div className={styles.resultsArea}>
             {loading ? (
               <div className={styles.loading}>Đang tải...</div>
@@ -194,7 +201,7 @@ export default function Marketplace() {
         </section>
       </div>
 
-      {/* PAGINATION */}
+      {/* Pagination */}
       <div className={styles.paginationContainer}>
         <Pagination
           page={page}

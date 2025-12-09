@@ -153,7 +153,9 @@ const CartPage = () => {
         )}
 
         {/* ====== Gợi ý khoá học ====== */}
-        <RecommendedCourses />
+        <div className={styles.recommendedSection}>
+          <RecommendedCourses />
+        </div>
       </div>
     </main>
   );
