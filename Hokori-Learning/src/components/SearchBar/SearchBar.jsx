@@ -1,19 +1,14 @@
-import React, { useState } from "react";
+import React from "react";
 import styles from "./styles.module.scss";
 import { GoSearch } from "react-icons/go";
 
-export const SearchBar = ({ placeholder, onSearch }) => {
+export const SearchBar = ({ placeholder, onSearch, value }) => {
   const { searchContainer, input, icon } = styles;
-  const [query, setQuery] = useState("");
 
   const handleChange = (e) => {
-    const value = e.target.value;
-    setQuery(value);
+    const val = e.target.value;
 
-    // goi ham onSearch mõi khi gõ
-    if (onSearch) {
-      onSearch(value);
-    }
+    if (onSearch) onSearch(val);
   };
 
   return (
@@ -21,7 +16,7 @@ export const SearchBar = ({ placeholder, onSearch }) => {
       <input
         className={input}
         type="text"
-        value={query}
+        value={value} // ⭐ controlled từ Filters
         placeholder={placeholder}
         onChange={handleChange}
       />
