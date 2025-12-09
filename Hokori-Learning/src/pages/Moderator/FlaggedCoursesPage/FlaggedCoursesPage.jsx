@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from "react";
-import { Table, Card, Button, Tag, message, Space } from "antd";
+import { Table, Card, Button, Tag, message, Space, Tooltip } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchFlaggedCoursesThunk,
@@ -21,21 +21,44 @@ export default function FlaggedCoursesPage() {
 
     if (moderatorFlagCourseThunk.fulfilled.match(action)) {
       message.success("Course has been flagged and hidden from public.");
+      // Sau khi flag xong, reload list để luôn sync với BE
       dispatch(fetchFlaggedCoursesThunk());
     } else {
-      message.error("Flag failed. Try again.");
+      message.error(action.payload || "Flag failed. Try again.");
     }
   };
 
-  // 🔹 Chuẩn hoá data từ BE → FE dùng thống nhất
   const tableData = useMemo(
     () =>
-      (flaggedList || []).map((item) => ({
-        id: item.courseId ?? item.id,
-        title: item.courseTitle ?? item.title,
-        flagCount: item.flagCount ?? item.totalFlags ?? 0,
-        latestFlagAt: item.latestFlagAt ?? item.lastFlagAt,
-      })),
+      (flaggedList || []).map((item) => {
+        const status = item.status || item.courseStatus;
+
+        // Nếu BE có gửi canFlag / isModeratorFlagged thì dùng,
+        // còn không thì tự tính theo status + flaggedByUserId
+        const canFlag =
+          typeof item.canFlag === "boolean"
+            ? item.canFlag
+            : status === "PUBLISHED" && !item.flaggedByUserId;
+
+        const isModeratorFlagged =
+          typeof item.isModeratorFlagged === "boolean"
+            ? item.isModeratorFlagged
+            : status === "FLAGGED" && !!item.flaggedByUserId;
+
+        return {
+          id: item.courseId ?? item.id,
+          title: item.courseTitle ?? item.title,
+          flagCount:
+            item.flagCount ?? item.totalFlags ?? item.flags?.length ?? 0,
+          latestFlagAt:
+            item.latestFlagAt ??
+            item.lastFlagAt ??
+            item.flags?.[0]?.latestFlagAt ??
+            null,
+          canFlag,
+          isModeratorFlagged,
+        };
+      }),
     [flaggedList]
   );
 
@@ -58,16 +81,22 @@ export default function FlaggedCoursesPage() {
     },
     {
       title: "Actions",
-      width: 150,
+      width: 220,
       render: (_, row) => (
         <Space>
-          <Button
-            type="primary"
-            danger
-            onClick={() => handleFlagCourse(row.id)}
-          >
-            Flag Course
-          </Button>
+          {row.isModeratorFlagged ? (
+            <Tag color="green">Sent ✓</Tag>
+          ) : row.canFlag ? (
+            <Button
+              type="primary"
+              danger
+              onClick={() => handleFlagCourse(row.id)}
+            >
+              Flag Course
+            </Button>
+          ) : (
+            <Tag color="default">Not allowed</Tag>
+          )}
         </Space>
       ),
     },

@@ -141,7 +141,7 @@ export default function CourseOverview({ courseId, onNext }) {
   return (
     <Card className={styles.cardBig}>
       <div className={styles.stepHeader}>
-        <div className={styles.stepTitle}>Course basics</div>
+        <div className={styles.stepTitle}>Tổng quan khoá học</div>
         <div className={styles.stepDesc}>
           Đặt tiêu đề, mô tả, cấp độ cho khoá học của bạn.
         </div>

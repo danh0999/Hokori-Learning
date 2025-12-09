@@ -40,6 +40,11 @@ const CourseCard = ({ course, onContinue }) => {
         <h3 className={styles.title}>{course.title}</h3>
         <p className={styles.teacher}>{course.teacher}</p>
 
+        {/* 👉 Banner trạng thái FLAGGED */}
+        {course.status === "FLAGGED" && course.statusMessage && (
+          <div className={styles.statusBanner}>{course.statusMessage}</div>
+        )}
+
         {/* Tiến độ */}
         <div className={styles.progress}>
           <ProgressBar

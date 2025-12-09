@@ -74,6 +74,7 @@ import Review from "../pages/JLPTTest/Review";
 import ModeratorPolicies from "../pages/Moderator/ModPolicies/ModPolicies";
 import CourseTrialLesson from "../pages/CourseDetail/CourseTrialLesson/CourseTrialLesson";
 import FlaggedCoursesPage from "../pages/Moderator/FlaggedCoursesPage/FlaggedCoursesPage";
+import QuizTrialPage from "../pages/CourseDetail/QuizTrialPage/QuizTrialPage";
 
 const routes = [
   // ============================
@@ -94,10 +95,6 @@ const routes = [
       { index: true, element: <Home /> },
       { path: "marketplace", element: <Marketplace /> },
       { path: "course/:id", element: <CourseDetail /> },
-      {
-        path: "course/:id/trial-lesson/:lessonId",
-        element: <CourseTrialLesson />,
-      },
       { path: "about", element: <AboutPage /> },
       { path: "contact", element: <Contact /> },
       { path: "information", element: <Information /> },
@@ -113,11 +110,7 @@ const routes = [
 
       // Protected Routes (Learner/Teacher/Admin/Moderator)
       {
-        element: (
-          <ProtectedRoute
-            allow={["LEARNER", "TEACHER", "ADMIN", "MODERATOR"]}
-          />
-        ),
+        element: <ProtectedRoute allow={["LEARNER"]} />,
         children: [
           { path: "learner-dashboard", element: <LearnerDashboard /> },
           { path: "my-courses", element: <MyCourses /> },
@@ -128,7 +121,6 @@ const routes = [
           { path: "ai-analyse", element: <AiAnalysePage /> },
           { path: "jlpt", element: <JLPTList /> },
           { path: "policies", element: <LearnerPolicies /> },
-
           { path: "payment/ai-package/success", element: <AiSucceedPage /> },
           { path: "jlpt/events/:eventId", element: <JLPTEventTests /> },
 
@@ -150,8 +142,12 @@ const routes = [
 
           //===flow trail chaper====
           {
-            path: "course/:id/trial-lesson/:lessonId",
+            path: "course/:courseId/trial-lesson/:chapterId",
             element: <CourseTrialLesson />,
+          },
+          {
+            path: "learner/trial-quiz/:lessonId",
+            element: <QuizTrialPage />,
           },
         ],
       },
@@ -253,7 +249,9 @@ const routes = [
           { path: "teacher-certificates", element: <TeacherCertificates /> },
           { path: "events", element: <JlptEvents /> },
           { path: "ai-packages", element: <AiPackages /> },
-          { path: "revenue", element: <Revenue /> },
+          // { path: "revenue", element: <Revenue /> },
+          { path: "revenue/:teacherId", element: <Revenue /> },
+          { path: "revenue/:teacherId/:courseId", element: <Revenue /> },
           { path: "withdrawals", element: <Withdrawals /> },
           { path: "complaints", element: <Complaints /> },
           { path: "adpolicies", element: <AdPolicies /> },

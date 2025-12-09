@@ -78,12 +78,7 @@ export default function QuestionCard({
                             points: q.points,
                           });
                         }}
-                        options={[
-                          { value: "single", label: "Single choice" },
-                          { value: "multiple", label: "Multiple choice" },
-                          { value: "truefalse", label: "True / False" },
-                          { value: "fill", label: "Fill in the blank" },
-                        ]}
+                        options={[{ value: "single", label: "Single choice" }]}
                       />
                     </Form.Item>
                   </Col>

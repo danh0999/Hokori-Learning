@@ -56,7 +56,8 @@ export const updateCourseThunk = createAsyncThunk(
   async ({ courseId, data }, { rejectWithValue }) => {
     try {
       const res = await api.put(`teacher/courses/${courseId}`, data);
-      return res.data;
+      const body = res.data;
+      return body?.data ?? body;
     } catch (err) {
       return rejectWithValue(getError(err));
     }
@@ -544,20 +545,35 @@ const teacherCourseSlice = createSlice({
       })
       .addCase(updateCourseThunk.fulfilled, (state, action) => {
         state.saving = false;
-        const updated = action.payload;
+        const updated = action.payload || {};
+        const prev = state.currentCourseMeta || {};
 
-        // merge meta
-        state.currentCourseMeta = {
-          ...(state.currentCourseMeta || {}),
-          ...(updated || {}),
-        };
+        // Merge nhưng bảo vệ description & subtitle
+        const merged = { ...prev, ...updated };
 
-        const idx = state.list.findIndex((c) => c.id === updated.id);
+        if (
+          (updated.description == null || updated.description === "") &&
+          prev.description
+        ) {
+          merged.description = prev.description;
+        }
+        if (
+          (updated.subtitle == null || updated.subtitle === "") &&
+          prev.subtitle
+        ) {
+          merged.subtitle = prev.subtitle;
+        }
+
+        state.currentCourseMeta = merged;
+
+        const idx = state.list.findIndex(
+          (c) => String(c.id) === String(updated.id ?? merged.id)
+        );
         if (idx !== -1) {
-          // 🟢 Giữ nguyên vị trí cũ — update đúng vị trí đó
-          state.list[idx] = { ...state.list[idx], ...(updated || {}) };
+          state.list[idx] = { ...state.list[idx], ...merged };
         }
       })
+
       .addCase(updateCourseThunk.rejected, (state, action) => {
         state.saving = false;
         state.error = action.payload;

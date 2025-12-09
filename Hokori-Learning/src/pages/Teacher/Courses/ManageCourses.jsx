@@ -303,11 +303,14 @@ export default function ManageCourses() {
             className={styles.select}
             value={status}
             onChange={setStatus}
-            options={["All", "Draft", "Review", "Published", "Rejected"].map(
-              (v) => ({ label: v, value: v })
-            )}
+            options={[
+              "All",
+              "Draft",
+              "PENDING_APPROVAL",
+              "Published",
+              "Rejected",
+            ].map((v) => ({ label: v, value: v }))}
           />
-          <Button icon={<CalendarOutlined />}>Date</Button>
         </Space>
       </Card>
 

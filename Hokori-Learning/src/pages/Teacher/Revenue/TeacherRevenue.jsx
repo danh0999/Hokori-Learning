@@ -1,6 +1,17 @@
 // src/pages/Teacher/Revenue/TeacherRevenue.jsx
 import React, { useEffect, useState, useMemo } from "react";
-import { Card, Row, Col, Table, Button, Statistic, Tag, message } from "antd";
+import {
+  Card,
+  Row,
+  Col,
+  Table,
+  Button,
+  Statistic,
+  Tag,
+  message,
+  DatePicker,
+  Space,
+} from "antd";
 import {
   DollarOutlined,
   ArrowDownOutlined,
@@ -9,6 +20,8 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import WithdrawModal from "./WithdrawModal";
 import styles from "./TeacherRevenue.module.scss";
+import api from "../../../configs/axios.js";
+import dayjs from "dayjs";
 
 import {
   fetchMyWallet,
@@ -21,6 +34,9 @@ import {
 
 export default function TeacherRevenue() {
   const dispatch = useDispatch();
+  const [monthRevenue, setMonthRevenue] = useState(null);
+  const [monthLoading, setMonthLoading] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(dayjs());
 
   // ====== Redux state ======
   const wallet = useSelector(selectWalletInfo);
@@ -30,6 +46,26 @@ export default function TeacherRevenue() {
 
   const [openWithdraw, setOpenWithdraw] = useState(false);
   const [page, setPage] = useState(1); // Antd index 1, BE index 0
+
+  const fetchMonthlyRevenue = async (year, month) => {
+    try {
+      setMonthLoading(true);
+      const res = await api.get("/teacher/dashboard/revenue", {
+        params: {
+          year,
+          month, // 1-12
+        },
+      });
+
+      const payload = res.data?.data;
+      setMonthRevenue(payload || null);
+    } catch (err) {
+      console.error("fetchMonthlyRevenue error:", err);
+      message.error("Không tải được doanh thu tháng, vui lòng thử lại.");
+    } finally {
+      setMonthLoading(false);
+    }
+  };
 
   // load ví + transactions lần đầu
   useEffect(() => {
@@ -41,7 +77,16 @@ export default function TeacherRevenue() {
         sort: ["createdAt,desc"],
       })
     );
+
+    // ✅ gọi doanh thu tháng hiện tại
+    const now = dayjs();
+    fetchMonthlyRevenue(now.year(), now.month() + 1); // month: 1-12
   }, [dispatch]);
+  const handleChangeMonth = (value) => {
+    const m = value || dayjs();
+    setSelectedMonth(m);
+    fetchMonthlyRevenue(m.year(), m.month() + 1);
+  };
 
   const loading = walletStatus === "loading" || txStatus === "loading";
 
@@ -128,9 +173,53 @@ export default function TeacherRevenue() {
   return (
     <div className={styles.container}>
       <h2 className={styles.title}>Ví & Doanh thu của bạn</h2>
+      <div className={styles.monthFilterRow}>
+        <Space>
+          <span>Chọn tháng:</span>
+          <DatePicker
+            picker="month"
+            value={selectedMonth}
+            onChange={handleChangeMonth}
+            format="MM/YYYY"
+          />
+        </Space>
+      </div>
 
       {/* --- Summary Cards --- */}
       <Row gutter={16} className={styles.summaryRow}>
+        {/* ✅ Card doanh thu theo tháng (chỉ tiền bán khóa học) */}
+        <Col xs={24} sm={12} md={8}>
+          <Card loading={monthLoading}>
+            <Statistic
+              title={
+                monthRevenue?.period
+                  ? `Doanh thu tháng ${monthRevenue.period}`
+                  : "Doanh thu tháng (Tiền bán khóa học)"
+              }
+              value={
+                monthRevenue?.revenue ??
+                (monthRevenue?.revenueCents != null
+                  ? monthRevenue.revenueCents / 100
+                  : 0)
+              }
+              valueStyle={{ color: "#1677ff" }}
+              prefix={<DollarOutlined />}
+              suffix="VNĐ"
+            />
+            <div style={{ marginTop: 8 }}>
+              Số giao dịch: <b>{monthRevenue?.transactionCount ?? 0}</b> – Số dư
+              ví hiện tại:{" "}
+              <b>
+                {(monthRevenue?.walletBalance ?? balanceCents).toLocaleString(
+                  "vi-VN"
+                )}
+                ₫
+              </b>
+            </div>
+          </Card>
+        </Col>
+
+        {/* 3 card cũ: Số dư, Tổng thu nhập, Đang chờ rút */}
         <Col xs={24} sm={12} md={8}>
           <Card loading={loading}>
             <Statistic

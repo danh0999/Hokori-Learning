@@ -2,11 +2,12 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { addItem } from "../../../redux/features/cartSlice";
 import { message } from "antd";
-import { buildFileUrl } from "../../../utils/fileUrl";
-import api from "../../../configs/axios"; // axios có token
 import { toast } from "react-toastify";
+
+import { addToCart } from "../../../redux/features/cartSlice";
+import { buildFileUrl } from "../../../utils/fileUrl";
+import api from "../../../configs/axios";
 
 const formatMoney = (value) => (Number(value) || 0).toLocaleString("vi-VN");
 
@@ -16,8 +17,9 @@ const CourseHero = ({ course }) => {
 
   if (!course) return <div>Loading...</div>;
 
-  // ====== MAP TỪ TREE SANG CÁC FIELD DÙNG CHO UI ======
+  // ====== MAP FIELD TỪ COURSE ======
   const {
+    id,
     title,
     subtitle,
     description,
@@ -25,16 +27,14 @@ const CourseHero = ({ course }) => {
     priceCents,
     discountedPriceCents,
     currency,
+    isEnrolled,
   } = course;
 
-  // Giá hiện tại & giá gốc
-  // Backend returns VND units in `priceCents` fields for this project.
-  // Treat discounted price as valid ONLY when > 0; otherwise use base price.
+  // Giá hiện tại & giá gốc (BE đang dùng VND bình thường)
   const hasDiscount = Number(discountedPriceCents) > 0;
   const currentPrice = hasDiscount
     ? Number(discountedPriceCents)
     : Number(priceCents ?? 0);
-
   const originalPrice = hasDiscount ? Number(priceCents ?? 0) : null;
 
   const discountPercent =
@@ -44,26 +44,22 @@ const CourseHero = ({ course }) => {
         )
       : null;
 
-  // Mock dữ liệu rating / students nếu BE chưa có
+  const isFree = currentPrice === 0;
+  const enrolled = !!isEnrolled;
+
   const rating = Number(course.rating) || 4.8;
   const students = Number(course.studentCount) || 1200;
-
-  // Tags: nếu có tags từ BE thì dùng, không thì để mảng rỗng
   const tags = Array.isArray(course.tags) ? course.tags : [];
 
-  // Video preview: tạm dùng coverImagePath / null
-  // const videoUrl = course.previewVideoUrl || null;
-
-  // Thông tin giảng viên: BE /tree chưa có nên dùng placeholder
   const teacherName = course.teacherName || "Giảng viên Hokori";
   const teacherAvatar =
     course.teacherAvatar ||
     "https://cdn-icons-png.flaticon.com/512/4140/4140048.png";
 
-  // Object sẽ đưa vào cart (tạm thời)
+  // Object để gửi cho cart API (FE có thể dùng luôn nếu cần)
   const courseForCart = {
-    id: course.id,
-    title: course.title,
+    id,
+    title,
     shortDesc: subtitle || description || "",
     price: currentPrice,
     oldPrice: originalPrice,
@@ -73,79 +69,117 @@ const CourseHero = ({ course }) => {
     level,
   };
 
-  const handleBuyNow = () => {
-    dispatch(addItem(courseForCart));
-    navigate("/cart");
+  // --- LẤY TOKEN ĐỂ CHECK GUEST ---
+  const token =
+    localStorage.getItem("accessToken") ||
+    sessionStorage.getItem("accessToken") ||
+    localStorage.getItem("token") ||
+    sessionStorage.getItem("token");
+
+  const isGuest = !token;
+
+  /* ================= HANDLERS ================ */
+
+  // 1. “Vào học ngay” khi đã sở hữu → giống MyCourses
+  const handleGoToLearning = () => {
+    if (isGuest) {
+      toast.error("Vui lòng đăng nhập để vào học.");
+      navigate("/login");
+      return;
+    }
+
+    // Giống MyCourses: /my-courses/:courseId/learn
+    navigate(`/my-courses/${id}/learn`);
   };
 
-  const handleAddToCart = () => {
-    dispatch(addItem(courseForCart));
-    message.success("Đã thêm khóa học vào giỏ hàng!");
-  };
+  // 2. Đăng ký khóa **miễn phí**
+  const handleEnrollFree = async () => {
+    if (isGuest) {
+      toast.error("Vui lòng đăng nhập để đăng ký khóa học.");
+      navigate("/login");
+      return;
+    }
 
-  const handleEnroll = async () => {
     try {
-      // 1. Nếu giá > 0 → redirect checkout (sau này)
-      if (currentPrice > 0) {
-        // TODO: redirect checkout page
-        dispatch(addItem(courseForCart));
-        navigate("/cart");
-        return;
-      }
+      await api.post(`/learner/courses/${id}/enroll`);
+      toast.success(
+        "Đăng ký thành công! Khóa học đã được thêm vào danh sách Khóa học của tôi."
+      );
 
-      // 2. FREE COURSE → kiểm tra enrollment trước
-      try {
-        await api.get(`/learner/courses/${course.id}/enrollment`);
-        // Nếu trả về 200 → đã enroll
-        return redirectToFirstLesson();
-      } catch (err) {
-        if (err?.response?.status !== 403) throw err;
-        // 403 = chưa enroll → tiếp tục
-      }
-
-      // 3. Gọi enroll
-      await api.post(`/learner/courses/${course.id}/enroll`);
-      toast.success("Enroll thành công!");
-
-      // 4. Redirect đến bài học đầu tiên
-      return redirectToFirstLesson();
+      // ⬇️ Sau khi đăng ký xong → quay về trang "Khóa học của tôi"
+      navigate("/my-courses");
     } catch (err) {
       console.error(err);
-      toast.error("Không thể enroll khóa học.");
+      toast.error("Không thể đăng ký khóa học. Vui lòng thử lại.");
     }
   };
 
-  const redirectToFirstLesson = async () => {
+  // 3. Thêm vào giỏ hàng
+  const handleAddToCart = async () => {
+    if (isGuest) {
+      toast.error("Vui lòng đăng nhập để thêm khóa học vào giỏ.");
+      navigate("/login");
+      return;
+    }
+
     try {
-      const lessonsRes = await api.get(`/learner/courses/${course.id}/lessons`);
-      const lessons = lessonsRes.data ?? [];
-
-      if (!lessons.length) {
-        toast.error("Khóa học chưa có bài học.");
-        return;
-      }
-
-      // Sắp xếp bài học theo orderIndex
-      const firstLesson = lessons.sort(
-        (a, b) => a.orderIndex - b.orderIndex
-      )[0];
-      const lessonId = firstLesson.lessonId ?? firstLesson.id;
-
-      // Navigate vào bài học đầu tiên
-      navigate(`/course/${course.id}/lesson/${lessonId}`);
+      await dispatch(addToCart(courseForCart)).unwrap();
+      // toast đã được xử lý trong thunk (nếu bạn có)
     } catch (err) {
       console.error(err);
-      toast.error("Không thể điều hướng vào bài học đầu tiên.");
     }
   };
+
+  // 4. Mua ngay
+  const handleBuyNow = async () => {
+    if (isGuest) {
+      toast.error("Vui lòng đăng nhập để mua khóa học.");
+      navigate("/login");
+      return;
+    }
+
+    try {
+      await dispatch(addToCart(courseForCart)).unwrap();
+      navigate("/cart");
+    } catch (err) {
+      console.error(err);
+      message.error("Không thể thêm khóa học vào giỏ hàng.");
+    }
+  };
+
+  /* ============== TÍNH NÚT HIỂN THỊ ============== */
+
+  let primaryLabel = "";
+  let primaryAction = () => {};
+  let showSecondaryCartBtn = false;
+
+  if (enrolled) {
+    primaryLabel = "Vào học ngay";
+    primaryAction = handleGoToLearning;
+    showSecondaryCartBtn = false;
+  } else if (isFree) {
+    primaryLabel = "Đăng ký học miễn phí";
+    primaryAction = handleEnrollFree;
+    showSecondaryCartBtn = false;
+  } else {
+    primaryLabel = "Mua khóa học ngay";
+    primaryAction = handleBuyNow;
+    showSecondaryCartBtn = true;
+  }
 
   return (
     <section className="hero-section">
       <div className="container">
-        {/* Video preview */}
+        {/* Video / Cover */}
         <div className="video-preview">
           {course.videoUrl ? (
-            <iframe /* ... */ />
+            <iframe
+              src={course.videoUrl}
+              title={course.title}
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
           ) : course.coverImagePath ? (
             <img
               src={buildFileUrl(course.coverImagePath)}
@@ -171,6 +205,7 @@ const CourseHero = ({ course }) => {
             {tags.map((tag, idx) => (
               <span key={idx}>{tag}</span>
             ))}
+            {enrolled && <span className="tag-owned">Đã sở hữu</span>}
           </div>
 
           <h1>{title}</h1>
@@ -207,30 +242,37 @@ const CourseHero = ({ course }) => {
           </div>
 
           {/* PRICE */}
-          <div className="price">
-            <span className="current">
-              {formatMoney(currentPrice)} {currency || "VNĐ"}
-            </span>
+          {!isFree && (
+            <div className="price">
+              <span className="current">
+                {formatMoney(currentPrice)} {currency || "VNĐ"}
+              </span>
 
-            {originalPrice != null && (
-              <>
-                <span className="old">
-                  {formatMoney(originalPrice)} {currency || "VNĐ"}
-                </span>
-                {discountPercent != null && (
-                  <span className="discount">-{discountPercent}%</span>
-                )}
-              </>
-            )}
-          </div>
+              {originalPrice != null && (
+                <>
+                  <span className="old">
+                    {formatMoney(originalPrice)} {currency || "VNĐ"}
+                  </span>
+                  {discountPercent != null && (
+                    <span className="discount">-{discountPercent}%</span>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+          {isFree && (
+            <div className="price price--free">
+              <span className="current">Miễn phí</span>
+            </div>
+          )}
 
+          {/* BUTTONS */}
           <div className="buttons">
-            <button className="btn-primary" onClick={handleEnroll}>
-              {currentPrice === 0 ? "Enroll" : "Mua khóa học ngay"}
+            <button className="btn-primary" onClick={primaryAction}>
+              {primaryLabel}
             </button>
 
-            {/* Nếu free thì KHÔNG hiển thị giỏ hàng */}
-            {currentPrice > 0 && (
+            {showSecondaryCartBtn && (
               <button className="btn-secondary" onClick={handleAddToCart}>
                 <i className="fa-solid fa-cart-shopping"></i> Thêm vào giỏ hàng
               </button>

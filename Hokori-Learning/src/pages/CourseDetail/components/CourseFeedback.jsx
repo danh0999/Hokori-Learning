@@ -1,31 +1,56 @@
-// src/pages/CourseDetail/components/CourseFeedback.jsx
-import React from "react";
+import { useEffect, useState } from "react";
+import api from "../../../configs/axios.js";
+import "../CourseDetail.scss";
 
-const CourseFeedback = ({ course }) => {
-  //  Đảm bảo luôn là mảng, kể cả khi backend / mock không trả về
-  const reviews = Array.isArray(course?.reviews) ? course.reviews : [];
+const CourseFeedback = ({ courseId }) => {
+  const [reviews, setReviews] = useState([]);
+  //eslint-disable-next-line
+  const [summary, setSummary] = useState(null);
+
+  useEffect(() => {
+    if (!courseId) return;
+
+    const fetchFeedback = async () => {
+      try {
+        const res = await api.get(`/courses/${courseId}/feedbacks`);
+        setReviews(res.data.data || []);
+      } catch (e) {
+        console.error("Error loading feedback", e);
+      }
+    };
+
+    const fetchSummary = async () => {
+      try {
+        const res = await api.get(`/courses/${courseId}/feedbacks/summary`);
+        setSummary(res.data.data);
+      } catch (e) {
+        console.error("Error loading summary", e);
+      }
+    };
+
+    fetchFeedback();
+    fetchSummary();
+  }, [courseId]);
 
   return (
     <section className="feedback-section">
       <div className="container">
         <h2>Đánh giá từ học viên</h2>
+
         <div className="reviews">
           {reviews.length === 0 ? (
             <p>Chưa có đánh giá nào</p>
           ) : (
-            reviews.map((r, i) => (
-              <div key={i} className="review">
-                <img
-                  src={
-                    r.user?.avatar ||
-                    "https://thumbs.dreamstime.com/b/teacher-icon-vector-male-person-profile-avatar-book-teaching-school-college-university-education-glyph-113755262.jpg"
-                  }
-                  alt={r.user?.name || "Learner"}
-                />
+            reviews.map((fb) => (
+              <div key={fb.id} className="review">
+                <img src={fb.learnerAvatarUrl} alt="" />
                 <div>
-                  <p>{r.user?.name || "Ẩn danh"}</p>
-                  <p>{r.comment}</p>
-                  <span>{r.timeAgo}</span>
+                  <p>
+                    <b>{fb.learnerName}</b>
+                  </p>
+                  <p>⭐ {fb.rating}</p>
+                  <p>{fb.comment}</p>
+                  <span>{new Date(fb.createdAt).toLocaleString()}</span>
                 </div>
               </div>
             ))

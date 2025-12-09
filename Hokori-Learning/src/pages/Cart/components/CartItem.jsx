@@ -45,9 +45,9 @@ const CartItem = ({ course, cartItemId, onRemove }) => {
 
         {/* Teacher */}
         <div className={styles.teacher}>
-          <div className={styles.teacherAvatar}>
+          {/* <div className={styles.teacherAvatar}>
             {teacherName?.[0]?.toUpperCase() || "T"}
-          </div>
+          </div> */}
           <div className={styles.teacherInfo}>
             <p className={styles.teacherName}>Bởi {teacherName}</p>
           </div>
