@@ -1,97 +1,83 @@
 // src/pages/Admin/pages/AiPackages.jsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import s from "./AiPackages.module.scss";
 import { toast } from "react-toastify";
+import { useDispatch, useSelector } from "react-redux";
 
-// ================= MOCK ==================
-const MOCK_PACKAGES = [
-  {
-    id: 1,
-    name: "AI Basic (30 ngày)",
-    duration: 30,
-    price: 99000,
-    description: "Gói AI cơ bản phù hợp cho người mới bắt đầu.",
-    services: {
-      kaiwa: 100,
-      grammar: 200,
-      pronunciation: 150,
-      vocabulary: 0,
-    },
-    status: "ACTIVE",
-  },
-  {
-    id: 2,
-    name: "AI Pro (90 ngày)",
-    duration: 90,
-    price: 249000,
-    description: "Gói AI nâng cao với đầy đủ các tính năng mạnh nhất.",
-    services: {
-      kaiwa: 300,
-      grammar: 400,
-      pronunciation: 300,
-      vocabulary: 500,
-    },
-    status: "INACTIVE",
-  },
-];
+import {
+  fetchAdminAiPackages,
+  createAdminAiPackage,
+  updateAdminAiPackage,
+  deleteAdminAiPackage,
+} from "../../../redux/features/adminAiPackageSlice";
 
+// ================= SERVICE OPTIONS ==================
 const SERVICE_OPTIONS = [
   { key: "kaiwa", label: "AI Kaiwa" },
   { key: "grammar", label: "Grammar Fix" },
   { key: "pronunciation", label: "Pronunciation Analysis" },
-  { key: "vocabulary", label: "Vocabulary Generator" },
 ];
 
-
-// PACKAGE MODAL
-
+// ================= PACKAGE MODAL ==================
 const PackageModal = ({ open, mode, initial, onClose, onSubmit }) => {
   const [form, setForm] = useState(
     initial || {
       name: "",
-      duration: "",
-      price: "",
+      durationDays: "",
+      priceCents: "",
       description: "",
-      services: {
-        kaiwa: 0,
-        grammar: 0,
-        pronunciation: 0,
-        vocabulary: 0,
-      },
+      grammarQuota: 0,
+      kaiwaQuota: 0,
+      pronunQuota: 0,
+      isActive: true,
+      displayOrder: 1,
     }
   );
 
   const [errors, setErrors] = useState({});
 
+  useEffect(() => {
+    if (initial) {
+      setForm({
+        name: initial.name,
+        durationDays: initial.durationDays,
+        priceCents: initial.priceCents / 100, // Hiển thị dạng VND bình thường
+
+        description: initial.description,
+        grammarQuota: initial.grammarQuota,
+        kaiwaQuota: initial.kaiwaQuota,
+        pronunQuota: initial.pronunQuota,
+        isActive: initial.isActive,
+        displayOrder: initial.displayOrder || 1,
+      });
+    }
+  }, [initial]);
+
   if (!open) return null;
 
-  // VALIDATION
   const validate = (field, value) => {
     let msg = "";
 
     if (field === "name" && !value.trim()) msg = "Tên gói là bắt buộc";
-    if (field === "duration" && (+value <= 0 || !value))
+    if (field === "durationDays" && (+value <= 0 || !value))
       msg = "Thời hạn phải > 0";
-    if (field === "price" && (+value <= 0 || !value))
+    if (field === "priceCents" && (+value <= 0 || !value))
       msg = "Giá tiền phải > 0";
     if (field === "description" && value.trim().length < 10)
       msg = "Mô tả tối thiểu 10 ký tự";
 
-    setErrors((p) => ({ ...p, [field]: msg }));
+    setErrors((prev) => ({ ...prev, [field]: msg }));
   };
 
   const change = (field) => (e) => {
     const v = e.target.value;
-    setForm((prev) => ({ ...prev, [field]: v }));
+    setForm((p) => ({ ...p, [field]: v }));
     validate(field, v);
   };
 
-  const changeService = (key) => (e) => {
+  const changeQuota = (field) => (e) => {
     const v = Number(e.target.value);
-    setForm((prev) => ({
-      ...prev,
-      services: { ...prev.services, [key]: v },
-    }));
+    setForm((p) => ({ ...p, [field]: v }));
   };
 
   const submit = (e) => {
@@ -100,7 +86,12 @@ const PackageModal = ({ open, mode, initial, onClose, onSubmit }) => {
     Object.keys(form).forEach((key) => validate(key, form[key]));
     if (Object.values(errors).some((m) => m)) return;
 
-    onSubmit(form);
+    const processedForm = {
+      ...form,
+      priceCents: Number(form.priceCents) * 100, 
+    };
+
+    onSubmit(processedForm);
   };
 
   return (
@@ -127,12 +118,14 @@ const PackageModal = ({ open, mode, initial, onClose, onSubmit }) => {
               Thời hạn (ngày)
               <input
                 type="number"
-                className={`${s.input} ${errors.duration ? s.errorInput : ""}`}
-                value={form.duration}
-                onChange={change("duration")}
+                className={`${s.input} ${
+                  errors.durationDays ? s.errorInput : ""
+                }`}
+                value={form.durationDays}
+                onChange={change("durationDays")}
               />
-              {errors.duration && (
-                <p className={s.errorText}>{errors.duration}</p>
+              {errors.durationDays && (
+                <p className={s.errorText}>{errors.durationDays}</p>
               )}
             </label>
 
@@ -140,11 +133,15 @@ const PackageModal = ({ open, mode, initial, onClose, onSubmit }) => {
               Giá tiền (VND)
               <input
                 type="number"
-                className={`${s.input} ${errors.price ? s.errorInput : ""}`}
-                value={form.price}
-                onChange={change("price")}
+                className={`${s.input} ${
+                  errors.priceCents ? s.errorInput : ""
+                }`}
+                value={form.priceCents}
+                onChange={change("priceCents")}
               />
-              {errors.price && <p className={s.errorText}>{errors.price}</p>}
+              {errors.priceCents && (
+                <p className={s.errorText}>{errors.priceCents}</p>
+              )}
             </label>
 
             <label className={s.label}>
@@ -166,18 +163,38 @@ const PackageModal = ({ open, mode, initial, onClose, onSubmit }) => {
           <div className={s.col}>
             <h4 className={s.serviceTitle}>Quota dịch vụ AI</h4>
 
-            {SERVICE_OPTIONS.map((sv) => (
-              <label key={sv.key} className={s.label}>
-                {sv.label}
-                <input
-                  type="number"
-                  min={0}
-                  className={s.input}
-                  value={form.services[sv.key]}
-                  onChange={changeService(sv.key)}
-                />
-              </label>
-            ))}
+            <label className={s.label}>
+              Grammar Fix
+              <input
+                type="number"
+                min={0}
+                className={s.input}
+                value={form.grammarQuota}
+                onChange={changeQuota("grammarQuota")}
+              />
+            </label>
+
+            <label className={s.label}>
+              AI Kaiwa
+              <input
+                type="number"
+                min={0}
+                className={s.input}
+                value={form.kaiwaQuota}
+                onChange={changeQuota("kaiwaQuota")}
+              />
+            </label>
+
+            <label className={s.label}>
+              Pronunciation Analysis
+              <input
+                type="number"
+                min={0}
+                className={s.input}
+                value={form.pronunQuota}
+                onChange={changeQuota("pronunQuota")}
+              />
+            </label>
           </div>
 
           <div className={s.modalActions}>
@@ -194,13 +211,21 @@ const PackageModal = ({ open, mode, initial, onClose, onSubmit }) => {
   );
 };
 
+// ======================================================
 // MAIN PAGE
+// ======================================================
 
 export default function AiPackages() {
-  const [list, setList] = useState(MOCK_PACKAGES);
+  const dispatch = useDispatch();
+  const { list, loading } = useSelector((state) => state.adminAiPackages);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [mode, setMode] = useState("create");
   const [editing, setEditing] = useState(null);
+
+  useEffect(() => {
+    dispatch(fetchAdminAiPackages());
+  }, [dispatch]);
 
   const openCreate = () => {
     setMode("create");
@@ -216,27 +241,36 @@ export default function AiPackages() {
 
   const submit = (form) => {
     if (mode === "create") {
-      const newPkg = { id: Date.now(), ...form, status: "ACTIVE" };
-      setList((p) => [newPkg, ...p]);
-      toast.success("Tạo gói AI thành công!");
+      dispatch(createAdminAiPackage(form))
+        .unwrap()
+        .then(() => toast.success("Tạo gói AI thành công!"))
+        .catch(() => toast.error("Không thể tạo gói AI"));
     } else {
-      setList((p) =>
-        p.map((item) => (item.id === editing.id ? { ...item, ...form } : item))
-      );
-      toast.success("Cập nhật gói AI thành công!");
+      dispatch(updateAdminAiPackage({ id: editing.id, data: form }))
+        .unwrap()
+        .then(() => toast.success("Cập nhật thành công!"))
+        .catch(() => toast.error("Không thể cập nhật!"));
     }
+
     setModalOpen(false);
   };
 
   const toggleStatus = (pkg) => {
-    setList((prev) =>
-      prev.map((p) =>
-        p.id === pkg.id
-          ? { ...p, status: p.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" }
-          : p
-      )
-    );
-    toast.success("Đã thay đổi trạng thái gói");
+    const newData = { ...pkg, isActive: !pkg.isActive };
+
+    dispatch(updateAdminAiPackage({ id: pkg.id, data: newData }))
+      .unwrap()
+      .then(() => toast.success("Đã thay đổi trạng thái!"))
+      .catch(() => toast.error("Không thể thay đổi trạng thái!"));
+  };
+
+  const handleDelete = (id) => {
+    dispatch(deleteAdminAiPackage(id))
+      .unwrap()
+      .then(() => toast.success("Đã xoá gói AI!"))
+      .catch(() =>
+        toast.error("Không thể xoá gói AI (có người đang sử dụng)!")
+      );
   };
 
   return (
@@ -247,6 +281,8 @@ export default function AiPackages() {
           + Tạo gói AI
         </button>
       </div>
+
+      {loading && <p>Đang tải dữ liệu...</p>}
 
       <div className={s.tableWrap}>
         <table className={s.table}>
@@ -265,23 +301,26 @@ export default function AiPackages() {
             {list.map((pkg) => (
               <tr key={pkg.id}>
                 <td>{pkg.name}</td>
-                <td>{pkg.duration} ngày</td>
-                <td>{pkg.price.toLocaleString()} đ</td>
+                <td>{pkg.durationDays} ngày</td>
+                <td>{(pkg.priceCents / 100).toLocaleString()} đ</td>
 
                 <td>
-                  {Object.entries(pkg.services)
-                    .filter(([, v]) => v > 0)
-                    .map(([k, v]) => `${k} (${v})`)
+                  {[
+                    pkg.grammarQuota > 0 && `grammar (${pkg.grammarQuota})`,
+                    pkg.kaiwaQuota > 0 && `kaiwa (${pkg.kaiwaQuota})`,
+                    pkg.pronunQuota > 0 && `pronun (${pkg.pronunQuota})`,
+                  ]
+                    .filter(Boolean)
                     .join(", ")}
                 </td>
 
                 <td>
                   <span
                     className={`${s.statusBadge} ${
-                      pkg.status === "ACTIVE" ? s.active : s.inactive
+                      pkg.isActive ? s.active : s.inactive
                     }`}
                   >
-                    {pkg.status === "ACTIVE" ? "Đang bán" : "Tạm dừng"}
+                    {pkg.isActive ? "Đang bán" : "Tạm dừng"}
                   </span>
                 </td>
 
@@ -289,8 +328,19 @@ export default function AiPackages() {
                   <button className={s.btnSmall} onClick={() => openEdit(pkg)}>
                     Sửa
                   </button>
-                  <button className={s.btnSmall} onClick={() => toggleStatus(pkg)}>
-                    {pkg.status === "ACTIVE" ? "Tạm dừng" : "Kích hoạt"}
+
+                  <button
+                    className={s.btnSmall}
+                    onClick={() => toggleStatus(pkg)}
+                  >
+                    {pkg.isActive ? "Tạm dừng" : "Kích hoạt"}
+                  </button>
+
+                  <button
+                    className={s.btnSmallDanger}
+                    onClick={() => handleDelete(pkg.id)}
+                  >
+                    Xoá
                   </button>
                 </td>
               </tr>
