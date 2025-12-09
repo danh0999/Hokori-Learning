@@ -187,9 +187,6 @@ export default function PublishStep({ courseId, statusFlags, onBack }) {
             {chapters.map((ch, chIndex) => (
               <div key={ch.id || chIndex} className={styles.curriculumChapter}>
                 <div className={styles.chapterLine}>
-                  <span className={styles.chapterIndex}>
-                    Chương {chIndex + 1}
-                  </span>
                   <span className={styles.chapterTitle}>
                     {ch.title || "Untitled chapter"}
                   </span>
@@ -203,9 +200,6 @@ export default function PublishStep({ courseId, statusFlags, onBack }) {
                   ) : (
                     (ch.lessons || []).map((les, lIndex) => (
                       <li key={les.id || lIndex} className={styles.lessonItem}>
-                        <span className={styles.lessonIndex}>
-                          Lesson {lIndex + 1}
-                        </span>
                         <span className={styles.lessonTitle}>
                           {les.title || "Untitled lesson"}
                         </span>

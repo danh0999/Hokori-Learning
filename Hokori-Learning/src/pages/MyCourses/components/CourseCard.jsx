@@ -33,15 +33,13 @@ const CourseCard = ({ course, onContinue, onViewCertificate }) => {
       </div>
 
       {/* Content */}
-      <div className={styles.content}>
+      <div className={styles.content} onClick={handleOpenCourse}>
         <div className={styles.headerRow}>
           <div className={styles.leftHeader}>
             {course.level && (
               <span className={styles.levelBadge}>{course.level}</span>
             )}
-            <h3 className={styles.title} onClick={handleOpenCourse}>
-              {course.title}
-            </h3>
+            <h3 className={styles.title}>{course.title}</h3>
           </div>
         </div>
 

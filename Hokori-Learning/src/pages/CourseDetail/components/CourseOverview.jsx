@@ -91,7 +91,7 @@ const CourseOverview = ({ course }) => {
 
               return (
                 <div key={ch.id ?? i} className="chapter">
-                  <h3>{`Chương ${i + 1}: ${ch.title}`}</h3>
+                  <h3>{ch.title}</h3>
 
                   {/* ⭐ Chương học thử (theo guide: chapter đầu tiên isTrial) */}
                   {i === 0 && (
