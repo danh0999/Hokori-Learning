@@ -1,6 +1,5 @@
 import React from "react";
 import RolePoliciesPage from "../RolePolicies/RolePoliciesPage";
-
 export default function LearnerPolicies() {
   return (
     <RolePoliciesPage

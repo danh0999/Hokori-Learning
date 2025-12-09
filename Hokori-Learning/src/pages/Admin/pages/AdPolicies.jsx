@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import api from "../../../configs/axios";
 import s from "./AdPolicies.module.scss";
+import { toast } from "react-toastify";
 
 export default function AdPolicies() {
   const [policies, setPolicies] = useState([]);
@@ -32,6 +33,7 @@ export default function AdPolicies() {
     } catch (err) {
       console.error(err);
       setError("Không tải được danh sách chính sách.");
+      toast.error("Không tải được danh sách chính sách!");
     } finally {
       setLoading(false);
     }
@@ -65,22 +67,44 @@ export default function AdPolicies() {
 
   // DELETE
   const handleDelete = async (p) => {
-    if (!window.confirm(`Xoá chính sách "${p.title}"?`)) return;
-
-    try {
-      await api.delete(`admin/policies/${p.id}`);
-      await loadPolicies();
-    } catch (err) {
-      console.error(err);
-      alert("Xoá thất bại.");
-    }
+    toast.info(
+      <div>
+        <div style={{ marginBottom: "8px" }}>
+          Xác nhận xoá policy "<b>{p.title}</b>"?
+        </div>
+        <button
+          style={{
+            padding: "6px 12px",
+            background: "#dc2626",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+            marginRight: "8px",
+          }}
+          onClick={async () => {
+            try {
+              await api.delete(`admin/policies/${p.id}`);
+              await loadPolicies();
+              toast.success("Đã xoá thành công!");
+            } catch (err) {
+              console.error(err);
+              toast.error("Xoá thất bại!");
+            }
+          }}
+        >
+          Xoá ngay
+        </button>
+      </div>,
+      { autoClose: 5000 }
+    );
   };
 
   // SAVE CREATE / UPDATE
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.roleName || !form.title || !form.content) {
-      alert("Vui lòng điền đầy đủ thông tin.");
+      toast.error("Vui lòng điền đầy đủ thông tin!");
       return;
     }
 
@@ -90,15 +114,17 @@ export default function AdPolicies() {
 
       if (editingPolicy) {
         await api.put(`admin/policies/${editingPolicy.id}`, body);
+        toast.success("Cập nhật chính sách thành công!");
       } else {
         await api.post("admin/policies", body);
+        toast.success("Tạo chính sách mới thành công!");
       }
 
       setShowForm(false);
       await loadPolicies();
     } catch (err) {
       console.error(err);
-      alert("Lưu thất bại.");
+      toast.error("Lưu thất bại!");
     } finally {
       setSaving(false);
     }
@@ -111,8 +137,7 @@ export default function AdPolicies() {
         <div className={s.headerText}>
           <h1 className={s.title}>Quản lý chính sách</h1>
           <p className={s.subtitle}>
-            Tạo và quản lý các chính sách áp dụng cho từng vai trò trong hệ
-            thống.
+            Tạo và quản lý các chính sách áp dụng cho từng vai trò trong hệ thống.
           </p>
         </div>
 
@@ -161,19 +186,20 @@ export default function AdPolicies() {
                     <td>
                       <span
                         className={`${s.roleBadge} ${
-                          p.roleName
-                            ? s[`roleBadge__${p.roleName.toLowerCase()}`]
-                            : ""
+                          p.roleName ? s[`roleBadge__${p.roleName.toLowerCase()}`] : ""
                         }`}
                       >
                         {p.roleName}
                       </span>
                     </td>
+
                     <td className={s.textCell}>{p.title}</td>
                     <td className={s.textCell}>{p.createdByEmail}</td>
+
                     <td className={s.textCell}>
                       {new Date(p.createdAt).toLocaleString("vi-VN")}
                     </td>
+
                     <td className={s.actions}>
                       <button
                         className={s.actionBtn}
@@ -207,7 +233,7 @@ export default function AdPolicies() {
         </div>
       </div>
 
-      {/* MODAL */}
+      {/* FORM MODAL */}
       {showForm && (
         <div className={s.modalOverlay}>
           <div className={s.modal}>
@@ -215,10 +241,7 @@ export default function AdPolicies() {
               <h2 className={s.modalTitle}>
                 {editingPolicy ? "Sửa chính sách" : "Tạo chính sách mới"}
               </h2>
-              <p className={s.modalDesc}>
-                Gắn chính sách với role tương ứng, mô tả rõ phạm vi áp dụng và
-                điều kiện.
-              </p>
+              <p className={s.modalDesc}>Điền thông tin chi tiết của policy.</p>
             </div>
 
             <form onSubmit={handleSubmit} className={s.form}>
@@ -226,9 +249,7 @@ export default function AdPolicies() {
                 <label>Role áp dụng</label>
                 <select
                   value={form.roleName}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, roleName: e.target.value }))
-                  }
+                  onChange={(e) => setForm((prev) => ({ ...prev, roleName: e.target.value }))}
                 >
                   <option value="">-- Chọn role --</option>
                   {ROLE_OPTIONS.map((r) => (
@@ -244,10 +265,7 @@ export default function AdPolicies() {
                 <input
                   type="text"
                   value={form.title}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, title: e.target.value }))
-                  }
-                  placeholder="VD: Chính sách chia sẻ doanh thu cho Teacher"
+                  onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
                 />
               </div>
 
@@ -256,10 +274,7 @@ export default function AdPolicies() {
                 <textarea
                   rows={6}
                   value={form.content}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, content: e.target.value }))
-                  }
-                  placeholder="Mô tả chi tiết điều kiện, phạm vi áp dụng, ngoại lệ..."
+                  onChange={(e) => setForm((prev) => ({ ...prev, content: e.target.value }))}
                 />
               </div>
 
@@ -273,25 +288,20 @@ export default function AdPolicies() {
                 </button>
 
                 <button type="submit" className={s.saveBtn} disabled={saving}>
-                  {saving
-                    ? "Đang lưu..."
-                    : editingPolicy
-                    ? "Lưu thay đổi"
-                    : "Tạo mới"}
+                  {saving ? "Đang lưu..." : editingPolicy ? "Lưu thay đổi" : "Tạo mới"}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* VIEW MODAL */}
       {viewingPolicy && (
         <div className={s.modalOverlay}>
           <div className={s.modal}>
             <div className={s.modalHeader}>
               <h2 className={s.modalTitle}>Chi tiết chính sách</h2>
-              <p className={s.modalDesc}>
-                Policy dành cho role: <strong>{viewingPolicy.roleName}</strong>
-              </p>
             </div>
 
             <div className={s.viewContentBox}>
@@ -300,19 +310,13 @@ export default function AdPolicies() {
               <div
                 className={s.viewBody}
                 dangerouslySetInnerHTML={{
-                  __html: (viewingPolicy.content || "").replace(
-                    /\n/g,
-                    "<br />"
-                  ),
+                  __html: (viewingPolicy.content || "").replace(/\n/g, "<br />"),
                 }}
               />
             </div>
 
             <div className={s.formActions}>
-              <button
-                className={s.cancelBtn}
-                onClick={() => setViewingPolicy(null)}
-              >
+              <button className={s.cancelBtn} onClick={() => setViewingPolicy(null)}>
                 Đóng
               </button>
             </div>
