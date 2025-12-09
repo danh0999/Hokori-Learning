@@ -42,6 +42,7 @@ export default function Filters({ filters, setFilters, onClear }) {
         <div className={styles.searchWrap}>
           <SearchBar
             placeholder="Tìm khóa học hoặc giáo viên..."
+            value={filters.keyword} 
             onSearch={handleKeywordSearch}
           />
         </div>
