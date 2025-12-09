@@ -16,25 +16,21 @@ const MyCourses = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        // 1️⃣ Lấy danh sách enrollment
         const enrollRes = await api.get("/learner/courses");
         const enrollments = enrollRes.data || [];
 
-        // 2️⃣ Duyệt từng course → lấy thông tin bằng TREE API
         const detailed = await Promise.all(
           enrollments.map(async (enroll) => {
             try {
               const treeRes = await api.get(`/courses/${enroll.courseId}/tree`);
               const tree = treeRes.data;
 
-              // Tính tổng số lessons từ tree
               let totalLessons = 0;
               tree.chapters?.forEach((ch) => {
                 totalLessons += ch.lessons?.length || 0;
               });
 
               return {
-                // ---- Thông tin Course ----
                 id: tree.id,
                 courseId: enroll.courseId,
                 title: tree.title || "Khóa học",
@@ -45,11 +41,9 @@ const MyCourses = () => {
                   : "https://cdn.pixabay.com/photo/2017/01/31/13/14/book-2024684_1280.png",
 
                 lessons: totalLessons,
-
                 status: tree.status,
                 statusMessage: tree.statusMessage,
 
-                // ---- Tiến độ ----
                 progress: enroll.progressPercent || 0,
                 completed: enroll.progressPercent >= 100,
                 lastStudy: enroll.lastAccessAt
@@ -76,10 +70,8 @@ const MyCourses = () => {
     fetchCourses();
   }, []);
 
-  // 🔹 Khi user nhấn “Tiếp tục học”
   const handleContinue = async (course) => {
     try {
-      // 1) Lấy danh sách lessons của course
       const res = await api.get(`/learner/courses/${course.courseId}/lessons`);
       const lessons = (res.data ?? []).sort(
         (a, b) => a.orderIndex - b.orderIndex
@@ -90,12 +82,10 @@ const MyCourses = () => {
         return;
       }
 
-      // 2) Tìm lesson đầu tiên chưa hoàn thành; nếu tất cả hoàn thành, chọn lesson đầu tiên
       const incompleteLesson = lessons.find((l) => !l.isCompleted);
       const targetLesson = incompleteLesson || lessons[0];
       const lessonId = targetLesson.lessonId ?? targetLesson.id;
 
-      // 3) Lấy contents của lesson mục tiêu để xác định content đang học hoặc tiếp theo
       const contentsRes = await api.get(
         `/learner/lessons/${lessonId}/contents`
       );
@@ -103,20 +93,27 @@ const MyCourses = () => {
         (a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0)
       );
 
-      // 4) Ưu tiên content đang xem dở (lastPositionSec > 0 và chưa hoàn thành)
       const inProgressContent = contents.find(
         (c) => (c.lastPositionSec ?? 0) > 0 && !c.isCompleted
       );
 
-      // 5) Nếu không có, chọn content đầu tiên chưa hoàn thành; nếu tất cả xong, không kèm contentId
       const nextContent = contents.find((c) => !c.isCompleted);
       const targetContent = inProgressContent || nextContent || null;
 
-      // Điều hướng tới trang LearningTreePage của course để học tiếp
-      // Route được định nghĩa: `/my-courses/:courseId/learn`
+      // hiện tại route học vẫn là trang Tree
       navigate(`/my-courses/${course.courseId}/learn`);
     } catch (err) {
       console.error("Không thể điều hướng vào bài học:", err);
+    }
+  };
+
+  const handleViewCertificate = async (course) => {
+    try {
+      const res = await ensureCertificateByCourse(course.courseId);
+      const certificateId = res.data.data.id;
+      navigate(`/certificates/${certificateId}`);
+    } catch {
+      toast.error("Không thể tạo hoặc lấy chứng chỉ");
     }
   };
 
@@ -127,17 +124,6 @@ const MyCourses = () => {
       </main>
     );
   }
-
-  const handleViewCertificate = async (course) => {
-    try {
-      const res = await ensureCertificateByCourse(course.courseId);
-      const certificateId = res.data.data.id;
-
-      navigate(`/certificates/${certificateId}`);
-    } catch {
-      toast.error("Không thể tạo hoặc lấy chứng chỉ");
-    }
-  };
 
   return (
     <main className={styles.main}>
@@ -150,7 +136,7 @@ const MyCourses = () => {
             <a href="/marketplace">Khám phá thêm khóa học →</a>
           </p>
         ) : (
-          <div className={styles.grid}>
+          <div className={styles.courseList}>
             {courses.map((course) => (
               <CourseCard
                 key={course.courseId}

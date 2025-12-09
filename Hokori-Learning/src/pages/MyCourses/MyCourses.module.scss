@@ -1,82 +1,42 @@
-/* ===============================
-   MY COURSES PAGE (NO SIDEBAR)
-   =============================== */
-
-.layout {
+.main {
   background: #f9fafb;
   min-height: 100vh;
-  font-family: "Inter", sans-serif;
+  padding: 32px 0 64px;
+}
+
+.container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.pageTitle {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 16px;
   color: #111827;
 }
 
-.main {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 3rem 2rem 4rem;
-}
+.empty {
+  margin-top: 24px;
+  font-size: 15px;
+  color: #4b5563;
 
-/* ===== PAGE HEADER ===== */
-.pageHeader {
-  margin-bottom: 2rem;
-  text-align: left;
+  a {
+    color: #2563eb;
+    font-weight: 500;
+    text-decoration: none;
 
-  .breadcrumb {
-    color: #6b7280;
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
-
-    .link {
-      color: #000000;
-      cursor: pointer;
-      font-weight: 500;
-      &:hover {
-        text-decoration: underline;
-        color: #2563eb;
-      }
+    &:hover {
+      text-decoration: underline;
     }
   }
-
-  .heading {
-    font-size: 1.9rem;
-    font-weight: 700;
-    color: #0f172a;
-    margin-bottom: 0.4rem;
-    letter-spacing: -0.3px;
-  }
-
-  .subheading {
-    font-size: 1rem;
-    color: #6b7280;
-  }
 }
 
-/* ===== FILTER SECTION ===== */
-.filters {
-  margin-bottom: 2rem;
-}
-
-/* ===== GRID OF COURSES ===== */
-.grid {
-  display: grid;
-  gap: 2rem;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  align-items: stretch;
-}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 1024px) {
-  .main {
-    padding: 2rem 1.25rem 3rem;
-  }
-
-  .grid {
-    gap: 1.5rem;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  }
-}
-
-@media (max-width: 640px) {
-  .pageHeader .heading {
-    font-size: 1.5rem;
-  }
+/* ⭐ Danh sách course dạng vertical list giống Coursera */
+.courseList {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }

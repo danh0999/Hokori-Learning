@@ -5,20 +5,14 @@ import {
   Row,
   Col,
   Table,
-  Button,
   Statistic,
   Tag,
   message,
   DatePicker,
   Space,
 } from "antd";
-import {
-  DollarOutlined,
-  ArrowDownOutlined,
-  ArrowUpOutlined,
-} from "@ant-design/icons";
+import { DollarOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
-import WithdrawModal from "./WithdrawModal";
 import styles from "./TeacherRevenue.module.scss";
 import api from "../../../configs/axios.js";
 import dayjs from "dayjs";
@@ -30,7 +24,7 @@ import {
   selectWalletTransactionsPage,
   selectWalletStatus,
   selectWalletTransactionsStatus,
-} from "../../../redux/features/walletSlice.js"; // ⚠️ chỉnh lại path cho đúng
+} from "../../../redux/features/walletSlice.js";
 
 export default function TeacherRevenue() {
   const dispatch = useDispatch();
@@ -43,18 +37,20 @@ export default function TeacherRevenue() {
   const walletStatus = useSelector(selectWalletStatus);
   const txPage = useSelector(selectWalletTransactionsPage);
   const txStatus = useSelector(selectWalletTransactionsStatus);
-
-  const [openWithdraw, setOpenWithdraw] = useState(false);
   const [page, setPage] = useState(1); // Antd index 1, BE index 0
+
+  const loading = walletStatus === "loading" || txStatus === "loading";
+
+  // Ví: BE trả VND
+  const balanceVnd = wallet?.walletBalance ?? 0;
+
+  const transactions = useMemo(() => txPage?.content || [], [txPage]);
 
   const fetchMonthlyRevenue = async (year, month) => {
     try {
       setMonthLoading(true);
       const res = await api.get("/teacher/dashboard/revenue", {
-        params: {
-          year,
-          month, // 1-12
-        },
+        params: { year, month }, // 1-12
       });
 
       const payload = res.data?.data;
@@ -67,7 +63,7 @@ export default function TeacherRevenue() {
     }
   };
 
-  // load ví + transactions lần đầu
+  // lần đầu load: ví + transaction + doanh thu tháng hiện tại
   useEffect(() => {
     dispatch(fetchMyWallet());
     dispatch(
@@ -78,32 +74,31 @@ export default function TeacherRevenue() {
       })
     );
 
-    // ✅ gọi doanh thu tháng hiện tại
     const now = dayjs();
-    fetchMonthlyRevenue(now.year(), now.month() + 1); // month: 1-12
+    fetchMonthlyRevenue(now.year(), now.month() + 1);
   }, [dispatch]);
+
   const handleChangeMonth = (value) => {
     const m = value || dayjs();
     setSelectedMonth(m);
     fetchMonthlyRevenue(m.year(), m.month() + 1);
   };
 
-  const loading = walletStatus === "loading" || txStatus === "loading";
+  // Doanh thu tháng: ưu tiên field VND, fallback sang *Cents*
+  const monthlyRevenueValue =
+    monthRevenue?.revenueCents ??
+    (monthRevenue?.revenue != null
+      ? Math.round(monthRevenue.revenueCents / 100)
+      : 0);
 
-  const balanceCents = wallet?.walletBalance ?? 0;
-  const balanceVnd = balanceCents / 100;
-
-  const totalEarned = 0; // nếu BE có field này trong /wallet/me thì map thêm ở walletSlice
-  const pendingWithdraw = 0; // sau này BE làm withdraw thì thêm
-
-  const transactions = useMemo(() => txPage?.content || [], [txPage]);
+  const walletBalanceDisplay = monthRevenue?.walletBalance ?? balanceVnd ?? 0;
 
   const columns = [
     {
       title: "Ngày",
       dataIndex: "createdAt",
       key: "createdAt",
-      render: (val) => new Date(val).toLocaleString("vi-VN"),
+      render: (val) => (val ? new Date(val).toLocaleString("vi-VN") : ""),
     },
     {
       title: "Loại giao dịch",
@@ -125,10 +120,9 @@ export default function TeacherRevenue() {
         const amount = (val ?? 0) / 100;
         return (
           <span
-            style={{
-              color: amount > 0 ? "green" : "red",
-              fontWeight: 500,
-            }}
+            className={
+              amount > 0 ? styles.amountPositive : styles.amountNegative
+            }
           >
             {amount > 0 ? "+" : ""}
             {amount.toLocaleString("vi-VN")}
@@ -144,7 +138,6 @@ export default function TeacherRevenue() {
     },
   ];
 
-  // change page trong table -> gọi lại API
   const handleChangePage = (newPage) => {
     setPage(newPage);
     dispatch(
@@ -156,121 +149,80 @@ export default function TeacherRevenue() {
     );
   };
 
-  // tạm thời: khi teacher bấm rút tiền, chỉ validate + show message
-  // vì BE chưa có API withdraw request
-  const handleSubmitWithdraw = async (amount) => {
-    if (amount > balanceVnd) {
-      message.warning("Số tiền rút vượt quá số dư hiện tại");
-      return;
-    }
-
-    // TODO: khi BE có API withdraw request, gọi ở đây
-    console.log("Withdraw request amount =", amount);
-    message.info("Chức năng rút tiền sẽ được kích hoạt khi BE hoàn thành API.");
-    setOpenWithdraw(false);
-  };
-
   return (
     <div className={styles.container}>
-      <h2 className={styles.title}>Ví & Doanh thu của bạn</h2>
-      <div className={styles.monthFilterRow}>
-        <Space>
-          <span>Chọn tháng:</span>
+      {/* HEADER */}
+      <div className={styles.header}>
+        <div className={styles.headerLeft}>
+          <h2 className={styles.title}>Ví & Doanh thu</h2>
+          <p className={styles.subtitle}>
+            Theo dõi số dư ví, doanh thu theo tháng và lịch sử giao dịch từ các
+            khóa học bạn đã bán.
+          </p>
+        </div>
+        <div className={styles.headerRight}>
+          <span className={styles.monthLabel}>Chọn tháng</span>
           <DatePicker
             picker="month"
             value={selectedMonth}
             onChange={handleChangeMonth}
             format="MM/YYYY"
+            allowClear={false}
+            className={styles.monthPicker}
           />
-        </Space>
+        </div>
       </div>
 
-      {/* --- Summary Cards --- */}
+      {/* SUMMARY CARDS */}
       <Row gutter={16} className={styles.summaryRow}>
-        {/* ✅ Card doanh thu theo tháng (chỉ tiền bán khóa học) */}
         <Col xs={24} sm={12} md={8}>
-          <Card loading={monthLoading}>
+          <Card loading={monthLoading} className={styles.summaryCard}>
             <Statistic
               title={
                 monthRevenue?.period
                   ? `Doanh thu tháng ${monthRevenue.period}`
-                  : "Doanh thu tháng (Tiền bán khóa học)"
+                  : "Doanh thu tháng (tiền bán khóa học)"
               }
-              value={
-                monthRevenue?.revenue ??
-                (monthRevenue?.revenueCents != null
-                  ? monthRevenue.revenueCents / 100
-                  : 0)
-              }
-              valueStyle={{ color: "#1677ff" }}
+              value={monthlyRevenueValue}
+              valueStyle={{ color: "#2563eb", fontWeight: 600 }}
               prefix={<DollarOutlined />}
               suffix="VNĐ"
             />
-            <div style={{ marginTop: 8 }}>
-              Số giao dịch: <b>{monthRevenue?.transactionCount ?? 0}</b> – Số dư
-              ví hiện tại:{" "}
-              <b>
-                {(monthRevenue?.walletBalance ?? balanceCents).toLocaleString(
-                  "vi-VN"
-                )}
-                ₫
-              </b>
+            <div className={styles.summaryHint}>
+              Số giao dịch: <b>{monthRevenue?.transactionCount ?? 0}</b>
             </div>
           </Card>
         </Col>
 
-        {/* 3 card cũ: Số dư, Tổng thu nhập, Đang chờ rút */}
         <Col xs={24} sm={12} md={8}>
-          <Card loading={loading}>
+          <Card loading={loading} className={styles.summaryCard}>
             <Statistic
-              title="Số dư hiện tại"
-              value={balanceVnd}
-              valueStyle={{ color: "#3f8600" }}
+              title="Số dư ví hiện tại"
+              value={walletBalanceDisplay}
+              valueStyle={{ color: "#16a34a", fontWeight: 600 }}
               prefix={<DollarOutlined />}
               suffix="VNĐ"
             />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={8}>
-          <Card loading={loading}>
-            <Statistic
-              title="Tổng thu nhập (tạm tính)"
-              value={totalEarned / 100}
-              valueStyle={{ color: "#1677ff" }}
-              prefix={<ArrowUpOutlined />}
-              suffix="VNĐ"
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={8}>
-          <Card loading={loading}>
-            <Statistic
-              title="Đang chờ rút"
-              value={pendingWithdraw / 100}
-              valueStyle={{ color: "#fa8c16" }}
-              prefix={<ArrowDownOutlined />}
-              suffix="VNĐ"
-            />
+            <div className={styles.summaryHint}>
+              Được cập nhật sau mỗi giao dịch thành công.
+            </div>
           </Card>
         </Col>
       </Row>
 
-      {/* --- Withdraw Button --- */}
-      <div className={styles.actions}>
-        <Button
-          type="primary"
-          size="large"
-          onClick={() => setOpenWithdraw(true)}
-          icon={<ArrowDownOutlined />}
-        >
-          Rút tiền
-        </Button>
-      </div>
-
-      {/* --- Transactions Table --- */}
+      {/* TRANSACTIONS TABLE */}
       <Card
         className={styles.tableCard}
-        title="Lịch sử giao dịch"
+        title={
+          <div className={styles.tableHeader}>
+            <div>
+              <h3 className={styles.tableTitle}>Lịch sử giao dịch</h3>
+              <p className={styles.tableSubtitle}>
+                Danh sách các giao dịch gần đây nhất trong ví của bạn.
+              </p>
+            </div>
+          </div>
+        }
         loading={loading}
       >
         <Table
@@ -285,14 +237,6 @@ export default function TeacherRevenue() {
           }}
         />
       </Card>
-
-      {/* --- Withdraw Modal --- */}
-      <WithdrawModal
-        open={openWithdraw}
-        maxAmount={balanceVnd}
-        onCancel={() => setOpenWithdraw(false)}
-        onSubmit={handleSubmitWithdraw}
-      />
     </div>
   );
 }

@@ -15,7 +15,7 @@ const CreateEventModal = ({ open, onClose, onSubmit }) => {
     startAt: "",
     endAt: "",
   });
-
+  const [minDateTime, setMinDateTime] = useState("");
   const change = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
   };
@@ -41,7 +41,15 @@ const CreateEventModal = ({ open, onClose, onSubmit }) => {
         startAt: "",
         endAt: "",
       });
+      return;
     }
+
+    // Khi mở modal: set min = thời điểm hiện tại (local) cho datetime-local
+    const now = new Date();
+    // Chuyển về local ISO string dạng YYYY-MM-DDTHH:mm cho input datetime-local
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    const localISO = now.toISOString().slice(0, 16);
+    setMinDateTime(localISO);
   }, [open]);
 
   if (!open) return null;
@@ -82,6 +90,7 @@ const CreateEventModal = ({ open, onClose, onSubmit }) => {
                 className={s.input}
                 value={form.startAt}
                 onChange={change("startAt")}
+                min={minDateTime}
               />
             </label>
           </div>
@@ -94,6 +103,7 @@ const CreateEventModal = ({ open, onClose, onSubmit }) => {
                 className={s.input}
                 value={form.endAt}
                 onChange={change("endAt")}
+                min={form.startAt || minDateTime}
               />
             </label>
 

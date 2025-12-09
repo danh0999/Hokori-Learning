@@ -39,6 +39,36 @@
     gap: 24px;
     align-items: stretch;
   }
+  .buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    .btn-flag {
+      border: none;
+      background: transparent;
+      font-size: 13px;
+      color: #ef4444;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      padding: 4px 0;
+
+      i {
+        font-size: 14px;
+      }
+
+      &:hover {
+        text-decoration: underline;
+      }
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+    }
+  }
 
   /* LEFT: preview image / video */
   .video-preview {

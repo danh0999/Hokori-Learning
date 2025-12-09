@@ -61,14 +61,6 @@ export default function CourseCard({ course }) {
     ? "Miễn phí"
     : Number(effectivePrice).toLocaleString("vi-VN") + " VND";
 
-  const originalPrice =
-    !isFree &&
-    discountedPriceCents &&
-    priceCents &&
-    discountedPriceCents < priceCents
-      ? Number(priceCents).toLocaleString("vi-VN") + " VND"
-      : null;
-
   const teacher = teacherName || "Giáo viên đang cập nhật";
 
   // ===============================
@@ -146,9 +138,6 @@ export default function CourseCard({ course }) {
           >
             {displayPrice}
           </span>
-          {originalPrice && (
-            <span className={styles.priceOld}>{originalPrice}</span>
-          )}
         </div>
 
         <div className={styles.teacher}>

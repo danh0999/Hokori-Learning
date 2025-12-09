@@ -576,7 +576,7 @@ export default function CourseCurriculumView({
             header={
               <Space>
                 <Text strong>{ch.title}</Text>
-                <Tag>{(ch.lessons || []).length} lessons</Tag>
+                <Tag>{(ch.lessons || []).length} Bài</Tag>
               </Space>
             }
             key={ch.id}
@@ -598,7 +598,7 @@ export default function CourseCurriculumView({
                             {lesson.title}
                           </div>
                           <div className={styles.lessonMeta}>
-                            {(lesson.sections || []).length} section(s)
+                            {(lesson.sections || []).length} phần
                             {lessonDurationLabel && (
                               <> · ~{lessonDurationLabel}</>
                             )}
@@ -656,7 +656,7 @@ export default function CourseCurriculumView({
                           return (
                             <div className={styles.inlinePreviewBox}>
                               <Text strong className={styles.previewTitle}>
-                                Nội dung chính
+                                Tài liệu xem
                               </Text>
                               {isVideo ? (
                                 <video
@@ -684,7 +684,7 @@ export default function CourseCurriculumView({
                           return (
                             <div className={styles.inlinePreviewBox}>
                               <Text strong className={styles.previewTitle}>
-                                Description
+                                Tài liệu đọc
                               </Text>
                               <div className={styles.previewRich}>
                                 {richTextContent.richText || (

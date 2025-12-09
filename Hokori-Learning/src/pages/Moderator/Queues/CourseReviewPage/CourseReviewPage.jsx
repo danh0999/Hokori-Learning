@@ -159,10 +159,6 @@ export default function CourseReviewPage() {
     }
   };
 
-  const handleRequestRevision = () => {
-    message.info("TODO: mở form yêu cầu chỉnh sửa nội dung.");
-  };
-
   const handleAiReview = async () => {
     if (!courseId) return;
 
@@ -215,7 +211,7 @@ export default function CourseReviewPage() {
           />
           <div>
             <Title level={4} className={styles.headerTitle}>
-              Review course #{courseId}
+              Duyệt khóa #{courseId}
             </Title>
             <Text type="secondary" className={styles.headerSubtitle}>
               {course?.title || "—"}
@@ -237,12 +233,11 @@ export default function CourseReviewPage() {
           >
             AI review nội dung khóa học
           </Button>
-          <Button onClick={handleRequestRevision}>Request revision</Button>
           <Button type="primary" onClick={handleApprove}>
-            Approve &amp; publish
+            Duyệt &amp; Xuất bản
           </Button>
           <Button danger onClick={handleReject}>
-            Reject
+            Từ chối
           </Button>
         </Space>
       </div>
@@ -290,10 +285,10 @@ export default function CourseReviewPage() {
 
           <div className={styles.curriculumBlock}>
             <div className={styles.blockHeader}>
-              <h3>Course curriculum preview</h3>
+              <h3>Xem trước nội dung khoá học</h3>
               <Paragraph type="secondary">
-                Preview đầy đủ như màn Curriculum của Teacher (chapter, lesson,
-                content, video, quiz, flashcard…).
+                Xem trước đầy đủ như màn Curriculum của Teacher (chapter,
+                lesson, content, video, quiz, flashcard…).
               </Paragraph>
             </div>
 
@@ -415,7 +410,7 @@ export default function CourseReviewPage() {
                         overview.estimatedStudyHours) && (
                         <div className={styles.aiSection}>
                           <div className={styles.aiSectionTitle}>
-                            Course overview
+                            Tổng quan nội dung
                           </div>
                           <div className={styles.aiOverviewRow}>
                             <div className={styles.aiOverviewItem}>
@@ -455,7 +450,7 @@ export default function CourseReviewPage() {
                       {aiReview.safetyCheck && (
                         <div className={styles.aiSection}>
                           <div className={styles.aiSectionTitle}>
-                            Safety check
+                            Kiểm tra an toàn nội dung
                           </div>
                           <Space direction="vertical" size={4}>
                             <Space>
@@ -479,16 +474,18 @@ export default function CourseReviewPage() {
                       {aiReview.levelMatch && (
                         <div className={styles.aiSection}>
                           <div className={styles.aiSectionTitle}>
-                            Level suitability
+                            Mức độ phù hợp trình độ
                           </div>
                           <Space direction="vertical" size={4}>
                             <Space wrap>
                               {levelMatch.declaredLevel && (
-                                <Tag>Declared: {levelMatch.declaredLevel}</Tag>
+                                <Tag>
+                                  Đang hướng tới: {levelMatch.declaredLevel}
+                                </Tag>
                               )}
                               {levelMatch.detectedLevel && (
                                 <Tag color="blue">
-                                  Detected: {levelMatch.detectedLevel}
+                                  Đã phát hiện: {levelMatch.detectedLevel}
                                 </Tag>
                               )}
                               {typeof levelMatch.match === "boolean" && (
@@ -510,7 +507,7 @@ export default function CourseReviewPage() {
                       {pedagogy && (
                         <div className={styles.aiSection}>
                           <div className={styles.aiSectionTitle}>
-                            Pedagogical quality
+                            Chất lượng sư phạm
                           </div>
                           <Space
                             direction="vertical"
@@ -581,7 +578,7 @@ export default function CourseReviewPage() {
                       {langAcc && (
                         <div className={styles.aiSection}>
                           <div className={styles.aiSectionTitle}>
-                            Language accuracy
+                            Độ chính xác ngôn ngữ
                           </div>
                           {langScore10 !== null && (
                             <Progress
@@ -674,7 +671,7 @@ export default function CourseReviewPage() {
                       {grammarProg && (
                         <div className={styles.aiSection}>
                           <div className={styles.aiSectionTitle}>
-                            Grammar progression
+                            Tiến trình ngữ pháp
                           </div>
                           <Space
                             direction="vertical"

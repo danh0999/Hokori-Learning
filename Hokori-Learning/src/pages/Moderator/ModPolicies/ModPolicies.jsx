@@ -5,8 +5,8 @@ export default function ModeratorPolicies() {
   return (
     <RolePoliciesPage
       roleName="MODERATOR"
-      title="Chính sách dành cho Giáo viên"
-      subtitle="Quy định về khóa học, doanh thu, nội dung bài giảng và bảo mật."
+      title="Chính sách dành cho Moderator"
+      subtitle=" Quy định và hướng dẫn dành cho các Moderator trong việc quản lý nội dung và người dùng trên nền tảng."
     />
   );
 }

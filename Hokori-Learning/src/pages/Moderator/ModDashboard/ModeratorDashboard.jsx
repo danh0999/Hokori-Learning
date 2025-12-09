@@ -14,8 +14,8 @@ import {
   Empty,
   Avatar,
 } from "antd";
-import api from "../../../configs/axios.js"; // chỉnh path nếu khác
-import { buildFileUrl } from "../../../utils/fileUrl.js"; // chỉnh path nếu khác
+import api from "../../../configs/axios.js";
+import { buildFileUrl } from "../../../utils/fileUrl.js";
 
 const { Title, Text } = Typography;
 const { Search } = Input;

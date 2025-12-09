@@ -94,10 +94,10 @@ const PaymentResultPage = () => {
     );
   }
 
-  // Bằng đoạn này:
-  const rawAmount = payment?.amountCents || 0;
-  // Nếu BE dùng đơn vị khác (ví dụ đã là VND rồi) thì bỏ chia /100 đi
-  const amountVnd = Math.round(rawAmount / 100);
+  const amountVnd =
+    payment?.amount ?? // nếu BE map từ PayOS sang field "amount"
+    payment?.amountCents ?? // hoặc vẫn dùng tên amountCents nhưng value là VND
+    0;
 
   // Format theo kiểu (2.000)
   const formattedAmount = `(${amountVnd.toLocaleString("vi-VN")})`;
