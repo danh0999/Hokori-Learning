@@ -91,12 +91,12 @@ export const sidebarMenusByRole = {
     mk("events", "Sự kiện JLPT", <ReadOutlined />, "/admin/events"),
     mk("ai-packages", "Gói AI", <ExperimentOutlined />, "/admin/ai-packages"),
     mk("revenue", "Tài chính", <DollarOutlined />, "/admin/revenue"),
-    mk(
-      "withdrawals",
-      "Rút tiền GV",
-      <DatabaseOutlined />,
-      "/admin/withdrawals"
-    ),
+    // mk(
+    //   "withdrawals",
+    //   "Rút tiền GV",
+    //   <DatabaseOutlined />,
+    //   "/admin/withdrawals"
+    // ),
     // mk("complaints", "Khiếu nại", <ProfileOutlined />, "/admin/complaints"),
     mk(
       "adpolicies",

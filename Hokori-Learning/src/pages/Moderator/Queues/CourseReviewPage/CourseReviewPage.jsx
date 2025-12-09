@@ -20,6 +20,8 @@ import styles from "./CourseReviewPage.module.scss";
 import api from "../../../../configs/axios.js";
 // ⚠️ chỉnh path cho đúng tới CourseCurriculumView
 import CourseCurriculumView from "../../../Teacher/Courses/CourseCurriculumView/CourseCurriculumView.jsx";
+import ApprovePublishModal from "../../Queues/components/ApprovePublishModal";
+import RejectModal from "../../Queues/components/RejectModal";
 
 const { Text, Title, Paragraph } = Typography;
 
@@ -75,6 +77,14 @@ export default function CourseReviewPage() {
   const [aiReview, setAiReview] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState(null);
+
+  // APPROVE modal
+  const [openApprove, setOpenApprove] = useState(false);
+  const [approveLoading, setApproveLoading] = useState(false);
+
+  // REJECT modal
+  const [openReject, setOpenReject] = useState(false);
+  const [rejectLoading, setRejectLoading] = useState(false);
 
   useEffect(() => {
     if (!courseId) return;
@@ -133,29 +143,34 @@ export default function CourseReviewPage() {
 
   const priceLabel = formatPriceFromCourse(course);
 
-  const handleApprove = async () => {
+  const confirmApprove = async () => {
+    setApproveLoading(true);
     try {
       await api.put(`/moderator/courses/${courseId}/approve`);
-      message.success("Đã approve & publish khóa học.");
+      message.success("Đã phê duyệt & xuất bản khóa học.");
       navigate(-1);
     } catch (err) {
-      console.error(err);
       message.error(
-        err?.response?.data?.message || "Approve khóa học thất bại."
+        err.response?.data?.message || "Approve khóa học thất bại."
       );
+    } finally {
+      setApproveLoading(false);
+      setOpenApprove(false);
     }
   };
-
-  const handleReject = async () => {
+  const submitReject = async (reasonText) => {
+    setRejectLoading(true);
     try {
-      await api.put(`/moderator/courses/${courseId}/reject`);
-      message.success("Đã reject khóa học.");
+      await api.put(`/moderator/courses/${courseId}/reject`, null, {
+        params: { reason: reasonText },
+      });
+      message.success("Khóa học đã bị từ chối.");
       navigate(-1);
     } catch (err) {
-      console.error(err);
-      message.error(
-        err?.response?.data?.message || "Reject khóa học thất bại."
-      );
+      message.error(err.response?.data?.message || "Reject khóa học thất bại.");
+    } finally {
+      setRejectLoading(false);
+      setOpenReject(false);
     }
   };
 
@@ -233,10 +248,11 @@ export default function CourseReviewPage() {
           >
             AI review nội dung khóa học
           </Button>
-          <Button type="primary" onClick={handleApprove}>
+          <Button type="primary" onClick={() => setOpenApprove(true)}>
             Duyệt &amp; Xuất bản
           </Button>
-          <Button danger onClick={handleReject}>
+
+          <Button danger onClick={() => setOpenReject(true)}>
             Từ chối
           </Button>
         </Space>
@@ -836,6 +852,26 @@ export default function CourseReviewPage() {
           </div>
         </div>
       </div>
+      {/* APPROVE MODAL */}
+      <ApprovePublishModal
+        open={openApprove}
+        onCancel={() => setOpenApprove(false)}
+        onConfirm={confirmApprove}
+        confirmLoading={approveLoading}
+        courseSummary={{
+          title: course?.title,
+          priceCents: course?.priceCents,
+          visibility: "Public",
+        }}
+      />
+
+      {/* REJECT MODAL */}
+      <RejectModal
+        open={openReject}
+        onCancel={() => setOpenReject(false)}
+        onSubmit={submitReject}
+        courseTitle={course?.title}
+      />
     </div>
   );
 }

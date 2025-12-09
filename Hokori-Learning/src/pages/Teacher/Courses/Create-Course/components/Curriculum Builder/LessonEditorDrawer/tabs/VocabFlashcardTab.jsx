@@ -199,7 +199,7 @@ export default function VocabFlashcardTab({
       <Form form={form} layout="vertical">
         <Form.Item
           name="sectionTitle"
-          label="Vocabulary section title"
+          label="Tiêu đề phần từ vựng"
           rules={[{ required: true }]}
         >
           <Input />
@@ -218,7 +218,7 @@ export default function VocabFlashcardTab({
             loading={opening}
             disabled={hasSet}
           >
-            {hasSet ? "Flashcard set đã tồn tại" : "Create flashcard set"}
+            {hasSet ? "Bộ flashcard đã tồn tại" : "Tạo bộ flashcard"}
           </Button>
         </div>
       </Form>

@@ -110,7 +110,6 @@ const routes = [
       { path: "payment/cancel", element: <PaymentResultPage /> },
       { path: "certificates/:certificateId", element: <CertificateDetail /> },
 
-
       // Protected Routes (Learner/Teacher/Admin/Moderator)
       {
         element: <ProtectedRoute allow={["LEARNER"]} />,
@@ -252,7 +251,7 @@ const routes = [
           { path: "teacher-certificates", element: <TeacherCertificates /> },
           { path: "events", element: <JlptEvents /> },
           { path: "ai-packages", element: <AiPackages /> },
-          // { path: "revenue", element: <Revenue /> },
+          { path: "revenue", element: <Revenue /> },
           { path: "revenue/:teacherId", element: <Revenue /> },
           { path: "revenue/:teacherId/:courseId", element: <Revenue /> },
           { path: "withdrawals", element: <Withdrawals /> },

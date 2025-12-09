@@ -170,7 +170,10 @@ export default function CreateCoursePage() {
         (ch) => Array.isArray(ch.lessons) && ch.lessons.length > 0
       ) || false;
 
-    const pricingDone = (currentCourseMeta?.priceCents || 0) > 0;
+    const rawPrice = currentCourseMeta?.priceCents;
+    const price = typeof rawPrice === "number" ? rawPrice : 0;
+    const pricingDone = price === 0 || price > 2000;
+
     const readyToPublish = basicsDone && hasLessons && pricingDone;
 
     return {

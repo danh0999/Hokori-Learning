@@ -232,7 +232,7 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
       }
       extra={
         <Button type="primary" onClick={handleReloadTreeAndClose}>
-          Save lesson
+          Lưu bài học
         </Button>
       }
       footer={

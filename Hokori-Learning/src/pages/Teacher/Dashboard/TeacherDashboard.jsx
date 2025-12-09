@@ -93,6 +93,11 @@ export default function TeacherDashboard() {
       title: "Cập nhật",
       dataIndex: "updatedAt",
       width: 200,
+      render: (v) => {
+        if (!v) return "-";
+        const d = new Date(v);
+        return d.toLocaleDateString("vi-VN"); // 👉 DD/MM/YYYY
+      },
     },
     {
       title: "Hành động",
