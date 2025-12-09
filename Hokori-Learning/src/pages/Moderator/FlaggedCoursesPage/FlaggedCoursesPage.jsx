@@ -64,35 +64,35 @@ export default function FlaggedCoursesPage() {
 
   const columns = [
     {
-      title: "Title",
+      title: "Tiêu đề khóa học",
       dataIndex: "title",
     },
     {
-      title: "Reports",
+      title: "Số báo cáo",
       dataIndex: "flagCount",
-      width: 110,
+      width: 150,
       render: (v) => <Tag color="orange">{v}</Tag>,
     },
     {
-      title: "Last Report",
+      title: "Lần báo cáo cuối cùng",
       dataIndex: "latestFlagAt",
       width: 180,
       render: (v) => (v ? new Date(v).toLocaleString() : "-"),
     },
     {
-      title: "Actions",
+      title: "Hành động",
       width: 220,
       render: (_, row) => (
         <Space>
           {row.isModeratorFlagged ? (
-            <Tag color="green">Sent ✓</Tag>
+            <Tag color="green">Đã gửi ✓</Tag>
           ) : row.canFlag ? (
             <Button
               type="primary"
               danger
               onClick={() => handleFlagCourse(row.id)}
             >
-              Flag Course
+              Ẩn khóa học
             </Button>
           ) : (
             <Tag color="default">Not allowed</Tag>
@@ -103,7 +103,7 @@ export default function FlaggedCoursesPage() {
   ];
 
   return (
-    <Card title="Flagged Courses from Learners">
+    <Card title="Khóa học bị báo cáo">
       <Table
         rowKey="id"
         columns={columns}

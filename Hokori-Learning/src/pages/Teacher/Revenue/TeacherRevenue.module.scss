@@ -1,25 +1,101 @@
+/* src/pages/Teacher/Revenue/TeacherRevenue.module.scss */
+
 .container {
-  padding: 20px;
+  padding: 24px 24px 32px;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-end;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.headerLeft {
+  flex: 1 1 260px;
 }
 
 .title {
+  margin: 0;
   font-size: 22px;
-  font-weight: 600;
-  margin-bottom: 20px;
-  color: #1f1f1f;
+  font-weight: 500;
+  letter-spacing: 0.01em;
 }
 
+.subtitle {
+  margin-top: 6px;
+  margin-bottom: 0;
+  font-size: 13px;
+  color: #6b7280;
+  max-width: 520px;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.monthLabel {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.monthPicker {
+  min-width: 140px;
+}
+
+/* Summary cards */
 .summaryRow {
   margin-bottom: 24px;
 }
 
-.actions {
-  text-align: right;
-  margin-bottom: 16px;
+.summaryCard {
+  border-radius: 16px !important;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
 }
 
+.summaryHint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* Amount color in table */
+.amountPositive {
+  color: #16a34a;
+  font-weight: 500;
+}
+
+.amountNegative {
+  color: #dc2626;
+  font-weight: 500;
+}
+
+/* Table card */
 .tableCard {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-top: 8px;
+  border-radius: 18px !important;
+}
+
+.tableHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tableTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.tableSubtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #9ca3af;
 }

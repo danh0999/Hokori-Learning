@@ -12,9 +12,6 @@ import { useNavigate } from "react-router-dom";
 
 import api from "../../../configs/axios.js"; // <--- CHỈNH lại path nếu khác
 
-// KHÔNG dùng modal review nữa
-// import CourseReviewModal from "../Queues/CourseReviewModal";
-import RequestRevisionModal from "../Queues/components/RequestRevisionModal";
 import ApprovePublishModal from "../Queues/components/ApprovePublishModal";
 import RejectModal from "../Queues/components/RejectModal";
 
@@ -28,10 +25,6 @@ export default function ManageQueues() {
 
   const [loading, setLoading] = useState(false);
   const [approveLoadingId, setApproveLoadingId] = useState(null);
-
-  // modal: request changes
-  const [openRequestRevision, setOpenRequestRevision] = useState(false);
-  const [requestTargetCourse, setRequestTargetCourse] = useState(null);
 
   // modal: approve & publish
   const [openApprovePublish, setOpenApprovePublish] = useState(false);
@@ -102,15 +95,6 @@ export default function ManageQueues() {
     }
   };
 
-  /** AFTER REQUEST REVISION (tạm thời chỉ log + giữ nguyên queue) */
-  const handleSubmitRequestRevision = async (feedbackText) => {
-    // TODO: gọi API gửi feedback cho teacher nếu BE có endpoint
-    console.log("Revision feedback:", feedbackText);
-    message.success("Đã gửi yêu cầu chỉnh sửa cho giáo viên (demo).");
-    setOpenRequestRevision(false);
-    setRequestTargetCourse(null);
-  };
-
   /** APPROVE & PUBLISH confirm trong modal */
   const handleConfirmApprovePublish = async () => {
     if (!approveTargetCourse) return;
@@ -145,7 +129,7 @@ export default function ManageQueues() {
   /** COLUMNS */
   const columns = [
     {
-      title: "Course",
+      title: "Khoá học",
       dataIndex: "title",
       key: "title",
       render: (v, r) => (
@@ -156,13 +140,13 @@ export default function ManageQueues() {
       ),
     },
     {
-      title: "Teacher",
+      title: "Giáo viên",
       dataIndex: "teacherName",
       width: 180,
       render: (_, r) => r.teacherName || `User #${r.userId}` || "—",
     },
     {
-      title: "Status",
+      title: "Trạng thái",
       dataIndex: "status",
       width: 150,
       render: (s) => {
@@ -190,7 +174,7 @@ export default function ManageQueues() {
       },
     },
     {
-      title: "Actions",
+      title: "Hành động",
       key: "actions",
       width: 260,
       render: (_, row) => (
@@ -217,7 +201,7 @@ export default function ManageQueues() {
             }}
             loading={approveLoadingId === row.id}
           >
-            Approve
+            Duyệt
           </Button>
           <Button
             size="small"
@@ -228,7 +212,7 @@ export default function ManageQueues() {
               setOpenReject(true);
             }}
           >
-            Reject
+            Từ chối
           </Button>
         </Space>
       ),
@@ -240,11 +224,7 @@ export default function ManageQueues() {
       {/* Header */}
       <div className={styles.headerBlock}>
         <div>
-          <h2 className={styles.pageTitle}>Course Approval Queue</h2>
-          <p className={styles.pageSubtitle}>
-            Danh sách các khoá học đang có status{" "}
-            <strong>PENDING_APPROVAL</strong> cần Moderator duyệt để publish.
-          </p>
+          <h2 className={styles.pageTitle}>Hàng đợi duyệt khoá học</h2>
         </div>
 
         <Space>
@@ -293,19 +273,6 @@ export default function ManageQueues() {
           />
         )}
       </div>
-
-      {/* Request Changes modal */}
-      {openRequestRevision && (
-        <RequestRevisionModal
-          open={openRequestRevision}
-          onCancel={() => {
-            setOpenRequestRevision(false);
-            setRequestTargetCourse(null);
-          }}
-          onSubmit={handleSubmitRequestRevision}
-          courseTitle={requestTargetCourse?.title}
-        />
-      )}
 
       {/* Approve & Publish modal */}
       {openApprovePublish && (

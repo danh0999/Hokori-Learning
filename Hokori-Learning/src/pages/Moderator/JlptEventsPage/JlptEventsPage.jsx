@@ -110,7 +110,7 @@ export default function JlptEventsPage() {
 
   const columns = [
     {
-      title: "ID",
+      title: "#",
       dataIndex: "id",
       width: 80,
       render: (id) => <b>{id}</b>,
