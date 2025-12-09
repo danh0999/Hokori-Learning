@@ -62,7 +62,13 @@ const CourseCard = ({ course, onContinue, onViewCertificate }) => {
         <h3 className={styles.title}>{course.title}</h3>
         <p className={styles.teacher}>{course.teacher}</p>
 
-        {/* Progress */}
+        {/* 👉 Banner trạng thái FLAGGED */}
+        {course.status === "FLAGGED" && course.statusMessage && (
+          <div className={styles.statusBanner}>{course.statusMessage}</div>
+        )}
+
+        {/* Tiến độ */}
+
         <div className={styles.progress}>
           <ProgressBar
             value={course.progress || 0}

@@ -54,23 +54,14 @@ const CourseOverview = ({ course }) => {
         return;
       }
 
-      const firstLesson = Array.isArray(trialChapter.lessons)
-        ? trialChapter.lessons[0]
-        : null;
-
-      if (!firstLesson) {
-        toast.error("Chương học thử chưa có bài học.");
+      const chapterId = trialChapter.id || trialChapter.chapterId;
+      if (!chapterId) {
+        toast.error("Không tìm thấy chương học thử hợp lệ.");
         return;
       }
 
-      const lessonId = firstLesson.id || firstLesson.lessonId;
-      if (!lessonId) {
-        toast.error("Không tìm thấy bài học thử hợp lệ.");
-        return;
-      }
-
-      // path: /course/:id/trial-lesson/:lessonId
-      navigate(`/course/${course.id}/trial-lesson/${lessonId}`);
+      // path mới: /course/:id/trial-lesson/:chapterId
+      navigate(`/course/${course.id}/trial-lesson/${chapterId}`);
     } catch (err) {
       console.error(err);
       toast.error("Không thể tải nội dung học thử.");

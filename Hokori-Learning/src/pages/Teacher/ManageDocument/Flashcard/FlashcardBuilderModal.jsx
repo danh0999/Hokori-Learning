@@ -165,9 +165,7 @@ export default function FlashcardBuilderModal({
               <Title level={4} className={styles.title}>
                 {effectiveSet?.title || "Flashcards – Từ vựng"}
               </Title>
-              <Text type="secondary">
-                Đây là bộ flashcard của lesson Vocabulary.
-              </Text>
+              <Text type="secondary">Đây là bộ flashcard của bài học này.</Text>
             </div>
           </div>
 
@@ -183,7 +181,7 @@ export default function FlashcardBuilderModal({
               <div className={styles.row}>
                 <Form.Item
                   name="front"
-                  label="Front"
+                  label="Mặt trước"
                   rules={[{ required: true }]}
                   className={styles.half}
                 >
@@ -192,7 +190,7 @@ export default function FlashcardBuilderModal({
 
                 <Form.Item
                   name="back"
-                  label="Back"
+                  label="Mặt sau"
                   rules={[{ required: true }]}
                   className={styles.half}
                 >
@@ -203,7 +201,7 @@ export default function FlashcardBuilderModal({
               <div className={styles.row}>
                 <Form.Item
                   name="reading"
-                  label="Reading"
+                  label="Cách đọc"
                   className={styles.half}
                 >
                   <Input placeholder="Cách đọc" />
@@ -211,7 +209,7 @@ export default function FlashcardBuilderModal({
 
                 <Form.Item
                   name="exampleSentence"
-                  label="Example sentence"
+                  label="Câu ví dụ"
                   className={styles.half}
                 >
                   <Input placeholder="Câu ví dụ" />
@@ -320,19 +318,23 @@ export default function FlashcardBuilderModal({
         title="Chỉnh sửa flashcard"
       >
         <Form form={editForm} layout="vertical">
-          <Form.Item name="front" label="Front" rules={[{ required: true }]}>
+          <Form.Item
+            name="front"
+            label="Mặt trước"
+            rules={[{ required: true }]}
+          >
             <Input />
           </Form.Item>
 
-          <Form.Item name="back" label="Back" rules={[{ required: true }]}>
+          <Form.Item name="back" label="Mặt sau" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
 
-          <Form.Item name="reading" label="Reading">
+          <Form.Item name="reading" label="Cách đọc">
             <Input />
           </Form.Item>
 
-          <Form.Item name="exampleSentence" label="Example sentence">
+          <Form.Item name="exampleSentence" label="Câu ví dụ">
             <Input />
           </Form.Item>
         </Form>

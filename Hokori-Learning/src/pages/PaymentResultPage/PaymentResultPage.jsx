@@ -94,9 +94,13 @@ const PaymentResultPage = () => {
     );
   }
 
-  const amountVnd = payment?.amountCents
-    ? Math.round(payment.amountCents / 100)
-    : 0;
+  // Bằng đoạn này:
+  const rawAmount = payment?.amountCents || 0;
+  // Nếu BE dùng đơn vị khác (ví dụ đã là VND rồi) thì bỏ chia /100 đi
+  const amountVnd = Math.round(rawAmount / 100);
+
+  // Format theo kiểu (2.000)
+  const formattedAmount = `(${amountVnd.toLocaleString("vi-VN")})`;
 
   const statusLabel = STATUS_LABELS[finalStatus] || finalStatus;
 
@@ -123,7 +127,7 @@ const PaymentResultPage = () => {
 
           <div>
             <span>Số tiền</span>
-            <strong>₫{amountVnd.toLocaleString()}</strong>
+            <strong>{formattedAmount}</strong>
           </div>
 
           {payment?.description && (
@@ -133,13 +137,16 @@ const PaymentResultPage = () => {
             </div>
           )}
 
-          {Array.isArray(payment?.courseIds) &&
-            payment.courseIds.length > 0 && (
-              <div>
-                <span>Khoá học đã thanh toán (courseIds)</span>
-                <p>{payment.courseIds.join(", ")}</p>
-              </div>
-            )}
+          {Array.isArray(payment?.courses) && payment.courses.length > 0 && (
+            <div>
+              <span>Khoá học đã thanh toán</span>
+              <ul>
+                {payment.courses.map((course) => (
+                  <li key={course.id}>{course.title}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         <div className={styles.actions}>

@@ -241,14 +241,14 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
             <Button onClick={onClose}>Cancel</Button>
             {activeTab === "grammar" && (
               <span className={styles.footerHint}>
-                Đây là <b>Grammar section</b>. Nhấn &quot;Save Grammar&quot; để
+                Đây là <b>Phần Ngữ pháp</b>. Nhấn &quot;Save Grammar&quot; để
                 lưu video & mô tả.
               </span>
             )}
             {activeTab === "kanji" && (
               <span className={styles.footerHint}>
-                Đây là <b>Kanji section</b>. Nhấn &quot;Save Kanji&quot; để lưu
-                nội dung.
+                Đây là <b>Phần Kanji</b>. Nhấn &quot;Save Kanji&quot; để lưu nội
+                dung.
               </span>
             )}
             {activeTab === "vocab" && (
@@ -268,13 +268,13 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
       className={styles.lessonDrawer}
     >
       <div className={styles.drawerInner}>
-        <div className={styles.drawerStructureHint}>
+        {/* <div className={styles.drawerStructureHint}>
           <Text type="secondary" className={styles.structureText}>
             <span className={styles.structureLabel}>Structure&nbsp;</span>
             Chapter &gt; Lesson &gt; Section (Grammar / Kanji / Vocab) &gt;
             Content (Video / Flashcard / Quiz)
           </Text>
-        </div>
+        </div> */}
 
         <Tabs
           activeKey={activeTab}

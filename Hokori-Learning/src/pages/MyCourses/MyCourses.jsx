@@ -16,72 +16,76 @@ const MyCourses = () => {
 
   // 🔹 Lấy danh sách enrollment + enrich course info
   useEffect(() => {
-  const fetchCourses = async () => {
-    try {
-      // 1️⃣ Lấy danh sách enrollment
-      const enrollRes = await api.get("/learner/courses");
-      const enrollments = enrollRes.data || [];
+    const fetchCourses = async () => {
+      try {
+        // 1️⃣ Lấy danh sách enrollment
+        const enrollRes = await api.get("/learner/courses");
+        const enrollments = enrollRes.data || [];
 
-      // 2️⃣ Duyệt từng course → lấy thông tin bằng TREE API
-      const detailed = await Promise.all(
-        enrollments.map(async (enroll) => {
-          try {
-            const treeRes = await api.get(`/courses/${enroll.courseId}/tree`);
-            const tree = treeRes.data;
+        // 2️⃣ Duyệt từng course → lấy thông tin bằng TREE API
+        const detailed = await Promise.all(
+          enrollments.map(async (enroll) => {
+            try {
+              const treeRes = await api.get(`/courses/${enroll.courseId}/tree`);
+              const tree = treeRes.data;
 
-            // Tính tổng số lessons từ tree
-            let totalLessons = 0;
-            tree.chapters?.forEach((ch) => {
-              totalLessons += ch.lessons?.length || 0;
-            });
+              // Tính tổng số lessons từ tree
+              let totalLessons = 0;
+              tree.chapters?.forEach((ch) => {
+                totalLessons += ch.lessons?.length || 0;
+              });
 
-            return {
-              // ---- Thông tin Course ----
-              id: tree.id,
-              courseId: enroll.courseId,
-              title: tree.title || "Khóa học",
-              level: tree.level || "N5",
-              teacher: tree.teacherName || "Giảng viên",
-              coverUrl: tree.coverImagePath
-              ? buildFileUrl(tree.coverImagePath)
-              : "https://cdn.pixabay.com/photo/2017/01/31/13/14/book-2024684_1280.png",
+              return {
+                // ---- Thông tin Course ----
+                id: tree.id,
+                courseId: enroll.courseId,
+                title: tree.title || "Khóa học",
+                level: tree.level || "N5",
+                teacher: tree.teacherName || "Giảng viên",
+                coverUrl: tree.coverImagePath
+                  ? buildFileUrl(tree.coverImagePath)
+                  : "https://cdn.pixabay.com/photo/2017/01/31/13/14/book-2024684_1280.png",
 
-              lessons: totalLessons,
+                lessons: totalLessons,
 
-              // ---- Tiến độ ----
-              progress: enroll.progressPercent || 0,
-              completed: enroll.progressPercent >= 100,
-              lastStudy: enroll.lastAccessAt
-                ? new Date(enroll.lastAccessAt).toLocaleDateString()
-                : "Chưa học",
+                status: tree.status,
+                statusMessage: tree.statusMessage,
 
-              enrollmentId: enroll.enrollmentId,
-            };
-          } catch (err) {
-            console.error("Lỗi load course tree:", err);
-            return null;
-          }
-        })
-      );
+                // ---- Tiến độ ----
+                progress: enroll.progressPercent || 0,
+                completed: enroll.progressPercent >= 100,
+                lastStudy: enroll.lastAccessAt
+                  ? new Date(enroll.lastAccessAt).toLocaleDateString()
+                  : "Chưa học",
 
-      setCourses(detailed.filter(Boolean));
-    } catch (err) {
-      console.error("Không thể tải danh sách khóa học:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+                enrollmentId: enroll.enrollmentId,
+              };
+            } catch (err) {
+              console.error("Lỗi load course tree:", err);
+              return null;
+            }
+          })
+        );
 
-  fetchCourses();
-}, []);
+        setCourses(detailed.filter(Boolean));
+      } catch (err) {
+        console.error("Không thể tải danh sách khóa học:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchCourses();
+  }, []);
 
   // 🔹 Khi user nhấn “Tiếp tục học”
   const handleContinue = async (course) => {
     try {
       // 1) Lấy danh sách lessons của course
       const res = await api.get(`/learner/courses/${course.courseId}/lessons`);
-      const lessons = (res.data ?? []).sort((a, b) => a.orderIndex - b.orderIndex);
+      const lessons = (res.data ?? []).sort(
+        (a, b) => a.orderIndex - b.orderIndex
+      );
 
       if (!lessons.length) {
         toast.error("Khóa học chưa có bài học.");
@@ -94,8 +98,12 @@ const MyCourses = () => {
       const lessonId = targetLesson.lessonId ?? targetLesson.id;
 
       // 3) Lấy contents của lesson mục tiêu để xác định content đang học hoặc tiếp theo
-      const contentsRes = await api.get(`/learner/lessons/${lessonId}/contents`);
-      const contents = (contentsRes.data ?? []).sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
+      const contentsRes = await api.get(
+        `/learner/lessons/${lessonId}/contents`
+      );
+      const contents = (contentsRes.data ?? []).sort(
+        (a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0)
+      );
 
       // 4) Ưu tiên content đang xem dở (lastPositionSec > 0 và chưa hoàn thành)
       const inProgressContent = contents.find(
@@ -135,14 +143,27 @@ const MyCourses = () => {
 
 
   return (
-  <main className={styles.main}>
-    <div className={styles.container}>
-      {/* ===== Page Header ===== */}
-      <div className={styles.pageHeader}>
-        <h1 className={styles.heading}>Khóa học của tôi</h1>
-        <p className={styles.subheading}>
-          Danh sách các khóa học bạn đã ghi danh
-        </p>
+    <main className={styles.main}>
+      <div className={styles.container}>
+        <h1 className={styles.pageTitle}>Khóa học của tôi</h1>
+
+        {courses.length === 0 ? (
+          <p className={styles.empty}>
+            Bạn chưa ghi danh khóa học nào.{" "}
+            <a href="/marketplace">Khám phá thêm khóa học →</a>
+          </p>
+        ) : (
+          <div className={styles.grid}>
+            {courses.map((c) => (
+              <CourseCard
+                key={c.enrollmentId}
+                course={c}
+                onContinue={handleContinue}
+              />
+            ))}
+          </div>
+        )}
+
       </div>
 
       {/* ===== Course Grid / Empty State ===== */}

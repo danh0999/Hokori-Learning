@@ -1,6 +1,6 @@
 // src/pages/Teacher/Courses/Create-Course/components/PricingStep/PricingStep.jsx
-import React, { useEffect } from "react";
-import { Card, Form, InputNumber, Button } from "antd";
+import React, { useEffect, useState } from "react";
+import { Card, InputNumber, Button } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 
 import {
@@ -18,29 +18,38 @@ import { toast } from "react-toastify";
  *  - onBack?: () => void
  */
 export default function PricingStep({ courseId, onNext, onBack }) {
-  const [form] = Form.useForm();
   const dispatch = useDispatch();
 
   const { currentCourseMeta, saving } = useSelector(
     (state) => state.teacherCourse
   );
 
+  // local state cho giá
+  const [price, setPrice] = useState(0);
+
   // Khi load meta -> set lại giá
   useEffect(() => {
     if (!currentCourseMeta) return;
 
-    form.setFieldsValue({
-      price: currentCourseMeta.priceCents ?? 0,
-    });
-  }, [currentCourseMeta, form]);
+    // BE trả priceCents (VND)
+    const bePrice = currentCourseMeta.priceCents;
+    setPrice(typeof bePrice === "number" ? bePrice : 0);
+  }, [currentCourseMeta]);
 
-  const handleFinish = async (values) => {
-    if (!courseId) return;
+  const handleSavePrice = async () => {
+    if (!courseId || !currentCourseMeta) return;
+
+    const numericPrice = Number(price) || 0;
+
+    // ✅ Rule: 0 (free) hoặc > 2000
+    if (!(numericPrice === 0 || numericPrice > 2000)) {
+      toast.error("Giá phải bằng 0 (khoá miễn phí) hoặc lớn hơn 2.000 VND.");
+      return;
+    }
 
     const payload = {
       ...currentCourseMeta,
-      // Lưu đúng số tiền VND (không nhân / chia gì nữa)
-      priceCents: values.price || 0,
+      priceCents: numericPrice,
       currency: "VND",
     };
 
@@ -50,9 +59,8 @@ export default function PricingStep({ courseId, onNext, onBack }) {
 
     if (updateCourseThunk.fulfilled.match(action)) {
       toast.success("Đã lưu giá khoá học.");
-      dispatch(fetchCourseTree(courseId));
+      await dispatch(fetchCourseTree(courseId));
 
-      // Sau khi lưu thành công, chuyển step nếu onNext có truyền vào
       if (typeof onNext === "function") {
         onNext();
       }
@@ -67,62 +75,59 @@ export default function PricingStep({ courseId, onNext, onBack }) {
         <div className={styles.stepTitle}>Giá khoá học</div>
       </div>
 
-      <Form
-        form={form}
-        layout="vertical"
-        className={styles.formGrid}
-        onFinish={handleFinish}
-      >
-        <Form.Item
-          name="price"
-          label="Giá (VND)"
-          rules={[
-            {
-              validator(_, value) {
-                if (value === 0 || value > 0) return Promise.resolve();
-                return Promise.reject("Giá phải lớn hơn hoặc bằng 0.");
-              },
-            },
-          ]}
-        >
-          <InputNumber
-            min={0}
-            step={1000}
-            style={{ width: "100%" }}
-            placeholder="Ví dụ: 200.000"
-            // Hiển thị 200000 -> "200.000"
-            formatter={(value) => {
-              if (value == null || value === "") return "";
-              // chỉ lấy phần số và format dấu chấm
-              const numeric = String(value).replace(/\D/g, "");
-              if (!numeric) return "";
-              return numeric.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-            }}
-            // Người dùng sửa -> convert về number (bỏ .)
-            parser={(value) => {
-              if (!value) return 0;
-              const numeric = value.toString().replace(/\./g, "");
-              const num = Number(numeric);
-              return Number.isNaN(num) ? 0 : num;
-            }}
-          />
-        </Form.Item>
+      <div className={styles.formGrid}>
+        <div className="ant-form-item">
+          <label className="ant-form-item-label">
+            <span>Giá (VND)</span>
+          </label>
 
-        <Form.Item>
-          <div className={styles.stepFooter}>
-            {typeof onBack === "function" && (
-              <Button onClick={onBack}>Quay lại</Button>
-            )}
-            <Button type="primary" htmlType="submit" loading={saving}>
-              {typeof onNext === "function" ? "Lưu & tiếp tục" : "Lưu giá"}
+          <div style={{ display: "flex", gap: 8 }}>
+            <InputNumber
+              min={0}
+              step={1000}
+              style={{ width: "100%" }}
+              placeholder="Ví dụ: 200.000"
+              value={price}
+              onChange={(val) => {
+                // antd InputNumber onChange trả number hoặc null
+                setPrice(typeof val === "number" ? val : 0);
+              }}
+              // Hiển thị 200000 -> "200.000"
+              formatter={(value) => {
+                if (value == null || value === "") return "";
+                const numeric = String(value).replace(/\D/g, "");
+                if (!numeric) return "";
+                return numeric.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+              }}
+              // Convert text nhập về number
+              parser={(value) => {
+                if (!value) return 0;
+                const numeric = value.toString().replace(/\./g, "");
+                const num = Number(numeric);
+                return Number.isNaN(num) ? 0 : num;
+              }}
+            />
+
+            {/* Nút set giá về 0 (free) */}
+            <Button type="default" onClick={() => setPrice(0)}>
+              Miễn phí
             </Button>
           </div>
-        </Form.Item>
+        </div>
+
+        <div className={styles.stepFooter}>
+          {typeof onBack === "function" && (
+            <Button onClick={onBack}>Quay lại</Button>
+          )}
+          <Button type="primary" onClick={handleSavePrice} loading={saving}>
+            {typeof onNext === "function" ? "Lưu & tiếp tục" : "Lưu giá"}
+          </Button>
+        </div>
 
         <div className={styles.hintText}>
           Ví dụ: gõ <b>200000</b> sẽ hiển thị là <b>200.000</b>.
         </div>
-      </Form>
+      </div>
     </Card>
   );
 }

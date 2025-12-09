@@ -212,17 +212,19 @@ export default function CourseInformation() {
         (ch) => Array.isArray(ch.lessons) && ch.lessons.length > 0
       ) || false;
 
-    const pricingDone = (currentCourseMeta?.priceCents || 0) > 0;
+    const pricingDone =
+      currentCourseMeta?.priceCents === 0 ||
+      (currentCourseMeta?.priceCents || 0) > 2000;
 
     return basicsDone && hasLessons && pricingDone;
   }, [currentCourseMeta, currentCourseTree]);
 
   const submitButtonLabel =
     status === "PENDING_APPROVAL"
-      ? "Waiting for approval"
+      ? "Đang chờ duyệt"
       : status === "REJECTED"
-      ? "Resubmit for approval"
-      : "Submit for review";
+      ? "Nộp lại để duyệt"
+      : "Nộp để duyệt";
 
   const disableSubmitButton =
     !canSubmit || saving || status === "PENDING_APPROVAL";
@@ -232,7 +234,7 @@ export default function CourseInformation() {
       <div className={styles.wrap}>
         <p>No course id in URL.</p>
         <Button onClick={() => navigate("/teacher/manage-courses")}>
-          Back to list
+          ← Quay lại
         </Button>
       </div>
     );
@@ -245,7 +247,7 @@ export default function CourseInformation() {
       {/* HEADER */}
       <div className={styles.header}>
         <Button onClick={() => navigate("/teacher/manage-courses")}>
-          ← Back
+          ← Quay lại
         </Button>
 
         <div>
@@ -253,7 +255,7 @@ export default function CourseInformation() {
             {currentCourseMeta?.title || `Course #${courseId}`}
           </h1>
           <p className={styles.subtitle}>
-            Edit content, manage media & assessments
+            Quản lý thông tin khóa học và theo dõi trạng thái duyệt khóa học
           </p>
         </div>
 
@@ -263,7 +265,7 @@ export default function CourseInformation() {
           </Tag>
 
           <Button onClick={handleSaveDraft} loading={saving || loadingMeta}>
-            {status === "PUBLISHED" ? "Save changes" : "Save "}
+            {status === "PUBLISHED" ? "Lưu thay đổi" : "Lưu "}
           </Button>
 
           {status === "PUBLISHED" ? (
@@ -277,7 +279,7 @@ export default function CourseInformation() {
               onClick={handleResubmitFlagged}
               loading={saving}
             >
-              Resubmit after fixing
+              Nộp lại sau khi sửa
             </Button>
           ) : (
             <Button
@@ -298,12 +300,12 @@ export default function CourseInformation() {
           <div className={styles.rejectedHeader}>
             <Tag color="error">Rejected</Tag>
             <span className={styles.rejectedTitle}>
-              This course was rejected by the moderator
+              Khóa học này đã bị từ chối duyệt
             </span>
           </div>
 
           <div className={styles.rejectedBody}>
-            <div className={styles.rejectedReasonLabel}>Reason:</div>
+            <div className={styles.rejectedReasonLabel}>Lý do:</div>
             <div className={styles.rejectedReasonText}>
               {currentCourseMeta.rejectionReason}
             </div>
@@ -311,13 +313,13 @@ export default function CourseInformation() {
             <div className={styles.rejectedMeta}>
               {currentCourseMeta.rejectedByUserName && (
                 <span>
-                  Moderator:{" "}
+                  Người duyệt:{" "}
                   <strong>{currentCourseMeta.rejectedByUserName}</strong>
                 </span>
               )}
               {currentCourseMeta.rejectedAt && (
                 <span>
-                  Rejected at:{" "}
+                  Từ chối lúc:{" "}
                   <strong>
                     {formatDateTime(currentCourseMeta.rejectedAt)}
                   </strong>
@@ -328,16 +330,13 @@ export default function CourseInformation() {
 
           <div className={styles.rejectedActions}>
             <Space>
-              <Button onClick={() => setActiveKey("basic")}>
-                Edit basic info
-              </Button>
               <Button
                 type="primary"
                 onClick={handleSubmitForReview}
                 disabled={disableSubmitButton}
                 loading={saving && status !== "PENDING_APPROVAL"}
               >
-                Resubmit for approval
+                Nộp lại để duyệt
               </Button>
             </Space>
           </div>
@@ -365,12 +364,12 @@ export default function CourseInformation() {
             <div className={styles.flaggedMeta}>
               {flagInfo?.flagCount > 0 && (
                 <span>
-                  Total reports: <strong>{flagInfo.flagCount}</strong>
+                  Tổng số báo cáo: <strong>{flagInfo.flagCount}</strong>
                 </span>
               )}
               {flagInfo?.latestFlagAt && (
                 <span>
-                  Latest at:{" "}
+                  Báo cáo lần cuối:{" "}
                   <strong>{formatDateTime(flagInfo.latestFlagAt)}</strong>
                 </span>
               )}
@@ -380,7 +379,7 @@ export default function CourseInformation() {
           <div className={styles.flaggedActions}>
             <Space>
               <Button onClick={() => setActiveKey("curriculum")}>
-                Edit content
+                Quản lý nội dung
               </Button>
               <Button
                 type="primary"
@@ -388,7 +387,7 @@ export default function CourseInformation() {
                 disabled={disableSubmitButton}
                 loading={saving}
               >
-                Resubmit after fixing
+                Nộp lại để duyệt
               </Button>
             </Space>
           </div>
@@ -403,7 +402,7 @@ export default function CourseInformation() {
           items={[
             {
               key: "basic",
-              label: "Basic",
+              label: "Tổng quan",
               children: (
                 <CourseOverview
                   key={courseId}
@@ -414,7 +413,7 @@ export default function CourseInformation() {
             },
             {
               key: "curriculum",
-              label: "Curriculum",
+              label: "Nội dung",
               children: (
                 <CourseCurriculumView
                   courseMeta={currentCourseMeta}
@@ -426,7 +425,7 @@ export default function CourseInformation() {
             },
             {
               key: "progress",
-              label: "Learners progress",
+              label: "Tiến độ học viên",
               children: (
                 <CourseProgressTab
                   courseId={courseId}
@@ -446,8 +445,13 @@ export default function CourseInformation() {
             },
             {
               key: "settings",
-              label: "Pricing",
-              children: <PricingStep courseId={courseId} />,
+              label: "Giá",
+              children: (
+                <PricingStep
+                  courseId={courseId}
+                  courseMeta={currentCourseMeta}
+                />
+              ),
             },
           ]}
         />

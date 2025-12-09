@@ -49,8 +49,17 @@ export default function PublishStep({ courseId, statusFlags, onBack }) {
 
   const handleSubmitForReview = async () => {
     if (!courseId) return;
-    if (!readyToPublish) {
-      toast.warning("Hãy hoàn thành các bước trước khi gửi xét duyệt.");
+
+    // -------------------------------
+    // 🔥 Validate giá ở bước Publish
+    // -------------------------------
+    const price = currentCourseMeta?.priceCents ?? 0;
+
+    if (!(price === 0 || price > 2000)) {
+      toast.error(
+        "Giá khóa học phải bằng 0 (miễn phí) hoặc lớn hơn 2.000 VND."
+      );
+      if (typeof onBack === "function") onBack(); // Điều hướng quay lại PricingStep
       return;
     }
 

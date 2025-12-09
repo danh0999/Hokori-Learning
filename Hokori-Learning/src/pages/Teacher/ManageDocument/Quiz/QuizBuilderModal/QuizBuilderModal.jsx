@@ -195,12 +195,13 @@ export default function QuizBuilderModal({
         message.error("Quiz cần ít nhất 1 câu hỏi.");
         return;
       }
-
+      const minutes = Number(meta.timeLimit ?? 0);
       const payload = {
         id: quizId,
-        ...meta,
-        timeLimit: Number(meta.timeLimit ?? 30),
-        passingScore: Number(meta.passingScore ?? 60),
+        title: meta.title,
+        description: meta.description,
+        timeLimitSec: minutes > 0 ? minutes * 60 : 0,
+        passScorePercent: Number(meta.passingScore ?? 60),
         shuffleQuestions: !!meta.shuffleQuestions,
         shuffleOptions: meta.shuffleOptions !== false,
         showExplanation:
@@ -240,7 +241,7 @@ export default function QuizBuilderModal({
       <div className={styles.topBar}>
         <Space wrap>
           <Button icon={<PlusOutlined />} type="primary" onClick={addQuestion}>
-            Add question
+            Thêm câu hỏi
           </Button>
           <Text type="secondary">
             Quiz này chỉ hỗ trợ dạng <b>Single choice</b>. Mỗi câu phải có 1 đáp
@@ -258,7 +259,7 @@ export default function QuizBuilderModal({
             onClick={handleClickSave}
             loading={saving}
           >
-            Save changes
+            Lưu
           </Button>
         </Space>
       </div>
@@ -271,7 +272,7 @@ export default function QuizBuilderModal({
           <Col span={16}>
             <Form.Item
               name="title"
-              label="Quiz title"
+              label="Tiêu đề quiz"
               rules={[
                 { required: true, message: "Vui lòng nhập tiêu đề quiz." },
               ]}
@@ -282,7 +283,7 @@ export default function QuizBuilderModal({
           <Col span={8}>
             <Form.Item
               name="timeLimit"
-              label="Time limit (minutes)"
+              label="Thời gian (phút)"
               tooltip="Để 0 hoặc bỏ trống = không giới hạn"
             >
               <InputNumber min={0} style={{ width: "100%" }} placeholder="30" />
@@ -292,14 +293,14 @@ export default function QuizBuilderModal({
 
         <Row gutter={16}>
           <Col span={16}>
-            <Form.Item name="description" label="Description">
+            <Form.Item name="description" label="Mô tả">
               <Input.TextArea rows={2} placeholder="Mô tả ngắn về quiz này" />
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item
               name="passingScore"
-              label="Passing score (%)"
+              label="Điểm tối thiểu để qua (%)"
               tooltip="Điểm tối thiểu để qua (0–100)"
               rules={[
                 {
@@ -324,7 +325,7 @@ export default function QuizBuilderModal({
           <Col span={6}>
             <Form.Item
               name="shuffleQuestions"
-              label="Shuffle questions"
+              label="Xáo trộn câu hỏi"
               valuePropName="checked"
             >
               <Switch />
@@ -333,7 +334,7 @@ export default function QuizBuilderModal({
           <Col span={6}>
             <Form.Item
               name="shuffleOptions"
-              label="Shuffle options"
+              label="Xáo trộn đáp án"
               valuePropName="checked"
             >
               <Switch />
@@ -342,7 +343,7 @@ export default function QuizBuilderModal({
           <Col span={6}>
             <Form.Item
               name="showExplanation"
-              label="Show explanation"
+              label="Hiển thị giải thích"
               valuePropName="checked"
             >
               <Switch />
@@ -364,7 +365,7 @@ export default function QuizBuilderModal({
 
       {/* ===== Question list ===== */}
       <Text type="secondary" style={{ display: "block", marginBottom: 8 }}>
-        Questions (Single choice only)
+        Câu hỏi (Chỉ chọn một đáp án)
       </Text>
 
       {questions.length === 0 ? (

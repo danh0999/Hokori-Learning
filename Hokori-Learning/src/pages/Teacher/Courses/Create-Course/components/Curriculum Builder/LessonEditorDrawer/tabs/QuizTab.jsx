@@ -155,10 +155,10 @@ export default function QuizTab({ lesson, onDurationComputed }) {
             onClick={handleCreate}
             disabled={!!currentQuiz} // <–– lesson đã có quiz → disable
           >
-            New quiz
+            Tạo quiz
           </Button>
           <Button onClick={() => setOpenBulk(true)} disabled={!!currentQuiz}>
-            Bulk import
+            Nhập câu hỏi hàng loạt
           </Button>
         </Space>
       </div>

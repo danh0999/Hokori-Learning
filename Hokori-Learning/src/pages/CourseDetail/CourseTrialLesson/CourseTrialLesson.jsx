@@ -1,21 +1,22 @@
-// src/pages/CourseTrialLesson/CourseTrialLesson.jsx
+// src/pages/CourseDetail/CourseTrialLesson/CourseTrialLesson.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
-import api from "../../../configs/axios.js";
-import { buildFileUrl } from "../../../utils/fileUrl.js";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import "./CourseTrialLesson.scss";
 
-/* ========================
-   Helper: unwrap response
-======================== */
+import api from "../../../configs/axios.js";
+import { buildFileUrl } from "../../../utils/fileUrl.js";
+
+/* =========================================
+   Helper: unwrap response { success, data }
+========================================= */
 const unwrap = (res) =>
   res?.data && typeof res.data === "object" && "data" in res.data
     ? res.data.data
     : res.data;
 
-/* ========================
-   Flashcard Modal (trial)
-======================== */
+/* =========================================
+   Flashcard Modal cho trial (giống bản cũ)
+========================================= */
 const TrialFlashcardModal = ({
   open,
   onClose,
@@ -176,36 +177,45 @@ const TrialFlashcardModal = ({
   );
 };
 
-/* ========================
-   Main Trial Lesson Page
-======================== */
+/* =========================================
+   Main Trial Lesson Page (chapter-level)
+========================================= */
 const CourseTrialLesson = () => {
-  const { id: courseId, lessonId } = useParams();
-  const navigate = useNavigate();
+  const { courseId, chapterId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // Tree theo course (chapter trial + lessons)
+  const [loadingTree, setLoadingTree] = useState(true);
+  const [treeError, setTreeError] = useState(null);
+  const [trialCourse, setTrialCourse] = useState(null);
+  const [trialChapter, setTrialChapter] = useState(null);
+  const [trialLessons, setTrialLessons] = useState([]);
 
-  const [trialCourse, setTrialCourse] = useState(null); // data từ /trial-tree
-  const [trialLessons, setTrialLessons] = useState([]); // danh sách lesson trong trial chapter
-
+  // Lesson & section đang active
   const [activeLessonId, setActiveLessonId] = useState(null);
   const [activeSectionId, setActiveSectionId] = useState(null);
 
+  // Chi tiết lesson (trial-detail)
+  const [lessonDetail, setLessonDetail] = useState(null);
+  const [lessonLoading, setLessonLoading] = useState(false);
+  const [lessonError, setLessonError] = useState(null);
+
+  // Flashcard
   const [flashcardModalOpen, setFlashcardModalOpen] = useState(false);
   const [selectedFlashcardContent, setSelectedFlashcardContent] =
     useState(null);
 
+  // Quiz (dùng endpoint learner quiz)
   const [quizLoading, setQuizLoading] = useState(false);
   const [quizError, setQuizError] = useState(null);
 
-  /* ========================
-     1. LOGIN GATE + GET TRIAL TREE
-     /api/courses/{courseId}/trial-tree
-  ========================= */
+  /* --------------------------
+     1. Check login + trial tree
+  -------------------------- */
   useEffect(() => {
     const fetchTrialTree = async () => {
+      // login kiểm tra ở đây luôn
       const token =
         localStorage.getItem("accessToken") ||
         sessionStorage.getItem("accessToken") ||
@@ -220,83 +230,141 @@ const CourseTrialLesson = () => {
         return;
       }
 
-      setLoading(true);
-      setError(null);
+      setLoadingTree(true);
+      setTreeError(null);
 
       try {
         const res = await api.get(`/courses/${courseId}/trial-tree`);
-        const data = unwrap(res); // course với 1 trial chapter, nhiều lessons :contentReference[oaicite:1]{index=1}
+        const data = unwrap(res);
+
         setTrialCourse(data);
 
-        const trialChapter =
-          data?.chapters?.find((ch) => ch.isTrial) || data?.chapters?.[0];
-
-        if (!trialChapter) {
-          throw new Error("Khóa học chưa có chapter học thử.");
+        const chapters = Array.isArray(data?.chapters) ? data.chapters : [];
+        if (!chapters.length) {
+          throw new Error("Khóa học chưa cấu hình chương học thử.");
         }
 
-        const lessons = trialChapter.lessons || [];
+        // Ưu tiên isTrial, sau đó mới so sánh với chapterId trên URL, cuối cùng fallback chương đầu
+        let chap =
+          chapters.find((c) => c.isTrial) ||
+          chapters.find(
+            (c) =>
+              String(c.id) === String(chapterId) ||
+              String(c.chapterId) === String(chapterId)
+          ) ||
+          chapters[0];
+
+        setTrialChapter(chap);
+
+        const lessons = Array.isArray(chap.lessons) ? chap.lessons : [];
         if (!lessons.length) {
-          throw new Error("Chapter học thử chưa có bài học.");
+          throw new Error("Chương học thử chưa có bài học.");
         }
 
         setTrialLessons(lessons);
 
-        // chọn lesson ban đầu: ưu tiên lessonId trên URL, nếu không thì lesson đầu
-        let initialLesson =
-          (lessonId &&
-            lessons.find((l) => String(l.id) === String(lessonId))) ||
-          lessons[0];
+        // Bài active ban đầu là bài 1
+        const firstLesson = lessons[0];
+        const lId = firstLesson.id || firstLesson.lessonId;
+        setActiveLessonId(lId || null);
 
-        setActiveLessonId(initialLesson.id);
-
-        // chọn section đầu tiên của lesson
-        const firstSection = initialLesson.sections?.[0];
-        setActiveSectionId(firstSection?.id || firstSection?.sectionId || null);
+        // Nếu trial-tree đã có sections, chọn luôn section đầu
+        const firstSections = Array.isArray(firstLesson.sections)
+          ? firstLesson.sections
+          : [];
+        if (firstSections.length) {
+          setActiveSectionId(firstSections[0].sectionId || firstSections[0].id);
+        }
       } catch (err) {
-        console.error("Error fetching trial tree", err);
-        setError(err);
+        console.error("Error fetching trial-tree", err);
+        setTreeError(err);
       } finally {
-        setLoading(false);
+        setLoadingTree(false);
       }
     };
 
     fetchTrialTree();
-  }, [courseId, lessonId, navigate, location.pathname]);
+  }, [courseId, chapterId, navigate, location.pathname]);
 
-  /* ========================
-     2. Tính lesson / section active
-  ========================= */
-  const activeLesson = useMemo(() => {
-    if (!trialLessons.length) return null;
-    if (!activeLessonId) return trialLessons[0];
-    return trialLessons.find((l) => l.id === activeLessonId) || trialLessons[0];
-  }, [trialLessons, activeLessonId]);
+  /* --------------------------
+     2. Lấy trial-detail theo lessonId
+  -------------------------- */
+  useEffect(() => {
+    if (!activeLessonId) {
+      setLessonDetail(null);
+      return;
+    }
 
+    const fetchLessonDetail = async () => {
+      setLessonLoading(true);
+      setLessonError(null);
+      setLessonDetail(null);
+      setQuizError(null);
+
+      try {
+        const res = await api.get(
+          `/courses/lessons/${activeLessonId}/trial-detail`
+        );
+        const detail = unwrap(res);
+        setLessonDetail(detail);
+
+        // Nếu chưa có section đang chọn thì chọn section[0]
+        if (
+          !activeSectionId &&
+          Array.isArray(detail.sections) &&
+          detail.sections.length
+        ) {
+          const firstSec = detail.sections[0];
+          setActiveSectionId(firstSec.sectionId || firstSec.id);
+        }
+      } catch (err) {
+        console.error("Error fetching trial-detail", err);
+        setLessonError(err);
+      } finally {
+        setLessonLoading(false);
+      }
+    };
+
+    fetchLessonDetail();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeLessonId]);
+
+  /* --------------------------
+     3. Tính section đang active
+  -------------------------- */
   const activeSection = useMemo(() => {
-    if (!activeLesson?.sections?.length) return null;
-    if (!activeSectionId) return activeLesson.sections[0];
-    return (
-      activeLesson.sections.find(
-        (s) => s.id === activeSectionId || s.sectionId === activeSectionId
-      ) || activeLesson.sections[0]
-    );
-  }, [activeLesson, activeSectionId]);
+    if (!lessonDetail?.sections?.length) return null;
+    if (!activeSectionId) return lessonDetail.sections[0];
 
+    return (
+      lessonDetail.sections.find(
+        (s) =>
+          String(s.sectionId) === String(activeSectionId) ||
+          String(s.id) === String(activeSectionId)
+      ) || lessonDetail.sections[0]
+    );
+  }, [lessonDetail, activeSectionId]);
+
+  /* --------------------------
+     4. Flashcard handler
+  -------------------------- */
   const handleOpenFlashcard = (section, content) => {
     setSelectedFlashcardContent({
       sectionTitle: section.title,
-      sectionContentId: content.id || content.contentId,
+      sectionContentId: content.contentId || content.id,
     });
     setFlashcardModalOpen(true);
   };
 
-  /* ========================
-     Helper: render toàn bộ content của 1 section
-     - Nếu section có asset + rich_text → hiện cùng luôn (video trên, lý thuyết dưới)
-  ========================= */
+  /* --------------------------
+     5. Render content section
+  -------------------------- */
   const renderSectionContents = (section) => {
-    if (!section || !section.contents || !section.contents.length) {
+    if (
+      !section ||
+      !Array.isArray(section.contents) ||
+      !section.contents.length
+    ) {
       return (
         <div className="viewer-empty">
           Phần này chưa có nội dung để học thử.
@@ -305,9 +373,11 @@ const CourseTrialLesson = () => {
     }
 
     return section.contents.map((content, index) => {
-      const key = `${section.id || section.sectionId}-${content.id || index}`;
+      const key = `${section.sectionId || section.id}-${
+        content.contentId || index
+      }`;
 
-      // ASSET: video / image
+      // ASSET (video / ảnh)
       if (content.contentFormat === "ASSET" && content.filePath) {
         const fileUrl = buildFileUrl(content.filePath);
         const isVideo = /\.(mp4|webm|ogg)$/i.test(fileUrl || "");
@@ -350,7 +420,7 @@ const CourseTrialLesson = () => {
         );
       }
 
-      // FLASHCARD_SET – vẫn dùng modal
+      // FLASHCARD_SET mở modal
       if (content.contentFormat === "FLASHCARD_SET") {
         return (
           <div key={key} className="viewer-block viewer-flashcard">
@@ -368,7 +438,7 @@ const CourseTrialLesson = () => {
         );
       }
 
-      // fallback
+      // Fallback
       return (
         <div key={key} className="viewer-empty">
           Nội dung thử (type: {content.contentFormat}) chưa được hỗ trợ hiển
@@ -378,17 +448,18 @@ const CourseTrialLesson = () => {
     });
   };
 
-  /* ========================
-     3. START QUIZ TRIAL THEO LESSON ĐANG CHỌN
-  ========================= */
+  /* --------------------------
+     6. Start quiz cho lesson hiện tại
+  -------------------------- */
   const handleStartTrialQuiz = async () => {
-    if (!activeLesson) return;
-    const lId = activeLesson.id;
+    const lId = lessonDetail?.lessonId || activeLessonId;
+    if (!lId) return;
 
     setQuizLoading(true);
     setQuizError(null);
 
     try {
+      // check info
       await api.get(`/learner/lessons/${lId}/quiz/info`);
 
       const startRes = await api.post(
@@ -399,33 +470,41 @@ const CourseTrialLesson = () => {
       const attempt = unwrap(startRes);
       const attemptId = attempt?.id || attempt?.attemptId;
 
-      if (attemptId) {
-        navigate(`/learner/quiz/attempts/${attemptId}`);
-      } else {
+      if (!attemptId) {
         setQuizError("Không xác định được attempt của quiz.");
+        return;
       }
+
+      navigate(`/learner/trial-quiz/${lId}`);
     } catch (err) {
       console.error("Error starting trial quiz", err);
       const status = err?.response?.status;
       const msg =
         err?.response?.data?.message ||
         "Không bắt đầu được quiz. Vui lòng thử lại.";
-      setQuizError(msg);
 
       if (status === 401) {
         navigate("/login", {
           state: { redirectTo: location.pathname },
           replace: true,
         });
+        return;
+      }
+
+      if (status === 404 || status === 400) {
+        setQuizError("Bài học này hiện chưa có quiz.");
+      } else {
+        setQuizError(msg);
       }
     } finally {
       setQuizLoading(false);
     }
   };
 
-  /* ====== STATE HIỂN THỊ ====== */
-
-  if (loading && !trialCourse) {
+  /* --------------------------
+     7. State hiển thị tổng
+  -------------------------- */
+  if (loadingTree && !trialCourse) {
     return (
       <main className="trial-lesson-page">
         <div className="trial-loading">Đang tải chương học thử…</div>
@@ -433,17 +512,17 @@ const CourseTrialLesson = () => {
     );
   }
 
-  if (error) {
+  if (treeError) {
     return (
       <main className="trial-lesson-page">
         <div className="trial-error">
-          Lỗi tải bài học thử: {error.message || String(error)}
+          Lỗi tải học thử: {treeError.message || String(treeError)}
         </div>
       </main>
     );
   }
 
-  if (!trialCourse || !trialLessons.length) {
+  if (!trialCourse || !trialChapter || !trialLessons.length) {
     return (
       <main className="trial-lesson-page">
         <div className="trial-empty">Không tìm thấy nội dung học thử.</div>
@@ -451,9 +530,17 @@ const CourseTrialLesson = () => {
     );
   }
 
-  // tìm index để hiển thị "Bài 1, Bài 2..."
+  const activeLesson = trialLessons.find(
+    (l) =>
+      String(l.id) === String(activeLessonId) ||
+      String(l.lessonId) === String(activeLessonId)
+  );
   const activeLessonIndex = activeLesson
-    ? trialLessons.findIndex((l) => l.id === activeLesson.id)
+    ? trialLessons.findIndex(
+        (l) =>
+          String(l.id) === String(activeLessonId) ||
+          String(l.lessonId) === String(activeLessonId)
+      )
     : -1;
 
   return (
@@ -464,7 +551,7 @@ const CourseTrialLesson = () => {
           Khóa học #{courseId}
         </Link>
         <span>›</span>
-        <span>Học thử</span>
+        <span>Học thử chương: {trialChapter.title}</span>
       </div>
 
       {/* Header */}
@@ -478,7 +565,7 @@ const CourseTrialLesson = () => {
 
       {/* MAIN 2 CỘT */}
       <div className="trial-main">
-        {/* LEFT: content của section đang chọn */}
+        {/* LEFT: viewer */}
         <div className="trial-main-left">
           <div className="viewer-card">
             {activeLesson && (
@@ -494,15 +581,29 @@ const CourseTrialLesson = () => {
               </div>
             )}
 
-            {activeSection ? (
-              renderSectionContents(activeSection)
-            ) : (
-              <div className="viewer-empty">Chưa có phần nào để hiển thị.</div>
+            {lessonLoading && (
+              <div className="viewer-loading">Đang tải nội dung bài học…</div>
+            )}
+
+            {lessonError && (
+              <div className="viewer-error">
+                Lỗi tải bài học: {lessonError.message || String(lessonError)}
+              </div>
+            )}
+
+            {!lessonLoading && !lessonError && activeSection && (
+              <>{renderSectionContents(activeSection)}</>
+            )}
+
+            {!lessonLoading && !lessonError && !activeSection && (
+              <div className="viewer-empty">
+                Chưa có phần nào để hiển thị cho bài học này.
+              </div>
             )}
           </div>
         </div>
 
-        {/* RIGHT: danh sách lesson + section */}
+        {/* RIGHT: sidebar lesson + section */}
         <aside className="trial-main-right">
           <div className="side-panel">
             <div className="side-header">
@@ -516,11 +617,20 @@ const CourseTrialLesson = () => {
 
             <div className="side-sections">
               {trialLessons.map((lesson, lIdx) => {
-                const isActiveLesson = lesson.id === activeLessonId;
+                const lId = lesson.id || lesson.lessonId;
+                const isActiveLesson = String(lId) === String(activeLessonId);
+
+                // Sections hiển thị:
+                const sectionsForThisLesson =
+                  isActiveLesson && lessonDetail?.sections
+                    ? lessonDetail.sections
+                    : Array.isArray(lesson.sections)
+                    ? lesson.sections
+                    : [];
 
                 return (
                   <div
-                    key={lesson.id}
+                    key={lId}
                     className={`side-section ${
                       isActiveLesson ? "is-active" : ""
                     }`}
@@ -530,11 +640,11 @@ const CourseTrialLesson = () => {
                       type="button"
                       className="side-section-header"
                       onClick={() => {
-                        setActiveLessonId(lesson.id);
-                        const firstSection = lesson.sections?.[0];
-                        setActiveSectionId(
-                          firstSection?.id || firstSection?.sectionId || null
-                        );
+                        setActiveLessonId(lId);
+                        setActiveSectionId(null);
+                        setLessonDetail(null);
+                        setLessonError(null);
+                        setQuizError(null);
                       }}
                     >
                       <span className="dot" />
@@ -543,19 +653,20 @@ const CourseTrialLesson = () => {
                           Bài {lIdx + 1}: {lesson.title}
                         </span>
                         <span className="meta">
-                          {lesson.sections?.length
-                            ? `${lesson.sections.length} phần`
+                          {Array.isArray(sectionsForThisLesson)
+                            ? `${sectionsForThisLesson.length} phần`
                             : "Chưa có phần"}
                         </span>
                       </div>
                     </button>
 
-                    {/* Danh sách section trong lesson */}
-                    {lesson.sections && lesson.sections.length > 0 && (
+                    {/* List sections */}
+                    {sectionsForThisLesson.length > 0 && (
                       <ul className="side-contents">
-                        {lesson.sections.map((section) => {
-                          const sid = section.id || section.sectionId;
-                          const isActiveSection = sid === activeSectionId;
+                        {sectionsForThisLesson.map((section) => {
+                          const sid = section.sectionId || section.id;
+                          const isActiveSection =
+                            String(sid) === String(activeSectionId);
                           return (
                             <li key={sid}>
                               <button
@@ -564,7 +675,7 @@ const CourseTrialLesson = () => {
                                   isActiveSection ? "is-active" : ""
                                 }`}
                                 onClick={() => {
-                                  setActiveLessonId(lesson.id);
+                                  setActiveLessonId(lId);
                                   setActiveSectionId(sid);
                                 }}
                               >
@@ -578,6 +689,10 @@ const CourseTrialLesson = () => {
                         })}
                       </ul>
                     )}
+
+                    {isActiveLesson && lessonLoading && (
+                      <p className="side-loading">Đang tải chi tiết bài học…</p>
+                    )}
                   </div>
                 );
               })}
@@ -586,13 +701,19 @@ const CourseTrialLesson = () => {
         </aside>
       </div>
 
-      {/* Quiz trial (nếu lesson đang chọn có quizId) */}
-      {activeLesson?.quizId && (
-        <section className="trial-quiz">
-          <h2 className="trial-quiz-title">
-            Bài kiểm tra thử cho: {activeLesson.title}
+      {/* QUIZ: chỉ render nếu lessonDetail có quizId */}
+      {lessonDetail?.quizId && (
+        <section className="trial-quiz" id="trial-quiz">
+          <h2 className="trial-quiz-heading">
+            Bài kiểm tra cho: {lessonDetail.title}
           </h2>
+          <p className="trial-quiz-note">
+            Đây là quiz của bài học này. Bạn có thể làm thử, hệ thống sẽ dùng
+            flow quiz bình thường.
+          </p>
+
           {quizError && <p className="trial-quiz-error">{quizError}</p>}
+
           <button
             type="button"
             className="primary-btn"

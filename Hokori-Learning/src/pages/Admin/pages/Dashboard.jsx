@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import s from "./Dashboard.module.scss";
 import { Pie } from "react-chartjs-2";
 import { Chart, registerables } from "chart.js";
 
-// axios client dùng chung của project (đổi path theo project của bà)
 import api from "../../../configs/axios.js";
 
 // React Icons
@@ -11,6 +11,8 @@ import { FaUsers } from "react-icons/fa";
 import { MdVerifiedUser, MdOutlinePendingActions } from "react-icons/md";
 import { RiUserFollowFill, RiUserUnfollowFill } from "react-icons/ri";
 import { HiOutlineUserGroup } from "react-icons/hi";
+import { AiOutlineMoneyCollect } from "react-icons/ai";
+import { FaMoneyBillWave } from "react-icons/fa";
 
 Chart.register(...registerables);
 
@@ -25,6 +27,11 @@ Chart.register({
   },
 });
 
+const formatVnd = (n) => {
+  const num = typeof n === "number" ? n : Number(n || 0);
+  return num.toLocaleString("vi-VN") + " ₫";
+};
+
 export default function AdminDashboard() {
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -37,7 +44,7 @@ export default function AdminDashboard() {
         setLoading(true);
         setError(null);
 
-        const res = await api.get("admin/dashboard");
+        const res = await api.get("/admin/dashboard");
         // BE trả: { success, message, data, ... }
         setDashboard(res.data.data);
       } catch (err) {
@@ -51,7 +58,10 @@ export default function AdminDashboard() {
     fetchDashboard();
   }, []);
 
-  // const overview = dashboard?.overview ?? {};
+  const overview = dashboard?.overview ?? {};
+  const revenueSummary = dashboard?.revenueSummary ?? {};
+  const topTeachers = dashboard?.topTeachersByRevenue ?? [];
+
   const lastUpdated = dashboard?.lastUpdated
     ? new Date(dashboard.lastUpdated).toLocaleString("vi-VN")
     : "-";
@@ -59,15 +69,15 @@ export default function AdminDashboard() {
   // ====== CHART DATA MAPPING ======
   const roleChartData = dashboard
     ? {
-        labels: Object.keys(dashboard.roleDistribution),
-        values: Object.values(dashboard.roleDistribution),
+        labels: Object.keys(dashboard.roleDistribution || {}),
+        values: Object.values(dashboard.roleDistribution || {}),
       }
     : { labels: [], values: [] };
 
   const jlptChartData = dashboard
     ? {
-        labels: Object.keys(dashboard.jlptDistribution),
-        values: Object.values(dashboard.jlptDistribution),
+        labels: Object.keys(dashboard.jlptDistribution || {}),
+        values: Object.values(dashboard.jlptDistribution || {}),
       }
     : { labels: [], values: [] };
 
@@ -88,39 +98,52 @@ export default function AdminDashboard() {
 
       {!loading && !error && dashboard && (
         <>
-          {/* ================= TOP CARDS =================
+          {/* ================= TOP CARDS: USER + REVENUE ================= */}
           <div className={s.statGrid}>
+            {/* -------- USER OVERVIEW -------- */}
             <Stat
               label="Tổng người dùng"
-              value={overview.totalUsers}
+              value={overview.totalUsers ?? 0}
               icon={<FaUsers />}
             />
+
+            {/* -------- REVENUE SUMMARY (dùng theo guide BE) -------- */}
             <Stat
-              label="Người dùng đang hoạt động"
-              value={overview.activeUsers}
-              icon={<RiUserFollowFill />}
+              label="Tổng doanh thu hệ thống"
+              value={formatVnd(
+                revenueSummary.totalRevenue ??
+                  (revenueSummary.totalRevenueCents != null
+                    ? revenueSummary.totalRevenueCents / 100
+                    : 0)
+              )}
+              icon={<AiOutlineMoneyCollect />}
             />
             <Stat
-              label="Người dùng không hoạt động"
-              value={overview.inactiveUsers}
-              icon={<RiUserUnfollowFill />}
+              label="Doanh thu tháng này"
+              value={formatVnd(
+                revenueSummary.monthlyRevenue ??
+                  (revenueSummary.monthlyRevenueCents != null
+                    ? revenueSummary.monthlyRevenueCents / 100
+                    : 0)
+              )}
+              icon={<FaMoneyBillWave />}
             />
             <Stat
-              label="Đã xác thực"
-              value={overview.verifiedUsers}
-              icon={<MdVerifiedUser />}
+              label="Giao dịch thành công"
+              value={revenueSummary.completedTransactions ?? 0}
+              icon={<FaMoneyBillWave />}
             />
             <Stat
-              label="Chưa xác thực"
-              value={overview.unverifiedUsers}
-              icon={<MdOutlinePendingActions />}
+              label="Phí nền tảng đã thu"
+              value={formatVnd(
+                revenueSummary.platformFee ??
+                  (revenueSummary.platformFeeCents != null
+                    ? revenueSummary.platformFeeCents / 100
+                    : 0)
+              )}
+              icon={<AiOutlineMoneyCollect />}
             />
-            <Stat
-              label="Số vai trò"
-              value={overview.totalRoles}
-              icon={<HiOutlineUserGroup />}
-            />
-          </div> */}
+          </div>
 
           {/* ================= CHARTS ================= */}
           <div className={s.chartGrid}>
@@ -139,8 +162,9 @@ export default function AdminDashboard() {
             </ChartCard>
           </div>
 
-          {/* ================= RECENT USERS ================= */}
+          {/* ================= BOTTOM: RECENT USERS + TOP TEACHERS ================= */}
           <div className={s.bottomGrid}>
+            {/* ----- RECENT USERS ----- */}
             <div className={s.box}>
               <div className={s.boxHeader}>
                 <h3>Người dùng mới đăng ký</h3>
@@ -176,6 +200,72 @@ export default function AdminDashboard() {
                       <tr>
                         <td colSpan={5} style={{ textAlign: "center" }}>
                           Chưa có user nào gần đây
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* ----- TOP TEACHERS BY REVENUE (dùng revenue api) ----- */}
+            <div className={s.box}>
+              <div className={s.boxHeader}>
+                <h3>Top giáo viên theo doanh thu</h3>
+                <span className={s.boxSub}>
+                  Dữ liệu từ BE: tổng & doanh thu tháng hiện tại
+                </span>
+              </div>
+
+              <div className={s.tableWrapper}>
+                <table className={s.table}>
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Giáo viên</th>
+                      <th>Doanh thu tháng</th>
+                      <th>Tổng doanh thu</th>
+                      <th>Số khóa học</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {topTeachers.map((t) => {
+                      const monthRevenue =
+                        t.monthlyRevenue ??
+                        (t.monthlyRevenueCents != null
+                          ? t.monthlyRevenueCents / 100
+                          : 0);
+
+                      const totalRevenue =
+                        t.totalRevenue ??
+                        (t.totalRevenueCents != null
+                          ? t.totalRevenueCents / 100
+                          : 0);
+
+                      return (
+                        <tr key={t.teacherId}>
+                          <td>{t.teacherId}</td>
+                          <td>{t.teacherName}</td>
+                          <td>{formatVnd(monthRevenue)}</td>
+                          <td>{formatVnd(totalRevenue)}</td>
+                          <td>{t.courseCount ?? "-"}</td>
+                          <td style={{ textAlign: "right" }}>
+                            <Link
+                              to={`/admin/revenue/${t.teacherId}`}
+                              className={s.linkButton}
+                            >
+                              Xem doanh thu
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    })}
+
+                    {topTeachers.length === 0 && (
+                      <tr>
+                        <td colSpan={6} style={{ textAlign: "center" }}>
+                          Chưa có dữ liệu doanh thu giáo viên
                         </td>
                       </tr>
                     )}
