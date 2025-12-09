@@ -4,10 +4,12 @@ import api from "../../configs/axios";
 import styles from "./LearningTreePage.module.scss";
 import { buildFileUrl } from "../../utils/fileUrl";
 
-// ================================
-// LearningTreePage
-// Trang tổng quan học tập (Coursera-style)
-// ================================
+import { FiChevronDown, FiChevronRight } from "react-icons/fi";
+import { IoDocumentTextOutline } from "react-icons/io5";
+import { MdOndemandVideo } from "react-icons/md";
+import { GiCardPick } from "react-icons/gi";
+import { AiOutlineCheck } from "react-icons/ai";
+import { AnimatePresence, motion } from "framer-motion";
 
 export default function LearningTreePage() {
   const { courseId } = useParams();
@@ -21,39 +23,37 @@ export default function LearningTreePage() {
   const [openLessons, setOpenLessons] = useState(new Set());
 
   useEffect(() => {
-    fetchLearningTree();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    fetchTree();
   }, [courseId]);
 
-  const fetchLearningTree = async () => {
+  const fetchTree = async () => {
     try {
       setLoading(true);
       const res = await api.get(`/learner/courses/${courseId}/learning-tree`);
       setData(res.data);
 
-      // auto-expand chapter đầu tiên cho UX tốt
       if (res.data?.chapters?.length) {
         setOpenChapters(new Set([res.data.chapters[0].chapterId]));
       }
-    } catch (err) {
+    } catch {
       setError("Không thể tải tiến độ học tập");
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleChapter = (chapterId) => {
+  const toggleChapter = (id) => {
     setOpenChapters((prev) => {
       const next = new Set(prev);
-      next.has(chapterId) ? next.delete(chapterId) : next.add(chapterId);
+      next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
   };
 
-  const toggleLesson = (lessonId) => {
+  const toggleLesson = (id) => {
     setOpenLessons((prev) => {
       const next = new Set(prev);
-      next.has(lessonId) ? next.delete(lessonId) : next.add(lessonId);
+      next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
   };
@@ -63,9 +63,9 @@ export default function LearningTreePage() {
       navigate(`/flashcards/${content.flashcardSetId}`);
       return;
     }
-
-    // mặc định: lesson page sẽ tự đọc contentId từ query
-    navigate(`/course/${courseId}/lesson/${lessonId}?contentId=${content.contentId}`);
+    navigate(
+      `/course/${courseId}/lesson/${lessonId}?contentId=${content.contentId}`
+    );
   };
 
   if (loading) return <div className={styles.loading}>Đang tải...</div>;
@@ -73,137 +73,174 @@ export default function LearningTreePage() {
 
   return (
     <main className={styles.page}>
-      <section className={styles.courseHeader}>
-        <div className={styles.headerBackground}>
+      <div className={styles.container}>
+        {/* ===== HEADER ===== */}
+        <section className={styles.header}>
           <img
-            src={buildFileUrl(data.coverImagePath) || "/placeholder-course.png"}
-            alt={data.courseTitle}
-            className={styles.headerImage}
+            className={styles.cover}
+            src={buildFileUrl(data.coverImagePath)}
+            alt="Course Cover"
           />
-          <div className={styles.headerOverlay} />
-        </div>
 
-        <div className={styles.headerContent}>
-          <div className={styles.coverImage}>
-            <img
-              src={buildFileUrl(data.coverImagePath) || "/placeholder-course.png"}
-              alt={data.courseTitle}
-            />
-          </div>
+          <div className={styles.headerInfo}>
+            <h1>{data.courseTitle}</h1>
+            <p>{data.courseSubtitle}</p>
 
-          <div className={styles.courseInfo}>
-            <h1 className={styles.courseTitle}>{data.courseTitle}</h1>
-            <p className={styles.courseSubtitle}>{data.courseSubtitle}</p>
-
-            <div className={styles.progressSection}>
-              <div className={styles.progressHeader}>
-                <span className={styles.progressLabel}>Your Progress</span>
-                <span className={styles.progressPercent}>{data.progressPercent}%</span>
-              </div>
+            <div className={styles.progressWrapper}>
               <div className={styles.progressBar}>
                 <div
                   className={styles.progressFill}
                   style={{ width: `${data.progressPercent}%` }}
                 />
               </div>
+              <span>{data.progressPercent}%</span>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ===== Learning Tree ===== */}
-      <section className={styles.tree}>
-        {data.chapters.map((chapter) => (
-          <div key={chapter.chapterId} className={styles.chapter}>
-            <div
-              className={styles.chapterHeader}
-              onClick={() => toggleChapter(chapter.chapterId)}
-            >
-              <span className={styles.toggle}>
-                {openChapters.has(chapter.chapterId) ? "▼" : "▶"}
-              </span>
-              <h2>{chapter.title}</h2>
-              <span className={styles.chapterProgress}>
-                {chapter.progressPercent}%
-              </span>
-            </div>
+        {/* ===== TREE ===== */}
+        <section className={styles.treeCard}>
+          <div className={styles.treeHeaderRow}>
+            <h2 className={styles.sectionTitle}>Học thử</h2>
+            <span className={styles.treeOverallPercent}>
+              {data.progressPercent}%
+            </span>
+          </div>
 
-            {openChapters.has(chapter.chapterId) && (
-              <div className={styles.lessons}>
-                {chapter.lessons.map((lesson) => (
-                  <div key={lesson.lessonId} className={styles.lesson}>
-                    <div
-                      className={styles.lessonHeader}
-                      onClick={() => toggleLesson(lesson.lessonId)}
-                    >
-                      <span className={styles.toggle}>
-                        {openLessons.has(lesson.lessonId) ? "▼" : "▶"}
-                      </span>
-                      <h3>{lesson.title}</h3>
-                      {lesson.isCompleted && (
-                        <span className={styles.completed}>✓</span>
-                      )}
-                    </div>
+          {data.chapters.map((ch) => (
+            <div key={ch.chapterId} className={styles.chapter}>
+              {/* CHAPTER HEADER */}
+              <button
+                type="button"
+                className={styles.chapterHeader}
+                onClick={() => toggleChapter(ch.chapterId)}
+              >
+                <span className={styles.arrowIcon}>
+                  {openChapters.has(ch.chapterId) ? (
+                    <FiChevronDown />
+                  ) : (
+                    <FiChevronRight />
+                  )}
+                </span>
 
-                    {openLessons.has(lesson.lessonId) && (
-                      <div className={styles.sections}>
-                        {lesson.sections.map((section) => (
-                          <div
-                            key={section.sectionId}
-                            className={styles.section}
-                          >
-                            <h4>{section.title}</h4>
-                            <ul className={styles.contents}>
-                              {section.contents.map((content) => (
-                                <li
-                                  key={content.contentId}
-                                  className={`${styles.content} ${
-                                    content.isCompleted
-                                      ? styles.done
-                                      : ""
-                                  }`}
-                                  onClick={() =>
-                                    handleContentClick(
-                                      lesson.lessonId,
-                                      content
-                                    )
-                                  }
+                <span className={styles.chapterTitle}>{ch.title}</span>
+
+                <span className={styles.chapterPercent}>
+                  {ch.progressPercent}%
+                </span>
+              </button>
+
+              {/* CHAPTER BODY (ANIMATED) */}
+              <AnimatePresence initial={false}>
+                {openChapters.has(ch.chapterId) && (
+                  <motion.div
+                    className={styles.lessonContainer}
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {ch.lessons.map((ls) => (
+                      <div key={ls.lessonId} className={styles.lessonItem}>
+                        {/* LESSON HEADER */}
+                        <button
+                          type="button"
+                          className={styles.lessonHeader}
+                          onClick={() => toggleLesson(ls.lessonId)}
+                        >
+                          <span className={styles.arrowIcon}>
+                            {openLessons.has(ls.lessonId) ? (
+                              <FiChevronDown />
+                            ) : (
+                              <FiChevronRight />
+                            )}
+                          </span>
+
+                          <span className={styles.lessonTitle}>{ls.title}</span>
+
+                          {ls.isCompleted && (
+                            <AiOutlineCheck className={styles.lessonDoneIcon} />
+                          )}
+                        </button>
+
+                        {/* LESSON BODY */}
+                        <AnimatePresence initial={false}>
+                          {openLessons.has(ls.lessonId) && (
+                            <motion.div
+                              className={styles.sectionList}
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              {ls.sections.map((sec) => (
+                                <div
+                                  key={sec.sectionId}
+                                  className={styles.sectionBlock}
                                 >
-                                  <span className={styles.icon}>
-                                    {content.contentFormat === "ASSET" && "▶"}
-                                    {content.contentFormat === "RICH_TEXT" && "📄"}
-                                    {content.contentFormat === "FLASHCARD_SET" &&
-                                      "📚"}
-                                  </span>
-                                  <span>
-                                    Nội dung {content.orderIndex}
-                                  </span>
-                                  {content.isCompleted && <span>✓</span>}
-                                  {!content.isCompleted &&
-                                    content.lastPositionSec > 0 && (
-                                      <span className={styles.resume}>
-                                        Tiếp tục tại {Math.floor(
-                                          content.lastPositionSec / 60
-                                        )}:
-                                        {(content.lastPositionSec % 60)
-                                          .toString()
-                                          .padStart(2, "0")}
-                                      </span>
-                                    )}
-                                </li>
+                                  <p className={styles.sectionName}>
+                                    {sec.title}
+                                  </p>
+
+                                  <ul className={styles.contentList}>
+                                    {sec.contents.map((ct) => (
+                                      <li
+                                        key={ct.contentId}
+                                        className={`${styles.contentItem} ${
+                                          ct.isCompleted
+                                            ? styles.contentCompleted
+                                            : ""
+                                        }`}
+                                        onClick={() =>
+                                          handleContentClick(ls.lessonId, ct)
+                                        }
+                                      >
+                                        <span
+                                          className={styles.contentIconWrapper}
+                                        >
+                                          {ct.contentFormat === "ASSET" && (
+                                            <MdOndemandVideo />
+                                          )}
+                                          {ct.contentFormat === "RICH_TEXT" && (
+                                            <IoDocumentTextOutline />
+                                          )}
+                                          {ct.contentFormat ===
+                                            "FLASHCARD_SET" && <GiCardPick />}
+                                        </span>
+
+                                        <span
+                                          className={styles.contentMainText}
+                                        >
+                                          {ct.contentFormat === "ASSET" &&
+                                            "Video"}
+                                          {ct.contentFormat === "RICH_TEXT" &&
+                                            "Nội dung"}
+                                          {ct.contentFormat ===
+                                            "FLASHCARD_SET" && "Từ vựng"}
+                                        </span>
+
+                                        {ct.isCompleted && (
+                                          <AiOutlineCheck
+                                            className={styles.contentDoneIcon}
+                                          />
+                                        )}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
                               ))}
-                            </ul>
-                          </div>
-                        ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </section>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))}
+        </section>
+      </div>
     </main>
   );
 }

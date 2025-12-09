@@ -128,7 +128,7 @@ const MyCourses = () => {
     const certificateId = res.data.data.id;
 
     navigate(`/certificates/${certificateId}`);
-  } catch (err) {
+  } catch  {
     toast.error("Không thể tạo hoặc lấy chứng chỉ");
   }
 };

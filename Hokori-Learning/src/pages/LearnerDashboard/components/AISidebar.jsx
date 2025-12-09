@@ -39,7 +39,7 @@ const AISidebar = () => {
   const goToServicePage = (serviceCode) => {
     if (serviceCode === "GRAMMAR") navigate("/ai-analyse");
     if (serviceCode === "KAIWA") navigate("/ai-kaiwa");
-    if (serviceCode === "PRONUN") navigate("/ai/pronunciation");
+
   };
 
   const handleClick = async (serviceCode) => {
@@ -90,13 +90,7 @@ const AISidebar = () => {
             containerClassName={styles.aiButtonContainer}
           />
 
-          {/* PRONUN */}
-          <Button
-            content="Kiểm tra phát âm"
-            onClick={() => handleClick("PRONUN")}
-            className={styles.aiButton}
-            containerClassName={styles.aiButtonContainer}
-          />
+      
         </div>
       </section>
 
