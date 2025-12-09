@@ -55,10 +55,10 @@ const DetailModal = ({ open, data, onClose }) => {
             <strong>Sản phẩm:</strong> {data.item}
           </p>
           <p>
-            <strong>Số tiền:</strong> {data.amount.toLocaleString()}₫
+            <strong>Số tiền:</strong> {data.amount.toLocaleString("vi-VN")}₫
           </p>
           <p>
-            <strong>Phí nền tảng:</strong> {data.fee.toLocaleString()}₫
+            <strong>Phí nền tảng:</strong> {data.fee.toLocaleString("vi-VN")}₫
           </p>
           <p>
             <strong>Ngày thanh toán:</strong> {data.date}
@@ -110,19 +110,6 @@ export default function Revenue() {
   // FETCH REVENUE DATA
   // =========================
   useEffect(() => {
-    // /admin/revenue: chưa chọn teacher → không fetch API
-    if (!teacherId) {
-      setSummary({
-        totalRevenue: 0,
-        monthRevenue: 0,
-        completedCount: 0,
-        platformFee: 0,
-      });
-      setChartData({ labels: [], values: [] });
-      setTxList([]);
-      return;
-    }
-
     const fetchRevenue = async () => {
       try {
         setLoading(true);
@@ -131,10 +118,86 @@ export default function Revenue() {
         const year = now.getFullYear();
         const month = now.getMonth() + 1; // 1-12
 
-        // ----- MODE 1: Revenue theo 1 course cụ thể -----
+        // ===== MODE 0: Tổng doanh thu toàn hệ thống (/admin/revenue) =====
+        if (!teacherId) {
+          const res = await api.get("/admin/revenue/total", {
+            params: { year, month },
+          });
+
+          const data = res.data?.data;
+
+          if (!data) {
+            setSummary({
+              totalRevenue: 0,
+              monthRevenue: 0,
+              completedCount: 0,
+              platformFee: 0,
+            });
+            setChartData({ labels: [], values: [] });
+            setTxList([]);
+            return;
+          }
+
+          // BE trả: revenue, revenueCents, transactionCount, teacherCount, courseCount, transactions[]
+          const revenue =
+            typeof data.revenue === "number"
+              ? data.revenue
+              : typeof data.revenueCents === "number"
+              ? data.revenueCents
+              : 0;
+
+          setSummary({
+            totalRevenue: revenue, // tổng doanh thu trong kỳ
+            monthRevenue: revenue,
+            completedCount: data.transactionCount || 0,
+            platformFee: 0, // chưa có field fee
+          });
+
+          setChartData({
+            labels: [
+              data.period || `${year}-${String(month).padStart(2, "0")}`,
+            ],
+            values: [revenue],
+          });
+
+          const rows = Array.isArray(data.transactions)
+            ? data.transactions
+            : [];
+
+          const mappedRows = rows.map((tx) => {
+            const amount =
+              typeof tx.amount === "number"
+                ? tx.amount
+                : typeof tx.amountCents === "number"
+                ? tx.amountCents
+                : 0;
+
+            const rawDate = tx.createdAt;
+            const formattedDate = rawDate
+              ? rawDate.replace("T", " ").slice(0, 16)
+              : "";
+
+            return {
+              id: tx.id,
+              buyer: "-", // BE chưa trả learnerName
+              teacher: tx.teacherName || "-",
+              type: "Khóa học",
+              item: tx.courseTitle || "-",
+              amount,
+              fee: 0,
+              date: formattedDate,
+              status: "COMPLETED",
+            };
+          });
+
+          setTxList(mappedRows);
+          return;
+        }
+
+        // ===== MODE 1: Revenue theo 1 course cụ thể =====
         if (courseId) {
           const res = await api.get(
-            `/api/admin/teachers/${teacherId}/courses/${courseId}/revenue`,
+            `/admin/teachers/${teacherId}/courses/${courseId}/revenue`,
             {
               params: { year, month },
             }
@@ -155,8 +218,11 @@ export default function Revenue() {
           }
 
           const monthRevenue =
-            data.revenue ??
-            (data.revenueCents != null ? data.revenueCents / 100 : 0);
+            typeof data.revenue === "number"
+              ? data.revenue
+              : typeof data.revenueCents === "number"
+              ? data.revenueCents
+              : 0;
 
           setSummary({
             // Tổng all-time của 1 course BE chưa trả → dùng luôn doanh thu tháng
@@ -179,10 +245,10 @@ export default function Revenue() {
 
           const mappedRows = rows.map((tx) => {
             const amount =
-              tx.amount != null
+              typeof tx.amount === "number"
                 ? tx.amount
-                : tx.amountCents != null
-                ? tx.amountCents / 100
+                : typeof tx.amountCents === "number"
+                ? tx.amountCents
                 : 0;
 
             const rawDate = tx.createdAt;
@@ -207,10 +273,10 @@ export default function Revenue() {
           return;
         }
 
-        // ----- MODE 2: Revenue theo teacher (tất cả courses) -----
+        // ===== MODE 2: Revenue theo teacher (tất cả courses) =====
         const [teacherRes, revRes] = await Promise.all([
-          api.get(`/api/admin/teachers/${teacherId}`),
-          api.get(`/api/admin/teachers/${teacherId}/revenue`, {
+          api.get(`/admin/teachers/${teacherId}`),
+          api.get(`/admin/teachers/${teacherId}/revenue`, {
             params: { year, month },
           }),
         ]);
@@ -219,17 +285,22 @@ export default function Revenue() {
         const revData = revRes.data?.data;
 
         const totalRevenue =
-          teacherData?.revenue?.totalRevenue ??
-          (teacherData?.revenue?.totalRevenueCents != null
-            ? teacherData.revenue.totalRevenueCents / 100
-            : 0);
+          typeof teacherData?.revenue?.totalRevenue === "number"
+            ? teacherData.revenue.totalRevenue
+            : typeof teacherData?.revenue?.totalRevenueCents === "number"
+            ? teacherData.revenue.totalRevenueCents
+            : 0;
 
         const monthRevenue =
-          teacherData?.revenue?.monthlyRevenue ??
-          (teacherData?.revenue?.monthlyRevenueCents != null
-            ? teacherData.revenue.monthlyRevenueCents / 100
-            : revData?.revenue ??
-              (revData?.revenueCents != null ? revData.revenueCents / 100 : 0));
+          typeof teacherData?.revenue?.monthlyRevenue === "number"
+            ? teacherData.revenue.monthlyRevenue
+            : typeof teacherData?.revenue?.monthlyRevenueCents === "number"
+            ? teacherData.revenue.monthlyRevenueCents
+            : typeof revData?.revenue === "number"
+            ? revData.revenue
+            : typeof revData?.revenueCents === "number"
+            ? revData.revenueCents
+            : 0;
 
         setSummary({
           totalRevenue,
@@ -238,14 +309,18 @@ export default function Revenue() {
           platformFee: 0,
         });
 
+        const monthlyRev =
+          typeof revData?.revenue === "number"
+            ? revData.revenue
+            : typeof revData?.revenueCents === "number"
+            ? revData.revenueCents
+            : 0;
+
         setChartData({
           labels: [
             revData?.period || `${year}-${String(month).padStart(2, "0")}`,
           ],
-          values: [
-            revData?.revenue ??
-              (revData?.revenueCents != null ? revData.revenueCents / 100 : 0),
-          ],
+          values: [monthlyRev],
         });
 
         const rows = Array.isArray(revData?.transactions)
@@ -254,10 +329,10 @@ export default function Revenue() {
 
         const mappedRows = rows.map((tx) => {
           const amount =
-            tx.amount != null
+            typeof tx.amount === "number"
               ? tx.amount
-              : tx.amountCents != null
-              ? tx.amountCents / 100
+              : typeof tx.amountCents === "number"
+              ? tx.amountCents
               : 0;
 
           const rawDate = tx.createdAt;
@@ -301,11 +376,11 @@ export default function Revenue() {
     { header: "Sản phẩm", accessor: "item" },
     {
       header: "Số tiền",
-      render: (r) => r.amount.toLocaleString() + "₫",
+      render: (r) => r.amount.toLocaleString("vi-VN") + "₫",
     },
     {
       header: "Phí nền tảng",
-      render: (r) => r.fee.toLocaleString() + "₫",
+      render: (r) => r.fee.toLocaleString("vi-VN") + "₫",
     },
     { header: "Ngày", accessor: "date" },
     {
@@ -333,7 +408,7 @@ export default function Revenue() {
   ];
 
   const titleText = !teacherId
-    ? "Tài chính - chọn giáo viên"
+    ? "Doanh thu hệ thống"
     : courseId
     ? "Doanh thu khóa học"
     : "Doanh thu giáo viên";
@@ -342,88 +417,85 @@ export default function Revenue() {
     <div className={s.page}>
       <h1 className={s.title}>{titleText}</h1>
 
-      {/* Nếu chưa chọn teacher → show hướng dẫn, không call API */}
       {!teacherId && (
-        <div className={s.emptyState}>
-          <p>
-            Vui lòng chọn một giáo viên từ trang{" "}
-            <strong>&quot;Người dùng&quot;</strong> hoặc{" "}
-            <strong>&quot;Chứng chỉ GV&quot;</strong> rồi chuyển tới
-            <br />
-            <code>/admin/revenue/&lt;teacherId&gt;</code> để xem doanh thu chi
-            tiết.
-          </p>
-          <p style={{ marginTop: 8, fontSize: 13 }}>
-            Ví dụ: <code>/admin/revenue/5</code> hoặc{" "}
-            <code>/admin/revenue/5/140</code> để xem doanh thu của một khóa học.
-          </p>
+        <p className={s.systemHint}>
+          Đang hiển thị tổng doanh thu toàn hệ thống theo tháng hiện tại.
+        </p>
+      )}
+
+      {teacherId && !courseId && (
+        <p className={s.systemHint}>
+          Đang hiển thị doanh thu tổng hợp của giáo viên ID {teacherId}.
+        </p>
+      )}
+
+      {teacherId && courseId && (
+        <p className={s.systemHint}>
+          Đang hiển thị doanh thu khóa học ID {courseId} của giáo viên ID{" "}
+          {teacherId}.
+        </p>
+      )}
+
+      {/* ===== SUMMARY CARDS ===== */}
+      <div className={s.summaryGrid}>
+        <SummaryCard
+          icon={<AiOutlineMoneyCollect />}
+          label="Tổng doanh thu"
+          value={summary.totalRevenue.toLocaleString("vi-VN") + "₫"}
+        />
+        <SummaryCard
+          icon={<FaShoppingCart />}
+          label="Doanh thu tháng"
+          value={summary.monthRevenue.toLocaleString("vi-VN") + "₫"}
+        />
+        <SummaryCard
+          icon={<FaShoppingCart />}
+          label="Giao dịch hoàn tất"
+          value={summary.completedCount}
+        />
+        <SummaryCard
+          icon={<AiOutlineMoneyCollect />}
+          label="Phí nền tảng thu được"
+          value={summary.platformFee.toLocaleString("vi-VN") + "₫"}
+        />
+      </div>
+
+      {/* ===== CHART ===== */}
+      <div className={s.chartCard}>
+        <div className={s.chartHeader}>
+          <h3>Biểu đồ doanh thu theo tháng</h3>
+          {loading && <span className={s.loadingText}>Đang tải...</span>}
         </div>
-      )}
 
-      {teacherId && (
-        <>
-          {/* ===== SUMMARY CARDS ===== */}
-          <div className={s.summaryGrid}>
-            <SummaryCard
-              icon={<AiOutlineMoneyCollect />}
-              label="Tổng doanh thu"
-              value={summary.totalRevenue.toLocaleString("vi-VN") + "₫"}
-            />
-            <SummaryCard
-              icon={<FaShoppingCart />}
-              label="Doanh thu tháng"
-              value={summary.monthRevenue.toLocaleString("vi-VN") + "₫"}
-            />
-            <SummaryCard
-              icon={<FaShoppingCart />}
-              label="Giao dịch hoàn tất"
-              value={summary.completedCount}
-            />
-            <SummaryCard
-              icon={<AiOutlineMoneyCollect />}
-              label="Phí nền tảng thu được"
-              value={summary.platformFee.toLocaleString("vi-VN") + "₫"}
-            />
-          </div>
+        <Line
+          data={{
+            labels: chartData.labels,
+            datasets: [
+              {
+                label: "Doanh thu",
+                data: chartData.values,
+                borderColor: "#2563eb",
+                backgroundColor: "rgba(37,99,235,0.2)",
+                tension: 0.35,
+              },
+            ],
+          }}
+          options={{ animation: false }}
+        />
+      </div>
 
-          {/* ===== CHART ===== */}
-          <div className={s.chartCard}>
-            <div className={s.chartHeader}>
-              <h3>Biểu đồ doanh thu theo tháng</h3>
-              {loading && <span className={s.loadingText}>Đang tải...</span>}
-            </div>
+      {/* ===== TABLE ===== */}
+      <h2 className={s.sectionTitle}>Lịch sử giao dịch</h2>
 
-            <Line
-              data={{
-                labels: chartData.labels,
-                datasets: [
-                  {
-                    label: "Doanh thu",
-                    data: chartData.values,
-                    borderColor: "#2563eb",
-                    backgroundColor: "rgba(37,99,235,0.2)",
-                    tension: 0.35,
-                  },
-                ],
-              }}
-              options={{ animation: false }}
-            />
-          </div>
+      <div className={s.tableWrap}>
+        <DataTable columns={columns} data={txList} loading={loading} />
+      </div>
 
-          {/* ===== TABLE ===== */}
-          <h2 className={s.sectionTitle}>Lịch sử giao dịch</h2>
-
-          <div className={s.tableWrap}>
-            <DataTable columns={columns} data={txList} loading={loading} />
-          </div>
-
-          <DetailModal
-            open={!!detailItem}
-            data={detailItem}
-            onClose={() => setDetailItem(null)}
-          />
-        </>
-      )}
+      <DetailModal
+        open={!!detailItem}
+        data={detailItem}
+        onClose={() => setDetailItem(null)}
+      />
     </div>
   );
 }

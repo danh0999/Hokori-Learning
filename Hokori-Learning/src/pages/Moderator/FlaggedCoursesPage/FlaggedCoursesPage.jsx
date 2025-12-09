@@ -1,3 +1,4 @@
+// src/pages/Moderator/FlaggedCoursesPage.jsx
 import React, { useEffect, useMemo } from "react";
 import { Table, Card, Button, Tag, message, Space, Tooltip } from "antd";
 import { useDispatch, useSelector } from "react-redux";
@@ -5,6 +6,44 @@ import {
   fetchFlaggedCoursesThunk,
   moderatorFlagCourseThunk,
 } from "../../../redux/features/moderatorCourseSlice.js";
+
+// Map loại report → tiếng Việt
+const FLAG_TYPE_LABELS = {
+  INAPPROPRIATE_CONTENT: "Nội dung không phù hợp",
+  COPYRIGHT_VIOLATION: "Vi phạm bản quyền",
+  MISLEADING_INFO: "Thông tin sai lệch",
+  SPAM: "Spam",
+  HARASSMENT: "Quấy rối",
+  OTHER: "Khác",
+};
+
+// (optional) Màu theo loại report (nếu muốn gọn thì dùng chung 1 màu cũng được)
+const FLAG_TYPE_COLORS = {
+  INAPPROPRIATE_CONTENT: "red",
+  COPYRIGHT_VIOLATION: "geekblue",
+  MISLEADING_INFO: "volcano",
+  SPAM: "orange",
+  HARASSMENT: "magenta",
+  OTHER: "default",
+};
+
+// Map status → tiếng Việt
+const STATUS_LABELS = {
+  PUBLISHED: "Đã xuất bản",
+  FLAGGED: "Đã ẩn (bị báo cáo)",
+  PENDING_APPROVAL: "Đang chờ duyệt",
+  DRAFT: "Bản nháp",
+  REJECTED: "Bị từ chối",
+};
+
+// Màu Tag theo status
+const STATUS_COLORS = {
+  PUBLISHED: "green",
+  FLAGGED: "red",
+  PENDING_APPROVAL: "gold",
+  DRAFT: "default",
+  REJECTED: "volcano",
+};
 
 export default function FlaggedCoursesPage() {
   const dispatch = useDispatch();
@@ -20,11 +59,11 @@ export default function FlaggedCoursesPage() {
     const action = await dispatch(moderatorFlagCourseThunk(courseId));
 
     if (moderatorFlagCourseThunk.fulfilled.match(action)) {
-      message.success("Course has been flagged and hidden from public.");
-      // Sau khi flag xong, reload list để luôn sync với BE
+      message.success("Khóa học đã được ẩn khỏi public.");
+      // Reload lại list cho sync với BE
       dispatch(fetchFlaggedCoursesThunk());
     } else {
-      message.error(action.payload || "Flag failed. Try again.");
+      message.error(action.payload || "Ẩn khóa học thất bại. Thử lại sau.");
     }
   };
 
@@ -32,9 +71,8 @@ export default function FlaggedCoursesPage() {
     () =>
       (flaggedList || []).map((item) => {
         const status = item.status || item.courseStatus;
+        const latestFlag = item.flags?.[0];
 
-        // Nếu BE có gửi canFlag / isModeratorFlagged thì dùng,
-        // còn không thì tự tính theo status + flaggedByUserId
         const canFlag =
           typeof item.canFlag === "boolean"
             ? item.canFlag
@@ -48,13 +86,18 @@ export default function FlaggedCoursesPage() {
         return {
           id: item.courseId ?? item.id,
           title: item.courseTitle ?? item.title,
-          flagCount:
-            item.flagCount ?? item.totalFlags ?? item.flags?.length ?? 0,
-          latestFlagAt:
-            item.latestFlagAt ??
-            item.lastFlagAt ??
-            item.flags?.[0]?.latestFlagAt ??
-            null,
+          slug: item.courseSlug,
+          teacherName: item.teacherName,
+          teacherId: item.teacherId,
+
+          status,
+          flagCount: item.flagCount ?? item.flags?.length ?? 0,
+
+          latestFlagAt: item.latestFlagAt,
+          latestFlagType: latestFlag?.flagType || null,
+          latestFlagReason: latestFlag?.reason || null,
+          latestFlaggedBy: latestFlag?.userName || null,
+
           canFlag,
           isModeratorFlagged,
         };
@@ -64,38 +107,72 @@ export default function FlaggedCoursesPage() {
 
   const columns = [
     {
-      title: "Tiêu đề khóa học",
+      title: "Khóa học",
       dataIndex: "title",
+      ellipsis: true,
     },
     {
-      title: "Số báo cáo",
+      title: "GV",
+      dataIndex: "teacherName",
+      width: 120,
+      ellipsis: true,
+    },
+    {
+      title: "Báo cáo",
       dataIndex: "flagCount",
-      width: 150,
+      width: 100,
       render: (v) => <Tag color="orange">{v}</Tag>,
     },
     {
-      title: "Lần báo cáo cuối cùng",
-      dataIndex: "latestFlagAt",
+      title: "Loại",
+      dataIndex: "latestFlagType",
       width: 180,
+      ellipsis: true,
+      render: (v) => {
+        if (!v) return "-";
+        const label = FLAG_TYPE_LABELS[v] || v;
+        const color = FLAG_TYPE_COLORS[v] || "red";
+        return <Tag color={color}>{label}</Tag>;
+      },
+    },
+    {
+      title: "Lý do",
+      dataIndex: "latestFlagReason",
+      ellipsis: true,
+      width: 180,
+      render: (text) =>
+        text ? (
+          <Tooltip title={text}>
+            <span>{text.length > 20 ? `${text.slice(0, 20)}...` : text}</span>
+          </Tooltip>
+        ) : (
+          "-"
+        ),
+    },
+    {
+      title: "Lần cuối",
+      dataIndex: "latestFlagAt",
+      width: 150,
       render: (v) => (v ? new Date(v).toLocaleString() : "-"),
     },
     {
       title: "Hành động",
-      width: 220,
+      width: 150,
       render: (_, row) => (
         <Space>
           {row.isModeratorFlagged ? (
             <Tag color="green">Đã gửi ✓</Tag>
           ) : row.canFlag ? (
             <Button
+              size="small"
               type="primary"
               danger
               onClick={() => handleFlagCourse(row.id)}
             >
-              Ẩn khóa học
+              Ẩn
             </Button>
           ) : (
-            <Tag color="default">Not allowed</Tag>
+            <Tag color="default">Không thể ẩn</Tag>
           )}
         </Space>
       ),
@@ -110,6 +187,7 @@ export default function FlaggedCoursesPage() {
         dataSource={tableData}
         loading={loadingFlagged}
         pagination={false}
+        size="small" // bảng gọn hơn
       />
     </Card>
   );

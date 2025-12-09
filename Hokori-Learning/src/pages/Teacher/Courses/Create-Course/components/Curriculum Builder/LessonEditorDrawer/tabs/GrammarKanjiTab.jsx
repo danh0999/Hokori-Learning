@@ -298,7 +298,7 @@ export default function GrammarKanjiTab({
       <Form form={form} layout="vertical">
         <Form.Item
           name="title"
-          label="Lesson title"
+          label="Tiêu đề bài học"
           rules={[
             { required: true, message: "Vui lòng nhập tiêu đề bài học." },
           ]}
@@ -309,7 +309,7 @@ export default function GrammarKanjiTab({
         <Form.Item
           name="sectionTitle"
           label={
-            type === "GRAMMAR" ? "Grammar section title" : "Kanji section title"
+            type === "GRAMMAR" ? "Tiêu đề section" : "Tiêu đề section Kanji"
           }
           rules={[
             { required: true, message: "Vui lòng nhập tiêu đề section." },
@@ -324,10 +324,12 @@ export default function GrammarKanjiTab({
           />
         </Form.Item>
 
-        <Form.Item label={type === "GRAMMAR" ? "Grammar video" : "Kanji video"}>
+        <Form.Item
+          label={type === "GRAMMAR" ? "Video ngữ pháp" : "Video Kanji"}
+        >
           {videoState.previewUrl ? (
             <div className={styles.videoBox}>
-              <Text strong>Current media</Text>
+              <Text strong>File hiện tại</Text>
               <br />
               <a href={videoState.previewUrl} target="_blank" rel="noreferrer">
                 {videoState.previewUrl}
@@ -339,7 +341,7 @@ export default function GrammarKanjiTab({
                     showUploadList={false}
                     customRequest={handleSelectVideo}
                   >
-                    <Button>Change file</Button>
+                    <Button>Thay đổi file</Button>
                   </Upload>
                   <Button
                     danger
@@ -353,7 +355,7 @@ export default function GrammarKanjiTab({
                       }))
                     }
                   >
-                    Remove
+                    Xóa file
                   </Button>
                 </Space>
               </div>
@@ -376,16 +378,14 @@ export default function GrammarKanjiTab({
 
         <Form.Item
           name="description"
-          label={
-            type === "GRAMMAR" ? "Grammar description" : "Kanji description"
-          }
+          label={type === "GRAMMAR" ? "Mô tả ngữ pháp" : "Mô tả Kanji"}
         >
           <TextArea rows={5} placeholder="Mô tả nội dung, ví dụ, ghi chú..." />
         </Form.Item>
 
         <Form.Item>
           <Button type="default" onClick={handleSave} loading={saving}>
-            Save {type === "GRAMMAR" ? "Grammar" : "Kanji"}
+            Lưu {type === "GRAMMAR" ? "Grammar" : "Kanji"}
           </Button>
         </Form.Item>
       </Form>

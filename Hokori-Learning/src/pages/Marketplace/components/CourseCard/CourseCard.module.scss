@@ -20,20 +20,10 @@
 }
 
 /* Thumbnail */
-.thumb {
-  position: relative;
+.thumb img {
   width: 100%;
-  height: 220px;
-  background: #e5e7eb;
-  overflow: hidden;
-
-  img {
-    width: 100%;
-    height: 100%;
-    bject-fit: contain; /* 👈 Quan trọng nhất */
-    object-position: center;
-    display: block;
-  }
+  height: 160px;
+  object-fit: cover;
 }
 
 /* Badges */
@@ -72,21 +62,20 @@
 /* Title & description */
 .title {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
+  margin-bottom: 4px;
   color: #111827;
   margin: 0;
   line-height: 1.35;
+  &:hover {
+    text-decoration: underline;
+  }
 }
 
 .subtitle {
-  margin: 2px 0 0;
-  font-size: 13px;
+  font-size: 14px;
   color: #6b7280;
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2; /* 2 dòng */
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  min-height: 38px; // giữ subtitle đồng đều
 }
 
 /* Meta chips */
@@ -141,16 +130,35 @@
 
 /* Actions (buttons) */
 .actions {
-  margin-top: 10px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
   gap: 8px;
+  margin-top: 12px;
+
+  /* ép chiều cao hành động đồng đều */
+  min-height: 40px;
 }
 
 .actionButton {
-  width: 100%;
-  font-size: 13px;
+  flex: 1; // 2 nút chia đều rộng
+  padding: 10px 14px !important;
+  font-size: 14px;
   font-weight: 600;
+
+  /* tránh bự khi text dài */
+  max-height: 42px;
+  line-height: 1.2;
+  white-space: normal; // cho phép xuống dòng
+  text-align: center;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  border-radius: 10px !important;
+  &:hover {
+    transform: translateY(-2px);
+    transition: 0.15s ease;
+  }
 }
 
 /* Nút primary/secondary tuỳ flow */
@@ -173,6 +181,9 @@
 }
 
 .cartButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   background: #2563eb !important;
   color: #ffffff !important;
 
@@ -180,7 +191,11 @@
     background: #1d4ed8 !important;
   }
 }
-
+/* nút khi disabled */
+.cartButtonDisabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
 /* Responsive tweaks */
 @media (max-width: 768px) {
   .thumb {

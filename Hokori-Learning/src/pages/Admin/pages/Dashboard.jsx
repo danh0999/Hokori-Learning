@@ -108,7 +108,7 @@ export default function AdminDashboard() {
             />
 
             {/* -------- REVENUE SUMMARY (dùng theo guide BE) -------- */}
-            <Stat
+            {/* <Stat
               label="Tổng doanh thu hệ thống"
               value={formatVnd(
                 revenueSummary.totalRevenue ??
@@ -142,7 +142,7 @@ export default function AdminDashboard() {
                     : 0)
               )}
               icon={<AiOutlineMoneyCollect />}
-            />
+            /> */}
           </div>
 
           {/* ================= CHARTS ================= */}
@@ -209,7 +209,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* ----- TOP TEACHERS BY REVENUE (dùng revenue api) ----- */}
-            <div className={s.box}>
+            {/* <div className={s.box}>
               <div className={s.boxHeader}>
                 <h3>Top giáo viên theo doanh thu</h3>
                 <span className={s.boxSub}>
@@ -272,7 +272,7 @@ export default function AdminDashboard() {
                   </tbody>
                 </table>
               </div>
-            </div>
+            </div> */}
           </div>
         </>
       )}
