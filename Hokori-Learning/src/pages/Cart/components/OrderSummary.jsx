@@ -119,22 +119,6 @@ const OrderSummary = ({ courses = [], cartId, selectedSubtotal }) => {
         <span>₫{finalTotal.toLocaleString()}</span>
       </div>
 
-      <div className={styles.coupon}>
-        <label htmlFor="coupon">Mã giảm giá</label>
-        <div className={styles.couponInput}>
-          <input
-            id="coupon"
-            type="text"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            placeholder="Nhập mã giảm giá (ví dụ: HOKORI10)"
-          />
-          <button type="button" onClick={handleApply}>
-            Áp dụng
-          </button>
-        </div>
-      </div>
-
       <button
         type="button"
         className={styles.checkout}
