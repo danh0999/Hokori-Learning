@@ -23,6 +23,7 @@ import {
 } from "../../../../redux/features/teacherCourseSlice.js";
 
 import styles from "./styles.module.scss";
+import { toast } from "react-toastify";
 
 const statusColor = {
   DRAFT: "default",
@@ -142,10 +143,10 @@ export default function CourseInformation() {
     );
 
     if (updateCourseThunk.fulfilled.match(action)) {
-      message.success("Saved");
+      toast.success("Đã lưu");
       dispatch(fetchCourseTree(courseId));
     } else {
-      message.error("Save failed, please try again");
+      toast.error("Lưu thất bại, vui lòng thử lại");
     }
   };
 
@@ -158,13 +159,13 @@ export default function CourseInformation() {
 
     if (submitforapprovalCourseThunk.fulfilled.match(action)) {
       if (previousStatus === "REJECTED") {
-        message.success("Course resubmitted for approval.");
+        toast.success("Khóa học đã được nộp lại để duyệt");
       } else {
-        message.success("Submitted for review / approval.");
+        toast.success("Đã nộp để duyệt");
       }
       dispatch(fetchCourseTree(courseId));
     } else {
-      message.error("Submit failed, please try again");
+      toast.error("Nộp duyệt thất bại, vui lòng thử lại");
     }
   };
 
@@ -173,10 +174,10 @@ export default function CourseInformation() {
 
     const action = await dispatch(unpublishCourseThunk(courseId));
     if (unpublishCourseThunk.fulfilled.match(action)) {
-      message.success("Unpublished");
+      toast.success("Đã hủy xuất bản");
       dispatch(fetchCourseTree(courseId));
     } else {
-      message.error("Unpublish failed, please try again");
+      toast.error("Hủy xuất bản thất bại, vui lòng thử lại");
     }
   };
 
@@ -186,10 +187,10 @@ export default function CourseInformation() {
     const action = await dispatch(resubmitFlaggedCourseThunk(courseId));
 
     if (resubmitFlaggedCourseThunk.fulfilled.match(action)) {
-      message.success("Course resubmitted for moderation.");
+      toast.success("Đã nộp lại khóa học để duyệt");
       dispatch(fetchCourseTree(courseId));
     } else {
-      message.error(action.payload || "Resubmit failed, please try again.");
+      toast.error(action.payload || "Nộp lại thất bại, vui lòng thử lại");
     }
   };
 
@@ -268,11 +269,8 @@ export default function CourseInformation() {
             {status === "PUBLISHED" ? "Lưu thay đổi" : "Lưu "}
           </Button>
 
-          {status === "PUBLISHED" ? (
-            <Button danger onClick={handleUnpublish} loading={saving}>
-              Unpublish
-            </Button>
-          ) : isFlagged ? (
+          {isFlagged ? (
+            // Khi bị FLAGGED → hiển thị nút nộp lại
             <Button
               type="primary"
               disabled={disableSubmitButton}
@@ -281,7 +279,11 @@ export default function CourseInformation() {
             >
               Nộp lại sau khi sửa
             </Button>
+          ) : status === "PUBLISHED" ? (
+            // Khi đã PUBLISHED → KHÔNG cho teacher làm gì (ẩn nút)
+            <></>
           ) : (
+            // Các trạng thái khác → Submit for review
             <Button
               type="primary"
               disabled={disableSubmitButton}
@@ -349,12 +351,12 @@ export default function CourseInformation() {
           <div className={styles.flaggedHeader}>
             <Tag color="warning">Flagged</Tag>
             <span className={styles.flaggedTitle}>
-              This course was reported by learners and flagged by moderator
+              Khóa học này đã bị báo cáo bởi người dùng
             </span>
           </div>
 
           <div className={styles.flaggedBody}>
-            <div className={styles.flaggedReasonLabel}>Flag summary:</div>
+            <div className={styles.flaggedReasonLabel}>Tóm tắt báo cáo:</div>
             <div className={styles.flaggedReasonText}>
               {loadingFlagInfo
                 ? "Loading flag details..."

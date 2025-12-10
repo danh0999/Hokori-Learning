@@ -16,6 +16,7 @@ import ApprovePublishModal from "../Queues/components/ApprovePublishModal";
 import RejectModal from "../Queues/components/RejectModal";
 
 import styles from "./styles.module.scss";
+import { toast } from "react-toastify";
 
 export default function ManageQueues() {
   const navigate = useNavigate();
@@ -64,11 +65,11 @@ export default function ManageQueues() {
       await api.put(`/moderator/courses/${courseId}/approve`);
       // xoá course khỏi queue (đã publish rồi)
       setData((prev) => prev.filter((c) => c.id !== courseId));
-      message.success("Khoá học đã được phê duyệt và publish.");
+      toast.success("Khoá học đã được phê duyệt và publish.");
       return true;
     } catch (err) {
       console.error(err);
-      message.error(
+      toast.error(
         err.response?.data?.message || "Duyệt khoá học thất bại, thử lại sau."
       );
       return false;
@@ -84,11 +85,11 @@ export default function ManageQueues() {
         params: { reason },
       });
       setData((prev) => prev.filter((c) => c.id !== courseId));
-      message.success("Khoá học đã bị từ chối.");
+      toast.success("Khoá học đã bị từ chối.");
       return true;
     } catch (err) {
       console.error(err);
-      message.error(
+      toast.error(
         err.response?.data?.message || "Từ chối khoá học thất bại, thử lại sau."
       );
       return false;

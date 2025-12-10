@@ -453,11 +453,6 @@ export default function Revenue() {
           label="Giao dịch hoàn tất"
           value={summary.completedCount}
         />
-        <SummaryCard
-          icon={<AiOutlineMoneyCollect />}
-          label="Phí nền tảng thu được"
-          value={summary.platformFee.toLocaleString("vi-VN") + "₫"}
-        />
       </div>
 
       {/* ===== CHART ===== */}
