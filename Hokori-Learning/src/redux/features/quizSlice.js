@@ -2,43 +2,27 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../configs/axios";
 
+/**
+ * Helper lấy message lỗi từ Axios error
+ */
 const getError = (err) =>
   err?.response?.data?.message ||
   err?.response?.data ||
   err.message ||
   "Something went wrong";
 
-// helper bóc data cho mềm (BE hay bọc { success, data, ... })
+/**
+ * Helper unwrap response (BE hay bọc { success, data, ... })
+ */
 const unwrap = (res) => res.data?.data ?? res.data;
 
-/**
- * Convert FE question.type -> BE questionType
- * FE: "single" | "multiple"
- * BE: "SINGLE_CHOICE" | "MULTIPLE_CHOICE"
- */
-const mapQuestionType = () => "SINGLE_CHOICE";
-/**
- * Chuẩn hoá list câu hỏi trước khi gửi lên BE:
- * - Chỉ giữ single / multiple
- * - Bỏ những câu ko có text hoặc < 2 options
- * - Gán _orderIndex để giữ thứ tự
- */
-const normalizeQuestions = (questions = []) =>
-  questions
-    .filter((q) => q?.text && (q.options || []).length >= 2)
-    .map((q, idx) => ({
-      ...q,
-      type: "single", // ép về single
-      _orderIndex: idx,
-    }));
-
 /* =========================================================
- *                    THUNKS
+ *                    QUIZ LEVEL
  * ======================================================= */
 
 /**
- * Lấy quiz của 1 lesson (nếu không có sẽ trả null)
  * GET /api/teacher/lessons/{lessonId}/quizzes
+ * Lấy quiz của 1 lesson (mỗi lesson hiện tại chỉ có 1 quiz)
  */
 export const fetchLessonQuizThunk = createAsyncThunk(
   "quiz/fetchLessonQuiz",
@@ -46,16 +30,14 @@ export const fetchLessonQuizThunk = createAsyncThunk(
     try {
       const res = await api.get(`teacher/lessons/${lessonId}/quizzes`);
       const data = unwrap(res);
+      // BE có thể trả list hoặc 1 object
       if (!data) return null;
       return Array.isArray(data) ? data[0] : data;
     } catch (err) {
       const status = err?.response?.status;
       const msg = err?.response?.data?.message;
 
-      // Lesson chưa có quiz:
-      // - chuẩn: 404
-      // - đôi khi: 400 "Quiz not found for this lesson"
-      // - bug hiện tại: message "Index 0 out of bounds for length 0"
+      // Lesson chưa có quiz → coi như null, không xem là lỗi
       if (
         status === 404 ||
         (status === 400 &&
@@ -64,7 +46,7 @@ export const fetchLessonQuizThunk = createAsyncThunk(
         (typeof msg === "string" &&
           msg.includes("Index 0 out of bounds for length 0"))
       ) {
-        return null; // lesson chưa có quiz
+        return null;
       }
 
       return rejectWithValue(getError(err));
@@ -73,8 +55,91 @@ export const fetchLessonQuizThunk = createAsyncThunk(
 );
 
 /**
- * Lấy danh sách câu hỏi của 1 quiz
+ * Chuẩn hoá meta quiz từ FE → payload cho BE
+ * - FE thường dùng: { title, description, timeLimit (phút), passingScore }
+ * - BE: { title, description, timeLimitSec, passScorePercent }
+ */
+const buildQuizMetaPayload = (meta = {}) => {
+  const minutes =
+    typeof meta.timeLimit === "number"
+      ? meta.timeLimit
+      : typeof meta.timeLimitMinutes === "number"
+      ? meta.timeLimitMinutes
+      : meta.timeLimit
+      ? Number(meta.timeLimit)
+      : 0;
+
+  const timeLimitSec =
+    typeof meta.timeLimitSec === "number"
+      ? meta.timeLimitSec
+      : minutes > 0
+      ? minutes * 60
+      : null;
+
+  let passScorePercent = 0;
+  if (typeof meta.passingScore === "number") {
+    passScorePercent = meta.passingScore;
+  } else if (typeof meta.passScorePercent === "number") {
+    passScorePercent = meta.passScorePercent;
+  }
+
+  return {
+    title: meta.title,
+    description: meta.description,
+    timeLimitSec,
+    passScorePercent,
+  };
+};
+
+/**
+ * POST /api/teacher/lessons/{lessonId}/quizzes
+ * Tạo quiz cho lesson (chỉ meta, chưa có câu hỏi)
+ */
+export const createLessonQuizThunk = createAsyncThunk(
+  "quiz/createLessonQuiz",
+  async ({ lessonId, meta }, { rejectWithValue }) => {
+    try {
+      const payload = buildQuizMetaPayload(meta);
+      const res = await api.post(
+        `teacher/lessons/${lessonId}/quizzes`,
+        payload
+      );
+      const quiz = unwrap(res);
+      return quiz;
+    } catch (err) {
+      return rejectWithValue(getError(err));
+    }
+  }
+);
+
+/**
+ * PUT /api/teacher/lessons/{lessonId}/quizzes/{quizId}
+ * Cập nhật meta quiz
+ */
+export const updateLessonQuizThunk = createAsyncThunk(
+  "quiz/updateLessonQuiz",
+  async ({ lessonId, quizId, meta }, { rejectWithValue }) => {
+    try {
+      const payload = buildQuizMetaPayload(meta);
+      const res = await api.put(
+        `teacher/lessons/${lessonId}/quizzes/${quizId}`,
+        payload
+      );
+      const quiz = unwrap(res);
+      return quiz;
+    } catch (err) {
+      return rejectWithValue(getError(err));
+    }
+  }
+);
+
+/* =========================================================
+ *                 QUESTION + OPTION LEVEL
+ * ======================================================= */
+
+/**
  * GET /api/teacher/lessons/{lessonId}/quizzes/{quizId}/questions
+ * Lấy danh sách câu hỏi kèm options của 1 quiz
  */
 export const fetchQuizQuestionsThunk = createAsyncThunk(
   "quiz/fetchQuizQuestions",
@@ -83,7 +148,8 @@ export const fetchQuizQuestionsThunk = createAsyncThunk(
       const res = await api.get(
         `teacher/lessons/${lessonId}/quizzes/${quizId}/questions`
       );
-      return unwrap(res) || [];
+      const questions = unwrap(res) || [];
+      return questions;
     } catch (err) {
       return rejectWithValue(getError(err));
     }
@@ -91,153 +157,117 @@ export const fetchQuizQuestionsThunk = createAsyncThunk(
 );
 
 /**
- * Tạo / cập nhật quiz cho 1 lesson + toàn bộ questions & options
- *
- * draftQuiz từ QuizBuilderModal:
- * {
- *   id?,
- *   title,
- *   description,
- *   timeLimit,      // phút
- *   passingScore,   // %
- *   questions: [...]
- * }
+ * POST /api/teacher/lessons/{lessonId}/quizzes/{quizId}/questions
+ * Tạo câu hỏi mới cho quiz
+ * Body BE kỳ vọng: { content, explanation, questionType, orderIndex?, points? }
  */
-export const saveLessonQuizThunk = createAsyncThunk(
-  "quiz/saveLessonQuiz",
-  async ({ lessonId, draftQuiz }, { rejectWithValue }) => {
+export const createQuizQuestionThunk = createAsyncThunk(
+  "quiz/createQuizQuestion",
+  async ({ lessonId, quizId, question }, { rejectWithValue }) => {
     try {
-      const questions = normalizeQuestions(draftQuiz.questions);
+      const res = await api.post(
+        `teacher/lessons/${lessonId}/quizzes/${quizId}/questions`,
+        question
+      );
+      const created = unwrap(res);
+      return created;
+    } catch (err) {
+      return rejectWithValue(getError(err));
+    }
+  }
+);
 
-      // 1. Check lesson đã có quiz chưa
-      let existingQuiz = null;
-      try {
-        const res = await api.get(`teacher/lessons/${lessonId}/quizzes`);
-        const data = unwrap(res);
-        existingQuiz = Array.isArray(data) ? data[0] : data;
-      } catch (err) {
-        const status = err?.response?.status;
-        const msg = err?.response?.data?.message;
+/**
+ * PUT /api/teacher/lessons/{lessonId}/quizzes/questions/{questionId}
+ * Cập nhật câu hỏi
+ */
+export const updateQuizQuestionThunk = createAsyncThunk(
+  "quiz/updateQuizQuestion",
+  async ({ lessonId, questionId, question }, { rejectWithValue }) => {
+    try {
+      const res = await api.put(
+        `teacher/lessons/${lessonId}/quizzes/questions/${questionId}`,
+        question
+      );
+      const updated = unwrap(res);
+      return updated;
+    } catch (err) {
+      return rejectWithValue(getError(err));
+    }
+  }
+);
 
-        if (
-          status === 404 ||
-          (status === 400 &&
-            typeof msg === "string" &&
-            msg.includes("Quiz not found")) ||
-          (typeof msg === "string" &&
-            msg.includes("Index 0 out of bounds for length 0"))
-        ) {
-          // lesson chưa có quiz → tạo mới
-          existingQuiz = null;
-        } else {
-          throw err;
-        }
-      }
+/**
+ * DELETE /api/teacher/lessons/{lessonId}/quizzes/questions/{questionId}
+ * Xoá câu hỏi
+ */
+export const deleteQuizQuestionThunk = createAsyncThunk(
+  "quiz/deleteQuizQuestion",
+  async ({ lessonId, questionId }, { rejectWithValue }) => {
+    try {
+      await api.delete(
+        `teacher/lessons/${lessonId}/quizzes/questions/${questionId}`
+      );
+      return questionId;
+    } catch (err) {
+      return rejectWithValue(getError(err));
+    }
+  }
+);
 
-      // 2. Payload meta quiz (swagger: title, description, timeLimitSec, passScorePercent)
-      const quizPayload = {
-        title: draftQuiz.title,
-        description: draftQuiz.description,
-        timeLimitSec:
-          draftQuiz.timeLimit && Number(draftQuiz.timeLimit) > 0
-            ? Number(draftQuiz.timeLimit) * 60
-            : null, // null = không giới hạn
-        passScorePercent:
-          typeof draftQuiz.passingScore === "number"
-            ? draftQuiz.passingScore
-            : 0,
-      };
+/**
+ * POST /api/teacher/lessons/{lessonId}/quizzes/questions/{questionId}/options
+ * Thêm nhiều options cho 1 câu hỏi
+ * Body: Array<{ content, isCorrect, orderIndex }>
+ */
+export const createQuestionOptionsThunk = createAsyncThunk(
+  "quiz/createQuestionOptions",
+  async ({ lessonId, questionId, options }, { rejectWithValue }) => {
+    try {
+      const res = await api.post(
+        `teacher/lessons/${lessonId}/quizzes/questions/${questionId}/options`,
+        options
+      );
+      const created = unwrap(res);
+      return created;
+    } catch (err) {
+      return rejectWithValue(getError(err));
+    }
+  }
+);
 
-      let quizId;
+/**
+ * PUT /api/teacher/lessons/{lessonId}/quizzes/options/{optionId}
+ * Cập nhật 1 option
+ */
+export const updateQuestionOptionThunk = createAsyncThunk(
+  "quiz/updateQuestionOption",
+  async ({ lessonId, optionId, option }, { rejectWithValue }) => {
+    try {
+      const res = await api.put(
+        `teacher/lessons/${lessonId}/quizzes/options/${optionId}`,
+        option
+      );
+      const updated = unwrap(res);
+      return updated;
+    } catch (err) {
+      return rejectWithValue(getError(err));
+    }
+  }
+);
 
-      // 3. Tạo mới hoặc update quiz meta
-      if (!existingQuiz) {
-        const res = await api.post(
-          `teacher/lessons/${lessonId}/quizzes`,
-          quizPayload
-        );
-        const quizObj = unwrap(res); // { id, lessonId, ... }
-        quizId = quizObj.id;
-      } else {
-        quizId = existingQuiz.id;
-        await api.put(
-          `teacher/lessons/${lessonId}/quizzes/${quizId}`,
-          quizPayload
-        );
-      }
-
-      // 4. Xoá toàn bộ câu hỏi cũ (nếu có)
-      try {
-        const qRes = await api.get(
-          `teacher/lessons/${lessonId}/quizzes/${quizId}/questions`
-        );
-        const oldQuestions = unwrap(qRes) || [];
-        for (const q of oldQuestions) {
-          await api.delete(
-            `teacher/lessons/${lessonId}/quizzes/questions/${q.id}`
-          );
-        }
-      } catch (err) {
-        if (err?.response?.status !== 404) {
-          throw err;
-        }
-      }
-
-      // 5. Tạo lại từng câu hỏi + options
-      for (const q of questions) {
-        // 5.1 Tạo question
-        const qRes = await api.post(
-          `teacher/lessons/${lessonId}/quizzes/${quizId}/questions`,
-          {
-            content: q.text || "",
-            explanation: q.explanation || "",
-            questionType: mapQuestionType(q.type),
-            orderIndex: q._orderIndex ?? 0,
-          }
-        );
-        const questionObj = unwrap(qRes);
-        const questionId = questionObj.id;
-
-        // 5.2 Chuẩn hoá options
-        const rawOptions = q.options || [];
-        let correctIdxs = [];
-
-        rawOptions.forEach((opt, idx) => {
-          if (opt.isCorrect) correctIdxs.push(idx);
-        });
-
-        if (q.type === "single") {
-          if (correctIdxs.length === 0) {
-            correctIdxs = [0];
-          } else if (correctIdxs.length > 1) {
-            correctIdxs = [correctIdxs[0]];
-          }
-        } else {
-          if (correctIdxs.length === 0 && rawOptions.length > 0) {
-            correctIdxs = [0];
-          }
-        }
-
-        const correctSet = new Set(correctIdxs);
-
-        const optionsPayload = rawOptions.map((opt, idx) => ({
-          content: opt.text || "",
-          isCorrect: correctSet.has(idx),
-          orderIndex: idx,
-        }));
-
-        await api.post(
-          `teacher/lessons/${lessonId}/quizzes/questions/${questionId}/options`,
-          optionsPayload
-        );
-      }
-
-      // 6. Lấy lại quiz meta sau khi đã có câu hỏi
-      const finalRes = await api.get(`teacher/lessons/${lessonId}/quizzes`);
-      const finalData = unwrap(finalRes);
-      const savedQuiz = Array.isArray(finalData) ? finalData[0] : finalData;
-
-      return { lessonId, quiz: savedQuiz };
+/**
+ * DELETE /api/teacher/lessons/{lessonId}/quizzes/options/{optionId}
+ * Xoá 1 option
+ */
+export const deleteQuestionOptionThunk = createAsyncThunk(
+  "quiz/deleteQuestionOption",
+  async ({ lessonId, optionId }, { rejectWithValue }) => {
+    try {
+      await api.delete(
+        `teacher/lessons/${lessonId}/quizzes/options/${optionId}`
+      );
+      return optionId;
     } catch (err) {
       return rejectWithValue(getError(err));
     }
@@ -249,9 +279,11 @@ export const saveLessonQuizThunk = createAsyncThunk(
  * ======================================================= */
 
 const initialState = {
-  currentQuiz: null,
-  loading: false,
-  saving: false,
+  currentQuiz: null, // meta quiz
+  questions: [], // danh sách câu hỏi + options
+  loading: false, // loading quiz meta
+  loadingQuestions: false, // loading questions
+  saving: false, // tạo / update bất cứ thứ gì
   error: null,
 };
 
@@ -264,13 +296,15 @@ const quizSlice = createSlice({
     },
     clearCurrentQuiz(state) {
       state.currentQuiz = null;
+      state.questions = [];
       state.error = null;
       state.loading = false;
+      state.loadingQuestions = false;
       state.saving = false;
     },
   },
   extraReducers: (builder) => {
-    // fetchLessonQuiz
+    /* ------- FETCH QUIZ BY LESSON ------- */
     builder
       .addCase(fetchLessonQuizThunk.pending, (state) => {
         state.loading = true;
@@ -286,17 +320,169 @@ const quizSlice = createSlice({
         state.currentQuiz = null;
       });
 
-    // saveLessonQuiz
+    /* ------- CREATE QUIZ ------- */
     builder
-      .addCase(saveLessonQuizThunk.pending, (state) => {
+      .addCase(createLessonQuizThunk.pending, (state) => {
         state.saving = true;
         state.error = null;
       })
-      .addCase(saveLessonQuizThunk.fulfilled, (state, action) => {
+      .addCase(createLessonQuizThunk.fulfilled, (state, action) => {
         state.saving = false;
-        state.currentQuiz = action.payload?.quiz || state.currentQuiz;
+        state.currentQuiz = action.payload;
       })
-      .addCase(saveLessonQuizThunk.rejected, (state, action) => {
+      .addCase(createLessonQuizThunk.rejected, (state, action) => {
+        state.saving = false;
+        state.error = action.payload;
+      });
+
+    /* ------- UPDATE QUIZ ------- */
+    builder
+      .addCase(updateLessonQuizThunk.pending, (state) => {
+        state.saving = true;
+        state.error = null;
+      })
+      .addCase(updateLessonQuizThunk.fulfilled, (state, action) => {
+        state.saving = false;
+        state.currentQuiz = action.payload;
+      })
+      .addCase(updateLessonQuizThunk.rejected, (state, action) => {
+        state.saving = false;
+        state.error = action.payload;
+      });
+
+    /* ------- FETCH QUESTIONS ------- */
+    builder
+      .addCase(fetchQuizQuestionsThunk.pending, (state) => {
+        state.loadingQuestions = true;
+        state.error = null;
+      })
+      .addCase(fetchQuizQuestionsThunk.fulfilled, (state, action) => {
+        state.loadingQuestions = false;
+        state.questions = action.payload || [];
+      })
+      .addCase(fetchQuizQuestionsThunk.rejected, (state, action) => {
+        state.loadingQuestions = false;
+        state.error = action.payload;
+        state.questions = [];
+      });
+
+    /* ------- CREATE QUESTION ------- */
+    builder
+      .addCase(createQuizQuestionThunk.pending, (state) => {
+        state.saving = true;
+        state.error = null;
+      })
+      .addCase(createQuizQuestionThunk.fulfilled, (state, action) => {
+        state.saving = false;
+        if (action.payload) {
+          state.questions.push(action.payload);
+        }
+      })
+      .addCase(createQuizQuestionThunk.rejected, (state, action) => {
+        state.saving = false;
+        state.error = action.payload;
+      });
+
+    /* ------- UPDATE QUESTION ------- */
+    builder
+      .addCase(updateQuizQuestionThunk.pending, (state) => {
+        state.saving = true;
+        state.error = null;
+      })
+      .addCase(updateQuizQuestionThunk.fulfilled, (state, action) => {
+        state.saving = false;
+        const updated = action.payload;
+        if (!updated) return;
+        const idx = state.questions.findIndex((q) => q.id === updated.id);
+        if (idx !== -1) {
+          state.questions[idx] = {
+            ...state.questions[idx],
+            ...updated,
+          };
+        }
+      })
+      .addCase(updateQuizQuestionThunk.rejected, (state, action) => {
+        state.saving = false;
+        state.error = action.payload;
+      });
+
+    /* ------- DELETE QUESTION ------- */
+    builder
+      .addCase(deleteQuizQuestionThunk.pending, (state) => {
+        state.saving = true;
+        state.error = null;
+      })
+      .addCase(deleteQuizQuestionThunk.fulfilled, (state, action) => {
+        state.saving = false;
+        const id = action.payload;
+        state.questions = state.questions.filter((q) => q.id !== id);
+      })
+      .addCase(deleteQuizQuestionThunk.rejected, (state, action) => {
+        state.saving = false;
+        state.error = action.payload;
+      });
+
+    /* ------- CREATE OPTIONS ------- */
+    builder
+      .addCase(createQuestionOptionsThunk.pending, (state) => {
+        state.saving = true;
+        state.error = null;
+      })
+      .addCase(createQuestionOptionsThunk.fulfilled, (state) => {
+        state.saving = false;
+        // payload tuỳ BE, thường không cần merge chi tiết ở đây
+        // component có thể gọi fetchQuizQuestionsThunk lại nếu cần
+      })
+      .addCase(createQuestionOptionsThunk.rejected, (state, action) => {
+        state.saving = false;
+        state.error = action.payload;
+      });
+
+    /* ------- UPDATE OPTION ------- */
+    builder
+      .addCase(updateQuestionOptionThunk.pending, (state) => {
+        state.saving = true;
+        state.error = null;
+      })
+      .addCase(updateQuestionOptionThunk.fulfilled, (state, action) => {
+        state.saving = false;
+        const updated = action.payload;
+        if (!updated) return;
+
+        // cập nhật option trong questions (nếu đang có)
+        const qIdx = state.questions.findIndex((q) =>
+          (q.options || []).some((op) => op.id === updated.id)
+        );
+        if (qIdx !== -1) {
+          const opts = state.questions[qIdx].options || [];
+          const oIdx = opts.findIndex((op) => op.id === updated.id);
+          if (oIdx !== -1) {
+            opts[oIdx] = { ...opts[oIdx], ...updated };
+            state.questions[qIdx].options = opts;
+          }
+        }
+      })
+      .addCase(updateQuestionOptionThunk.rejected, (state, action) => {
+        state.saving = false;
+        state.error = action.payload;
+      });
+
+    /* ------- DELETE OPTION ------- */
+    builder
+      .addCase(deleteQuestionOptionThunk.pending, (state) => {
+        state.saving = true;
+        state.error = null;
+      })
+      .addCase(deleteQuestionOptionThunk.fulfilled, (state, action) => {
+        state.saving = false;
+        const id = action.payload;
+        // xoá option khỏi questions (nếu đang cache)
+        state.questions = state.questions.map((q) => ({
+          ...q,
+          options: (q.options || []).filter((op) => op.id !== id),
+        }));
+      })
+      .addCase(deleteQuestionOptionThunk.rejected, (state, action) => {
         state.saving = false;
         state.error = action.payload;
       });

@@ -18,7 +18,7 @@ import CourseDetail from "../pages/CourseDetail/CourseDetail";
 import MyCourses from "../pages/MyCourses/MyCourses";
 import Cart from "../pages/Cart/Cart";
 import LearnerDashboard from "../pages/LearnerDashboard/LearnerDashboard";
-import LessonPlayer from "../pages/LessonPlayer/LessonPlayer";
+import LessonPlayer from "../pages/LessonPlayer/LessonPlayerPage";
 import QuizPage from "../pages/QuizPage/QuizPage";
 import MyFlashcards from "../pages/Flashcards/MyFlashcards";
 import ProfilePage from "../pages/Profile/ProfilePage";
@@ -76,6 +76,8 @@ import ModeratorPolicies from "../pages/Moderator/ModPolicies/ModPolicies";
 import CourseTrialLesson from "../pages/CourseDetail/CourseTrialLesson/CourseTrialLesson";
 import FlaggedCoursesPage from "../pages/Moderator/FlaggedCoursesPage/FlaggedCoursesPage";
 import QuizTrialPage from "../pages/CourseDetail/QuizTrialPage/QuizTrialPage";
+import LessonPlayerPage from "../pages/LessonPlayer/LessonPlayerPage";
+import LessonQuizAttemptPage from "../pages/LessonPlayer/LessonQuizAttemptPage/LessonQuizAttemptPage";
 
 const routes = [
   // ============================
@@ -103,7 +105,7 @@ const routes = [
         path: "learner/flashcards/:sectionContentId",
         element: <FlashcardPage />,
       },
-      { path: "my-courses/:courseId/learn", element: <LearningTreePage /> },
+      // { path: "my-courses/:courseId/learn", element: <LearningTreePage /> },
 
       { path: "payment/result", element: <PaymentResultPage /> },
       { path: "payment/success", element: <PaymentResultPage /> },
@@ -133,13 +135,27 @@ const routes = [
           { path: "jlpt/test/:testId/result", element: <Result /> },
           { path: "jlpt/test/:testId/review", element: <Review /> },
 
-          {
-            path: "course/:courseId/lesson/:lessonId",
-            element: <LessonPlayer />,
-          },
+          // {
+          //   path: "course/:courseId/lesson/:lessonId",
+          //   element: <LessonPlayer />,
+          // },
           {
             path: "course/:courseId/lesson/:lessonId/quiz/:quizId",
             element: <QuizPage />,
+          },
+
+          //====flow-learn===
+          {
+            path: "learn/:courseId/:slug/home/chapter/:chapterIndex",
+            element: <LearningTreePage />,
+          },
+          {
+            path: "learn/:courseId/:slug/lesson/:lessonId/content/:contentId",
+            element: <LessonPlayerPage />,
+          },
+          {
+            path: "learn/:courseId/:slug/lesson/:lessonId/quiz/attempt/:attemptId",
+            element: <LessonQuizAttemptPage />,
           },
 
           //===flow trail chaper====

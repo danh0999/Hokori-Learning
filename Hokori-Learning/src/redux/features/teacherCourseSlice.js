@@ -756,17 +756,34 @@ const teacherCourseSlice = createSlice({
         if (!chapter.lessons) chapter.lessons = [];
         chapter.lessons.push(lesson);
       })
+      // teacherCourseSlice.js
+
       .addCase(updateLessonThunk.fulfilled, (state, action) => {
-        const updated = action.payload;
+        const updated = action.payload || {};
         const chapters = state.currentCourseTree?.chapters || [];
+
         for (const ch of chapters) {
           const idx = ch.lessons?.findIndex((l) => l.id === updated.id);
-          if (idx !== -1) {
-            ch.lessons[idx] = { ...ch.lessons[idx], ...updated };
-            break;
+          if (idx === -1) continue;
+
+          const prevLesson = ch.lessons[idx] || {};
+
+          // merge meta
+          const merged = { ...prevLesson, ...updated };
+
+          // ❗ Quan trọng: nếu BE không trả sections hoặc trả [] thì giữ lại sections cũ
+          if (
+            updated.sections == null ||
+            (Array.isArray(updated.sections) && updated.sections.length === 0)
+          ) {
+            merged.sections = prevLesson.sections;
           }
+
+          ch.lessons[idx] = merged;
+          break;
         }
       })
+
       .addCase(deleteLessonThunk.fulfilled, (state, action) => {
         const { chapterId, lessonId } = action.payload;
         const chapter = state.currentCourseTree?.chapters?.find(

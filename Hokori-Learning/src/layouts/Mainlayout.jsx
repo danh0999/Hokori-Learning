@@ -10,11 +10,11 @@ const MainLayout = () => {
         display: "flex",
         flexDirection: "column",
         minHeight: "100vh",
-        width: "100vw",     
-        overflowX: "hidden",   // tránh thanh scroll ngang
+        width: "100vw",
+        overflowX: "hidden", // tránh thanh scroll ngang
       }}
     >
-       <ScrollToTop />
+      <ScrollToTop />
       <Header />
       <main style={{ flex: 1, width: "100%" }}>
         <Outlet />

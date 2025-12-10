@@ -1,7 +1,7 @@
 // src/pages/CourseDetail/components/CourseHero.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { message, Modal, Input } from "antd";
 import { toast } from "react-toastify";
 
@@ -15,6 +15,9 @@ const CourseHero = ({ course }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
+  // Lấy cart items từ Redux
+  const cartItems = useSelector((state) => state.cart?.items || []);
+
   // ====== MAP FIELD TỪ COURSE ======
   const {
     id,
@@ -23,7 +26,6 @@ const CourseHero = ({ course }) => {
     description,
     level,
     priceCents,
-    discountedPriceCents,
     currency,
     isEnrolled,
     canFlag, // BE trả về để biết có được flag hay không
@@ -31,6 +33,8 @@ const CourseHero = ({ course }) => {
     studentCount,
     tags: tagsFromApi,
     teacherName: teacherNameFromApi,
+    coverImagePath,
+    videoUrl,
   } = course;
 
   /* ================= STATE FLAG COURSE ================ */
@@ -81,36 +85,27 @@ const CourseHero = ({ course }) => {
   const rating = ratingSummary.ratingAvg || 0;
   const students = ratingSummary.ratingCount || 0;
 
-  // ====== GIÁ / DISCOUNT ======
-  const hasDiscount = Number(discountedPriceCents) > 0;
-  const currentPrice = hasDiscount
-    ? Number(discountedPriceCents)
-    : Number(priceCents ?? 0);
-  const originalPrice = hasDiscount ? Number(priceCents ?? 0) : null;
-
-  const discountPercent =
-    hasDiscount && priceCents
-      ? Math.round(
-          (1 - Number(discountedPriceCents) / Number(priceCents)) * 100
-        )
-      : null;
-
+  // ====== GIÁ KHÔNG DÙNG DISCOUNT ======
+  const currentPrice = Number(priceCents ?? 0); // PayOS: giữ nguyên VND, KHÔNG chia 100
   const isFree = currentPrice === 0;
   const enrolled = !!isEnrolled;
 
   const tags = Array.isArray(tagsFromApi) ? tagsFromApi : [];
-
   const teacherName = teacherNameFromApi || "Giảng viên Hokori";
-  // Object để gửi cho cart API
+
+  // Object để gửi cho cart API / Redux
   const courseForCart = {
-    id,
+    courseId: id, // BE dùng courseId
+    id, // phòng khi cartSlice cũ dùng id
     title,
+    courseTitle: title,
     shortDesc: subtitle || description || "",
     price: currentPrice,
-    oldPrice: originalPrice,
-    discount: discountPercent,
-    teacher: teacherName,
+    priceCents: currentPrice,
+    quantity: 1,
+    teacherName: teacherName,
     level,
+    coverImagePath,
   };
 
   // --- LẤY TOKEN ĐỂ CHECK GUEST ---
@@ -121,6 +116,9 @@ const CourseHero = ({ course }) => {
     sessionStorage.getItem("token");
 
   const isGuest = !token;
+
+  // Check course đã có trong giỏ hàng chưa (cartSlice map với API: item.courseId)
+  const isInCart = cartItems.some((item) => item.courseId === id);
 
   /* ================= HANDLERS ================ */
 
@@ -164,10 +162,18 @@ const CourseHero = ({ course }) => {
       return;
     }
 
+    // Nếu đã có trong giỏ rồi thì không gọi API nữa
+    if (isInCart) {
+      toast.info("Khóa học đã có trong giỏ hàng.", { autoClose: 1500 });
+      return;
+    }
+
     try {
       await dispatch(addToCart(courseForCart)).unwrap();
+      // Redux sẽ cập nhật cart.items → isInCart = true → nút tự disable
     } catch (err) {
       console.error(err);
+      message.error("Không thể thêm khóa học vào giỏ hàng.");
     }
   };
 
@@ -176,6 +182,12 @@ const CourseHero = ({ course }) => {
     if (isGuest) {
       toast.error("Vui lòng đăng nhập để mua khóa học.");
       navigate("/login");
+      return;
+    }
+
+    // Nếu đã có trong giỏ → chỉ chuyển sang trang giỏ hàng
+    if (isInCart) {
+      navigate("/cart");
       return;
     }
 
@@ -254,18 +266,18 @@ const CourseHero = ({ course }) => {
       <div className="container">
         {/* Video / Cover */}
         <div className="video-preview">
-          {course.videoUrl ? (
+          {videoUrl ? (
             <iframe
-              src={course.videoUrl}
-              title={course.title}
+              src={videoUrl}
+              title={title}
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             />
-          ) : course.coverImagePath ? (
+          ) : coverImagePath ? (
             <img
-              src={buildFileUrl(course.coverImagePath)}
-              alt={course.title}
+              src={buildFileUrl(coverImagePath)}
+              alt={title}
               className="cover-image"
             />
           ) : (
@@ -299,7 +311,7 @@ const CourseHero = ({ course }) => {
                   const starValue = i + 1;
 
                   if (students === 0) {
-                    // ⭐ Chưa có đánh giá → show sao rỗng
+                    // Chưa có đánh giá → show sao rỗng
                     return <i key={i} className="fa-regular fa-star"></i>;
                   }
 
@@ -332,7 +344,7 @@ const CourseHero = ({ course }) => {
           {!isFree && (
             <div className="price">
               <span className="current">
-                {formatMoney(currentPrice)} {currency || "VNĐ"}
+                {formatMoney(currentPrice)} {currency || "VND"}
               </span>
             </div>
           )}
@@ -349,8 +361,13 @@ const CourseHero = ({ course }) => {
             </button>
 
             {showSecondaryCartBtn && (
-              <button className="btn-secondary" onClick={handleAddToCart}>
-                <i className="fa-solid fa-cart-shopping"></i> Thêm vào giỏ hàng
+              <button
+                className="btn-secondary"
+                onClick={handleAddToCart}
+                disabled={isInCart}
+              >
+                <i className="fa-solid fa-cart-shopping"></i>{" "}
+                {isInCart ? "Đã có trong giỏ" : "Thêm vào giỏ hàng"}
               </button>
             )}
 

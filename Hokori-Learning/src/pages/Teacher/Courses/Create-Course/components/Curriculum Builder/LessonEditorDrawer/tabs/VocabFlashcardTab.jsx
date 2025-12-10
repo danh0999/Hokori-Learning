@@ -1,110 +1,95 @@
-// LessonEditorDrawer/tabs/VocabFlashcardTab.jsx
+// src/pages/Teacher/Courses/Create-Course/components/Curriculum Builder/LessonEditorDrawer/tabs/VocabFlashcardTab.jsx
 import React, { useCallback, useEffect, useState } from "react";
-import { Button, Typography, Form, Input } from "antd";
+import { Button, Form, Input, Typography } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 
 import {
   createContentThunk,
   updateSectionThunk,
 } from "../../../../../../../../redux/features/teacherCourseSlice.js";
-
 import {
   createCourseVocabSet,
   resetFlashcardState,
 } from "../../../../../../../../redux/features/flashcardSlice.js";
 
-import FlashcardBuilderModal from "../../../../../../ManageDocument/Flashcard/FlashcardBuilderModal.jsx";
 import FlashcardList from "../../../../../../ManageDocument/Flashcard/FlashcardList/FlashcardList.jsx";
+import FlashcardBuilderModal from "../../../../../../ManageDocument/Flashcard/FlashcardBuilderModal.jsx";
 
 import styles from "../styles.module.scss";
 import { toast } from "react-toastify";
 
 const { Text } = Typography;
 
-// bóc id content từ response createContentThunk
-const extractContentId = (created) => {
+// Helper lấy id content từ response createContentThunk
+function extractContentId(created) {
   if (!created) return null;
   if (created.content?.id) return created.content.id;
   if (created.id) return created.id;
-  if (created.data?.id) return created.data.id;
   return null;
-};
+}
 
+/**
+ * Props:
+ *  - lesson: lessonFromTree
+ *  - sectionsHook
+ *  - onSaved: gọi để LessonEditorDrawer fetchCourseTree
+ *  - onDurationComputed: set duration cho VOCAB
+ */
 export default function VocabFlashcardTab({
   lesson,
   sectionsHook,
-  onDurationComputed,
   onSaved,
+  onDurationComputed,
 }) {
   const dispatch = useDispatch();
   const [form] = Form.useForm();
 
-  const [vocabSectionId, setVocabSectionId] = useState(null);
-  const [sectionContentId, setSectionContentId] = useState(null);
-
-  const [modalOpen, setModalOpen] = useState(false);
   const [opening, setOpening] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
-  // Lấy currentSet từ Redux để biết lesson này đã có bộ flashcard chưa
-  const { currentSet } = useSelector(
-    (state) => state.flashcardTeacher || state.flashcard
-  );
+  const [sectionId, setSectionId] = useState(null);
+  const [contentId, setContentId] = useState(null);
 
-  const hasSet = !!currentSet;
-
-  /* Khi đổi lesson → reset state flashcard (tránh dính từ lesson cũ) */
+  // 🔹 Mỗi lần đổi lesson → clear currentSet, cards,… để không xài set của lesson trước
   useEffect(() => {
     dispatch(resetFlashcardState());
-    setVocabSectionId(null);
-    setSectionContentId(null);
-  }, [lesson?.id, dispatch]);
+  }, [dispatch, lesson?.id]);
 
-  /* Đồng bộ section + content theo tree hiện tại của lesson */
+  // 🔹 Đồng bộ section + content từ lesson.sections
   useEffect(() => {
-    if (!lesson?.sections) return;
-
-    const sections = lesson.sections || [];
-
-    let foundSection = null;
-    let foundContent = null;
-
-    for (const sec of sections) {
-      if (sec.studyType !== "VOCABULARY") continue;
-
-      foundSection = sec;
-
-      const flash = (sec.contents || []).find(
-        (c) => c.contentFormat === "FLASHCARD_SET"
-      );
-      if (flash) {
-        foundContent = flash;
-        break;
-      }
+    if (!lesson?.sections) {
+      setSectionId(null);
+      setContentId(null);
+      form.setFieldsValue({
+        sectionTitle: `Vocabulary – ${lesson?.title || "Lesson"}`,
+      });
+      return;
     }
 
-    if (!foundSection) {
-      foundSection = sections.find((sec) => sec.studyType === "VOCABULARY");
-    }
+    const vocabSec = lesson.sections.find((s) => s.studyType === "VOCABULARY");
+    setSectionId(vocabSec?.id || null);
 
-    setVocabSectionId(foundSection?.id || null);
-    setSectionContentId(foundContent?.id || null);
+    const flashContent = vocabSec?.contents?.find(
+      (c) => c.contentFormat === "FLASHCARD_SET"
+    );
+    setContentId(flashContent?.id || null);
 
-    const defaultTitle =
-      foundSection?.title ||
-      (lesson.title ? `Vocabulary – ${lesson.title}` : "Vocabulary section");
-
-    form.setFieldsValue({ sectionTitle: defaultTitle });
+    form.setFieldsValue({
+      sectionTitle:
+        vocabSec?.title || `Vocabulary – ${lesson?.title || "Lesson"}`,
+    });
   }, [lesson?.id, lesson?.title, lesson?.sections, form]);
 
-  /* duration: nếu đã có flashcard content thì fix 10' */
+  // 🔹 Duration: 1 flashcard set = 10 phút
   useEffect(() => {
-    if (typeof onDurationComputed !== "function") return;
-    if (sectionContentId) onDurationComputed(600);
-    else onDurationComputed(0);
-  }, [sectionContentId, onDurationComputed]);
+    if (!onDurationComputed) return;
+    onDurationComputed(contentId ? 600 : 0);
+  }, [contentId, onDurationComputed]);
 
-  const handleOpenBuilder = useCallback(async () => {
+  const hasSet = !!contentId;
+
+  const handleCreateOrOpen = useCallback(async () => {
     if (!lesson?.id) return toast.error("Missing lessonId");
 
     // validate title
@@ -119,77 +104,72 @@ export default function VocabFlashcardTab({
     setOpening(true);
 
     try {
-      let sectionId = vocabSectionId;
+      let secId = sectionId;
 
-      // 1) Đảm bảo đã có section VOCABULARY
-      if (!sectionId) {
+      // 1) Tạo / update section VOCABULARY
+      if (!secId) {
         const createdSec = await sectionsHook.ensureSection("VOCABULARY", {
           title: sectionTitle,
           studyType: "VOCABULARY",
         });
-
-        sectionId = createdSec?.id;
-        setVocabSectionId(sectionId);
+        secId = createdSec?.id;
+        setSectionId(secId);
       } else {
-        // update title section nếu đã tồn tại
         await dispatch(
           updateSectionThunk({
-            sectionId,
+            sectionId: secId,
             data: { title: sectionTitle },
           })
-        );
+        ).unwrap();
       }
 
-      // 2) Đảm bảo đã có content FLASHCARD_SET trong section
-      let newContentId = sectionContentId;
-
-      if (!newContentId) {
+      // 2) Tạo content FLASHCARD_SET nếu chưa có
+      let cntId = contentId;
+      if (!cntId) {
         const createdContent = await dispatch(
           createContentThunk({
-            sectionId,
+            sectionId: secId,
             data: {
               orderIndex: 0,
               contentFormat: "FLASHCARD_SET",
-              primaryContent: false,
             },
           })
         ).unwrap();
 
-        newContentId = extractContentId(createdContent);
-        if (!newContentId) {
-          throw new Error("Cannot extract sectionContentId from response");
-        }
+        cntId = extractContentId(createdContent);
+        if (!cntId) throw new Error("Cannot extract sectionContentId");
+        setContentId(cntId);
 
-        // 3) Tạo flashcard set cho content này (COURSE_VOCAB)
-        const action = await dispatch(
+        // 3) Tạo flashcard set cho content này
+        const rs = await dispatch(
           createCourseVocabSet({
-            title: `Từ vựng – ${lesson.title || "New lesson"}`,
-            sectionContentId: newContentId,
+            title: `Từ vựng – ${lesson.title || "Lesson"}`,
+            sectionContentId: cntId,
           })
         );
-        if (createCourseVocabSet.rejected.match(action)) {
-          throw new Error(action.payload || "Create flashcard set failed");
+        if (createCourseVocabSet.rejected.match(rs)) {
+          throw new Error(rs.payload || "Create flashcard set failed");
         }
-
-        // Chỉ set lại sectionContentId sau khi set tạo thành công
-        setSectionContentId(newContentId);
       }
 
-      onSaved?.();
+      // 4) Reload tree cho lesson / curriculum
+      await onSaved?.();
+
+      // 5) Mở modal builder
       setModalOpen(true);
     } catch (err) {
       console.error(err);
-      toast.error(err.message || "Không thể mở Flashcard builder.");
+      toast.error(err.message || "Không thể mở flashcard builder");
     } finally {
       setOpening(false);
     }
   }, [
     lesson?.id,
     lesson?.title,
-    vocabSectionId,
-    sectionContentId,
-    dispatch,
+    sectionId,
+    contentId,
     form,
+    dispatch,
     sectionsHook,
     onSaved,
   ]);
@@ -200,21 +180,20 @@ export default function VocabFlashcardTab({
         <Form.Item
           name="sectionTitle"
           label="Tiêu đề phần từ vựng"
-          rules={[{ required: true }]}
+          rules={[{ required: true, message: "Nhập tiêu đề phần từ vựng" }]}
         >
           <Input />
         </Form.Item>
 
         <Text>
-          Đây là phần <b>Vocabulary</b> của lesson. Lesson này có thể gắn{" "}
-          <b>một</b> bộ flashcard để học từ vựng.
+          Mỗi <b>lesson</b> chỉ có <b>1</b> bộ flashcard từ vựng.
         </Text>
 
         <div style={{ marginTop: 16 }}>
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={handleOpenBuilder}
+            onClick={handleCreateOrOpen}
             loading={opening}
             disabled={hasSet}
           >
@@ -223,19 +202,17 @@ export default function VocabFlashcardTab({
         </div>
       </Form>
 
-      {/* FLASHCARD LIST */}
       <div style={{ marginTop: 32 }}>
         <FlashcardList
-          sectionContentId={sectionContentId}
+          sectionContentId={contentId}
           onEditSet={() => setModalOpen(true)}
         />
       </div>
 
-      {/* MODAL BUILDER */}
       <FlashcardBuilderModal
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
-        sectionContentId={sectionContentId}
+        sectionContentId={contentId}
       />
     </div>
   );

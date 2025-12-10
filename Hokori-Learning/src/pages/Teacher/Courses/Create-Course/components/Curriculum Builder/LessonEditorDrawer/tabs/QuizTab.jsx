@@ -6,7 +6,6 @@ import { useDispatch, useSelector } from "react-redux";
 
 import {
   fetchLessonQuizThunk,
-  saveLessonQuizThunk,
   clearCurrentQuiz,
 } from "../../../../../../../../redux/features/quizSlice.js";
 
@@ -21,15 +20,13 @@ const { Text } = Typography;
 
 export default function QuizTab({ lesson, onDurationComputed }) {
   const dispatch = useDispatch();
-  const { currentQuiz, loading, saving } = useSelector(
-    (state) => state.quiz || {}
-  );
+  const { currentQuiz, loading } = useSelector((state) => state.quiz || {});
 
   const [openBuilder, setOpenBuilder] = useState(false);
   const [openBulk, setOpenBulk] = useState(false);
   const [draftQuiz, setDraftQuiz] = useState(null);
 
-  // load quiz khi mở/chọn lesson
+  // ── Load quiz khi mở/chọn lesson ─────────────────────────
   useEffect(() => {
     dispatch(clearCurrentQuiz());
     if (!lesson?.id) return;
@@ -49,7 +46,7 @@ export default function QuizTab({ lesson, onDurationComputed }) {
     onDurationComputed(sec);
   }, [currentQuiz, onDurationComputed]);
 
-  // map QuizDto từ BE -> Quiz builder format
+  // map QuizDto từ BE -> format cho builder (meta only)
   const mapQuizFromBE = useCallback((q) => {
     if (!q) return null;
     return {
@@ -68,15 +65,18 @@ export default function QuizTab({ lesson, onDurationComputed }) {
         typeof q.showExplanation === "boolean" ? q.showExplanation : true,
       isRequired: !!q.isRequired,
       tags: q.tags || [],
+      // câu hỏi sẽ để builder tự fetch
       questions: [],
     };
   }, []);
 
+  // ── Tạo quiz mới ─────────────────────────────────────────
   const handleCreate = () => {
     setDraftQuiz(null);
     setOpenBuilder(true);
   };
 
+  // ── Sửa quiz đang có ─────────────────────────────────────
   const handleEdit = () => {
     if (!currentQuiz) {
       setDraftQuiz(null);
@@ -86,6 +86,7 @@ export default function QuizTab({ lesson, onDurationComputed }) {
     setOpenBuilder(true);
   };
 
+  // ── Bulk import → đưa câu hỏi vào draftQuiz khi mở modal ─
   const handleBulkDone = (questions) => {
     setOpenBulk(false);
     if (!questions?.length) return;
@@ -106,33 +107,23 @@ export default function QuizTab({ lesson, onDurationComputed }) {
     setOpenBuilder(true);
   };
 
-  const handleSaveQuiz = async (builderQuiz) => {
-    if (!lesson?.id) {
-      toast.error("Thiếu lessonId.");
-      return;
+  // ── Sau khi modal lưu xong (đã gọi hết API) ───────────────
+  // onSaved sẽ nhận meta (ít nhất có timeLimitMinutes)
+  const handleSaved = async ({ timeLimitMinutes }) => {
+    // reload quiz từ BE để list luôn đúng
+    if (lesson?.id) {
+      await dispatch(fetchLessonQuizThunk(lesson.id));
     }
 
-    const action = await dispatch(
-      saveLessonQuizThunk({
-        lessonId: lesson.id,
-        draftQuiz: builderQuiz,
-      })
-    );
+    setOpenBuilder(false);
+    toast.success("Đã lưu quiz.");
 
-    if (saveLessonQuizThunk.fulfilled.match(action)) {
-      toast.success("Đã lưu quiz.");
-      setOpenBuilder(false);
-
-      // duration = timeLimit (phút) * 60
-      if (typeof onDurationComputed === "function") {
-        const minutes =
-          typeof builderQuiz.timeLimit === "number" && builderQuiz.timeLimit > 0
-            ? builderQuiz.timeLimit
-            : 30;
-        onDurationComputed(minutes * 60);
-      }
-    } else {
-      toast.error(action.payload || "Lưu quiz thất bại.");
+    if (typeof onDurationComputed === "function") {
+      const minutes =
+        typeof timeLimitMinutes === "number" && timeLimitMinutes > 0
+          ? timeLimitMinutes
+          : 30;
+      onDurationComputed(minutes * 60);
     }
   };
 
@@ -153,7 +144,7 @@ export default function QuizTab({ lesson, onDurationComputed }) {
             type="primary"
             icon={<PlusOutlined />}
             onClick={handleCreate}
-            disabled={!!currentQuiz} // <–– lesson đã có quiz → disable
+            disabled={!!currentQuiz} // đã có quiz → không cho tạo mới
           >
             Tạo quiz
           </Button>
@@ -182,8 +173,7 @@ export default function QuizTab({ lesson, onDurationComputed }) {
         lessonId={lesson?.id}
         initial={draftQuiz}
         onCancel={() => setOpenBuilder(false)}
-        onSave={handleSaveQuiz}
-        saving={saving}
+        onSaved={handleSaved}
       />
     </div>
   );
