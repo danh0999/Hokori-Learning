@@ -129,9 +129,10 @@ return (
             {/* ... (Các phần Content và Actions giữ nguyên) */}
              <LessonContent data={lessonData?.sections} />
              
-             <LessonActions 
-                quizId={lessonData?.quizId} 
+                <LessonActions 
+                courseId={courseId}    
                 lessonId={lessonId}
+                quizId={lessonData?.quizId} 
             />
 
             {/* <div className={styles.footerActions}>
