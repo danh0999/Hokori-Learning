@@ -1,3 +1,5 @@
+/* src/pages/QuizPage/components/SubmitModal.module.scss */
+
 .backdrop {
   position: fixed;
   inset: 0;
@@ -13,9 +15,11 @@
   border-radius: 12px;
   padding: 28px 32px;
   max-width: 400px;
+  width: 90%; /* Responsive trên mobile */
   text-align: center;
   border: 1px solid #e5e7eb;
   font-family: inherit;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 .modal h2 {
@@ -32,6 +36,29 @@
   line-height: 1.5;
 }
 
+/* Style mới cho hộp kết quả */
+.resultBox {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+.resultBox p {
+    margin: 8px 0;
+    color: #374151;
+    font-size: 16px;
+}
+
+.pass {
+  color: #16a34a; /* Xanh lá đậm */
+}
+
+.notPass {
+  color: #dc2626; /* Đỏ đậm */
+}
+
 .actions {
   display: flex;
   justify-content: center;
@@ -42,10 +69,11 @@
 .submitBtn {
   border: none;
   border-radius: 6px;
-  padding: 8px 16px;
+  padding: 10px 20px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-size: 14px;
 }
 
 .cancelBtn {
@@ -66,10 +94,7 @@
   background: #163bb6;
 }
 
-.pass {
-  color: #166534;
-}
-
-.notPass {
-  color: #b91c1c;
+.submitBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }

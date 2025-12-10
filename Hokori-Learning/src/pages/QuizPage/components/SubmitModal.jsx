@@ -8,7 +8,7 @@ const SubmitModal = ({
   result,
   totalQuestions,
   answeredCount,
-  onCancel,
+  onCancel,  // Hàm này giờ sẽ kiêm chức năng "Quay về" khi đã có kết quả
   onConfirm,
 }) => {
   if (!open) return null;
@@ -19,6 +19,7 @@ const SubmitModal = ({
     <div className={styles.backdrop}>
       <div className={styles.modal}>
         {!hasResult ? (
+          // --- TRẠNG THÁI 1: XÁC NHẬN NỘP BÀI ---
           <>
             <h2>Xác nhận nộp bài</h2>
             <p>
@@ -40,32 +41,40 @@ const SubmitModal = ({
             </div>
           </>
         ) : (
+          // --- TRẠNG THÁI 2: HIỂN THỊ KẾT QUẢ ---
           <>
-            <h2>Kết quả bài làm</h2>
-            <p>
-              Điểm số: <strong>{result.score ?? result.totalScore ?? "N/A"}</strong>
-            </p>
-            {typeof result.correctCount === "number" && (
-              <p>
-                Đúng {result.correctCount}/{totalQuestions} câu
-              </p>
-            )}
-            {typeof result.pass === "boolean" && (
-              <p>
-                Trạng thái:{" "}
-                <strong
-                  className={
-                    result.pass ? styles.pass : styles.notPass
-                  }
-                >
-                  {result.pass ? "Đạt" : "Chưa đạt"}
-                </strong>
-              </p>
-            )}
+            <h2 style={{ color: '#166534' }}>Kết quả bài làm</h2>
+            
+            <div className={styles.resultBox}>
+                <p>
+                  Điểm số: <strong style={{ fontSize: '24px', color: '#2563eb' }}>{result.scorePercent ?? 0} / 100</strong>
+                </p>
+                {/* Check nếu có trường correctCount thì hiển thị */}
+                {(result.correctCount !== undefined) && (
+                  <p>
+                    Số câu đúng: <strong>{result.correctCount}/{totalQuestions}</strong>
+                  </p>
+                )}
+                {/* Check nếu có trường pass (đậu/rớt) */}
+                {(result.pass !== undefined) && (
+                  <p>
+                    Trạng thái:{" "}
+                    <span
+                      className={
+                        result.pass ? styles.pass : styles.notPass
+                      }
+                      style={{ fontWeight: 'bold' }}
+                    >
+                      {result.pass ? "ĐẠT" : "CHƯA ĐẠT"}
+                    </span>
+                  </p>
+                )}
+            </div>
 
             <div className={styles.actions}>
+              {/* Nút này sẽ gọi handleCloseModal ở trang cha -> navigate về bài học */}
               <button onClick={onCancel} className={styles.submitBtn}>
-                Đóng
+                Quay về bài học
               </button>
             </div>
           </>

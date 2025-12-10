@@ -132,19 +132,27 @@ const QuizPage = () => {
 
   const handleConfirmSubmit = async () => {
     if (!lessonId || !attemptId) return;
+    
+    // Gọi action submit
     const action = await dispatch(
       submitAttemptThunk({ lessonId, attemptId })
     );
+
     if (submitAttemptThunk.fulfilled.match(action)) {
-      // ở đây bạn có thể điều hướng sang trang kết quả riêng:
-      // navigate(`/course/${courseId}/lesson/${lessonId}/quiz/${quizId}/result`);
-      // Ẩn modal để người học có thể xem lại câu hỏi
-      setShowSubmitModal(false);
+      // ✅ Thành công:
+      // KHÔNG đóng modal ngay. 
+      // Redux state `result` đã được cập nhật, modal sẽ tự re-render để hiện kết quả.
     }
   };
 
   const handleCloseModal = () => {
-    setShowSubmitModal(false);
+    // Logic: Nếu đã có kết quả (đã nộp), bấm nút này nghĩa là muốn quay về bài học
+    if (result) {
+        navigate(`/course/${courseId}/lesson/${lessonId}`);
+    } else {
+        // Nếu chưa nộp (đang ở màn hình xác nhận), bấm nút này là hủy bỏ (làm tiếp)
+        setShowSubmitModal(false);
+    }
   };
 
   // ====== 5) Render ======
@@ -217,12 +225,10 @@ const QuizPage = () => {
                   type="button"
                   className={styles.nextBtn}
                   onClick={async () => {
-                    // nếu đã nạp sẵn câu tiếp theo
                     if (activeIndex < questions.length - 1) {
                       setActiveIndex((i) => i + 1);
                       return;
                     }
-                    // cần gọi API /next để nạp thêm
                     if (!lessonId || !attemptId) return;
                     const action = await dispatch(
                       fetchNextQuestionThunk({ lessonId, attemptId })
@@ -235,7 +241,6 @@ const QuizPage = () => {
                     }
                   }}
                   disabled={
-                    // disable nếu đã ở câu cuối cùng theo totalQuestions
                     quizInfo?.totalQuestions
                       ? activeIndex >= quizInfo.totalQuestions - 1
                       : false
@@ -268,8 +273,8 @@ const QuizPage = () => {
         result={result}
         totalQuestions={totalQuestions}
         answeredCount={answeredCount}
-        onCancel={handleCloseModal}
-        onConfirm={handleConfirmSubmit}
+        onCancel={handleCloseModal}   // Nút "Làm tiếp" hoặc "Quay về"
+        onConfirm={handleConfirmSubmit} // Nút "Nộp bài"
       />
     </div>
   );
