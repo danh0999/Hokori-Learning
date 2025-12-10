@@ -17,7 +17,12 @@ import { toast } from "react-toastify";
  *  - onNext?: () => void
  *  - onBack?: () => void
  */
-export default function PricingStep({ courseId, onNext, onBack }) {
+export default function PricingStep({
+  courseId,
+  onNext,
+  onBack,
+  disableEditing,
+}) {
   const dispatch = useDispatch();
 
   const { currentCourseMeta, saving } = useSelector(
@@ -92,6 +97,7 @@ export default function PricingStep({ courseId, onNext, onBack }) {
                 // antd InputNumber onChange trả number hoặc null
                 setPrice(typeof val === "number" ? val : 0);
               }}
+              disabled={disableEditing}
               // Hiển thị 200000 -> "200.000"
               formatter={(value) => {
                 if (value == null || value === "") return "";
@@ -109,7 +115,11 @@ export default function PricingStep({ courseId, onNext, onBack }) {
             />
 
             {/* Nút set giá về 0 (free) */}
-            <Button type="default" onClick={() => setPrice(0)}>
+            <Button
+              type="default"
+              onClick={() => setPrice(0)}
+              disabled={disableEditing}
+            >
               Miễn phí
             </Button>
           </div>
@@ -119,7 +129,12 @@ export default function PricingStep({ courseId, onNext, onBack }) {
           {typeof onBack === "function" && (
             <Button onClick={onBack}>Quay lại</Button>
           )}
-          <Button type="primary" onClick={handleSavePrice} loading={saving}>
+          <Button
+            type="primary"
+            onClick={handleSavePrice}
+            loading={saving}
+            disabled={disableEditing}
+          >
             {typeof onNext === "function" ? "Lưu & tiếp tục" : "Lưu giá"}
           </Button>
         </div>
