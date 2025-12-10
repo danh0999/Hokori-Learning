@@ -72,6 +72,7 @@ export default function CourseCurriculumView({
   courseTree,
   loading,
   onEditLesson,
+  disableEditing,
 }) {
   const [selectedContent, setSelectedContent] = useState(null);
   const [openSectionIds, setOpenSectionIds] = useState([]);
@@ -610,6 +611,7 @@ export default function CourseCurriculumView({
                               size="small"
                               icon={<EditOutlined />}
                               onClick={() => onEditLesson(lesson)}
+                              disabled={disableEditing}
                             >
                               Edit
                             </Button>

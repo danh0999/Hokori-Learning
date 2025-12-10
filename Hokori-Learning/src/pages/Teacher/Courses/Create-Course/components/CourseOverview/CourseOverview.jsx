@@ -34,7 +34,7 @@ const getFileNameFromPath = (p) => {
   return parts[parts.length - 1];
 };
 
-export default function CourseOverview({ courseId, onNext }) {
+export default function CourseOverview({ courseId, onNext, disableEditing }) {
   const [form] = Form.useForm();
   const dispatch = useDispatch();
 
@@ -161,11 +161,17 @@ export default function CourseOverview({ courseId, onNext }) {
             { max: 120 },
           ]}
         >
-          <Input placeholder="JLPT N5 – Nền tảng tiếng Nhật cho người mới" />
+          <Input
+            disabled={disableEditing}
+            placeholder="JLPT N5 – Nền tảng tiếng Nhật cho người mới"
+          />
         </Form.Item>
 
         <Form.Item name="subtitle" label="Phụ đề" rules={[{ max: 160 }]}>
-          <Input placeholder="Khoá học giúp bạn chinh phục JLPT N5 từ con số 0." />
+          <Input
+            disabled={disableEditing}
+            placeholder="Khoá học giúp bạn chinh phục JLPT N5 từ con số 0."
+          />
         </Form.Item>
 
         <Form.Item
@@ -175,12 +181,14 @@ export default function CourseOverview({ courseId, onNext }) {
         >
           <TextArea
             rows={6}
+            disabled={disableEditing}
             placeholder="Giới thiệu nội dung, phương pháp giảng dạy, đối tượng phù hợp, v.v."
           />
         </Form.Item>
 
         <Form.Item name="level" label="Cấp độ" rules={[{ required: true }]}>
           <Select
+            disabled={disableEditing}
             options={[
               { label: "JLPT N5", value: "N5" },
               { label: "JLPT N4", value: "N4" },
@@ -194,6 +202,7 @@ export default function CourseOverview({ courseId, onNext }) {
         <Form.Item label="Ảnh đại diện khoá học">
           {!hasThumb ? (
             <Upload.Dragger
+              disabled={disableEditing}
               multiple={false}
               showUploadList={false}
               customRequest={handleThumbnailUpload}
@@ -234,7 +243,7 @@ export default function CourseOverview({ courseId, onNext }) {
                   showUploadList={false}
                   customRequest={handleThumbnailUpload}
                 >
-                  <Button type="default" size="small">
+                  <Button type="default" size="small" disabled={disableEditing}>
                     Thay đổi ảnh đại diện
                   </Button>
                 </Upload>
@@ -244,6 +253,7 @@ export default function CourseOverview({ courseId, onNext }) {
                   icon={<DeleteOutlined />}
                   onClick={handleRemoveThumb}
                   size="small"
+                  disabled={disableEditing}
                 >
                   Gỡ ảnh đại diện
                 </Button>
@@ -257,6 +267,7 @@ export default function CourseOverview({ courseId, onNext }) {
             type="primary"
             htmlType="submit"
             loading={saving || uploadingThumb}
+            disabled={disableEditing}
           >
             {typeof onNext === "function" ? " Lưu & tiếp tục" : "Lưu cơ bản"}
           </Button>

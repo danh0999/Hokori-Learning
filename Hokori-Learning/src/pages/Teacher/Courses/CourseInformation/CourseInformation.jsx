@@ -78,6 +78,10 @@ export default function CourseInformation() {
   const [selectedLesson, setSelectedLesson] = useState(null);
 
   const handleEditLesson = (lesson) => {
+    if (disableEditing) {
+      toast.warning("Khóa học đang chờ duyệt, không thể chỉnh sửa");
+      return;
+    }
     setSelectedLesson(lesson);
     setLessonDrawerOpen(true);
   };
@@ -119,6 +123,11 @@ export default function CourseInformation() {
   }, [courseId, dispatch]);
 
   const status = currentCourseMeta?.status || "DRAFT";
+  const isPendingApproval = status === "PENDING_APPROVAL";
+
+  // Không cho chỉnh sửa nếu đang chờ duyệt
+  const disableEditing = isPendingApproval;
+
   const isRejected = status === "REJECTED";
   const isFlagged = status === "FLAGGED";
 
@@ -265,7 +274,11 @@ export default function CourseInformation() {
             {statusLabel[status] || status}
           </Tag>
 
-          <Button onClick={handleSaveDraft} loading={saving || loadingMeta}>
+          <Button
+            onClick={handleSaveDraft}
+            loading={saving || loadingMeta}
+            disabled={disableEditing}
+          >
             {status === "PUBLISHED" ? "Lưu thay đổi" : "Lưu "}
           </Button>
 
@@ -282,8 +295,7 @@ export default function CourseInformation() {
           ) : status === "PUBLISHED" ? (
             // Khi đã PUBLISHED → KHÔNG cho teacher làm gì (ẩn nút)
             <></>
-          ) : (
-            // Các trạng thái khác → Submit for review
+          ) : status === "PENDING_APPROVAL" ? null : (
             <Button
               type="primary"
               disabled={disableSubmitButton}
@@ -410,6 +422,7 @@ export default function CourseInformation() {
                   key={courseId}
                   courseId={courseId}
                   loading={loadingMeta}
+                  disableEditing={disableEditing}
                 />
               ),
             },
@@ -422,6 +435,7 @@ export default function CourseInformation() {
                   courseTree={currentCourseTree}
                   loading={loadingTree}
                   onEditLesson={handleEditLesson}
+                  disableEditing={disableEditing}
                 />
               ),
             },
