@@ -1,4 +1,7 @@
-// src/pages/AiKaiwaPage/components/FeedbackPanel.jsx
+// ===============================================
+// FeedbackPanel.jsx — BẢN CHUẨN CHỈNH ĐIỂM MỚI
+// ===============================================
+
 import React from "react";
 import styles from "./FeedbackPanel.module.scss";
 
@@ -14,7 +17,7 @@ const FeedbackPanel = ({ loading, error, result }) => {
     return (
       <section className={styles.panel}>
         <h3 className={styles.heading}>Phản hồi AI</h3>
-        <p> AI đang phân tích giọng nói của bạn...</p>
+        <p>AI đang phân tích giọng nói của bạn...</p>
       </section>
     );
   }
@@ -38,19 +41,25 @@ const FeedbackPanel = ({ loading, error, result }) => {
   }
 
   const {
-    overallScore,
     pronunciationScore,
     accuracyScore,
-    fluencyScore,
     userTranscript,
     targetText,
     feedback,
   } = result;
 
-  const total = normalizeScore(overallScore);
+  // CHUẨN HÓA ĐIỂM
   const pron = normalizeScore(pronunciationScore);
   const acc = normalizeScore(accuracyScore);
-  const flu = normalizeScore(fluencyScore);
+
+  // ===============================================
+  // TÍNH LẠI TỔNG ĐIỂM (BỎ FLUENCY)
+  // 60% Pronunciation + 40% Accuracy
+  // ===============================================
+  const total =
+    pron != null && acc != null
+      ? Math.round(pron * 0.6 + acc * 0.4)
+      : null;
 
   const renderBar = (label, value) => {
     const v = normalizeScore(value);
@@ -74,20 +83,23 @@ const FeedbackPanel = ({ loading, error, result }) => {
     <section className={styles.panel}>
       <h3 className={styles.heading}>Phản hồi AI</h3>
 
+      {/* Tổng điểm */}
       <div className={styles.scoreCircle}>
         {total != null ? total : "--"}
       </div>
       <p className={styles.totalLabel}>Tổng điểm phát âm</p>
 
+      {/* Các điểm con */}
       {renderBar("Phát âm", pron)}
       {renderBar("Độ chính xác", acc)}
-      {renderBar("Độ trôi chảy", flu)}
 
+      {/* Transcript người dùng */}
       <div className={styles.textBlock}>
         <div className={styles.title}>Câu bạn đọc</div>
         <p className={styles.detail}>{userTranscript || "--"}</p>
       </div>
 
+      {/* Target text */}
       <div className={styles.textBlock}>
         <div className={styles.title}>Câu mẫu</div>
         <p className={`${styles.detail} ${styles.target}`}>
@@ -95,6 +107,7 @@ const FeedbackPanel = ({ loading, error, result }) => {
         </p>
       </div>
 
+      {/* Feedback AI */}
       <div className={styles.textBlock}>
         <div className={styles.title}>Nhận xét của AI</div>
         <p className={`${styles.detail} ${styles.feedbackText}`}>
