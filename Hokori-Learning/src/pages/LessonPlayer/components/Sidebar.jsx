@@ -1,3 +1,4 @@
+// src/pages/LessonPlayer/components/Sidebar.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./Sidebar.module.scss";
@@ -35,23 +36,30 @@ const Sidebar = ({ courseTree, isLoading, currentLessonId, courseId }) => {
   };
 
   const handleLessonSelect = (lessonId) => {
-    navigate(`/course/${courseId}/lesson/${lessonId}`);
+    // Quay về chế độ xem mặc định của Lesson (xóa state targetContentId)
+    navigate(`/course/${courseId}/lesson/${lessonId}`, { state: {} });
     setExpandedLessons(prev => ({ ...prev, [lessonId]: true }));
   };
 
-  // --- HÀM MỚI THÊM: Xử lý click vào content ---
+  // --- LOGIC ĐIỀU HƯỚNG CONTENT ---
   const handleContentSelect = (e, lessonId, content) => {
     e.stopPropagation(); 
 
     if (content.contentFormat === 'FLASHCARD_SET') {
-        // Gửi state để LessonPlayer biết cần xử lý flashcard
-        navigate(`/course/${courseId}/lesson/${lessonId}`, {
-             state: { targetContentId: content.contentId, type: 'FLASHCARD' }
+        // ✅ CẬP NHẬT: Truyền courseId và lessonId qua state để FlashcardPage dùng nút Back
+        navigate(`/learner/flashcards/${content.contentId}`, {
+            state: { 
+                courseId: courseId, 
+                lessonId: lessonId 
+            }
         });
     } else {
-        // Video hoặc Text -> Gửi state để LessonPlayer biết cần focus vào đâu
+        // Video hoặc Text -> Gửi state để LessonPlayer hiển thị riêng content đó
         navigate(`/course/${courseId}/lesson/${lessonId}`, {
-             state: { targetContentId: content.contentId, type: content.contentFormat }
+             state: { 
+               targetContentId: content.contentId, 
+               type: content.contentFormat 
+             }
         });
     }
   };
@@ -110,7 +118,6 @@ const Sidebar = ({ courseTree, isLoading, currentLessonId, courseId }) => {
                                             <div 
                                                 key={content.contentId} 
                                                 className={styles.contentItem}
-                                                // --- SỰ KIỆN CLICK ĐƯỢC GẮN TẠI ĐÂY ---
                                                 onClick={(e) => handleContentSelect(e, lesson.lessonId, content)}
                                                 style={{ cursor: 'pointer' }}
                                             >

@@ -166,3 +166,26 @@
     box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
   }
 }
+.backButton {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #4b5563;
+  font-weight: 500;
+  transition: all 0.2s;
+  z-index: 20;
+
+  &:hover {
+    background: #f3f4f6;
+    color: #111827;
+    border-color: #d1d5db;
+  }
+}
