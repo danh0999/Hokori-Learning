@@ -1,38 +1,143 @@
-import React from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import styles from "./Sidebar.module.scss";
 
-const Sidebar = ({ lessons = [] }) => {
+const Sidebar = ({ courseTree, isLoading, currentLessonId, courseId }) => {
   const navigate = useNavigate();
-  const { courseId, lessonId } = useParams();
+  
+  const [expandedChapters, setExpandedChapters] = useState({});
+  const [expandedLessons, setExpandedLessons] = useState({});
 
-  const handleSelect = (id) => {
-    navigate(`/course/${courseId}/lesson/${id}`);
+  useEffect(() => {
+    if (courseTree?.chapters) {
+      const newExpandedChap = {};
+      const newExpandedLess = {};
+      
+      courseTree.chapters.forEach(chap => {
+        const hasCurrentLesson = chap.lessons.some(l => l.lessonId === currentLessonId);
+        if (hasCurrentLesson) {
+             newExpandedChap[chap.chapterId] = true;
+             newExpandedLess[currentLessonId] = true;
+        }
+      });
+      setExpandedChapters(prev => ({ ...prev, ...newExpandedChap }));
+      setExpandedLessons(prev => ({ ...prev, ...newExpandedLess }));
+    }
+  }, [courseTree, currentLessonId]);
+
+  const toggleChapter = (chapterId) => {
+    setExpandedChapters(prev => ({ ...prev, [chapterId]: !prev[chapterId] }));
   };
+
+  const toggleLesson = (e, lessonId) => {
+    e.stopPropagation(); 
+    setExpandedLessons(prev => ({ ...prev, [lessonId]: !prev[lessonId] }));
+  };
+
+  const handleLessonSelect = (lessonId) => {
+    navigate(`/course/${courseId}/lesson/${lessonId}`);
+    setExpandedLessons(prev => ({ ...prev, [lessonId]: true }));
+  };
+
+  // --- HÀM MỚI THÊM: Xử lý click vào content ---
+  const handleContentSelect = (e, lessonId, content) => {
+    e.stopPropagation(); 
+
+    if (content.contentFormat === 'FLASHCARD_SET') {
+        // Gửi state để LessonPlayer biết cần xử lý flashcard
+        navigate(`/course/${courseId}/lesson/${lessonId}`, {
+             state: { targetContentId: content.contentId, type: 'FLASHCARD' }
+        });
+    } else {
+        // Video hoặc Text -> Gửi state để LessonPlayer biết cần focus vào đâu
+        navigate(`/course/${courseId}/lesson/${lessonId}`, {
+             state: { targetContentId: content.contentId, type: content.contentFormat }
+        });
+    }
+  };
+
+  if (isLoading) return <div className={styles.loading}>Đang tải mục lục...</div>;
+  if (!courseTree) return null;
 
   return (
     <div className={styles.sidebar}>
-      <h3 className={styles.heading}>Mục lục khóa học</h3>
+      <h3 className={styles.heading}>Nội dung khóa học</h3>
+      
+      <div className={styles.treeContainer}>
+        {courseTree.chapters.map((chapter) => (
+          <div key={chapter.chapterId} className={styles.chapterGroup}>
+            <div 
+              className={styles.chapterHeader} 
+              onClick={() => toggleChapter(chapter.chapterId)}
+            >
+              <span className={styles.arrow}>
+                {expandedChapters[chapter.chapterId] ? "▼" : "▶"}
+              </span>
+              <span className={styles.chapterTitle}>{chapter.title}</span>
+            </div>
 
-      {lessons.length === 0 && (
-        <p className={styles.placeholder}>Đang tải bài học...</p>
-      )}
+            {expandedChapters[chapter.chapterId] && (
+              <div className={styles.chapterContent}>
+                {chapter.lessons.map((lesson) => {
+                  const isActive = Number(lesson.lessonId) === Number(currentLessonId);
+                  const isExpanded = expandedLessons[lesson.lessonId];
 
-      {lessons.map((lesson) => (
-        <div
-          key={lesson.lessonId}
-          className={`${styles.lessonItem} ${
-            String(lesson.lessonId) === String(lessonId) ? styles.active : ""
-          }`}
-          onClick={() => handleSelect(lesson.lessonId)}
-        >
-          <span className={styles.lessonTitle}>{lesson.title}</span>
+                  return (
+                    <div key={lesson.lessonId} className={styles.lessonGroup}>
+                      <div 
+                        className={`${styles.lessonHeader} ${isActive ? styles.active : ""}`}
+                        onClick={() => handleLessonSelect(lesson.lessonId)}
+                      >
+                         <div className={styles.lessonInfo}>
+                            <span 
+                                className={styles.lessonArrow}
+                                onClick={(e) => toggleLesson(e, lesson.lessonId)}
+                            >
+                                {isExpanded ? "▼" : "▶"}
+                            </span>
+                            <span className={styles.lessonTitle}>{lesson.title}</span>
+                         </div>
+                         {lesson.isCompleted && <span className={styles.check}>✔</span>}
+                      </div>
 
-          {lesson.isCompleted && (
-            <span className={styles.completed}>✔</span>
-          )}
-        </div>
-      ))}
+                      {isExpanded && (
+                         <div className={styles.sectionList}>
+                            {lesson.sections?.map(section => (
+                                <div key={section.sectionId} className={styles.sectionItem}>
+                                    <div className={styles.sectionTitle}>{section.title}</div>
+                                    <div className={styles.contentList}>
+                                        {section.contents?.map(content => (
+                                            <div 
+                                                key={content.contentId} 
+                                                className={styles.contentItem}
+                                                // --- SỰ KIỆN CLICK ĐƯỢC GẮN TẠI ĐÂY ---
+                                                onClick={(e) => handleContentSelect(e, lesson.lessonId, content)}
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                <span className={styles.contentIcon}>
+                                                    {content.contentFormat === 'ASSET' ? '📺' : 
+                                                     content.contentFormat === 'FLASHCARD_SET' ? '🎴' : '📄'}
+                                                </span>
+                                                <span className={styles.contentText}>
+                                                    {content.title || (content.contentFormat === 'ASSET' ? 'Video bài giảng' : 
+                                                     content.contentFormat === 'FLASHCARD_SET' ? 'Flashcard từ vựng' : 'Tài liệu đọc')}
+                                                </span>
+                                                {content.isCompleted && <span className={styles.contentCheck}>✔</span>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                         </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

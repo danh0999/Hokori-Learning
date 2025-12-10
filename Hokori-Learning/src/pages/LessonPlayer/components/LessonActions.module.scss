@@ -1,0 +1,45 @@
+/* src/pages/LessonPlayer/components/LessonActions.module.scss */
+
+.actionsContainer {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: center; /* Căn giữa nút bấm */
+}
+
+.quizButton {
+  /* Style giống nút Primary (Đánh dấu hoàn thành) */
+  background-color: #1f4ed8; /* Màu xanh chủ đạo */
+  color: #ffffff;
+  border: 1px solid #1f4ed8;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px -1px rgba(31, 78, 216, 0.2);
+
+  &:hover {
+    background-color: #1e40af; /* Màu xanh đậm hơn khi hover */
+    transform: translateY(-1px);
+    box-shadow: 0 6px 8px -1px rgba(31, 78, 216, 0.3);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: none;
+  }
+}
+
+.icon {
+  font-size: 18px;
+}
+
+.text {
+  /* Text styles thừa hưởng từ nút cha */
+}

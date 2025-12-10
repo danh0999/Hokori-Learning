@@ -1,99 +1,83 @@
-/* ===== Layout tổng ===== */
+/* src/pages/LessonPlayer/LessonPlayer.module.scss */
 .main {
   display: grid;
-  grid-template-columns: 264px 1fr; /* sidebar | content */
-  gap: 0;
+  /* Đổi lại: Content (70-75%) | Sidebar (25-30%) */
+  grid-template-columns: 1fr 350px; 
   min-height: 100vh;
-  background-color: #f9fafb;
+  background-color: #ffffff; /* Nền trắng */
   font-family: "Inter", sans-serif;
-  overflow: hidden; /* 1 thanh cuộn duy nhất */
 }
 
-/* Ẩn hẳn cột AI nếu JSX còn import */
-.ai {
-  display: none;
+.contentColumn {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Sidebar trái */
-.sidebar {
-  background: #ffffff;
-  border-right: 1px solid #e5e7eb;
+.videoContainer {
+    background-color: #1c1d1f; /* Màu nền video khớp với VideoPanel */
+}
+
+.bodyContainer {
+    max-width: 1000px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 24px;
+    box-sizing: border-box;
+}
+
+.footerActions {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.sidebarColumn {
   position: sticky;
   top: 0;
   height: 100vh;
   overflow-y: auto;
+  border-left: 1px solid #d1d7dc;
+  background: #fff;
+  z-index: 10;
 }
 
-/* Khu vực nội dung bài học (cuộn CHỈ ở đây) */
-.lesson {
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-/* Container canh giữa + chiều rộng hợp lý */
-.container {
-  width: 100%;
-  max-width: 980px;
-  padding: 40px 32px 64px;
-  box-sizing: border-box;
-  margin: 0 auto;
-}
-
-/* Header bài học */
-.header {
-  margin: 24px 0 12px;
-}
-
-.header h1 {
-  font-size: 26px;
-  font-weight: 600; /* nhẹ hơn để đều nét */
-  color: #111827;
-  letter-spacing: 0.2px; /* giãn nhẹ */
-  line-height: 1.4; /* cân đối chiều cao */
-}
-
-.header p {
-  color: #6b7280;
-  font-size: 15px;
-  margin-top: 6px;
-  line-height: 1.6;
-  max-width: 720px;
-}
-
-.desc {
-  color: #6b7280;
-  font-size: 15px;
-}
-
-/* ===== Responsive ===== */
+/* Responsive */
 @media (max-width: 1024px) {
   .main {
-    grid-template-columns: 220px 1fr;
-  }
-
-  .container {
-    padding: 28px 24px 56px;
-  }
-  .header h1 {
-    font-size: 24px;
+    grid-template-columns: 1fr 300px;
   }
 }
 
 @media (max-width: 768px) {
   .main {
     grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr; /* Video trên, list dưới */
   }
-  .sidebar {
-    display: none;
-  } /* ẩn sidebar trên mobile */
-  .container {
-    padding: 24px 16px 48px;
-    max-width: 640px;
+  .sidebarColumn {
+    height: auto;
+    position: static;
+    border-left: none;
+    border-top: 1px solid #d1d7dc;
   }
-  .header h1 {
-    font-size: 22px;
-  }
+}
+
+.lessonMeta {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.lessonTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 8px 0;
+}
+
+.lessonDesc {
+  font-size: 15px;
+  color: #4b5563;
+  line-height: 1.6;
+  margin: 0;
 }

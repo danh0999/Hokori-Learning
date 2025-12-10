@@ -1,4 +1,3 @@
-// src/pages/LessonPlayer/LessonPlayer.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation, Outlet } from "react-router-dom";
 import api from "../../configs/axios";
@@ -6,200 +5,155 @@ import styles from "./LessonPlayer.module.scss";
 
 import Sidebar from "./components/Sidebar";
 import VideoPanel from "./components/VideoPanel";
-import QuickActions from "./components/QuickActions";
-import LessonContent from "./components/LessonContent";
+import LessonActions from "./components/LessonActions";
 import ActionBar from "./components/ActionBar";
 import { buildFileUrl } from "../../utils/fileUrl";
-
+import LessonContent from "./components/LessonContent";
 
 const LessonPlayer = () => {
   const { courseId, lessonId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
+  const location = useLocation(); // Hook lấy state từ Sidebar
 
-  const trialMode = location.state?.trialMode || false;
-
-  const [lessons, setLessons] = useState([]);
   const [lessonData, setLessonData] = useState(null);
+  const [courseTree, setCourseTree] = useState(null);
+  const [isLoadingTree, setIsLoadingTree] = useState(true);
+  
+  // State quản lý video đang phát (mặc định hoặc video được chọn từ sidebar)
+  const [activeVideo, setActiveVideo] = useState(null);
 
-  /** 📌 1) Fetch danh sách bài học */
+  // 1. Fetch Tree
   useEffect(() => {
-    if (lessonId === "trial") return; // đang ở màn placeholder học thử
-
-    const fetchLessons = async () => {
+    const fetchLearningTree = async () => {
       try {
-        const res = await api.get(`/learner/courses/${courseId}/lessons`);
-        const list = res.data ?? [];
-        setLessons(list);
-
-        // Nếu learner truy cập /lesson mà thiếu lessonId → điều hướng bài đầu tiên
-        if (!lessonId && list.length > 0) {
-          navigate(`/course/${courseId}/lesson/${list[0].lessonId}`, {
-            replace: true,
-          });
-        }
+        setIsLoadingTree(true);
+        const res = await api.get(`/learner/courses/${courseId}/learning-tree`);
+        setCourseTree(res.data);
       } catch (err) {
-        console.error("Lỗi tải danh sách bài học:", err);
+        console.error("Lỗi tải learning tree:", err);
+      } finally {
+        setIsLoadingTree(false);
       }
     };
+    fetchLearningTree();
+  }, [courseId]);
 
-    fetchLessons();
-  }, [courseId, lessonId, navigate]);
-
-
-  /** 📌 2) Fetch chi tiết bài học */
+  // 2. Fetch Lesson Detail & Xử lý click từ Sidebar
   useEffect(() => {
     if (!lessonId || lessonId === "trial") return;
-
+    
     const fetchLessonDetail = async () => {
       try {
         const res = await api.get(`/learner/lessons/${lessonId}/detail`);
-        setLessonData(res.data);
+        const data = res.data;
+        setLessonData(data);
+
+        // --- LOGIC MỚI: Xử lý Target Content ---
+        const targetId = location.state?.targetContentId;
+
+        // Tìm video mặc định (primary)
+        const defaultVideo = data.sections
+            ?.flatMap(sec => sec.contents)
+            ?.find(c => c.primaryContent && c.contentFormat === "ASSET");
+
+        if (targetId) {
+            const targetContent = data.sections
+                ?.flatMap(sec => sec.contents)
+                ?.find(c => c.id === targetId || c.contentId === targetId);
+
+            if (targetContent) {
+                if (targetContent.contentFormat === 'ASSET' && targetContent.filePath?.match(/\.(mp4|mov|webm)$/i)) {
+                    // Nếu click vào Video -> Đổi video active
+                    setActiveVideo(targetContent);
+                } else {
+                    // Nếu click Text/Ảnh -> Giữ video mặc định, scroll xuống
+                    setActiveVideo(defaultVideo);
+                    setTimeout(() => {
+                        const element = document.getElementById(`content-${targetId}`);
+                        if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 500);
+                }
+            }
+        } else {
+            // Không có target -> Load video mặc định
+            setActiveVideo(defaultVideo);
+        }
+
       } catch (err) {
-        console.error("Lỗi tải dữ liệu bài học:", err);
+        console.error("Lỗi tải bài học:", err);
       }
     };
-
     fetchLessonDetail();
-  }, [lessonId]);
+  }, [lessonId, location.state]); 
 
+  // URL Video active
+  const videoUrl = activeVideo ? buildFileUrl(activeVideo.filePath) : null;
+  
+  const flashcardContent = lessonData?.sections
+    ?.flatMap((sec) => sec.contents)
+    ?.find((c) => c.contentFormat === "FLASHCARD_SET");
+  const flashcardContentId = flashcardContent?.id;
 
-  /** Nếu lessons chưa load xong */
-  const isLoading = lessons.length === 0;
-  if (isLoading) {
-    return <main className={styles.main}>Đang tải bài học...</main>;
-  }
+  const handlePrev = () => { console.log("Prev logic update needed"); };
+  const handleNext = () => { console.log("Next logic update needed"); };
+  const handleCompleteLesson = async () => { console.log("Complete logic update needed"); };
 
-  // === Lấy nội dung video (ASSET & primaryContent) từ lessonData ===
-  const primaryContent = lessonData?.sections
-    ?.flatMap(sec => sec.contents)
-    ?.find(c => c.primaryContent && c.contentFormat === "ASSET");
-
-  const videoUrl = primaryContent
-  ? buildFileUrl(primaryContent.filePath)
-  : null;
-
-  // === TÌM FLASHCARD ===
-const flashcardContent = lessonData?.sections
-  ?.flatMap((sec) => sec.contents)
-  ?.find((c) => c.contentFormat === "FLASHCARD_SET");
-
-const flashcardContentId = flashcardContent?.id;
-
-const currentIndex = lessons.findIndex(
-  l => Number(l.lessonId) === Number(lessonId)
-);
-
-const prevLesson = lessons[currentIndex - 1];
-const nextLesson = lessons[currentIndex + 1];
-
-const handlePrev = () => {
-  if (prevLesson) {
-    navigate(`/course/${courseId}/lesson/${prevLesson.lessonId}`);
-  }
-};
-
-const handleNext = () => {
-  if (nextLesson) {
-    navigate(`/course/${courseId}/lesson/${nextLesson.lessonId}`);
-  } else {
-    navigate(`/my-courses/${courseId}/learn`);
-  }
-};
-
-const handleCompleteLesson = async () => {
-  if (!lessonData?.sections) return;
-
-  try {
-    const contents = lessonData.sections
-      .flatMap((sec) => sec.contents)
-      // Mark ALL contents that have a progress endpoint
-      .map((c) => ({
-        contentId: c.contentId ?? c.id,
-        lastPositionSec: c.durationSec ?? 0,
-      }))
-      .filter((c) => !!c.contentId);
-
-    if (contents.length === 0) {
-      // No contents to update — nothing to complete
-      return;
-    }
-
-    const results = await Promise.allSettled(
-      contents.map((c) =>
-        api.patch(`/learner/contents/${c.contentId}/progress`, {
-          isCompleted: true,
-          lastPositionSec: c.lastPositionSec,
-        })
-      )
-    );
-
-    // Optional: if some failed, you could log or show a toast; keep UI moving
-
-    const res = await api.get(`/learner/courses/${courseId}/lessons`);
-    setLessons(res.data ?? []);
-
-    if (nextLesson) {
-      navigate(`/course/${courseId}/lesson/${nextLesson.lessonId}`);
-    } else {
-      navigate(`/my-courses/${courseId}/learn`);
-    }
-  } catch (err) {
-    console.error("Complete lesson failed", err);
-  }
-};
-
-
-
-
-
-  return (
+return (
     <main className={styles.main}>
-      {/* === SIDEBAR === */}
-      <aside className={styles.sidebar}>
-        <Sidebar
-          lessons={lessons}
-          currentLessonId={Number(lessonId)}
-          trialMode={trialMode}
-          courseId={Number(courseId)}
-        />
-      </aside>
-
-      {/* === NỘI DUNG BÀI HỌC === */}
-      <section className={styles.lesson}>
-        <div className={styles.container}>
-        <VideoPanel
-        videoUrl={videoUrl}
-        title={lessonData?.title}
-        duration={lessonData?.totalDurationSec}
-        content={primaryContent}
-      />
-
-          <div className={styles.header}>
-            <h1>{lessonData?.title || "Tiêu đề bài học"}</h1>
-            <p className={styles.desc}>{lessonData?.description}</p>
+      <section className={styles.contentColumn}>
+        
+        {/* --- SỬA ĐỔI TẠI ĐÂY --- */}
+        {/* Chỉ render VideoPanel nếu có videoUrl hợp lệ */}
+        {videoUrl && (
+          <div className={styles.videoContainer}>
+            <VideoPanel
+              videoUrl={videoUrl}
+              title={activeVideo?.title || lessonData?.title}
+              duration={lessonData?.totalDurationSec}
+              content={activeVideo}
+            />
           </div>
+        )}
+        {/* ----------------------- */}
 
-          <QuickActions
-            lessonId={lessonId}
-            flashcardContentId={flashcardContentId}
-          />
+        <div className={styles.bodyContainer}>
+            {/* 2. Tiêu đề & Mô tả bài học */}
+            {/* Khi Video ẩn đi, phần này sẽ tự động nhảy lên đầu trang, rất đẹp */}
+            <div className={styles.lessonMeta}>
+                <h1 className={styles.lessonTitle}>{lessonData?.title}</h1>
+                {lessonData?.description && (
+                   <p className={styles.lessonDesc}>{lessonData.description}</p>
+                )}
+            </div>
 
-          <LessonContent data={lessonData?.sections} />
-          <ActionBar
-            onPrev={handlePrev}
-            onNext={handleNext}
-            onComplete={handleCompleteLesson}
-          />
+            {/* ... (Các phần Content và Actions giữ nguyên) */}
+             <LessonContent data={lessonData?.sections} />
+             
+             <LessonActions 
+                quizId={lessonData?.quizId} 
+                lessonId={lessonId}
+            />
 
-
-          {/* === Quiz hiển thị khi vào /lesson/:id/quiz/... === */}
-          <Outlet />
+            {/* <div className={styles.footerActions}>
+                <ActionBar 
+                    onPrev={handlePrev} 
+                    onNext={handleNext} 
+                    onComplete={handleCompleteLesson} 
+                />
+            </div>
+             */}
+            <Outlet />
         </div>
       </section>
 
-      {/* === KHUNG TRỐNG CHO AI SAU NÀY === */}
-      <aside className={styles.ai}></aside>
+      <aside className={styles.sidebarColumn}>
+        <Sidebar
+          courseTree={courseTree}
+          isLoading={isLoadingTree}
+          currentLessonId={Number(lessonId)}
+          courseId={courseId}
+        />
+      </aside>
     </main>
   );
 };
