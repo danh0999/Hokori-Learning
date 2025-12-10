@@ -8,7 +8,7 @@ const EditProfileModal = ({ user, onClose }) => {
   const dispatch = useDispatch();
 
   const [form, setForm] = useState({
-    username: user?.username || "",
+    displayName: user?.displayName || user?.username || "",
     email: user?.email || "",
     phoneNumber: user?.phoneNumber || "",
   });
@@ -20,8 +20,8 @@ const EditProfileModal = ({ user, onClose }) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneRegex = /^(0|\+84)[0-9]{8,10}$/;
 
-    if (!form.username.trim()) {
-      err.username = "Vui lòng nhập tên hiển thị.";
+    if (!form.displayName.trim()) {
+      err.displayName = "Vui lòng nhập tên hiển thị.";
     }
 
     if (!form.email.trim() || !emailRegex.test(form.email.trim())) {
@@ -44,19 +44,18 @@ const EditProfileModal = ({ user, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) {
-      toast.warn(" Vui lòng kiểm tra lại thông tin!");
+      toast.warn("Vui lòng kiểm tra lại thông tin!");
       return;
     }
 
     const payload = {
-      ...user, // giữ các field khác của profile
-      username: form.username.trim(),
+      username: form.displayName.trim(),
+      displayName: form.displayName.trim(),
       email: form.email.trim(),
-      phoneNumber: form.phoneNumber.trim() || null,
+      phoneNumber: form.phoneNumber.trim(),
     };
 
     await dispatch(updateMe(payload));
-    // toast.success(" Cập nhật hồ sơ thành công!");
     onClose();
   };
 
@@ -67,16 +66,16 @@ const EditProfileModal = ({ user, onClose }) => {
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.field}>
-            <label htmlFor="username">Tên hiển thị</label>
+            <label htmlFor="displayName">Tên hiển thị</label>
             <input
-              id="username"
+              id="displayName"
               type="text"
-              name="username"
-              value={form.username}
+              name="displayName"
+              value={form.displayName}
               onChange={handleChange}
             />
-            {errors.username && (
-              <span className={styles.error}>{errors.username}</span>
+            {errors.displayName && (
+              <span className={styles.error}>{errors.displayName}</span>
             )}
           </div>
 
@@ -116,10 +115,7 @@ const EditProfileModal = ({ user, onClose }) => {
             >
               Hủy
             </button>
-            <button
-              type="submit"
-              className={`${styles.btn} ${styles.save}`}
-            >
+            <button type="submit" className={`${styles.btn} ${styles.save}`}>
               Lưu thay đổi
             </button>
           </div>
