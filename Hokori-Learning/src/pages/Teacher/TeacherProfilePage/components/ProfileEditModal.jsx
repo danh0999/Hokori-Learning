@@ -190,25 +190,58 @@ export default function ProfileEditModal({ open, onClose }) {
               {/* BANK INFO: chia 2 cột trong cùng Teacher card */}
               <Row gutter={[16, 8]}>
                 <Col xs={24} md={12}>
-                  <Form.Item label="Số tài khoản" name="bankAccountNumber">
+                  <Form.Item
+                    label="Số tài khoản"
+                    name="bankAccountNumber"
+                    rules={[
+                      { required: true, message: "Vui lòng nhập số tài khoản" },
+                    ]}
+                  >
                     <Input />
                   </Form.Item>
                 </Col>
 
                 <Col xs={24} md={12}>
-                  <Form.Item label="Tên chủ tài khoản" name="bankAccountName">
+                  <Form.Item
+                    label="Tên chủ tài khoản"
+                    name="bankAccountName"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Vui lòng nhập tên chủ tài khoản",
+                      },
+                    ]}
+                  >
                     <Input />
                   </Form.Item>
                 </Col>
 
                 <Col xs={24} md={12}>
-                  <Form.Item label="Ngân hàng" name="bankName">
+                  <Form.Item
+                    label="Ngân hàng"
+                    name="bankName"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Vui lòng nhập tên ngân hàng",
+                      },
+                    ]}
+                  >
                     <Input />
                   </Form.Item>
                 </Col>
 
                 <Col xs={24} md={12}>
-                  <Form.Item label="Chi nhánh" name="bankBranchName">
+                  <Form.Item
+                    label="Chi nhánh"
+                    name="bankBranchName"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Vui lòng nhập tên chi nhánh",
+                      },
+                    ]}
+                  >
                     <Input />
                   </Form.Item>
                 </Col>
