@@ -620,3 +620,83 @@
     max-height: 360px;
   }
 }
+
+.side-lesson-body {
+  margin-left: 28px; // lệch vào trong so với lesson
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.side-section-block {
+  margin-top: 6px;
+}
+
+.side-section-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.section-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #d1d5db;
+}
+
+.section-title-text {
+  flex: 1;
+}
+
+.side-contents {
+  margin: 4px 0 8px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.side-content-item {
+  width: 100%;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: flex-start; // căn theo đầu dòng
+  justify-content: flex-start; // căn trái
+  text-align: left; // chữ căn trái
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+
+  .content-type-tag {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    text-transform: uppercase;
+    flex-shrink: 0; // không giãn ra, giữ sát trái
+  }
+
+  .content-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: #111827;
+    text-align: left;
+    flex: 1; // fill phần còn lại về bên trái
+  }
+
+  &:hover {
+    background: #f3f4f6;
+  }
+
+  &.is-active {
+    background: #e8f0ff;
+    border: 1px solid #3b82f6;
+  }
+}

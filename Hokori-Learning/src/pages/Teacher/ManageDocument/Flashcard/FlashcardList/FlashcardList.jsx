@@ -105,7 +105,7 @@ export default function FlashcardList({ sectionContentId, onEditSet }) {
               icon={<EditOutlined />}
               onClick={() => onEditSet && onEditSet(currentSet)}
             >
-              View / Edit
+              Xem/ sửa
             </Button>
 
             <Popconfirm
@@ -116,7 +116,7 @@ export default function FlashcardList({ sectionContentId, onEditSet }) {
               okType="danger"
             >
               <Button danger icon={<DeleteOutlined />} loading={saving}>
-                Delete set
+                Xóa bộ
               </Button>
             </Popconfirm>
           </Space>
@@ -163,7 +163,7 @@ export default function FlashcardList({ sectionContentId, onEditSet }) {
                   </div>
 
                   <div className={styles.cardContent}>
-                    <Text type="secondary">Back: </Text>
+                    <Text type="secondary"> → </Text>
                     {card.backText}
                   </div>
                 </Card>

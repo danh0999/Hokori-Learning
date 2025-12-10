@@ -192,9 +192,10 @@ const CourseTrialLesson = () => {
   const [trialChapter, setTrialChapter] = useState(null);
   const [trialLessons, setTrialLessons] = useState([]);
 
-  // Lesson & section đang active
+  // Lesson & section & content đang active
   const [activeLessonId, setActiveLessonId] = useState(null);
   const [activeSectionId, setActiveSectionId] = useState(null);
+  const [activeContentId, setActiveContentId] = useState(null);
 
   // Chi tiết lesson (trial-detail)
   const [lessonDetail, setLessonDetail] = useState(null);
@@ -267,14 +268,6 @@ const CourseTrialLesson = () => {
         const firstLesson = lessons[0];
         const lId = firstLesson.id || firstLesson.lessonId;
         setActiveLessonId(lId || null);
-
-        // Nếu trial-tree đã có sections, chọn luôn section đầu
-        const firstSections = Array.isArray(firstLesson.sections)
-          ? firstLesson.sections
-          : [];
-        if (firstSections.length) {
-          setActiveSectionId(firstSections[0].sectionId || firstSections[0].id);
-        }
       } catch (err) {
         console.error("Error fetching trial-tree", err);
         setTreeError(err);
@@ -292,6 +285,8 @@ const CourseTrialLesson = () => {
   useEffect(() => {
     if (!activeLessonId) {
       setLessonDetail(null);
+      setActiveSectionId(null);
+      setActiveContentId(null);
       return;
     }
 
@@ -308,14 +303,30 @@ const CourseTrialLesson = () => {
         const detail = unwrap(res);
         setLessonDetail(detail);
 
-        // Nếu chưa có section đang chọn thì chọn section[0]
-        if (
-          !activeSectionId &&
-          Array.isArray(detail.sections) &&
-          detail.sections.length
-        ) {
-          const firstSec = detail.sections[0];
-          setActiveSectionId(firstSec.sectionId || firstSec.id);
+        // Chọn default section + content cho lesson này
+        if (Array.isArray(detail.sections) && detail.sections.length) {
+          // nếu đang có activeSectionId thuộc lesson này thì ưu tiên, không thì lấy section đầu
+          const sectionToUse =
+            detail.sections.find(
+              (s) =>
+                String(s.sectionId) === String(activeSectionId) ||
+                String(s.id) === String(activeSectionId)
+            ) || detail.sections[0];
+
+          const secId = sectionToUse.sectionId || sectionToUse.id;
+          setActiveSectionId(secId);
+
+          const contentsArr = Array.isArray(sectionToUse.contents)
+            ? sectionToUse.contents
+            : [];
+          const firstContent = contentsArr[0];
+
+          setActiveContentId(
+            firstContent ? firstContent.contentId || firstContent.id : null
+          );
+        } else {
+          setActiveSectionId(null);
+          setActiveContentId(null);
         }
       } catch (err) {
         console.error("Error fetching trial-detail", err);
@@ -330,7 +341,7 @@ const CourseTrialLesson = () => {
   }, [activeLessonId]);
 
   /* --------------------------
-     3. Tính section đang active
+     3. Tính section & content đang active
   -------------------------- */
   const activeSection = useMemo(() => {
     if (!lessonDetail?.sections?.length) return null;
@@ -345,6 +356,21 @@ const CourseTrialLesson = () => {
     );
   }, [lessonDetail, activeSectionId]);
 
+  const activeContent = useMemo(() => {
+    if (!activeSection || !Array.isArray(activeSection.contents)) return null;
+    if (!activeSection.contents.length) return null;
+
+    if (!activeContentId) return activeSection.contents[0];
+
+    return (
+      activeSection.contents.find(
+        (c) =>
+          String(c.contentId) === String(activeContentId) ||
+          String(c.id) === String(activeContentId)
+      ) || activeSection.contents[0]
+    );
+  }, [activeSection, activeContentId]);
+
   /* --------------------------
      4. Flashcard handler
   -------------------------- */
@@ -357,14 +383,10 @@ const CourseTrialLesson = () => {
   };
 
   /* --------------------------
-     5. Render content section
+     5. Render 1 content (LEFT)
   -------------------------- */
-  const renderSectionContents = (section) => {
-    if (
-      !section ||
-      !Array.isArray(section.contents) ||
-      !section.contents.length
-    ) {
+  const renderActiveContentBlock = (section, content) => {
+    if (!section || !content) {
       return (
         <div className="viewer-empty">
           Phần này chưa có nội dung để học thử.
@@ -372,80 +394,77 @@ const CourseTrialLesson = () => {
       );
     }
 
-    return section.contents.map((content, index) => {
-      const key = `${section.sectionId || section.id}-${
-        content.contentId || index
-      }`;
+    const key = `${section.sectionId || section.id}-${
+      content.contentId || content.id
+    }`;
 
-      // ASSET (video / ảnh)
-      if (content.contentFormat === "ASSET" && content.filePath) {
-        const fileUrl = buildFileUrl(content.filePath);
-        const isVideo = /\.(mp4|webm|ogg)$/i.test(fileUrl || "");
+    // ASSET (video / ảnh)
+    if (content.contentFormat === "ASSET" && content.filePath) {
+      const fileUrl = buildFileUrl(content.filePath);
+      const isVideo = /\.(mp4|webm|ogg)$/i.test(fileUrl || "");
 
-        return (
-          <div key={key} className="viewer-block viewer-asset">
-            {isVideo ? (
-              <video
-                controls
-                src={fileUrl}
-                className="viewer-video"
-                preload="metadata"
-              />
-            ) : (
-              <img
-                src={fileUrl}
-                alt={content.title || "Trial asset"}
-                className="viewer-image"
-              />
-            )}
-
-            {content.richText && (
-              <div
-                className="viewer-caption"
-                dangerouslySetInnerHTML={{ __html: content.richText }}
-              />
-            )}
-          </div>
-        );
-      }
-
-      // RICH_TEXT
-      if (content.contentFormat === "RICH_TEXT" && content.richText) {
-        return (
-          <div
-            key={key}
-            className="viewer-block viewer-richtext"
-            dangerouslySetInnerHTML={{ __html: content.richText }}
-          />
-        );
-      }
-
-      // FLASHCARD_SET mở modal
-      if (content.contentFormat === "FLASHCARD_SET") {
-        return (
-          <div key={key} className="viewer-block viewer-flashcard">
-            <p className="viewer-flashcard-text">
-              Đây là bộ flashcard cho phần từ vựng bài học này.
-            </p>
-            <button
-              type="button"
-              className="primary-outline-btn"
-              onClick={() => handleOpenFlashcard(section, content)}
-            >
-              Mở flashcard
-            </button>
-          </div>
-        );
-      }
-
-      // Fallback
       return (
-        <div key={key} className="viewer-empty">
-          Nội dung thử (type: {content.contentFormat}) chưa được hỗ trợ hiển
-          thị.
+        <div key={key} className="viewer-block viewer-asset">
+          {isVideo ? (
+            <video
+              controls
+              src={fileUrl}
+              className="viewer-video"
+              preload="metadata"
+            />
+          ) : (
+            <img
+              src={fileUrl}
+              alt={content.title || "Trial asset"}
+              className="viewer-image"
+            />
+          )}
+
+          {content.richText && (
+            <div
+              className="viewer-caption"
+              dangerouslySetInnerHTML={{ __html: content.richText }}
+            />
+          )}
         </div>
       );
-    });
+    }
+
+    // RICH_TEXT
+    if (content.contentFormat === "RICH_TEXT" && content.richText) {
+      return (
+        <div
+          key={key}
+          className="viewer-block viewer-richtext"
+          dangerouslySetInnerHTML={{ __html: content.richText }}
+        />
+      );
+    }
+
+    // FLASHCARD_SET mở modal
+    if (content.contentFormat === "FLASHCARD_SET") {
+      return (
+        <div key={key} className="viewer-block viewer-flashcard">
+          <p className="viewer-flashcard-text">
+            Đây là bộ flashcard cho phần từ vựng bài học này.
+          </p>
+          <button
+            type="button"
+            className="primary-outline-btn"
+            onClick={() => handleOpenFlashcard(section, content)}
+          >
+            Mở flashcard
+          </button>
+        </div>
+      );
+    }
+
+    // Fallback
+    return (
+      <div key={key} className="viewer-empty">
+        Nội dung thử (type: {content.contentFormat}) chưa được hỗ trợ hiển thị.
+      </div>
+    );
   };
 
   /* --------------------------
@@ -548,10 +567,10 @@ const CourseTrialLesson = () => {
       {/* Breadcrumb */}
       <div className="trial-breadcrumb">
         <Link to={`/course/${courseId}`} className="crumb-link">
-          Khóa học #{courseId}
+          {trialCourse.title}
         </Link>
         <span>›</span>
-        <span>Học thử chương: {trialChapter.title}</span>
+        <span>{trialChapter.title}</span>
       </div>
 
       {/* Header */}
@@ -569,10 +588,7 @@ const CourseTrialLesson = () => {
         <div className="trial-main-left">
           <div className="viewer-card">
             {activeLesson && (
-              <p className="viewer-lesson-label">
-                Bài {activeLessonIndex >= 0 ? activeLessonIndex + 1 : ""} ·{" "}
-                {activeLesson.title}
-              </p>
+              <p className="viewer-lesson-label">{activeLesson.title}</p>
             )}
 
             {activeSection && (
@@ -591,19 +607,23 @@ const CourseTrialLesson = () => {
               </div>
             )}
 
-            {!lessonLoading && !lessonError && activeSection && (
-              <>{renderSectionContents(activeSection)}</>
-            )}
+            {!lessonLoading &&
+              !lessonError &&
+              activeSection &&
+              activeContent &&
+              renderActiveContentBlock(activeSection, activeContent)}
 
-            {!lessonLoading && !lessonError && !activeSection && (
-              <div className="viewer-empty">
-                Chưa có phần nào để hiển thị cho bài học này.
-              </div>
-            )}
+            {!lessonLoading &&
+              !lessonError &&
+              (!activeSection || !activeContent) && (
+                <div className="viewer-empty">
+                  Chưa có phần nào để hiển thị cho bài học này.
+                </div>
+              )}
           </div>
         </div>
 
-        {/* RIGHT: sidebar lesson + section */}
+        {/* RIGHT: sidebar lesson -> section -> content */}
         <aside className="trial-main-right">
           <div className="side-panel">
             <div className="side-header">
@@ -620,7 +640,6 @@ const CourseTrialLesson = () => {
                 const lId = lesson.id || lesson.lessonId;
                 const isActiveLesson = String(lId) === String(activeLessonId);
 
-                // Sections hiển thị:
                 const sectionsForThisLesson =
                   isActiveLesson && lessonDetail?.sections
                     ? lessonDetail.sections
@@ -635,13 +654,15 @@ const CourseTrialLesson = () => {
                       isActiveLesson ? "is-active" : ""
                     }`}
                   >
-                    {/* Header lesson */}
+                    {/* Lesson header: bấm để load trial-detail */}
                     <button
                       type="button"
                       className="side-section-header"
                       onClick={() => {
+                        if (String(activeLessonId) === String(lId)) return;
                         setActiveLessonId(lId);
                         setActiveSectionId(null);
+                        setActiveContentId(null);
                         setLessonDetail(null);
                         setLessonError(null);
                         setQuizError(null);
@@ -649,9 +670,7 @@ const CourseTrialLesson = () => {
                     >
                       <span className="dot" />
                       <div className="side-section-text">
-                        <span className="title">
-                          Bài {lIdx + 1}: {lesson.title}
-                        </span>
+                        <span className="title">{lesson.title}</span>
                         <span className="meta">
                           {Array.isArray(sectionsForThisLesson)
                             ? `${sectionsForThisLesson.length} phần`
@@ -660,34 +679,93 @@ const CourseTrialLesson = () => {
                       </div>
                     </button>
 
-                    {/* List sections */}
+                    {/* Section_title (không bấm được) + list content */}
                     {sectionsForThisLesson.length > 0 && (
-                      <ul className="side-contents">
+                      <div className="side-lesson-body">
                         {sectionsForThisLesson.map((section) => {
                           const sid = section.sectionId || section.id;
-                          const isActiveSection =
-                            String(sid) === String(activeSectionId);
+                          const contents = Array.isArray(section.contents)
+                            ? section.contents
+                            : [];
+
                           return (
-                            <li key={sid}>
-                              <button
-                                type="button"
-                                className={`side-content-item ${
-                                  isActiveSection ? "is-active" : ""
-                                }`}
-                                onClick={() => {
-                                  setActiveLessonId(lId);
-                                  setActiveSectionId(sid);
-                                }}
-                              >
-                                <span className="content-type">Phần</span>
-                                <span className="content-title">
+                            <div key={sid} className="side-section-block">
+                              {/* section_title (label, không click) */}
+                              <div className="side-section-title-row">
+                                <span className="section-dot" />
+                                <span className="section-title-text">
                                   {section.title}
                                 </span>
-                              </button>
-                            </li>
+                              </div>
+
+                              {/* list content */}
+                              {contents.length > 0 && (
+                                <ul className="side-contents">
+                                  {contents.map((content) => {
+                                    const cid = content.contentId || content.id;
+                                    const isActiveContent =
+                                      isActiveLesson &&
+                                      String(sid) === String(activeSectionId) &&
+                                      String(cid) === String(activeContentId);
+
+                                    let contentLabel = content.title || "";
+                                    if (!contentLabel || !contentLabel.trim()) {
+                                      if (content.contentFormat === "ASSET") {
+                                        contentLabel = "Tài liệu xem";
+                                      } else if (
+                                        content.contentFormat === "RICH_TEXT"
+                                      ) {
+                                        contentLabel = "Lý thuyết";
+                                      } else if (
+                                        content.contentFormat ===
+                                        "FLASHCARD_SET"
+                                      ) {
+                                        contentLabel = "Flashcard từ vựng";
+                                      } else {
+                                        contentLabel =
+                                          content.contentFormat || "Nội dung";
+                                      }
+                                    }
+
+                                    let typeTag = "";
+                                    if (content.contentFormat === "ASSET")
+                                      typeTag = "ASSET";
+                                    else if (
+                                      content.contentFormat === "RICH_TEXT"
+                                    )
+                                      typeTag = "TEXT";
+                                    else if (
+                                      content.contentFormat === "FLASHCARD_SET"
+                                    )
+                                      typeTag = "CARD";
+                                    else typeTag = content.contentFormat || "";
+
+                                    return (
+                                      <li key={cid}>
+                                        <button
+                                          type="button"
+                                          className={`side-content-item ${
+                                            isActiveContent ? "is-active" : ""
+                                          }`}
+                                          onClick={() => {
+                                            setActiveLessonId(lId);
+                                            setActiveSectionId(sid);
+                                            setActiveContentId(cid);
+                                          }}
+                                        >
+                                          <span className="content-title">
+                                            {contentLabel}
+                                          </span>
+                                        </button>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              )}
+                            </div>
                           );
                         })}
-                      </ul>
+                      </div>
                     )}
 
                     {isActiveLesson && lessonLoading && (

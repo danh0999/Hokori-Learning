@@ -22,6 +22,7 @@ import api from "../../../../configs/axios.js";
 import CourseCurriculumView from "../../../Teacher/Courses/CourseCurriculumView/CourseCurriculumView.jsx";
 import ApprovePublishModal from "../../Queues/components/ApprovePublishModal";
 import RejectModal from "../../Queues/components/RejectModal";
+import { toast } from "react-toastify";
 
 const { Text, Title, Paragraph } = Typography;
 
@@ -147,12 +148,10 @@ export default function CourseReviewPage() {
     setApproveLoading(true);
     try {
       await api.put(`/moderator/courses/${courseId}/approve`);
-      message.success("Đã phê duyệt & xuất bản khóa học.");
+      toast.success("Đã phê duyệt & xuất bản khóa học.");
       navigate(-1);
     } catch (err) {
-      message.error(
-        err.response?.data?.message || "Approve khóa học thất bại."
-      );
+      toast.error(err.response?.data?.message || "Approve khóa học thất bại.");
     } finally {
       setApproveLoading(false);
       setOpenApprove(false);
@@ -164,10 +163,10 @@ export default function CourseReviewPage() {
       await api.put(`/moderator/courses/${courseId}/reject`, null, {
         params: { reason: reasonText },
       });
-      message.success("Khóa học đã bị từ chối.");
+      toast.success("Khóa học đã bị từ chối.");
       navigate(-1);
     } catch (err) {
-      message.error(err.response?.data?.message || "Reject khóa học thất bại.");
+      toast.error(err.response?.data?.message || "Reject khóa học thất bại.");
     } finally {
       setRejectLoading(false);
       setOpenReject(false);

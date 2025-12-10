@@ -295,9 +295,7 @@ export default function TeacherProfilePage() {
               </div>
               <div className={styles.field}>
                 <label>Tình trạng xác minh</label>
-                <div>
-                  {teacher.approvalStatus ? "Đã xác minh" : "Chưa xác minh"}
-                </div>
+                <div>{teacher.approvalStatus}</div>
               </div>
             </div>
 

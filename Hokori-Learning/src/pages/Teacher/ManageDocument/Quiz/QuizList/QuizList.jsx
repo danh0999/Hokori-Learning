@@ -57,7 +57,7 @@ export default function QuizList({
                   <Space>
                     <b>{qz.title}</b>
                     <span className={styles.muted}>
-                      · {getQuestionCount(qz)} questions
+                      · {getQuestionCount(qz)} câu
                     </span>
                   </Space>
                   {qz.description && (
@@ -69,10 +69,10 @@ export default function QuizList({
               {/* bên phải: nút hành động */}
               <div className={styles.actions}>
                 <Button size="small" onClick={() => onEdit?.(qz)}>
-                  Edit
+                  Sửa
                 </Button>
                 <Button size="small" danger onClick={() => onRemove?.(qz.id)}>
-                  Remove
+                  Xóa
                 </Button>
               </div>
             </List.Item>
