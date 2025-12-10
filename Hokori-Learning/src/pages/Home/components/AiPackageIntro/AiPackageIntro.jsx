@@ -23,8 +23,8 @@ export default function AiPackageIntro({ onOpenModal }) {
     },
     {
       icon: <PiMagicWandBold size={26} />,
-      title: "Tạo Quiz & Flashcard AI",
-      desc: "Sinh quiz / flashcard từ video hoặc đoạn văn.",
+      title: "Gói AI phù hợp mọi trình độ ",
+      desc: "AI được tùy chỉnh dựa theo học lực của học viên",
     },
     {
       icon: <PiRobotBold size={26} />,

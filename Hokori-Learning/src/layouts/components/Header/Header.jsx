@@ -7,10 +7,12 @@ import { logoutFirebase } from "../../../redux/features/auth";
 
 import { UserOutlined } from "@ant-design/icons";
 import { Avatar, Dropdown, Space } from "antd";
-import { FiShoppingCart, FiBell } from "react-icons/fi";
+import { FiShoppingCart } from "react-icons/fi";
+
 import {
   resetAiPackageState,
   openModal,
+  fetchMyAiPackage,
 } from "../../../redux/features/aiPackageSlice";
 
 import { fetchCart } from "../../../redux/features/cartSlice";
@@ -43,40 +45,37 @@ export const Header = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  // ============================
-  // LẤY USER & PROFILE
-  // ============================
+  // =====================================
+  // USER, PROFILE, CART
+  // =====================================
   const user = useSelector((state) => state.user);
   const profile = useSelector((state) => state.profile.data);
-  const aiPackage = useSelector((state) => state.aiPackage.myPackage);
-
-  const hasAiPackage =
-    aiPackage && aiPackage.hasPackage && !aiPackage.isExpired;
 
   const cartItems = useSelector((state) => state.cart.items);
   const cartCount = cartItems?.length || 0;
 
-  // ============================
+  // =====================================
   // FETCH PROFILE KHI LOGIN
-  // ============================
+  // =====================================
   useEffect(() => {
     if (user?.accessToken) {
       dispatch(fetchMe());
+      dispatch(fetchMyAiPackage()); // Load gói AI ngay khi login
     }
   }, [user, dispatch]);
 
-  // ============================
-  // AUTO FETCH CART WHEN LOGIN
-  // ============================
+  // =====================================
+  // FETCH CART SAU KHI CÓ PROFILE
+  // =====================================
   useEffect(() => {
     if (user && user.accessToken && profile) {
       dispatch(fetchCart());
     }
   }, [user, profile, dispatch]);
 
-  // ============================
-  // DROPDOWNS
-  // ============================
+  // =====================================
+  // DROPDOWN CONTROL
+  // =====================================
   const [openDropdown, setOpenDropdown] = useState(null);
   const courseDropdownRef = useRef(null);
   const aboutDropdownRef = useRef(null);
@@ -84,13 +83,13 @@ export const Header = () => {
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      // Nếu click vào bất kỳ dropdown nào → không đóng
       if (
         (courseDropdownRef.current &&
           courseDropdownRef.current.contains(e.target)) ||
         (aboutDropdownRef.current &&
           aboutDropdownRef.current.contains(e.target)) ||
-        (aiDropdownRef.current && aiDropdownRef.current.contains(e.target))
+        (aiDropdownRef.current &&
+          aiDropdownRef.current.contains(e.target))
       ) {
         return;
       }
@@ -101,9 +100,9 @@ export const Header = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ============================
+  // =====================================
   // LOGOUT
-  // ============================
+  // =====================================
   const handleLogout = async () => {
     try {
       await logoutFirebase();
@@ -122,62 +121,72 @@ export const Header = () => {
     }
   };
 
-  // ============================
-  // HANDLE AI TOOL OPEN
-  // ============================
-  const handleOpenAiTool = (path) => {
+  // =====================================
+  // HANDLE OPEN AI TOOL (FIX LỖI QUAN TRỌNG)
+  // =====================================
+  const handleOpenAiTool = async (path) => {
     if (!user) return navigate(`/login?redirect=${path}`);
 
-    if (!hasAiPackage) {
-      dispatch(openModal());
-      return;
-    }
+    try {
+      // Luôn fetch AI package mới nhất → tránh stale state
+      const data = await dispatch(fetchMyAiPackage()).unwrap();
 
-    navigate(path);
+      const hasAi =
+        data?.hasPackage && !data?.isExpired;
+
+      if (!hasAi) {
+        dispatch(openModal());
+        return;
+      }
+
+      navigate(path);
+    } catch  {
+      // fallback trong trường hợp BE lỗi → vẫn mở modal
+      dispatch(openModal());
+    }
   };
 
-  // ============================
+  // =====================================
   // USER MENU
-  // ============================
-  const userMenu = [
-    {
-      key: "profile",
-      label: "Hồ sơ cá nhân",
-      onClick: () => navigate("/profile"),
-    },
-    {
-      key: "learner-dashboard",
-      label: "Thống kê học tập",
-      onClick: () => navigate("/learner-dashboard"),
-    },
-    {
-      key: "logout",
-      label: "Đăng xuất",
-      onClick: handleLogout,
-    },
-  ];
+  // =====================================
+  const userMenu = {
+    items: [
+      {
+        key: "profile",
+        label: "Hồ sơ cá nhân",
+        onClick: () => navigate("/profile"),
+      },
+      {
+        key: "learner-dashboard",
+        label: "Thống kê học tập",
+        onClick: () => navigate("/learner-dashboard"),
+      },
+      {
+        key: "logout",
+        label: "Đăng xuất",
+        onClick: handleLogout,
+      },
+    ],
+  };
 
   return (
     <header className={`${header} notification-light`}>
       <div className={container}>
-        {/* ===== LOGO ===== */}
+
+        {/* LOGO */}
         <div className={logo} onClick={() => navigate("/")}>
-          <div className={logoBox}>
-            <span className={logoText}>H</span>
-          </div>
+          <div className={logoBox}><span className={logoText}>H</span></div>
           <span className={brand}>Hokori</span>
         </div>
 
-        {/* ===== NAVIGATION ===== */}
+        {/* ====================== NAVIGATION ====================== */}
         <nav className={nav}>
-          <NavLink
-            to="/"
-            className={({ isActive }) => (isActive ? active : "")}
-          >
+
+          <NavLink to="/" className={({ isActive }) => (isActive ? active : "")}>
             Trang chủ
           </NavLink>
 
-          {/* Dropdown Khóa học */}
+          {/* ===== Khóa học ===== */}
           <div className={dropdown} ref={courseDropdownRef}>
             <button
               className={dropdownToggle}
@@ -186,11 +195,7 @@ export const Header = () => {
               }
             >
               Khóa học{" "}
-              <span
-                className={`${arrow} ${
-                  openDropdown === "course" ? rotate : ""
-                }`}
-              >
+              <span className={`${arrow} ${openDropdown === "course" ? rotate : ""}`}>
                 ▾
               </span>
             </button>
@@ -200,16 +205,16 @@ export const Header = () => {
                 <NavLink to="/marketplace" className={dropdownItem}>
                   Tất cả khóa học
                 </NavLink>
+
                 <NavLink
                   to={user ? "/my-courses" : "/login?redirect=/my-courses"}
                   className={dropdownItem}
                 >
                   Khóa học của tôi
                 </NavLink>
+
                 <NavLink
-                  to={
-                    user ? "/my-flashcards" : "/login?redirect=/my-flashcards"
-                  }
+                  to={user ? "/my-flashcards" : "/login?redirect=/my-flashcards"}
                   className={dropdownItem}
                 >
                   Flashcard của tôi
@@ -218,15 +223,12 @@ export const Header = () => {
             )}
           </div>
 
-          {/* JLPT */}
-          <NavLink
-            to="/JLPT"
-            className={({ isActive }) => (isActive ? active : "")}
-          >
+          {/* ===== JLPT ===== */}
+          <NavLink to="/JLPT" className={({ isActive }) => (isActive ? active : "")}>
             Thi thử JLPT
           </NavLink>
 
-          {/* Dropdown Công cụ AI */}
+          {/* ===== Công cụ AI ===== */}
           <div className={dropdown} ref={aiDropdownRef}>
             <button
               className={dropdownToggle}
@@ -235,9 +237,7 @@ export const Header = () => {
               }
             >
               Công cụ AI{" "}
-              <span
-                className={`${arrow} ${openDropdown === "ai" ? rotate : ""}`}
-              >
+              <span className={`${arrow} ${openDropdown === "ai" ? rotate : ""}`}>
                 ▾
               </span>
             </button>
@@ -261,7 +261,7 @@ export const Header = () => {
             )}
           </div>
 
-          {/* Dropdown Về Hokori */}
+          {/* ===== Về Hokori ===== */}
           <div className={dropdown} ref={aboutDropdownRef}>
             <button
               className={dropdownToggle}
@@ -270,66 +270,48 @@ export const Header = () => {
               }
             >
               Về Hokori{" "}
-              <span
-                className={`${arrow} ${openDropdown === "about" ? rotate : ""}`}
-              >
+              <span className={`${arrow} ${openDropdown === "about" ? rotate : ""}`}>
                 ▾
               </span>
             </button>
 
             {openDropdown === "about" && (
               <div className={dropdownMenu}>
-                <NavLink to="/about" className={dropdownItem}>
-                  Về chúng tôi
-                </NavLink>
-                <NavLink to="/policies" className={dropdownItem}>
-                  Chính sách & Điều khoản
-                </NavLink>
-
-                <NavLink
-                  to="/contact"
-                  className={({ isActive }) => (isActive ? active : "")}
-                >
+                <NavLink to="/about" className={dropdownItem}>Về chúng tôi</NavLink>
+                <NavLink to="/policies" className={dropdownItem}>Chính sách & Điều khoản</NavLink>
+                <NavLink to="/contact" className={({ isActive }) => (isActive ? active : "")}>
                   Liên hệ
                 </NavLink>
               </div>
             )}
           </div>
+
         </nav>
 
-        {/* ===== USER ACTIONS ===== */}
+        {/* ====================== USER ACTIONS ====================== */}
         <div className={actions}>
           {!user ? (
             <>
               <button className={loginBtn} onClick={() => navigate("/login")}>
                 Đăng nhập
               </button>
-              <button
-                className={registerBtn}
-                onClick={() => navigate("/register")}
-              >
+              <button className={registerBtn} onClick={() => navigate("/register")}>
                 Đăng ký
               </button>
             </>
           ) : (
             <Space size={24} align="center">
+
               {/* Cart */}
               <div
-                onClick={() => {
-                  if (!user) return navigate("/login?redirect=/cart");
-                  navigate("/cart");
-                }}
+                onClick={() => navigate("/cart")}
                 style={{
                   position: "relative",
                   cursor: "pointer",
                   transition: "transform 0.2s ease",
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.transform = "scale(1.1)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.transform = "scale(1.0)")
-                }
+                onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1.0)")}
               >
                 <FiShoppingCart size={21} color="#444" />
                 {cartCount > 0 && (
@@ -359,12 +341,7 @@ export const Header = () => {
               <NotificationBell />
 
               {/* Avatar */}
-              <Dropdown
-                menu={{ items: userMenu }}
-                placement="bottomRight"
-                arrow
-                trigger={["click"]}
-              >
+              <Dropdown menu={userMenu} placement="bottomRight" arrow trigger={["click"]}>
                 <Space style={{ cursor: "pointer" }}>
                   <Avatar
                     size={36}
@@ -373,9 +350,11 @@ export const Header = () => {
                   />
                 </Space>
               </Dropdown>
+
             </Space>
           )}
         </div>
+
       </div>
     </header>
   );
