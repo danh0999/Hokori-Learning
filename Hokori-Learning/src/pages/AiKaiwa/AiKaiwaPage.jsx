@@ -16,7 +16,8 @@ import {
 const AiKaiwaPage = () => {
   const [audioBlob, setAudioBlob] = useState(null);
 
-  const [targetText, setTargetText] = useState("私は日本語を勉強しています");
+  const [targetText, setTargetText] = useState("");
+
   const [level, setLevel] = useState(KAIWA_DEFAULTS.LEVEL);
 
   const [loading, setLoading] = useState(false);
@@ -93,6 +94,7 @@ const AiKaiwaPage = () => {
             <textarea
               className={styles.textarea}
               value={targetText}
+              placeholder="Hãy nhập câu tiếng Nhật và bắt đầu luyện nói!"
               onChange={(e) => setTargetText(e.target.value)}
               rows={3}
             />
