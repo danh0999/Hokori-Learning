@@ -1,3 +1,4 @@
+// src/pages/LearningTreePage/LearningTreePage.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../configs/axios";
@@ -58,13 +59,30 @@ export default function LearningTreePage() {
     });
   };
 
+  // --- LOGIC ĐIỀU HƯỚNG MỚI ---
   const handleContentClick = (lessonId, content) => {
     if (content.contentFormat === "FLASHCARD_SET") {
-      navigate(`/flashcards/${content.flashcardSetId}`);
+      // Sửa lỗi điều hướng: dùng contentId (hoặc id) thay vì flashcardSetId (vì có thể null)
+      // Truyền thêm state courseId & lessonId để nút Back hoạt động
+      const targetId = content.contentId || content.id;
+      navigate(`/learner/flashcards/${targetId}`, {
+        state: { 
+            courseId: courseId,
+            lessonId: lessonId 
+        }
+      });
       return;
     }
+    
+    // Điều hướng vào bài học (LessonPlayer)
     navigate(
-      `/course/${courseId}/lesson/${lessonId}?contentId=${content.contentId}`
+      `/course/${courseId}/lesson/${lessonId}`, 
+      {
+        state: { 
+            targetContentId: content.contentId,
+            type: content.contentFormat
+        }
+      }
     );
   };
 
@@ -101,7 +119,7 @@ export default function LearningTreePage() {
         {/* ===== TREE ===== */}
         <section className={styles.treeCard}>
           <div className={styles.treeHeaderRow}>
-            <h2 className={styles.sectionTitle}>Học thử</h2>
+            <h2 className={styles.sectionTitle}>Nội dung khóa học</h2>
             <span className={styles.treeOverallPercent}>
               {data.progressPercent}%
             </span>
@@ -212,9 +230,9 @@ export default function LearningTreePage() {
                                           className={styles.contentMainText}
                                         >
                                           {ct.contentFormat === "ASSET" &&
-                                            "Video"}
+                                            "Video bài giảng"}
                                           {ct.contentFormat === "RICH_TEXT" &&
-                                            "Nội dung"}
+                                            "Nội dung bài đọc"}
                                           {ct.contentFormat ===
                                             "FLASHCARD_SET" && "Từ vựng"}
                                         </span>
