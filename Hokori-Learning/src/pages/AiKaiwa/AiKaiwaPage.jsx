@@ -16,8 +16,7 @@ import {
 const AiKaiwaPage = () => {
   const [audioBlob, setAudioBlob] = useState(null);
 
-  const [targetText, setTargetText] =
-    useState("私は日本語を勉強しています");
+  const [targetText, setTargetText] = useState("私は日本語を勉強しています");
   const [level, setLevel] = useState(KAIWA_DEFAULTS.LEVEL);
 
   const [loading, setLoading] = useState(false);
@@ -63,7 +62,20 @@ const AiKaiwaPage = () => {
       setResult(response);
     } catch (err) {
       console.error("Kaiwa practice error:", err);
-      setError(err.message || KAIWA_ERROR_MESSAGES.PRACTICE_FAILED);
+
+      // ÉP HIỆN TIẾNG VIỆT THÂN THIỆN
+      let message = err?.message || "";
+
+      if (message.includes("Could not transcribe audio")) {
+        message =
+          "Không thể nhận diện giọng nói. Vui lòng nói rõ hơn hoặc ghi âm lại.";
+      }
+
+      if (message.includes("Failed to process audio")) {
+        message = "AI gặp lỗi khi xử lý âm thanh. Hãy thử ghi âm lại.";
+      }
+
+      setError(message || "Lỗi luyện nói. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }

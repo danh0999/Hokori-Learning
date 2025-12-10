@@ -4,8 +4,8 @@ import api from "../../configs/axios";
 import { toast } from "react-toastify";
 
 /* ======================================================
-   Helper: build absolute URL cho file (avatar, ... )
-====================================================== */
+   Helper: build absolute URL cho file (avatar, ...)
+======================================================= */
 const buildFileUrl = (path) => {
   if (!path) return null;
   if (path.startsWith("http")) return path;
@@ -17,14 +17,14 @@ const buildFileUrl = (path) => {
 
 /* ======================================================
    FETCH CURRENT USER PROFILE
-====================================================== */
+======================================================= */
 export const fetchMe = createAsyncThunk(
   "profile/fetchMe",
   async (_, thunkAPI) => {
     try {
       const res = await api.get("profile/me");
       return res.data?.data || {};
-    } catch (err) {
+    } catch {
       return thunkAPI.rejectWithValue("Không thể tải hồ sơ người dùng.");
     }
   }
@@ -32,14 +32,14 @@ export const fetchMe = createAsyncThunk(
 
 /* ======================================================
    UPDATE CURRENT USER PROFILE
-====================================================== */
+======================================================= */
 export const updateMe = createAsyncThunk(
   "profile/updateMe",
   async (payload, thunkAPI) => {
     try {
       const res = await api.put("profile/me", payload);
       toast.success(" Cập nhật hồ sơ thành công!");
-      return res.data?.data || payload;
+      return res.data?.data; // PHẢI DÙNG DỮ LIỆU BE
     } catch {
       toast.error(" Không thể cập nhật hồ sơ.");
       return thunkAPI.rejectWithValue("Cập nhật thất bại");
@@ -49,7 +49,7 @@ export const updateMe = createAsyncThunk(
 
 /* ======================================================
    CHANGE PASSWORD
-====================================================== */
+======================================================= */
 export const changePassword = createAsyncThunk(
   "profile/changePassword",
   async ({ currentPassword, newPassword, confirmPassword }, thunkAPI) => {
@@ -70,7 +70,7 @@ export const changePassword = createAsyncThunk(
 
 /* ======================================================
    UPLOAD AVATAR
-====================================================== */
+======================================================= */
 export const uploadAvatar = createAsyncThunk(
   "profile/uploadAvatar",
   async (file, thunkAPI) => {
@@ -84,9 +84,8 @@ export const uploadAvatar = createAsyncThunk(
 
       const rawAvatar = res.data?.avatarUrl || res.data?.avatar_url;
       toast.success(" Cập nhật ảnh đại diện thành công!");
-
-      return rawAvatar; // raw path
-    } catch (err) {
+      return rawAvatar;
+    } catch {
       toast.error(" Không thể cập nhật avatar.");
       return thunkAPI.rejectWithValue("Upload avatar failed");
     }
@@ -95,7 +94,7 @@ export const uploadAvatar = createAsyncThunk(
 
 /* ======================================================
    SLICE
-====================================================== */
+======================================================= */
 const initialState = {
   data: null,
   loading: false,
@@ -107,7 +106,6 @@ const profileSlice = createSlice({
   name: "profile",
   initialState,
   reducers: {
-    // NEW: RESET PROFILE (CẦN THIẾT CHO LOGOUT)
     resetProfile: (state) => {
       state.data = null;
       state.loading = false;
@@ -118,7 +116,7 @@ const profileSlice = createSlice({
 
   extraReducers: (builder) => {
     builder
-      /* ----- FETCH PROFILE ----- */
+      /* ===== FETCH ME ===== */
       .addCase(fetchMe.pending, (state) => {
         state.loading = true;
       })
@@ -132,11 +130,10 @@ const profileSlice = createSlice({
           id: u.id,
           email: u.email,
           username: u.username,
-          displayName:
-            u.displayName || u.display_name || u.username || "Chưa cập nhật",
+          displayName: u.displayName || u.display_name || u.username,
           avatarUrl: buildFileUrl(rawAvatar),
           phoneNumber: u.phoneNumber || u.phone_number || "",
-          nativeLanguage: u.nativeLanguage || u.native_language || "",
+          nativeLanguage: u.nativeLanguage || u.native_language || "VI",
           learningLanguage: u.learningLanguage || u.learning_language || "JA",
           country: u.country || "",
           roleName: u.roleName || "Học viên",
@@ -151,22 +148,22 @@ const profileSlice = createSlice({
         state.error = action.payload;
       })
 
-      /* ----- UPDATE PROFILE ----- */
+      /* ===== UPDATE PROFILE ===== */
       .addCase(updateMe.pending, (state) => {
         state.saving = true;
       })
       .addCase(updateMe.fulfilled, (state, action) => {
         state.saving = false;
         const updated = action.payload || {};
-        const rawAvatar = updated.avatarUrl || updated.avatar_url;
 
+        const rawAvatar =
+          updated.avatarUrl || updated.avatar_url || state.data?.avatarUrl;
+
+        // Không merge state.data cũ → dùng dữ liệu BE trả về
         state.data = {
-          ...(state.data || {}),
-          ...updated,
-          avatarUrl:
-            rawAvatar !== undefined
-              ? buildFileUrl(rawAvatar)
-              : state.data?.avatarUrl,
+          ...state.data, // giữ những field BE không trả về
+          ...updated,    // override bằng dữ liệu mới từ BE
+          avatarUrl: buildFileUrl(rawAvatar),
         };
       })
       .addCase(updateMe.rejected, (state, action) => {
@@ -174,7 +171,7 @@ const profileSlice = createSlice({
         state.error = action.payload;
       })
 
-      /* ----- UPLOAD AVATAR ----- */
+      /* ===== UPLOAD AVATAR ===== */
       .addCase(uploadAvatar.fulfilled, (state, action) => {
         const rawAvatar = action.payload;
         state.data = {
