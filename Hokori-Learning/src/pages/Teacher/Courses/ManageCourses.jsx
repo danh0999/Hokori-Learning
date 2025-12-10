@@ -219,6 +219,8 @@ export default function ManageCourses() {
       key: "actions",
       width: 110,
       render: (_, row) => {
+        const isPublished = row.status === "Published";
+
         const items = [
           {
             key: "manage",
@@ -232,12 +234,15 @@ export default function ManageCourses() {
                 },
               ]
             : []),
-
-          {
-            key: "del",
-            danger: true,
-            label: "Xóa",
-          },
+          ...(!isPublished
+            ? [
+                {
+                  key: "del",
+                  danger: true,
+                  label: "Xóa",
+                },
+              ]
+            : []),
         ];
 
         return (
@@ -258,6 +263,11 @@ export default function ManageCourses() {
                 } else if (key === "submit") {
                   onSubmitForReview(row.id);
                 } else if (key === "del") {
+                  // safety check thêm cho chắc
+                  if (row.status === "Published") {
+                    message.warning("Không thể xoá khoá học đã xuất bản.");
+                    return;
+                  }
                   onDelete(row.id);
                 }
               },

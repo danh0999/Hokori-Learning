@@ -65,8 +65,7 @@ export default function GrammarKanjiTab({
     if (!lesson) return;
 
     const defaultSectionTitle =
-      sectionForType?.title ||
-      (type === "GRAMMAR" ? "Grammar section" : "Kanji section");
+      sectionForType?.title || (type === "GRAMMAR" ? "Grammar" : "Kanji");
 
     form.setFieldsValue({
       title: lesson.title,
@@ -309,11 +308,9 @@ export default function GrammarKanjiTab({
         <Form.Item
           name="sectionTitle"
           label={
-            type === "GRAMMAR" ? "Tiêu đề section" : "Tiêu đề section Kanji"
+            type === "GRAMMAR" ? "Tiêu đề phần ngữ pháp" : "Tiêu đề phần Kanji"
           }
-          rules={[
-            { required: true, message: "Vui lòng nhập tiêu đề section." },
-          ]}
+          rules={[{ required: true, message: "Vui lòng nhập tiêu đề phần." }]}
         >
           <Input
             placeholder={
@@ -325,7 +322,11 @@ export default function GrammarKanjiTab({
         </Form.Item>
 
         <Form.Item
-          label={type === "GRAMMAR" ? "Video ngữ pháp" : "Video Kanji"}
+          label={
+            type === "GRAMMAR"
+              ? "Tài liệu xem phần ngữ pháp"
+              : "Tài liệu xem phần Kanji"
+          }
         >
           {videoState.previewUrl ? (
             <div className={styles.videoBox}>
@@ -378,7 +379,11 @@ export default function GrammarKanjiTab({
 
         <Form.Item
           name="description"
-          label={type === "GRAMMAR" ? "Mô tả ngữ pháp" : "Mô tả Kanji"}
+          label={
+            type === "GRAMMAR"
+              ? "Tài liệu đọc phần ngữ pháp"
+              : "Tài liệu đọc phần Kanji"
+          }
         >
           <TextArea rows={5} placeholder="Mô tả nội dung, ví dụ, ghi chú..." />
         </Form.Item>
