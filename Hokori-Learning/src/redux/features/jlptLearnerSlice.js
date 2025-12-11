@@ -195,9 +195,7 @@ export const fetchMyJlptResult = createAsyncThunk(
 /* =========================================================
    10) GET ATTEMPT DETAIL
 ========================================================= */
-/* =========================================================
-   10) GET ATTEMPT DETAIL
-========================================================= */
+
 export const fetchAttemptDetail = createAsyncThunk(
   "jlptLearner/fetchAttemptDetail",
   async ({ testId, attemptId }, { rejectWithValue }) => {
@@ -223,6 +221,21 @@ export const fetchAttemptDetail = createAsyncThunk(
         `/learner/jlpt/tests/${numTestId}/attempts/${numAttemptId}/detail`
       );
       return res.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+/* =========================================================
+   11) GET ATTEMPTS LIST (HISTORY)
+========================================================= */
+export const fetchJlptAttempts = createAsyncThunk(
+  "jlptLearner/fetchJlptAttempts",
+  async (testId, { rejectWithValue }) => {
+    const id = safeTestId(testId);
+    try {
+      const res = await api.get(`/learner/jlpt/tests/${id}/attempts`);
+      return { testId: id, attempts: res.data || [] };
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }
@@ -263,6 +276,10 @@ const initialState = {
   attemptDetail: null,
   loadingAttemptDetail: false,
   attemptDetailError: null,
+
+  recentAttempts: {}, // lưu theo testId
+  loadingAttempts: false,
+  attemptsError: null,
 };
 
 /* =========================================================
@@ -443,7 +460,24 @@ const jlptLearnerSlice = createSlice({
       .addCase(fetchAttemptDetail.rejected, (state, action) => {
         state.loadingAttemptDetail = false;
         state.attemptDetailError = action.payload;
+      })
+            /* ATTEMPTS LIST */
+      .addCase(fetchJlptAttempts.pending, (state) => {
+        state.loadingAttempts = true;
+        state.attemptsError = null;
+      })
+      .addCase(fetchJlptAttempts.fulfilled, (state, action) => {
+        state.loadingAttempts = false;
+        const { testId, attempts } = action.payload || {};
+        if (!testId) return;
+
+        state.recentAttempts[testId] = attempts;
+      })
+      .addCase(fetchJlptAttempts.rejected, (state, action) => {
+        state.loadingAttempts = false;
+        state.attemptsError = action.payload;
       });
+
   },
 });
 

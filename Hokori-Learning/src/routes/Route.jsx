@@ -36,7 +36,7 @@ import LearningTreePage from "../pages/LearningTreePage/LearningTreePage";
 import AiSucceedPage from "../pages/AiPackage/PaymentSuccess";
 import PaymentResultPage from "../pages/PaymentResultPage/PaymentResultPage";
 import CertificateDetail from "../pages/Certificate/CertificateDetail";
-
+import JLPTHistory from "../pages/JLPTTest/JLPTHistory";
 // ===== Teacher =====
 import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
 import ManageCourses from "../pages/Teacher/Courses/ManageCourses";
@@ -139,6 +139,11 @@ const routes = [
           //   path: "course/:courseId/lesson/:lessonId",
           //   element: <LessonPlayer />,
           // },
+          { path: "jlpt/history", element: <JLPTHistory /> },
+          {
+            path: "course/:courseId/lesson/:lessonId",
+            element: <LessonPlayer />,
+          },
           {
             path: "course/:courseId/lesson/:lessonId/quiz/:quizId",
             element: <QuizPage />,

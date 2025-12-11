@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+// src/pages/LearnerDashboard/LearnerDashboard.jsx
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./LearnerDashboard.module.scss";
 import api from "../../configs/axios";
@@ -28,7 +29,10 @@ const LearnerDashboard = () => {
   const [progress, setProgress] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ====== FETCH DATA ======
+  // JLPT history (5 bài gần nhất để show dashboard)
+  const [jlptResults, setJlptResults] = useState([]);
+
+  // ====== FETCH DASHBOARD DATA ======
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -105,6 +109,57 @@ const LearnerDashboard = () => {
     fetchDashboardData();
   }, []);
 
+  // ====== FETCH JLPT TEST HISTORY (chỉ để show 5 dòng gần nhất) ======
+  useEffect(() => {
+    const loadJlptAttempts = async () => {
+      try {
+        const eventsRes = await api.get("/jlpt/events/open");
+        const events = eventsRes.data || [];
+
+        let allAttempts = [];
+
+        for (const ev of events) {
+          const testsRes = await api.get(
+            `/learner/jlpt/events/${ev.id}/tests`
+          );
+          const tests = testsRes.data || [];
+
+          for (const t of tests) {
+            const attemptsRes = await api.get(
+              `/learner/jlpt/tests/${t.id}/attempts`
+            );
+            const attempts = attemptsRes.data || [];
+
+            attempts.forEach((a) => {
+              allAttempts.push({
+                id: a.id,
+                testId: t.id, // QUAN TRỌNG: dùng để mở trang review
+                title: `Đề thi JLPT ${t.level} – ${t.title}`,
+                takenAt: a.submittedAt || a.startedAt,
+                score: Math.round(a.score || 0),
+                correct: `${a.correctCount}/${a.totalQuestions}`,
+              });
+            });
+          }
+        }
+
+        // sort mới → cũ
+        allAttempts.sort(
+          (a, b) => new Date(b.takenAt) - new Date(a.takenAt)
+        );
+
+        // chỉ giữ 5 bài gần nhất để tránh list quá dài
+        setJlptResults(allAttempts.slice(0, 5));
+      } catch (err) {
+        console.error("Lỗi tải lịch sử JLPT:", err);
+        setJlptResults([]);
+      }
+    };
+
+    loadJlptAttempts();
+  }, []);
+
+  // ====== RENDER ======
   if (loading) {
     return (
       <main className={styles.dashboard}>
@@ -132,7 +187,12 @@ const LearnerDashboard = () => {
           <div className={styles.left}>
             {progress && <ProgressTracker {...progress} />}
             <CompletedLessons onViewAll={() => navigate("/my-courses")} />
-            <QuizResults />
+
+            {/* Chỉ 5 kết quả gần nhất + nút Xem tất cả */}
+            <QuizResults
+              results={jlptResults}
+              onViewAll={() => navigate("/jlpt/history")}
+            />
           </div>
 
           <div className={styles.right}>
@@ -152,7 +212,7 @@ const LearnerDashboard = () => {
         </div>
       </div>
 
-      {/* AI PACKAGE MODAL*/}
+      {/* AI PACKAGE MODAL */}
       {aiPackage.showModal && (
         <AiPackageModal
           onClose={() => dispatch(closeModal())}

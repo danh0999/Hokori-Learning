@@ -5,6 +5,7 @@ import { Tabs } from "antd";
 
 import styles from "./Review.module.scss";
 import { fetchAttemptDetail } from "../../redux/features/jlptLearnerSlice";
+import ScrollToTopButton from "../../components/SrcollToTopButton/ScrollToTopButton";
 
 // Helper validateAttemptId giống BE guide
 function validateAttemptId(attemptId) {
@@ -151,28 +152,6 @@ const Review = () => {
   return (
     <div className={styles.reviewWrapper}>
       <h1 className={styles.title}>Xem lại bài làm</h1>
-      <div className={styles.reviewActions}>
-        <button
-          className={styles.backResultBtn}
-          onClick={() => {
-            const params = new URLSearchParams();
-            if (validAttemptId) params.set("attemptId", validAttemptId);
-            if (params.toString()) {
-              navigate(
-                `/jlpt/test/${numericTestId}/result?${params.toString()}`
-              );
-            } else {
-              navigate(`/jlpt/test/${numericTestId}/result`);
-            }
-          }}
-        >
-          ← Quay lại kết quả
-        </button>
-
-        <button className={styles.homeBtn} onClick={() => navigate("/")}>
-          Về trang chủ
-        </button>
-      </div>
 
       <Tabs
         defaultActiveKey="all"
@@ -206,6 +185,29 @@ const Review = () => {
           },
         ]}
       />
+      <div className={styles.reviewActions}>
+        <button
+          className={styles.backResultBtn}
+          onClick={() => {
+            const params = new URLSearchParams();
+            if (validAttemptId) params.set("attemptId", validAttemptId);
+            if (params.toString()) {
+              navigate(
+                `/jlpt/test/${numericTestId}/result?${params.toString()}`
+              );
+            } else {
+              navigate(`/jlpt/test/${numericTestId}/result`);
+            }
+          }}
+        >
+          ← Quay lại kết quả
+        </button>
+
+        <button className={styles.homeBtn} onClick={() => navigate("/")}>
+          Về trang chủ
+        </button>
+      </div>
+      <ScrollToTopButton />
     </div>
   );
 };

@@ -98,3 +98,31 @@
 .homeBtn:hover {
   background: #1d4ed8;
 }
+.actionRow {
+  display: flex;
+  gap: 12px;        // khoảng cách nhẹ nhàng
+  margin: 12px 0 20px 0;
+  align-items: center;
+  justify-content: flex-start;  // sát bên trái
+}
+
+.backBtn,
+.homeBtn {
+  padding: 6px 14px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #f8f9fb;
+  cursor: pointer;
+  transition: 0.2s ease;
+  color: #374151;
+
+  &:hover {
+    background: #eef1f6;
+    border-color: #cbd3dd;
+  }
+
+  &:active {
+    background: #e3e7ed;
+  }
+}
