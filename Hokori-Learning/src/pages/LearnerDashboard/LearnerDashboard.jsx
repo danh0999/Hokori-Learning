@@ -6,14 +6,16 @@ import api from "../../configs/axios";
 // === Redux for AI Modal ===
 import { useSelector, useDispatch } from "react-redux";
 import AiPackageModal from "../AiPackage/components/AiPackageModal.jsx";
-import { closeModal, purchaseAiPackage } from "../../redux/features/aiPackageSlice";
+import {
+  closeModal,
+  purchaseAiPackage,
+} from "../../redux/features/aiPackageSlice";
 
 // === Components ===
 import UserProfile from "./components/UserProfile";
 import ProgressTracker from "./components/ProgressTracker";
 import CompletedLessons from "./components/CompletedLessons";
 import QuizResults from "./components/QuizResults";
-import UpcomingLessons from "./components/UpcomingLessons";
 import AISidebar from "./components/AISidebar";
 
 const LearnerDashboard = () => {
@@ -47,7 +49,8 @@ const LearnerDashboard = () => {
           });
 
           const jlptLevels = Object.entries(byLevel).map(([level, list]) => {
-            const avg = list.reduce((sum, v) => sum + v, 0) / (list.length || 1);
+            const avg =
+              list.reduce((sum, v) => sum + v, 0) / (list.length || 1);
             return {
               level: `JLPT ${level}`,
               progress: Math.round(avg),
@@ -81,7 +84,10 @@ const LearnerDashboard = () => {
             "https://cdn-icons-png.flaticon.com/512/9131/9131529.png",
         });
       } catch (err) {
-        console.error("Dashboard API error:", err.response?.data || err.message);
+        console.error(
+          "Dashboard API error:",
+          err.response?.data || err.message
+        );
         setProgress({ overall: 0, jlptLevels: [] });
         setUser({
           name: "Người học Hokori",

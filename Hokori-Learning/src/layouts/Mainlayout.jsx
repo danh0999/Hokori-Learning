@@ -14,7 +14,7 @@ const MainLayout = () => {
         flexDirection: "column",
         minHeight: "100vh",
         width: "100vw",
-        overflowX: "hidden",
+        overflowX: "hidden", // tránh thanh scroll ngang
       }}
     >
       <ScrollToTop />

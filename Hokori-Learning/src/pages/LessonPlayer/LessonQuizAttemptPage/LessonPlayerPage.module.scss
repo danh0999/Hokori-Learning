@@ -1,0 +1,215 @@
+/* ====== QUIZ COMMON ====== */
+
+.quizPlayHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+
+  h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+}
+
+.quizResult,
+.quizNoMoreQuestion,
+.quizQuestionBlock {
+  margin-top: 16px;
+  padding: 20px 24px;
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+}
+
+/* summary điểm */
+.quizMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0 12px;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+/* ====== KẾT QUẢ CHI TIẾT ====== */
+
+.quizDetail {
+  margin-top: 16px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 16px;
+}
+
+.quizDetailTitle {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.quizQuestionList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.quizQuestionRow {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+.quizQuestionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.quizQuestionIndex {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.quizQuestionResultTag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.quizQuestionResultCorrect {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.quizQuestionResultWrong {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.quizQuestionText {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #111827;
+}
+
+/* block: bạn chọn / đáp án đúng */
+.quizAnswerRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .quizAnswerRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.quizAnswerBlock {
+  font-size: 13px;
+}
+
+.quizAnswerLabel {
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #4b5563;
+}
+
+.quizAnswerValue {
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #f3f4f6;
+}
+
+.quizAnswerCorrect {
+  background: #ecfdf3;
+  color: #166534;
+}
+
+.quizAnswerWrong {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+/* ====== FORM LÀM QUIZ ====== */
+
+.quizQuestionBlock h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.quizQuestionBlock .quizQuestionText {
+  margin-bottom: 10px;
+}
+
+.quizOptions {
+  margin: 12px 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quizOptionItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+  color: #111827;
+
+  input {
+    margin-top: 3px;
+  }
+}
+
+/* ====== BUTTON CƠ BẢN (nếu file đã có rồi thì bỏ đoạn này) ====== */
+
+.primaryBtn {
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: none;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+
+  &:hover:not(:disabled) {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.secondaryBtn {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+  }
+}

@@ -1,3 +1,4 @@
+// src/pages/MyCourses/MyCourses.jsx
 import React, { useEffect, useState } from "react";
 import api from "../../configs/axios";
 import CourseCard from "./components/CourseCard";
@@ -6,6 +7,15 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { buildFileUrl } from "../../utils/fileUrl";
 import { ensureCertificateByCourse } from "../../services/certificateService";
+
+// Tạo slug giống coursera từ title
+const slugify = (str = "") =>
+  str
+    ?.normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "") || "khoa-hoc";
 
 const MyCourses = () => {
   const [courses, setCourses] = useState([]);
@@ -16,44 +26,53 @@ const MyCourses = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
+        // 1. Danh sách khóa đã enroll
         const enrollRes = await api.get("/learner/courses");
         const enrollments = enrollRes.data || [];
 
+        // 2. Với mỗi course → lấy learning-tree (learner endpoint)
         const detailed = await Promise.all(
           enrollments.map(async (enroll) => {
             try {
-              const treeRes = await api.get(`/courses/${enroll.courseId}/tree`);
+              const treeRes = await api.get(
+                `/learner/courses/${enroll.courseId}/learning-tree`
+              );
               const tree = treeRes.data;
 
+              // Đếm tổng lesson
               let totalLessons = 0;
               tree.chapters?.forEach((ch) => {
                 totalLessons += ch.lessons?.length || 0;
               });
 
+              const progress =
+                tree.progressPercent ?? enroll.progressPercent ?? 0;
+
               return {
-                id: tree.id,
                 courseId: enroll.courseId,
-                title: tree.title || "Khóa học",
-                level: tree.level || "N5",
-                teacher: tree.teacherName || "Giảng viên",
+                title: tree.courseTitle || "Khóa học",
+                level: enroll.level || tree.level || "N5",
+                teacher: enroll.teacherName || tree.teacherName || "Giảng viên",
                 coverUrl: tree.coverImagePath
                   ? buildFileUrl(tree.coverImagePath)
-                  : "https://cdn.pixabay.com/photo/2017/01/31/13/14/book-2024684_1280.png",
+                  : null,
 
                 lessons: totalLessons,
-                status: tree.status,
-                statusMessage: tree.statusMessage,
+                // learner my-courses thực ra không cần status, nhưng giữ lại nếu BE có
+                status: enroll.status,
+                statusMessage: enroll.statusMessage,
 
-                progress: enroll.progressPercent || 0,
-                completed: enroll.progressPercent >= 100,
-                lastStudy: enroll.lastAccessAt
-                  ? new Date(enroll.lastAccessAt).toLocaleDateString()
+                progress,
+                completed: progress >= 100,
+                lastStudy: tree.lastAccessAt
+                  ? new Date(tree.lastAccessAt).toLocaleDateString("vi-VN")
                   : "Chưa học",
 
                 enrollmentId: enroll.enrollmentId,
               };
             } catch (err) {
-              console.error("Lỗi load course tree:", err);
+              console.error("Lỗi load course learning-tree:", err);
+              // nếu 1 course lỗi thì bỏ qua, không làm vỡ cả list
               return null;
             }
           })
@@ -70,40 +89,15 @@ const MyCourses = () => {
     fetchCourses();
   }, []);
 
-  const handleContinue = async (course) => {
+  // 🔹 Click card / nút "Tiếp tục học" → sang trang Coursera-style learning tree
+  const handleContinue = (course) => {
     try {
-      const res = await api.get(`/learner/courses/${course.courseId}/lessons`);
-      const lessons = (res.data ?? []).sort(
-        (a, b) => a.orderIndex - b.orderIndex
-      );
-
-      if (!lessons.length) {
-        toast.error("Khóa học chưa có bài học.");
-        return;
-      }
-
-      const incompleteLesson = lessons.find((l) => !l.isCompleted);
-      const targetLesson = incompleteLesson || lessons[0];
-      const lessonId = targetLesson.lessonId ?? targetLesson.id;
-
-      const contentsRes = await api.get(
-        `/learner/lessons/${lessonId}/contents`
-      );
-      const contents = (contentsRes.data ?? []).sort(
-        (a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0)
-      );
-
-      const inProgressContent = contents.find(
-        (c) => (c.lastPositionSec ?? 0) > 0 && !c.isCompleted
-      );
-
-      const nextContent = contents.find((c) => !c.isCompleted);
-      const targetContent = inProgressContent || nextContent || null;
-
-      // hiện tại route học vẫn là trang Tree
-      navigate(`/my-courses/${course.courseId}/learn`);
+      const slug = slugify(course.title);
+      // vào thẳng learning tree của chapter 1
+      navigate(`/learn/${course.courseId}/${slug}/home/chapter/1`);
     } catch (err) {
       console.error("Không thể điều hướng vào bài học:", err);
+      toast.error("Không thể mở khóa học. Vui lòng thử lại sau.");
     }
   };
 
@@ -112,7 +106,8 @@ const MyCourses = () => {
       const res = await ensureCertificateByCourse(course.courseId);
       const certificateId = res.data.data.id;
       navigate(`/certificates/${certificateId}`);
-    } catch {
+    } catch (err) {
+      console.error(err);
       toast.error("Không thể tạo hoặc lấy chứng chỉ");
     }
   };
@@ -133,10 +128,12 @@ const MyCourses = () => {
         {courses.length === 0 ? (
           <p className={styles.empty}>
             Bạn chưa ghi danh khóa học nào.{" "}
-            <a href="/marketplace">Khám phá thêm khóa học →</a>
+            <span className={styles.link} onClick={() => navigate("/courses")}>
+              Khám phá khóa học
+            </span>
           </p>
         ) : (
-          <div className={styles.courseList}>
+          <div className={styles.grid}>
             {courses.map((course) => (
               <CourseCard
                 key={course.courseId}

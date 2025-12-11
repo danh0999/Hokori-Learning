@@ -5,17 +5,15 @@ import { FaCertificate } from "react-icons/fa";
 const CourseCard = ({ course, onContinue, onViewCertificate }) => {
   const isCompleted = course.completed === true;
 
-  // ❗ KHÔNG dùng ảnh default nữa
+  // KHÔNG dùng ảnh default nữa
   const thumbnail = course.coverUrl || null;
 
+  // Click card -> luôn vào học (learn page)
   const handleOpenCourse = () => {
-    if (isCompleted) {
-      onViewCertificate?.(course);
-    } else {
-      onContinue?.(course);
-    }
+    onContinue?.(course);
   };
 
+  // Click nút chứng chỉ -> vào certificate, không dính onClick card
   const handleViewCertificate = (e) => {
     e.stopPropagation();
     onViewCertificate?.(course);
@@ -24,7 +22,7 @@ const CourseCard = ({ course, onContinue, onViewCertificate }) => {
   return (
     <div className={styles.card}>
       {/* Thumbnail */}
-      <div className={styles.thumbnail}>
+      <div className={styles.thumbnail} onClick={handleOpenCourse}>
         {thumbnail ? (
           <img src={thumbnail} alt={course.title} />
         ) : (
