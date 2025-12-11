@@ -1,14 +1,10 @@
-import React, { useEffect } from "react";
+import React from "react";
 import styles from "./AISidebar.module.scss";
-import { FaRobot, FaChartLine, FaLightbulb } from "react-icons/fa6";
+import { FaRobot } from "react-icons/fa6";
 import { Button } from "../../../components/Button/Button";
 
 import { useDispatch, useSelector } from "react-redux";
-import {
-  fetchMyAiPackage,
-  fetchAiQuota,
-  openModal,
-} from "../../../redux/features/aiPackageSlice";
+import { openModal, fetchMyAiPackage } from "../../../redux/features/aiPackageSlice";
 
 import { useNavigate } from "react-router-dom";
 
@@ -16,29 +12,26 @@ const AISidebar = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  // Lấy package nhưng KHÔNG dùng trực tiếp để check
   const { myPackage } = useSelector((state) => state.aiPackage);
-
-  const hasActivePackage =
-    myPackage && myPackage.hasPackage && !myPackage.isExpired;
-
-  useEffect(() => {
-    dispatch(fetchMyAiPackage());
-    dispatch(fetchAiQuota());
-  }, [dispatch]);
 
   const goToServicePage = (serviceCode) => {
     if (serviceCode === "GRAMMAR") navigate("/ai-analyse");
     if (serviceCode === "KAIWA") navigate("/ai-kaiwa");
   };
 
-  const handleClick = (serviceCode) => {
-    if (hasActivePackage) {
-      goToServicePage(serviceCode);
+  const handleClick = async (serviceCode) => {
+    // Fetch real-time gói AI khi user click
+    const data = await dispatch(fetchMyAiPackage()).unwrap().catch(() => null);
+
+    const hasAI = data?.hasPackage && !data?.isExpired;
+
+    if (!hasAI) {
+      dispatch(openModal(serviceCode));
       return;
     }
 
-    // CHƯA MUA GÓI → MỞ MODAL LUÔN
-    dispatch(openModal(serviceCode));
+    goToServicePage(serviceCode);
   };
 
   return (
@@ -63,7 +56,6 @@ const AISidebar = () => {
         </div>
       </section>
     </aside>
-    
   );
 };
 

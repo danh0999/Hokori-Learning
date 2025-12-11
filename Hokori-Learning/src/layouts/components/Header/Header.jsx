@@ -50,22 +50,22 @@ export const Header = () => {
   // =====================================
   const user = useSelector((state) => state.user);
   const profile = useSelector((state) => state.profile.data);
-
+  const aiPackage = useSelector((state) => state.aiPackage.myPackage);
   const cartItems = useSelector((state) => state.cart.items);
   const cartCount = cartItems?.length || 0;
 
   // =====================================
-  // FETCH PROFILE KHI LOGIN
+  // FETCH PROFILE + AI PACKAGE KHI LOGIN
   // =====================================
   useEffect(() => {
     if (user?.accessToken) {
       dispatch(fetchMe());
-      dispatch(fetchMyAiPackage()); // Load gói AI ngay khi login
+      dispatch(fetchMyAiPackage()); // tải gói AI 1 lần khi login
     }
   }, [user, dispatch]);
 
   // =====================================
-  // FETCH CART SAU KHI CÓ PROFILE
+  // FETCH CART sau khi có profile
   // =====================================
   useEffect(() => {
     if (user && user.accessToken && profile) {
@@ -74,7 +74,7 @@ export const Header = () => {
   }, [user, profile, dispatch]);
 
   // =====================================
-  // DROPDOWN CONTROL
+  // DROPDOWN
   // =====================================
   const [openDropdown, setOpenDropdown] = useState(null);
   const courseDropdownRef = useRef(null);
@@ -122,28 +122,22 @@ export const Header = () => {
   };
 
   // =====================================
-  // HANDLE OPEN AI TOOL (FIX LỖI QUAN TRỌNG)
+  // HANDLE OPEN AI TOOL (FIX FLASH + FIX KHÔNG HIỆN MODAL)
   // =====================================
-  const handleOpenAiTool = async (path) => {
+  const handleOpenAiTool = (path) => {
     if (!user) return navigate(`/login?redirect=${path}`);
 
-    try {
-      // Luôn fetch AI package mới nhất → tránh stale state
-      const data = await dispatch(fetchMyAiPackage()).unwrap();
+    // ❗ KHÔNG fetch lại API → tránh flash modal
+    const data = aiPackage;
 
-      const hasAi =
-        data?.hasPackage && !data?.isExpired;
+    const hasAi = data?.hasPackage && !data?.isExpired;
 
-      if (!hasAi) {
-        dispatch(openModal());
-        return;
-      }
-
-      navigate(path);
-    } catch  {
-      // fallback trong trường hợp BE lỗi → vẫn mở modal
+    if (!hasAi) {
       dispatch(openModal());
+      return;
     }
+
+    navigate(path);
   };
 
   // =====================================
@@ -244,8 +238,11 @@ export const Header = () => {
 
             {openDropdown === "ai" && (
               <div className={dropdownMenu}>
+
+                {/* FIX: prevent dropdown from closing before click */}
                 <div
                   className={dropdownItem}
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleOpenAiTool("/ai-analyse")}
                 >
                   Phân tích câu
@@ -253,10 +250,12 @@ export const Header = () => {
 
                 <div
                   className={dropdownItem}
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleOpenAiTool("/ai-kaiwa")}
                 >
                   Luyện nói (AI Kaiwa)
                 </div>
+
               </div>
             )}
           </div>
