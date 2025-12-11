@@ -16,8 +16,7 @@ const HeroSection = () => {
 
           <p className={styles.subtitle}>
             AI giúp phân tích từ vựng, ngữ pháp, cấu trúc câu và cung cấp ví dụ
-            liên quan theo chuẩn JLPT. Giao diện trực quan – hỗ trợ học sâu và ghi
-            nhớ lâu.
+            liên quan theo chuẩn JLPT.
           </p>
         </div>
       </div>

@@ -17,9 +17,9 @@ const AiAnalysePage = () => {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
-  /* ============================================================
-     1) LOAD STATE TỪ LOCAL STORAGE KHI MỞ LẠI TRANG
-  ============================================================ */
+  // ================================================
+  // 1) LOAD STATE TỪ LOCAL STORAGE
+  // ================================================
   useEffect(() => {
     const savedSentence = localStorage.getItem("ai_sentence");
     const savedLevel = localStorage.getItem("ai_level");
@@ -30,9 +30,9 @@ const AiAnalysePage = () => {
     if (savedResult) setResult(JSON.parse(savedResult));
   }, []);
 
-  /* ============================================================
-     2) LƯU STATE VÀO LOCAL STORAGE MỖI KHI THAY ĐỔI
-  ============================================================ */
+  // ================================================
+  // 2) LƯU STATE VÀO LOCAL STORAGE
+  // ================================================
   useEffect(() => {
     localStorage.setItem("ai_sentence", sentence);
   }, [sentence]);
@@ -45,14 +45,17 @@ const AiAnalysePage = () => {
     if (result) localStorage.setItem("ai_result", JSON.stringify(result));
   }, [result]);
 
-  /* ============================================================
-     3) PHÂN TÍCH CÂU
-  ============================================================ */
+  // ================================================
+  // 3) PHÂN TÍCH CÂU
+  //    - BE tự detect: Nhật / Việt
+  //    - Nếu input Việt: trả sentence (JP), originalSentence, isTranslated = true
+  //    - Nếu input Nhật: trả sentence (JP), vietnameseTranslation, isTranslated = false
+  // ================================================
   const handleAnalyse = async () => {
     const trimmed = sentence.trim();
 
     if (!trimmed) {
-      setError("Vui lòng nhập câu tiếng Nhật.");
+      setError("Vui lòng nhập câu (tiếng Nhật hoặc tiếng Việt).");
       setResult(null);
       return;
     }
@@ -68,10 +71,13 @@ const AiAnalysePage = () => {
 
     try {
       const apiRes = await analyseSentence(trimmed, level);
+
       if (!apiRes?.success) {
         setError(apiRes?.message || "Phân tích câu thất bại.");
         setResult(null);
-      } else setResult(apiRes.data);
+      } else {
+        setResult(apiRes.data); // data = SentenceAnalysisResponse
+      }
     } catch {
       setError("Lỗi phân tích câu.");
       setResult(null);
@@ -80,9 +86,9 @@ const AiAnalysePage = () => {
     }
   };
 
-  /* ============================================================
-     4) CÂU NGẪU NHIÊN
-  ============================================================ */
+  // ================================================
+  // 4) CÂU NGẪU NHIÊN (OPTIONAL)
+  // ================================================
   const handleRandomSentence = async () => {
     setError("");
     setResult(null);
