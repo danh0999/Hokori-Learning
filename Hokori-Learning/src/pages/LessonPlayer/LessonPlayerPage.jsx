@@ -20,6 +20,36 @@ const getExt = (path = "") => {
 const isVideoAsset = (path) => VIDEO_EXTS.includes(getExt(path));
 const isImageAsset = (path) => IMAGE_EXTS.includes(getExt(path));
 
+/**
+ * ✅ QUY TẮC MỚI:
+ * QuizId nằm ở CONTENT (contentFormat = "QUIZ"), không nằm ở section.quizId
+ *
+ * Return:
+ * { sectionId, contentId, quizId }
+ */
+const getQuizMetaFromLesson = (lessonLike) => {
+  if (!lessonLike?.sections?.length) return null;
+
+  for (const sec of lessonLike.sections) {
+    if (String(sec.studyType || "").toUpperCase() !== "QUIZ") continue;
+
+    const contents = sec.contents || [];
+    const quizContent = contents.find((ct) => {
+      const fmt = String(ct.contentFormat || "").toUpperCase();
+      return fmt === "QUIZ" && ct.quizId != null;
+    });
+
+    if (quizContent) {
+      return {
+        sectionId: sec.sectionId ?? sec.id,
+        contentId: quizContent.contentId ?? quizContent.id,
+        quizId: quizContent.quizId,
+      };
+    }
+  }
+  return null;
+};
+
 export default function LessonPlayerPage() {
   const { courseId, slug, lessonId, contentId } = useParams();
   const navigate = useNavigate();
@@ -49,6 +79,9 @@ export default function LessonPlayerPage() {
   // activeView: "content" | "quiz-info"
   const [activeView, setActiveView] = useState("content");
   const [quizLessonId, setQuizLessonId] = useState(null);
+  const [quizSectionId, setQuizSectionId] = useState(null);
+  const [quizId, setQuizId] = useState(null);
+
   const [quizInfo, setQuizInfo] = useState(null);
   const [quizAttempts, setQuizAttempts] = useState([]);
   const [quizLoading, setQuizLoading] = useState(false);
@@ -66,20 +99,22 @@ export default function LessonPlayerPage() {
     if (!courseTree?.chapters) return [];
 
     const items = [];
-    courseTree.chapters.forEach((ch) => {
-      ch.lessons?.forEach((ls) => {
-        ls.sections?.forEach((sec) => {
-          sec.contents?.forEach((ct) => {
-            items.push({
-              chapterId: ch.chapterId,
-              chapterOrderIndex: ch.orderIndex,
-              lessonId: ls.lessonId,
-              contentId: ct.contentId,
+    courseTree.chapters
+      .filter((ch) => ch.orderIndex !== 0) // bỏ chapter trial
+      .forEach((ch) => {
+        ch.lessons?.forEach((ls) => {
+          ls.sections?.forEach((sec) => {
+            sec.contents?.forEach((ct) => {
+              items.push({
+                chapterId: ch.chapterId,
+                chapterOrderIndex: ch.orderIndex,
+                lessonId: ls.lessonId,
+                contentId: ct.contentId ?? ct.id,
+              });
             });
           });
         });
       });
-    });
 
     return items;
   }, [courseTree]);
@@ -105,12 +140,14 @@ export default function LessonPlayerPage() {
         setLoadingTree(true);
         const res = await api.get(`/learner/courses/${courseId}/learning-tree`);
         const tree = res.data;
+
         setCourseTree(tree);
         setErrorTree(null);
 
-        const chapters = tree.chapters || [];
+        const rawChapters = tree.chapters || [];
+        const visibleChapters = rawChapters.filter((ch) => ch.orderIndex !== 0);
 
-        const currentChapter = chapters.find((ch) =>
+        const currentChapter = visibleChapters.find((ch) =>
           ch.lessons?.some((ls) => ls.lessonId === numericLessonId)
         );
 
@@ -126,8 +163,8 @@ export default function LessonPlayerPage() {
           const lessonSet = new Set();
           if (currentLesson?.lessonId) lessonSet.add(currentLesson.lessonId);
           setOpenLessonIds(lessonSet);
-        } else if (chapters[0]) {
-          const firstChapter = chapters[0];
+        } else if (visibleChapters[0]) {
+          const firstChapter = visibleChapters[0];
           setOpenChapterIds(new Set([firstChapter.chapterId]));
           if (firstChapter.lessons?.[0]?.lessonId) {
             setOpenLessonIds(new Set([firstChapter.lessons[0].lessonId]));
@@ -161,7 +198,7 @@ export default function LessonPlayerPage() {
         const contentsProgress = contentsRes.data || [];
 
         const progressMap = new Map(
-          contentsProgress.map((c) => [c.contentId, c])
+          contentsProgress.map((c) => [c.contentId ?? c.id, c])
         );
 
         const lessonWithProgress = {
@@ -197,6 +234,11 @@ export default function LessonPlayerPage() {
   useEffect(() => {
     setActiveView("content");
     setQuizLessonId(null);
+    setQuizSectionId(null);
+    setQuizId(null);
+    setQuizInfo(null);
+    setQuizAttempts([]);
+    setQuizError(null);
   }, [numericLessonId, numericContentId]);
 
   /* ===========================
@@ -259,9 +301,9 @@ export default function LessonPlayerPage() {
     if (
       !globalSequence.length ||
       currentGlobalIndex === globalSequence.length - 1
-    ) {
+    )
       return;
-    }
+
     const target = globalSequence[currentGlobalIndex + 1];
     updateUrlForContent(
       target.lessonId,
@@ -275,6 +317,12 @@ export default function LessonPlayerPage() {
   ============================ */
   const handleMarkCompleted = async () => {
     if (!activeContent?.contentId) return;
+
+    const fmt = String(activeContent?.contentFormat || "").toUpperCase();
+    if (fmt === "QUIZ") {
+      // quiz không mark completed tay
+      return;
+    }
 
     try {
       await api.patch(`/learner/contents/${activeContent.contentId}/progress`, {
@@ -310,7 +358,7 @@ export default function LessonPlayerPage() {
               sections: ls.sections?.map((sec) => ({
                 ...sec,
                 contents: sec.contents?.map((ct) =>
-                  ct.contentId === activeContent.contentId
+                  (ct.contentId ?? ct.id) === activeContent.contentId
                     ? { ...ct, isCompleted: true }
                     : ct
                 ),
@@ -334,7 +382,11 @@ export default function LessonPlayerPage() {
         arr.push({
           lessonId: ls.lessonId,
           lessonTitle: ls.title,
-          contentId: ct.contentId,
+
+          sectionId: sec.sectionId ?? sec.id, // ✅ thêm
+          quizId: ct.quizId ?? null, // ✅ thêm (nếu contentFormat QUIZ)
+
+          contentId: ct.contentId ?? ct.id,
           contentFormat: ct.contentFormat,
           isCompleted: ct.isCompleted,
           sectionTitle: sec.title,
@@ -369,6 +421,9 @@ export default function LessonPlayerPage() {
   ) => {
     setActiveView("content");
     setQuizLessonId(null);
+    setQuizSectionId(null);
+    setQuizId(null);
+
     updateUrlForContent(
       lessonIdTarget,
       { contentId: contentIdTarget },
@@ -377,18 +432,37 @@ export default function LessonPlayerPage() {
   };
 
   /* ===========================
-     QUIZ OVERVIEW
+     QUIZ OVERVIEW (NEW STRUCTURE)
   ============================ */
+  const openQuizOverview = (lessonObj) => {
+    const meta = getQuizMetaFromLesson(lessonObj);
+    if (!meta) {
+      setQuizError("Bài học này hiện chưa có quiz.");
+      setActiveView("quiz-info");
+      setQuizLessonId(lessonObj?.lessonId ?? null);
+      setQuizSectionId(null);
+      setQuizId(null);
+      return;
+    }
 
-  const openQuizOverview = (lessonIdForQuiz) => {
+    setQuizError(null);
     setActiveView("quiz-info");
-    setQuizLessonId(lessonIdForQuiz);
+    setQuizLessonId(lessonObj.lessonId);
+    setQuizSectionId(meta.sectionId);
+    setQuizId(meta.quizId);
+  };
+  const openQuizOverviewByMeta = ({ lessonId, sectionId, quizId }) => {
+    setQuizError(null);
+    setActiveView("quiz-info");
+    setQuizLessonId(lessonId);
+    setQuizSectionId(sectionId);
+    setQuizId(quizId ?? null);
   };
 
-  // khi đang ở view quiz-info + có quizLessonId → load info + lịch sử
-  // khi đang ở view quiz-info + có quizLessonId → load info + lịch sử
+  // khi đang ở view quiz-info + có quizSectionId → load info + lịch sử
   useEffect(() => {
-    if (activeView !== "quiz-info" || !quizLessonId) return;
+    if (activeView !== "quiz-info") return;
+    if (!quizSectionId) return;
 
     let cancelled = false;
 
@@ -398,61 +472,48 @@ export default function LessonPlayerPage() {
         setQuizError(null);
 
         const [infoRes, attemptsRes] = await Promise.all([
-          api.get(`/learner/lessons/${quizLessonId}/quiz/info`),
-          api.get(`/learner/lessons/${quizLessonId}/quiz/attempts`),
+          api.get(`/learner/sections/${quizSectionId}/quiz/info`),
+          api.get(`/learner/sections/${quizSectionId}/quiz/attempts`),
         ]);
 
         if (cancelled) return;
 
-        console.log("quiz info", infoRes.data);
-        console.log("quiz attempts", attemptsRes.data);
-
-        // unwrap wrapper { success, message, data }
         const infoWrapper = infoRes.data || {};
         const attemptsWrapper = attemptsRes.data || {};
 
         const infoData = infoWrapper.data || null;
-
-        // attempts có thể là data: [...] hoặc data: { items: [...] }
-        let attemptsData = attemptsWrapper.data || [];
-        if (Array.isArray(attemptsData.items)) {
-          attemptsData = attemptsData.items;
-        }
+        const attemptsDataRaw = attemptsWrapper.data || [];
+        const attemptsData = Array.isArray(attemptsDataRaw)
+          ? attemptsDataRaw
+          : attemptsDataRaw.items || [];
 
         setQuizInfo(infoData);
-        setQuizAttempts(Array.isArray(attemptsData) ? attemptsData : []);
+        setQuizAttempts(attemptsData);
       } catch (err) {
-        console.error("Không thể tải thông tin quiz:", err);
-        if (!cancelled) {
-          setQuizError("Không thể tải thông tin quiz của bài này");
-        }
+        console.error("Không thể tải quiz:", err);
+        if (!cancelled) setQuizError("Không thể tải thông tin quiz");
       } finally {
         if (!cancelled) setQuizLoading(false);
       }
     };
 
     fetchQuizOverview();
-
     return () => {
       cancelled = true;
     };
-  }, [activeView, quizLessonId]);
+  }, [activeView, quizSectionId]);
 
   const handleStartQuiz = async () => {
-    if (!quizLessonId) return;
+    if (!quizSectionId || !quizLessonId) return;
+
     try {
       setQuizLoading(true);
 
       const res = await api.post(
-        `/learner/lessons/${quizLessonId}/quiz/attempts/start`
+        `/learner/sections/${quizSectionId}/quiz/attempts/start`
       );
-
-      console.log("start quiz res", res.data); // debug cho chắc
-
-      // unwrap wrapper { success, message, data }
       const wrapper = res.data || {};
-      const attempt = wrapper.data || wrapper; // nếu BE sau này bỏ wrapper vẫn chạy
-
+      const attempt = wrapper.data || wrapper;
       const attemptId = attempt.attemptId || attempt.id;
 
       if (!attemptId) {
@@ -462,7 +523,10 @@ export default function LessonPlayerPage() {
       }
 
       navigate(
-        `/learn/${courseId}/${slug}/lesson/${quizLessonId}/quiz/attempt/${attemptId}`
+        `/learn/${courseId}/${slug}/lesson/${quizLessonId}/section/${quizSectionId}/quiz/attempt/${attemptId}`,
+        {
+          state: { quizId }, // optional (để debug/đồng bộ)
+        }
       );
     } catch (err) {
       console.error("Lỗi khi bắt đầu quiz:", err);
@@ -473,13 +537,14 @@ export default function LessonPlayerPage() {
   };
 
   const handleViewAttemptDetail = (attemptId) => {
-    if (!quizLessonId || !attemptId) return;
+    if (!quizSectionId || !quizLessonId || !attemptId) return;
     navigate(
-      `/learn/${courseId}/${slug}/lesson/${quizLessonId}/quiz/attempt/${attemptId}`
+      `/learn/${courseId}/${slug}/lesson/${quizLessonId}/section/${quizSectionId}/quiz/attempt/${attemptId}`,
+      { state: { quizId } }
     );
   };
 
-  //=====FLASHCARD==========
+  //===== FLASHCARD ==========
   useEffect(() => {
     setFlashcardIndex(0);
     setFlashcardFlipped(false);
@@ -501,10 +566,8 @@ export default function LessonPlayerPage() {
         setFlashcardsLoading(true);
         setFlashcardsError(null);
 
-        // 1. Lấy setId
         let setId = activeContent.flashcardSetId;
 
-        // Nếu content chưa có flashcardSetId, gọi learner/contents/.../flashcard-set
         if (!setId) {
           const resSet = await api.get(
             `/learner/contents/${activeContent.contentId}/flashcard-set`
@@ -517,7 +580,6 @@ export default function LessonPlayerPage() {
           }
         }
 
-        // 2. Gọi /api/flashcards/sets/{setId}/cards
         const resCards = await api.get(`/flashcards/sets/${setId}/cards`);
 
         if (!cancelled) {
@@ -527,9 +589,7 @@ export default function LessonPlayerPage() {
         }
       } catch (err) {
         console.error("Không thể tải flashcard:", err);
-        if (!cancelled) {
-          setFlashcardsError("Không thể tải flashcard");
-        }
+        if (!cancelled) setFlashcardsError("Không thể tải flashcard");
       } finally {
         if (!cancelled) setFlashcardsLoading(false);
       }
@@ -546,40 +606,23 @@ export default function LessonPlayerPage() {
     activeContent?.contentFormat,
     activeContent?.flashcardSetId,
   ]);
-  const openFlashcardModal = () => {
-    setIsFlashcardModalOpen(true);
-  };
 
-  const closeFlashcardModal = () => {
-    setIsFlashcardModalOpen(false);
-  };
+  const openFlashcardModal = () => setIsFlashcardModalOpen(true);
+  const closeFlashcardModal = () => setIsFlashcardModalOpen(false);
 
-  const toggleFlashcardFlip = () => {
-    setFlashcardFlipped((prev) => !prev);
-  };
+  const toggleFlashcardFlip = () => setFlashcardFlipped((prev) => !prev);
 
   const goPrevFlashcard = () => {
-    if (!flashcards || flashcards.length === 0) return;
-
-    setFlashcardIndex((prev) => {
-      const next = prev - 1;
-      // nếu nhỏ hơn 0 thì quay về thẻ cuối
-      return next < 0 ? flashcards.length - 1 : next;
-    });
-
+    if (!flashcards.length) return;
+    setFlashcardIndex((prev) =>
+      prev - 1 < 0 ? flashcards.length - 1 : prev - 1
+    );
     setFlashcardFlipped(false);
   };
 
   const goNextFlashcard = () => {
-    if (!flashcards || flashcards.length === 0) return;
-
-    setFlashcardIndex((prev) => {
-      const next = prev + 1;
-      // nếu quá thẻ cuối thì quay về 0
-      return next >= flashcards.length ? 0 : next;
-    });
-
-    // quay về mặt trước
+    if (!flashcards.length) return;
+    setFlashcardIndex((prev) => (prev + 1 >= flashcards.length ? 0 : prev + 1));
     setFlashcardFlipped(false);
   };
 
@@ -589,18 +632,19 @@ export default function LessonPlayerPage() {
   /* ===========================
      RENDER
   ============================ */
-
-  if (loadingLesson || loadingTree) {
+  if (loadingLesson || loadingTree)
     return <div className={styles.loading}>Đang tải...</div>;
-  }
 
   if (errorLesson || !lesson) {
     return (
       <div className={styles.error}>{errorLesson || "Không có dữ liệu"}</div>
     );
   }
-
+  const activeFmt = String(activeContent?.contentFormat || "").toUpperCase();
+  const isQuizContent = activeFmt === "QUIZ";
   const isCurrentCompleted = !!activeContent?.isCompleted;
+  const hasQuiz = !!getQuizMetaFromLesson(lesson);
+  const canMarkCompleted = !isQuizContent && !isCurrentCompleted;
 
   return (
     <main className={styles.page}>
@@ -624,193 +668,222 @@ export default function LessonPlayerPage() {
 
             {!errorTree && (
               <div className={styles.chapterList}>
-                {courseTree?.chapters?.map((ch) => {
-                  const isChapterOpen = openChapterIds.has(ch.chapterId);
-                  const chapterOrderIndex = ch.orderIndex;
+                {courseTree?.chapters
+                  ?.filter((ch) => ch.orderIndex !== 0)
+                  .map((ch) => {
+                    const isChapterOpen = openChapterIds.has(ch.chapterId);
+                    const chapterOrderIndex = ch.orderIndex;
 
-                  // TÍNH TRẠNG THÁI HOÀN THÀNH CỦA CHAPTER
-                  const lessonsInChapter = ch.lessons || [];
-                  const isChapterCompleted =
-                    lessonsInChapter.length > 0 &&
-                    lessonsInChapter.every((ls) => {
-                      const lessonItems = getLessonContents(ls);
-                      return (
-                        lessonItems.length > 0 &&
-                        lessonItems.every((item) => item.isCompleted)
-                      );
-                    });
-
-                  return (
-                    <div key={ch.chapterId} className={styles.chapterItem}>
-                      <button
-                        type="button"
-                        className={styles.chapterHeader}
-                        onClick={() => toggleChapter(ch.chapterId)}
-                      >
-                        <div className={styles.chapterHeaderText}>
-                          <span className={styles.chapterTitle}>
-                            {ch.title}
-                          </span>
-                        </div>
-
-                        <div className={styles.chapterHeaderRight}>
-                          {isChapterCompleted && (
-                            <span className={styles.chapterStatusIcon}>✓</span>
-                          )}
-                          <span
-                            className={`${styles.chapterArrow} ${
-                              isChapterOpen ? styles.chapterArrowOpen : ""
-                            }`}
-                          >
-                            ▾
-                          </span>
-                        </div>
-                      </button>
-
-                      {isChapterOpen && (
-                        <div className={styles.lessonList}>
-                          {ch.lessons?.map((ls) => {
-                            const isLessonOpen = openLessonIds.has(ls.lessonId);
-
-                            // DÙNG getLessonContents CHO LESSON
-                            const contents = getLessonContents(ls);
-                            const hasContents = contents.length > 0;
-                            const isLessonCompleted =
-                              hasContents &&
-                              contents.every((c) => c.isCompleted);
-
-                            const isQuizActive =
-                              activeView === "quiz-info" &&
-                              quizLessonId === ls.lessonId;
-
+                    const lessonsInChapter = ch.lessons || [];
+                    const isChapterCompleted =
+                      typeof ch.progressPercent === "number"
+                        ? ch.progressPercent >= 100
+                        : lessonsInChapter.length > 0 &&
+                          lessonsInChapter.every((ls) => {
+                            const lessonItems = getLessonContents(ls);
                             return (
-                              <div
-                                key={ls.lessonId}
-                                className={styles.lessonItem}
-                              >
-                                <button
-                                  type="button"
-                                  className={styles.lessonHeader}
-                                  onClick={() =>
-                                    hasContents && toggleLesson(ls.lessonId)
-                                  }
-                                >
-                                  <div className={styles.lessonHeaderMain}>
-                                    <span className={styles.lessonTitleText}>
-                                      {ls.title}
-                                    </span>
+                              lessonItems.length > 0 &&
+                              lessonItems.every((item) => item.isCompleted)
+                            );
+                          });
 
-                                    {isLessonCompleted && (
-                                      <span className={styles.lessonStatusIcon}>
-                                        ✓
+                    return (
+                      <div key={ch.chapterId} className={styles.chapterItem}>
+                        <button
+                          type="button"
+                          className={styles.chapterHeader}
+                          onClick={() => toggleChapter(ch.chapterId)}
+                        >
+                          <div className={styles.chapterHeaderText}>
+                            <span className={styles.chapterTitle}>
+                              {ch.title}
+                            </span>
+                          </div>
+
+                          <div className={styles.chapterHeaderRight}>
+                            {isChapterCompleted && (
+                              <span className={styles.chapterStatusIcon}>
+                                ✓
+                              </span>
+                            )}
+                            <span
+                              className={`${styles.chapterArrow} ${
+                                isChapterOpen ? styles.chapterArrowOpen : ""
+                              }`}
+                            >
+                              ▾
+                            </span>
+                          </div>
+                        </button>
+
+                        {isChapterOpen && (
+                          <div className={styles.lessonList}>
+                            {ch.lessons?.map((ls) => {
+                              const isLessonOpen = openLessonIds.has(
+                                ls.lessonId
+                              );
+
+                              const contents = getLessonContents(ls);
+                              const hasContents = contents.length > 0;
+
+                              // ✅ Lesson có quiz theo structure mới
+                              const metaQuiz = getQuizMetaFromLesson(ls);
+                              const lessonHasQuiz = !!metaQuiz;
+
+                              let isLessonCompleted = false;
+                              if (lessonHasQuiz) {
+                                if (typeof ls.quizPassed === "boolean") {
+                                  isLessonCompleted = ls.quizPassed;
+                                } else if (
+                                  typeof ls.progressPercent === "number"
+                                ) {
+                                  isLessonCompleted = ls.progressPercent >= 100;
+                                } else {
+                                  isLessonCompleted =
+                                    hasContents &&
+                                    contents.every((c) => c.isCompleted);
+                                }
+                              } else {
+                                if (typeof ls.progressPercent === "number") {
+                                  isLessonCompleted = ls.progressPercent >= 100;
+                                } else {
+                                  isLessonCompleted =
+                                    hasContents &&
+                                    contents.every((c) => c.isCompleted);
+                                }
+                              }
+
+                              const isQuizActive =
+                                activeView === "quiz-info" &&
+                                quizLessonId === ls.lessonId;
+
+                              return (
+                                <div
+                                  key={ls.lessonId}
+                                  className={styles.lessonItem}
+                                >
+                                  <button
+                                    type="button"
+                                    className={styles.lessonHeader}
+                                    onClick={() =>
+                                      hasContents && toggleLesson(ls.lessonId)
+                                    }
+                                  >
+                                    <div className={styles.lessonHeaderMain}>
+                                      <span className={styles.lessonTitleText}>
+                                        {ls.title}
+                                      </span>
+                                      {isLessonCompleted && (
+                                        <span
+                                          className={styles.lessonStatusIcon}
+                                        >
+                                          ✓
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {hasContents && (
+                                      <span
+                                        className={`${styles.lessonArrow} ${
+                                          isLessonOpen
+                                            ? styles.lessonArrowOpen
+                                            : ""
+                                        }`}
+                                      >
+                                        ▾
                                       </span>
                                     )}
-                                  </div>
+                                  </button>
 
-                                  {hasContents && (
-                                    <span
-                                      className={`${styles.lessonArrow} ${
-                                        isLessonOpen
-                                          ? styles.lessonArrowOpen
-                                          : ""
-                                      }`}
-                                    >
-                                      ▾
-                                    </span>
-                                  )}
-                                </button>
+                                  {isLessonOpen && (
+                                    <ul className={styles.lessonContentList}>
+                                      {/* các content */}
+                                      {hasContents &&
+                                        contents.map((item) => {
+                                          const isActive =
+                                            item.lessonId === numericLessonId &&
+                                            item.contentId ===
+                                              numericContentId &&
+                                            activeView === "content";
 
-                                {isLessonOpen && (
-                                  <ul className={styles.lessonContentList}>
-                                    {/* các content */}
-                                    {hasContents &&
-                                      contents.map((item) => {
-                                        const isActive =
-                                          item.lessonId === numericLessonId &&
-                                          item.contentId === numericContentId &&
-                                          activeView === "content";
+                                          return (
+                                            <li
+                                              key={`${item.lessonId}-${item.contentId}`}
+                                              className={`${
+                                                styles.lessonContentItem
+                                              } ${
+                                                isActive
+                                                  ? styles.lessonContentItemActive
+                                                  : ""
+                                              }`}
+                                              onClick={() => {
+                                                const fmt = String(
+                                                  item.contentFormat || ""
+                                                ).toUpperCase();
 
-                                        return (
-                                          <li
-                                            key={`${item.lessonId}-${item.contentId}`}
-                                            className={`${
-                                              styles.lessonContentItem
-                                            } ${
-                                              isActive
-                                                ? styles.lessonContentItemActive
-                                                : ""
-                                            }`}
-                                            onClick={() =>
-                                              handleSidebarContentClick(
-                                                item.lessonId,
-                                                item.contentId,
-                                                chapterOrderIndex
-                                              )
-                                            }
-                                          >
-                                            <p
-                                              className={
-                                                styles.lessonContentTitle
-                                              }
+                                                if (fmt === "QUIZ") {
+                                                  // ✅ mở quiz overview (gọi info + attempts bằng sectionId)
+                                                  openQuizOverviewByMeta({
+                                                    lessonId: item.lessonId,
+                                                    sectionId: item.sectionId,
+                                                    quizId: item.quizId,
+                                                  });
+                                                  return;
+                                                }
+
+                                                // ✅ content khác vẫn navigate như cũ
+                                                handleSidebarContentClick(
+                                                  item.lessonId,
+                                                  item.contentId,
+                                                  chapterOrderIndex
+                                                );
+                                              }}
                                             >
-                                              {item.contentFormat === "ASSET" &&
-                                                "Video / tài liệu"}
-                                              {item.contentFormat ===
-                                                "RICH_TEXT" && "Bài đọc"}
-                                              {item.contentFormat ===
-                                                "FLASHCARD_SET" && "Từ vựng"}
-                                            </p>
-                                            <span
-                                              className={
-                                                styles.lessonContentSection
-                                              }
-                                            >
-                                              {item.sectionTitle}
-                                            </span>
-                                            {item.isCompleted && (
-                                              <span
+                                              <p
                                                 className={
-                                                  styles.lessonContentDone
+                                                  styles.lessonContentTitle
                                                 }
                                               >
-                                                ✓
+                                                {item.contentFormat ===
+                                                  "ASSET" && "Video / tài liệu"}
+                                                {item.contentFormat ===
+                                                  "RICH_TEXT" && "Bài đọc"}
+                                                {item.contentFormat ===
+                                                  "FLASHCARD_SET" && "Từ vựng"}
+                                                {String(
+                                                  item.contentFormat || ""
+                                                ).toUpperCase() === "QUIZ" &&
+                                                  "Quiz"}
+                                              </p>
+                                              <span
+                                                className={
+                                                  styles.lessonContentSection
+                                                }
+                                              >
+                                                {item.sectionTitle}
                                               </span>
-                                            )}
-                                          </li>
-                                        );
-                                      })}
-
-                                    {/* item Quiz – luôn hiện, nếu lesson chưa có quiz thì view sẽ báo "chưa có quiz" */}
-                                    <li
-                                      key={`${ls.lessonId}-quiz`}
-                                      className={`${styles.lessonContentItem} ${
-                                        isQuizActive
-                                          ? styles.lessonContentItemActive
-                                          : ""
-                                      }`}
-                                      onClick={() =>
-                                        openQuizOverview(ls.lessonId)
-                                      }
-                                    >
-                                      <p className={styles.lessonContentTitle}>
-                                        Quiz
-                                      </p>
-                                      <span
-                                        className={styles.lessonContentSection}
-                                      >
-                                        Luyện tập
-                                      </span>
-                                    </li>
-                                  </ul>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                                              {item.isCompleted && (
+                                                <span
+                                                  className={
+                                                    styles.lessonContentDone
+                                                  }
+                                                >
+                                                  ✓
+                                                </span>
+                                              )}
+                                            </li>
+                                          );
+                                        })}
+                                    </ul>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
               </div>
             )}
           </aside>
@@ -818,7 +891,6 @@ export default function LessonPlayerPage() {
           {/* ========== PLAYER PANEL ========== */}
           <section className={styles.playerPanel}>
             {activeView === "quiz-info" ? (
-              // ------------ QUIZ OVERVIEW ------------
               <div className={styles.quizOverview}>
                 <div className={styles.quizOverviewHeader}>
                   <button
@@ -827,6 +899,8 @@ export default function LessonPlayerPage() {
                     onClick={() => {
                       setActiveView("content");
                       setQuizLessonId(null);
+                      setQuizSectionId(null);
+                      setQuizId(null);
                     }}
                   >
                     ← Quay lại nội dung bài học
@@ -834,7 +908,6 @@ export default function LessonPlayerPage() {
                 </div>
 
                 {quizLoading && <p>Đang tải thông tin quiz...</p>}
-
                 {quizError && <p className={styles.error}>{quizError}</p>}
 
                 {!quizLoading && !quizError && !quizInfo && (
@@ -939,7 +1012,6 @@ export default function LessonPlayerPage() {
                 )}
               </div>
             ) : activeContent ? (
-              // ------------ PLAYER CONTENT ------------
               <>
                 <div className={styles.playerBody}>
                   {activeContent.contentFormat === "ASSET" && (
@@ -1017,10 +1089,28 @@ export default function LessonPlayerPage() {
 
                   <button
                     className={styles.markBtn}
-                    onClick={handleMarkCompleted}
-                    disabled={isCurrentCompleted || !activeContent?.contentId}
+                    onClick={() => {
+                      if (isQuizContent) {
+                        openQuizOverviewByMeta({
+                          lessonId: numericLessonId,
+                          sectionId: activeContent.sectionId, // nhớ đảm bảo activeContent có sectionId
+                          quizId: activeContent.quizId,
+                        });
+                        return;
+                      }
+                      handleMarkCompleted();
+                    }}
+                    disabled={
+                      isQuizContent
+                        ? false
+                        : !canMarkCompleted || !activeContent?.contentId
+                    }
                   >
-                    {isCurrentCompleted ? "Đã hoàn thành" : "Đánh dấu đã học"}
+                    {isCurrentCompleted
+                      ? "Đã hoàn thành"
+                      : isQuizContent
+                      ? "Làm quiz để hoàn thành"
+                      : "Đánh dấu đã học"}
                   </button>
 
                   <button
@@ -1064,7 +1154,6 @@ export default function LessonPlayerPage() {
 
                 <div className={styles.flashcardModalBody}>
                   {flashcardsLoading && <p>Đang tải flashcard...</p>}
-
                   {flashcardsError && (
                     <p className={styles.flashcardError}>{flashcardsError}</p>
                   )}
@@ -1077,7 +1166,6 @@ export default function LessonPlayerPage() {
                     !flashcardsError &&
                     currentFlashcard && (
                       <>
-                        {/* --- FLASHCARD CARD --- */}
                         <div className={styles.flashcardCardWrapper}>
                           <button
                             type="button"
@@ -1091,7 +1179,6 @@ export default function LessonPlayerPage() {
                                   : ""
                               }`}
                             >
-                              {/* Mặt trước */}
                               <div
                                 className={`${styles.flashcardFace} ${styles.flashcardFaceFront}`}
                               >
@@ -1104,7 +1191,6 @@ export default function LessonPlayerPage() {
                                 </div>
                               </div>
 
-                              {/* Mặt sau */}
                               <div
                                 className={`${styles.flashcardFace} ${styles.flashcardFaceBack}`}
                               >
@@ -1128,7 +1214,6 @@ export default function LessonPlayerPage() {
                           </button>
                         </div>
 
-                        {/* --- CONTROLS --- */}
                         <div className={styles.flashcardControls}>
                           <span className={styles.flashcardCounter}>
                             Thẻ {flashcardIndex + 1} / {flashcards.length}
@@ -1138,7 +1223,7 @@ export default function LessonPlayerPage() {
                               type="button"
                               className={styles.secondaryBtn}
                               onClick={goPrevFlashcard}
-                              disabled={flashcardIndex <= 1}
+                              disabled={flashcards.length <= 1}
                             >
                               Trước
                             </button>

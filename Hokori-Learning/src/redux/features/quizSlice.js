@@ -17,34 +17,32 @@ const getError = (err) =>
 const unwrap = (res) => res.data?.data ?? res.data;
 
 /* =========================================================
- *                    QUIZ LEVEL
+ *                    QUIZ LEVEL (SECTION)
  * ======================================================= */
 
 /**
- * GET /api/teacher/lessons/{lessonId}/quizzes
- * Lấy quiz của 1 lesson (mỗi lesson hiện tại chỉ có 1 quiz)
+ * GET /api/teacher/sections/{sectionId}/quizzes
+ * Lấy quiz của 1 section (mỗi section chỉ có 1 quiz)
  */
 export const fetchLessonQuizThunk = createAsyncThunk(
   "quiz/fetchLessonQuiz",
-  async (lessonId, { rejectWithValue }) => {
+  async (sectionId, { rejectWithValue }) => {
     try {
-      const res = await api.get(`teacher/lessons/${lessonId}/quizzes`);
+      const res = await api.get(`teacher/sections/${sectionId}/quizzes`);
       const data = unwrap(res);
-      // BE có thể trả list hoặc 1 object
       if (!data) return null;
       return Array.isArray(data) ? data[0] : data;
     } catch (err) {
       const status = err?.response?.status;
       const msg = err?.response?.data?.message;
 
-      // Lesson chưa có quiz → coi như null, không xem là lỗi
+      // Section chưa có quiz → coi như null, không xem là lỗi
       if (
         status === 404 ||
         (status === 400 &&
           typeof msg === "string" &&
-          msg.includes("Quiz not found")) ||
-        (typeof msg === "string" &&
-          msg.includes("Index 0 out of bounds for length 0"))
+          msg?.includes("Quiz not found")) ||
+        msg?.includes?.("Index 0 out of bounds for length 0")
       ) {
         return null;
       }
@@ -56,8 +54,8 @@ export const fetchLessonQuizThunk = createAsyncThunk(
 
 /**
  * Chuẩn hoá meta quiz từ FE → payload cho BE
- * - FE thường dùng: { title, description, timeLimit (phút), passingScore }
- * - BE: { title, description, timeLimitSec, passScorePercent }
+ * - FE:  { title, description, timeLimit (phút), passingScore }
+ * - BE:  { title, description, timeLimitSec, passScorePercent }
  */
 const buildQuizMetaPayload = (meta = {}) => {
   const minutes =
@@ -92,16 +90,16 @@ const buildQuizMetaPayload = (meta = {}) => {
 };
 
 /**
- * POST /api/teacher/lessons/{lessonId}/quizzes
- * Tạo quiz cho lesson (chỉ meta, chưa có câu hỏi)
+ * POST /api/teacher/sections/{sectionId}/quizzes
+ * Tạo quiz cho section (chỉ meta, chưa có câu hỏi)
  */
 export const createLessonQuizThunk = createAsyncThunk(
   "quiz/createLessonQuiz",
-  async ({ lessonId, meta }, { rejectWithValue }) => {
+  async ({ sectionId, meta }, { rejectWithValue }) => {
     try {
       const payload = buildQuizMetaPayload(meta);
       const res = await api.post(
-        `teacher/lessons/${lessonId}/quizzes`,
+        `teacher/sections/${sectionId}/quizzes`,
         payload
       );
       const quiz = unwrap(res);
@@ -113,16 +111,16 @@ export const createLessonQuizThunk = createAsyncThunk(
 );
 
 /**
- * PUT /api/teacher/lessons/{lessonId}/quizzes/{quizId}
+ * PUT /api/teacher/sections/{sectionId}/quizzes/{quizId}
  * Cập nhật meta quiz
  */
 export const updateLessonQuizThunk = createAsyncThunk(
   "quiz/updateLessonQuiz",
-  async ({ lessonId, quizId, meta }, { rejectWithValue }) => {
+  async ({ sectionId, quizId, meta }, { rejectWithValue }) => {
     try {
       const payload = buildQuizMetaPayload(meta);
       const res = await api.put(
-        `teacher/lessons/${lessonId}/quizzes/${quizId}`,
+        `teacher/sections/${sectionId}/quizzes/${quizId}`,
         payload
       );
       const quiz = unwrap(res);
@@ -138,15 +136,15 @@ export const updateLessonQuizThunk = createAsyncThunk(
  * ======================================================= */
 
 /**
- * GET /api/teacher/lessons/{lessonId}/quizzes/{quizId}/questions
+ * GET /api/teacher/sections/{sectionId}/quizzes/{quizId}/questions
  * Lấy danh sách câu hỏi kèm options của 1 quiz
  */
 export const fetchQuizQuestionsThunk = createAsyncThunk(
   "quiz/fetchQuizQuestions",
-  async ({ lessonId, quizId }, { rejectWithValue }) => {
+  async ({ sectionId, quizId }, { rejectWithValue }) => {
     try {
       const res = await api.get(
-        `teacher/lessons/${lessonId}/quizzes/${quizId}/questions`
+        `teacher/sections/${sectionId}/quizzes/${quizId}/questions`
       );
       const questions = unwrap(res) || [];
       return questions;
@@ -157,16 +155,15 @@ export const fetchQuizQuestionsThunk = createAsyncThunk(
 );
 
 /**
- * POST /api/teacher/lessons/{lessonId}/quizzes/{quizId}/questions
+ * POST /api/teacher/sections/{sectionId}/quizzes/{quizId}/questions
  * Tạo câu hỏi mới cho quiz
- * Body BE kỳ vọng: { content, explanation, questionType, orderIndex?, points? }
  */
 export const createQuizQuestionThunk = createAsyncThunk(
   "quiz/createQuizQuestion",
-  async ({ lessonId, quizId, question }, { rejectWithValue }) => {
+  async ({ sectionId, quizId, question }, { rejectWithValue }) => {
     try {
       const res = await api.post(
-        `teacher/lessons/${lessonId}/quizzes/${quizId}/questions`,
+        `teacher/sections/${sectionId}/quizzes/${quizId}/questions`,
         question
       );
       const created = unwrap(res);
@@ -178,15 +175,15 @@ export const createQuizQuestionThunk = createAsyncThunk(
 );
 
 /**
- * PUT /api/teacher/lessons/{lessonId}/quizzes/questions/{questionId}
+ * PUT /api/teacher/sections/{sectionId}/quizzes/questions/{questionId}
  * Cập nhật câu hỏi
  */
 export const updateQuizQuestionThunk = createAsyncThunk(
   "quiz/updateQuizQuestion",
-  async ({ lessonId, questionId, question }, { rejectWithValue }) => {
+  async ({ sectionId, questionId, question }, { rejectWithValue }) => {
     try {
       const res = await api.put(
-        `teacher/lessons/${lessonId}/quizzes/questions/${questionId}`,
+        `teacher/sections/${sectionId}/quizzes/questions/${questionId}`,
         question
       );
       const updated = unwrap(res);
@@ -198,15 +195,15 @@ export const updateQuizQuestionThunk = createAsyncThunk(
 );
 
 /**
- * DELETE /api/teacher/lessons/{lessonId}/quizzes/questions/{questionId}
+ * DELETE /api/teacher/sections/{sectionId}/quizzes/questions/{questionId}
  * Xoá câu hỏi
  */
 export const deleteQuizQuestionThunk = createAsyncThunk(
   "quiz/deleteQuizQuestion",
-  async ({ lessonId, questionId }, { rejectWithValue }) => {
+  async ({ sectionId, questionId }, { rejectWithValue }) => {
     try {
       await api.delete(
-        `teacher/lessons/${lessonId}/quizzes/questions/${questionId}`
+        `teacher/sections/${sectionId}/quizzes/questions/${questionId}`
       );
       return questionId;
     } catch (err) {
@@ -216,16 +213,15 @@ export const deleteQuizQuestionThunk = createAsyncThunk(
 );
 
 /**
- * POST /api/teacher/lessons/{lessonId}/quizzes/questions/{questionId}/options
+ * POST /api/teacher/sections/{sectionId}/quizzes/questions/{questionId}/options
  * Thêm nhiều options cho 1 câu hỏi
- * Body: Array<{ content, isCorrect, orderIndex }>
  */
 export const createQuestionOptionsThunk = createAsyncThunk(
   "quiz/createQuestionOptions",
-  async ({ lessonId, questionId, options }, { rejectWithValue }) => {
+  async ({ sectionId, questionId, options }, { rejectWithValue }) => {
     try {
       const res = await api.post(
-        `teacher/lessons/${lessonId}/quizzes/questions/${questionId}/options`,
+        `teacher/sections/${sectionId}/quizzes/questions/${questionId}/options`,
         options
       );
       const created = unwrap(res);
@@ -237,15 +233,15 @@ export const createQuestionOptionsThunk = createAsyncThunk(
 );
 
 /**
- * PUT /api/teacher/lessons/{lessonId}/quizzes/options/{optionId}
+ * PUT /api/teacher/sections/{sectionId}/quizzes/options/{optionId}
  * Cập nhật 1 option
  */
 export const updateQuestionOptionThunk = createAsyncThunk(
   "quiz/updateQuestionOption",
-  async ({ lessonId, optionId, option }, { rejectWithValue }) => {
+  async ({ sectionId, optionId, option }, { rejectWithValue }) => {
     try {
       const res = await api.put(
-        `teacher/lessons/${lessonId}/quizzes/options/${optionId}`,
+        `teacher/sections/${sectionId}/quizzes/options/${optionId}`,
         option
       );
       const updated = unwrap(res);
@@ -257,15 +253,15 @@ export const updateQuestionOptionThunk = createAsyncThunk(
 );
 
 /**
- * DELETE /api/teacher/lessons/{lessonId}/quizzes/options/{optionId}
+ * DELETE /api/teacher/sections/{sectionId}/quizzes/options/{optionId}
  * Xoá 1 option
  */
 export const deleteQuestionOptionThunk = createAsyncThunk(
   "quiz/deleteQuestionOption",
-  async ({ lessonId, optionId }, { rejectWithValue }) => {
+  async ({ sectionId, optionId }, { rejectWithValue }) => {
     try {
       await api.delete(
-        `teacher/lessons/${lessonId}/quizzes/options/${optionId}`
+        `teacher/sections/${sectionId}/quizzes/options/${optionId}`
       );
       return optionId;
     } catch (err) {
@@ -279,11 +275,11 @@ export const deleteQuestionOptionThunk = createAsyncThunk(
  * ======================================================= */
 
 const initialState = {
-  currentQuiz: null, // meta quiz
-  questions: [], // danh sách câu hỏi + options
-  loading: false, // loading quiz meta
-  loadingQuestions: false, // loading questions
-  saving: false, // tạo / update bất cứ thứ gì
+  currentQuiz: null,
+  questions: [],
+  loading: false,
+  loadingQuestions: false,
+  saving: false,
   error: null,
 };
 
@@ -304,7 +300,7 @@ const quizSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    /* ------- FETCH QUIZ BY LESSON ------- */
+    /* ------- FETCH QUIZ ------- */
     builder
       .addCase(fetchLessonQuizThunk.pending, (state) => {
         state.loading = true;
@@ -312,7 +308,7 @@ const quizSlice = createSlice({
       })
       .addCase(fetchLessonQuizThunk.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentQuiz = action.payload; // có thể là null
+        state.currentQuiz = action.payload || null;
       })
       .addCase(fetchLessonQuizThunk.rejected, (state, action) => {
         state.loading = false;
@@ -430,8 +426,6 @@ const quizSlice = createSlice({
       })
       .addCase(createQuestionOptionsThunk.fulfilled, (state) => {
         state.saving = false;
-        // payload tuỳ BE, thường không cần merge chi tiết ở đây
-        // component có thể gọi fetchQuizQuestionsThunk lại nếu cần
       })
       .addCase(createQuestionOptionsThunk.rejected, (state, action) => {
         state.saving = false;
@@ -448,8 +442,6 @@ const quizSlice = createSlice({
         state.saving = false;
         const updated = action.payload;
         if (!updated) return;
-
-        // cập nhật option trong questions (nếu đang có)
         const qIdx = state.questions.findIndex((q) =>
           (q.options || []).some((op) => op.id === updated.id)
         );
@@ -476,7 +468,6 @@ const quizSlice = createSlice({
       .addCase(deleteQuestionOptionThunk.fulfilled, (state, action) => {
         state.saving = false;
         const id = action.payload;
-        // xoá option khỏi questions (nếu đang cache)
         state.questions = state.questions.map((q) => ({
           ...q,
           options: (q.options || []).filter((op) => op.id !== id),

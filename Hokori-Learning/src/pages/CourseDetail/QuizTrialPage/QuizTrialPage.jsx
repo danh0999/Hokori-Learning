@@ -7,7 +7,7 @@ const unwrap = (res) =>
   res?.data && "data" in res.data ? res.data.data : res.data;
 
 const QuizTrialPage = () => {
-  const { lessonId } = useParams();
+  const { lessonId, sectionId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -15,6 +15,7 @@ const QuizTrialPage = () => {
   const [loadingQuestion, setLoadingQuestion] = useState(false);
 
   const [error, setError] = useState(null);
+  const [quizSectionId, setQuizSectionId] = useState(sectionId || null);
 
   const [attemptId, setAttemptId] = useState(null);
   const [attemptInfo, setAttemptInfo] = useState(null);
@@ -45,9 +46,51 @@ const QuizTrialPage = () => {
   ).length;
 
   // ============================
+  // 0. TÌM QUIZ SECTION NẾU CHƯA CÓ
+  // ============================
+  useEffect(() => {
+    if (quizSectionId || !lessonId) return;
+
+    const findQuizSection = async () => {
+      try {
+        // Lấy learning tree để tìm quiz section
+        // Note: Cần courseId từ route hoặc context
+        const courseId = location.pathname.split("/")[2]; // Adjust based on your route structure
+        if (courseId) {
+          const treeRes = await api.get(
+            `/learner/courses/${courseId}/learning-tree`
+          );
+          const tree = treeRes.data?.data || treeRes.data;
+          const lesson = tree?.lessons?.find(
+            (l) => l.lessonId === Number(lessonId)
+          );
+          const quizSection = lesson?.sections?.find(
+            (s) => s.studyType === "QUIZ"
+          );
+
+          if (quizSection?.id) {
+            setQuizSectionId(quizSection.id);
+          } else {
+            setError("Không tìm thấy quiz section cho lesson này.");
+            setLoading(false);
+          }
+        }
+      } catch (err) {
+        console.error("Lỗi tìm quiz section:", err);
+        setError("Không thể tải thông tin quiz section.");
+        setLoading(false);
+      }
+    };
+
+    findQuizSection();
+  }, [lessonId, quizSectionId, location.pathname]);
+
+  // ============================
   // 1. INIT: info + start + detail + câu đầu tiên
   // ============================
   useEffect(() => {
+    if (!quizSectionId) return;
+
     const load = async () => {
       const token =
         localStorage.getItem("accessToken") ||
@@ -60,12 +103,6 @@ const QuizTrialPage = () => {
           state: { redirectTo: location.pathname },
           replace: true,
         });
-        return;
-      }
-
-      if (!lessonId) {
-        setError("Không xác định được lessonId.");
-        setLoading(false);
         return;
       }
 
@@ -84,11 +121,11 @@ const QuizTrialPage = () => {
 
       try {
         // 1) Xem info
-        await api.get(`/learner/lessons/${lessonId}/quiz/info`);
+        await api.get(`/learner/sections/${quizSectionId}/quiz/info`);
 
         // 2) Start (hoặc resume) attempt
         const startRes = await api.post(
-          `/learner/lessons/${lessonId}/quiz/attempts/start`,
+          `/learner/sections/${quizSectionId}/quiz/attempts/start`,
           { forceNew: false }
         );
         const attempt = unwrap(startRes);
@@ -100,7 +137,7 @@ const QuizTrialPage = () => {
 
         // 3) Lấy detail để biết totalQuestions + correctOptionId
         const detailRes = await api.get(
-          `/learner/lessons/${lessonId}/quiz/attempts/${newAttemptId}`
+          `/learner/sections/${quizSectionId}/quiz/attempts/${newAttemptId}`
         );
         const detail = unwrap(detailRes);
 
@@ -139,7 +176,7 @@ const QuizTrialPage = () => {
 
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lessonId, navigate, location.pathname]);
+  }, [quizSectionId, navigate, location.pathname]);
 
   // ============================
   // 2. GỌI /next
@@ -167,9 +204,14 @@ const QuizTrialPage = () => {
     setLoadingQuestion(true);
     setError(null);
 
+    if (!quizSectionId) {
+      setError("Chưa xác định được quiz section.");
+      return;
+    }
+
     try {
       const res = await api.get(
-        `/learner/lessons/${lessonId}/quiz/attempts/${_attemptId}/next`
+        `/learner/sections/${quizSectionId}/quiz/attempts/${_attemptId}/next`
       );
       const q = unwrap(res);
 
@@ -232,9 +274,14 @@ const QuizTrialPage = () => {
     setAnswers(newAnswers);
 
     // GỌI API ANSWER
+    if (!quizSectionId) {
+      console.error("Chưa xác định được quiz section.");
+      return;
+    }
+
     try {
       await api.post(
-        `/learner/lessons/${lessonId}/quiz/attempts/${attemptId}/questions/${qId}/answer`,
+        `/learner/sections/${quizSectionId}/quiz/attempts/${attemptId}/questions/${qId}/answer`,
         {
           optionId: currentAnswer,
         }
@@ -267,9 +314,14 @@ const QuizTrialPage = () => {
     setLoadingQuestion(true);
     setError(null);
 
+    if (!quizSectionId) {
+      setError("Chưa xác định được quiz section.");
+      return;
+    }
+
     try {
       const res = await api.post(
-        `/learner/lessons/${lessonId}/quiz/attempts/${attemptId}/submit`
+        `/learner/sections/${quizSectionId}/quiz/attempts/${attemptId}/submit`
       );
       const data = unwrap(res);
       const attempt = data?.attempt || data;
@@ -304,10 +356,15 @@ const QuizTrialPage = () => {
   };
 
   const handleRetry = async () => {
+    if (!quizSectionId) {
+      setError("Chưa xác định được quiz section.");
+      return;
+    }
+
     try {
       // 1) Gọi START để tạo attempt mới
       const startRes = await api.post(
-        `/learner/lessons/${lessonId}/quiz/attempts/start`,
+        `/learner/sections/${quizSectionId}/quiz/attempts/start`,
         { forceNew: true }
       );
 
@@ -329,7 +386,7 @@ const QuizTrialPage = () => {
 
       // 3) Lấy detail để lấy meta (correctOptionId)
       const detailRes = await api.get(
-        `/learner/lessons/${lessonId}/quiz/attempts/${newAttemptId}`
+        `/learner/sections/${quizSectionId}/quiz/attempts/${newAttemptId}`
       );
       const detail = unwrap(detailRes);
       const attemptData = detail?.attempt || detail;

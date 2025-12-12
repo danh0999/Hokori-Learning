@@ -19,6 +19,7 @@ import {
   EditOutlined,
   RightOutlined,
   DownOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 
 import styles from "./CourseCurriculumView.module.scss";
@@ -50,21 +51,27 @@ const getError = (err) =>
 
 /* -----------------------------
    👉 Helper format duration
-   totalSec (number) => "30 phút", "1 giờ 20 phút"
 ----------------------------- */
 const formatDuration = (totalSec) => {
   if (!totalSec || totalSec <= 0) return null;
   const minutes = Math.round(totalSec / 60);
 
-  if (minutes < 60) {
-    return `${minutes} phút`;
-  }
+  if (minutes < 60) return `${minutes} phút`;
 
   const hours = Math.floor(minutes / 60);
   const remain = minutes % 60;
 
   if (!remain) return `${hours} giờ`;
   return `${hours} giờ ${remain} phút`;
+};
+
+/* -----------------------------
+   👉 Detect Quiz content
+----------------------------- */
+const isQuizContent = (c) => {
+  const fmt = (c?.contentFormat || "").toUpperCase();
+  const type = (c?.contentType || c?.type || "").toUpperCase();
+  return fmt === "QUIZ" || type === "QUIZ";
 };
 
 export default function CourseCurriculumView({
@@ -82,8 +89,8 @@ export default function CourseCurriculumView({
     questions: [],
     loading: false,
     error: null,
-    lessonTitle: "",
-    lessonId: null,
+    sectionTitle: "",
+    sectionId: null,
   });
 
   const [flashcardPreview, setFlashcardPreview] = useState({
@@ -101,11 +108,11 @@ export default function CourseCurriculumView({
     courseMeta?.imageUrl ||
     null;
 
-  // 👉 tổng số lesson + tổng duration toàn course
   const totalLessons = chapters.reduce(
     (sum, ch) => sum + (ch.lessons?.length || 0),
     0
   );
+
   const totalDurationSec = chapters.reduce((sum, ch) => {
     return (
       sum +
@@ -120,7 +127,11 @@ export default function CourseCurriculumView({
      Icon cho từng loại content
   ----------------------------- */
   const renderContentIcon = (c) => {
-    switch (c.contentFormat) {
+    const fmt = (c?.contentFormat || "").toUpperCase();
+
+    if (isQuizContent(c)) return <FileTextOutlined />;
+
+    switch (fmt) {
       case "ASSET": {
         const url = buildFileUrl(c.filePath);
         const isVideo = url && /\.(mp4|mov|webm|mkv)$/i.test(url);
@@ -139,7 +150,7 @@ export default function CourseCurriculumView({
   };
 
   /* -----------------------------
-     Chọn content (flashcard, ...)
+     Chọn content (flashcard, asset,...)
   ----------------------------- */
   const handleSelectContent = async (content) => {
     // click lại content đang chọn → đóng
@@ -156,16 +167,17 @@ export default function CourseCurriculumView({
 
     setSelectedContent(content);
 
-    // clear quiz preview khi đang focus content
-    setQuizPreview((prev) => ({
-      ...prev,
+    // clear quiz preview khi đang focus content (khác quiz)
+    setQuizPreview({
       quiz: null,
       questions: [],
+      loading: false,
       error: null,
-      lessonId: null,
-    }));
+      sectionTitle: "",
+      sectionId: null,
+    });
 
-    if (content.contentFormat === "FLASHCARD_SET") {
+    if ((content.contentFormat || "").toUpperCase() === "FLASHCARD_SET") {
       setFlashcardPreview({
         set: null,
         cards: [],
@@ -174,7 +186,6 @@ export default function CourseCurriculumView({
       });
 
       try {
-        // 1) lấy flashcard set theo sectionContentId
         const setRes = await api.get(
           `flashcards/sets/by-section-content/${content.id}`
         );
@@ -190,7 +201,6 @@ export default function CourseCurriculumView({
           return;
         }
 
-        // 2) lấy cards trong set
         const cardsRes = await api.get(`flashcards/sets/${setData.id}/cards`);
         const cards = unwrap(cardsRes) || [];
 
@@ -221,7 +231,6 @@ export default function CourseCurriculumView({
         }
       }
     } else {
-      // không phải flashcard → clear preview
       setFlashcardPreview({
         set: null,
         cards: [],
@@ -232,46 +241,55 @@ export default function CourseCurriculumView({
   };
 
   /* -----------------------------
-     View quiz theo lesson
+     View quiz theo SECTION (NEW)
   ----------------------------- */
-  const handleViewQuiz = async (lesson) => {
-    // ấn lại quiz cùng lesson → đóng
-    if (quizPreview.lessonId === lesson.id && quizPreview.quiz) {
+  const handleViewQuizBySection = async (section) => {
+    if (!section?.id) return;
+
+    // click lại cùng section → đóng
+    if (quizPreview.sectionId === section.id && quizPreview.quiz) {
       setQuizPreview({
         quiz: null,
         questions: [],
         loading: false,
         error: null,
-        lessonTitle: "",
-        lessonId: null,
+        sectionTitle: "",
+        sectionId: null,
       });
       return;
     }
 
     // đang xem quiz thì không highlight content
     setSelectedContent(null);
+    setFlashcardPreview({
+      set: null,
+      cards: [],
+      loading: false,
+      error: null,
+    });
 
     setQuizPreview({
       quiz: null,
       questions: [],
       loading: true,
       error: null,
-      lessonTitle: lesson.title,
-      lessonId: lesson.id,
+      sectionTitle: section.title,
+      sectionId: section.id,
     });
 
     try {
-      const res = await api.get(`teacher/lessons/${lesson.id}/quizzes`);
-      let data = unwrap(res);
+      // NEW ENDPOINT: quizzes thuộc section
+      const res = await api.get(`teacher/sections/${section.id}/quizzes`);
+      const data = unwrap(res);
 
       if (!data || (Array.isArray(data) && data.length === 0)) {
         setQuizPreview({
           quiz: null,
           questions: [],
           loading: false,
-          error: "Lesson này chưa có quiz.",
-          lessonTitle: lesson.title,
-          lessonId: lesson.id,
+          error: "Section này chưa có quiz.",
+          sectionTitle: section.title,
+          sectionId: section.id,
         });
         return;
       }
@@ -279,7 +297,7 @@ export default function CourseCurriculumView({
       const quiz = Array.isArray(data) ? data[0] : data;
 
       const qRes = await api.get(
-        `teacher/lessons/${lesson.id}/quizzes/${quiz.id}/questions`
+        `teacher/sections/${section.id}/quizzes/${quiz.id}/questions`
       );
       const questions = unwrap(qRes) || [];
 
@@ -288,39 +306,18 @@ export default function CourseCurriculumView({
         questions,
         loading: false,
         error: null,
-        lessonTitle: lesson.title,
-        lessonId: lesson.id,
+        sectionTitle: section.title,
+        sectionId: section.id,
       });
     } catch (err) {
-      const status = err?.response?.status;
-      const msg = err?.response?.data?.message;
-
-      if (
-        status === 404 ||
-        (status === 400 &&
-          typeof msg === "string" &&
-          msg.includes("Quiz not found")) ||
-        (typeof msg === "string" &&
-          msg.includes("Index 0 out of bounds for length 0"))
-      ) {
-        setQuizPreview({
-          quiz: null,
-          questions: [],
-          loading: false,
-          error: "Lesson này chưa có quiz.",
-          lessonTitle: lesson.title,
-          lessonId: lesson.id,
-        });
-      } else {
-        setQuizPreview({
-          quiz: null,
-          questions: [],
-          loading: false,
-          error: getError(err),
-          lessonTitle: lesson.title,
-          lessonId: lesson.id,
-        });
-      }
+      setQuizPreview({
+        quiz: null,
+        questions: [],
+        loading: false,
+        error: getError(err),
+        sectionTitle: section.title,
+        sectionId: section.id,
+      });
     }
   };
 
@@ -386,10 +383,10 @@ export default function CourseCurriculumView({
   };
 
   /* -----------------------------
-     Quiz inline preview theo lesson
+     Quiz inline preview theo SECTION
   ----------------------------- */
-  const renderQuizInline = (lessonId) => {
-    if (quizPreview.lessonId !== lessonId) return null;
+  const renderQuizInline = (sectionId) => {
+    if (quizPreview.sectionId !== sectionId) return null;
 
     if (quizPreview.loading) {
       return (
@@ -467,14 +464,15 @@ export default function CourseCurriculumView({
   };
 
   /* -----------------------------
-     Preview cho content (dùng cho otherContents)
+     Preview cho content (other contents)
   ----------------------------- */
   const renderContentInlinePreview = (content) => {
     if (!content) return null;
 
     const url = buildFileUrl(content.filePath || content.assetPath);
+    const fmt = (content.contentFormat || "").toUpperCase();
 
-    if (content.contentFormat === "ASSET" && url) {
+    if (fmt === "ASSET" && url) {
       const isVideo = /\.(mp4|mov|webm|mkv)$/i.test(url);
       const isImage = /\.(jpe?g|png|gif|webp)$/i.test(url);
 
@@ -496,7 +494,7 @@ export default function CourseCurriculumView({
       );
     }
 
-    if (content.contentFormat === "RICH_TEXT") {
+    if (fmt === "RICH_TEXT") {
       return (
         <div className={styles.inlinePreviewBox}>
           <Text strong className={styles.previewTitle}>
@@ -509,7 +507,7 @@ export default function CourseCurriculumView({
       );
     }
 
-    if (content.contentFormat === "FLASHCARD_SET") {
+    if (fmt === "FLASHCARD_SET") {
       return renderFlashcardInline();
     }
 
@@ -587,7 +585,7 @@ export default function CourseCurriculumView({
               renderItem={(lesson) => {
                 const lessonDurationLabel = formatDuration(
                   lesson.totalDurationSec
-                ); // 👉 duration từng lesson
+                );
 
                 return (
                   <List.Item key={lesson.id} className={styles.lessonItem}>
@@ -605,6 +603,7 @@ export default function CourseCurriculumView({
                             )}
                           </div>
                         </div>
+
                         <Space className={styles.lessonHeaderActions}>
                           {onEditLesson && (
                             <Button
@@ -616,33 +615,27 @@ export default function CourseCurriculumView({
                               Edit
                             </Button>
                           )}
-
-                          <Button
-                            size="small"
-                            className={styles.quizButton}
-                            onClick={() => handleViewQuiz(lesson)}
-                          >
-                            Quiz
-                          </Button>
+                          {/* ✅ ĐÃ XÓA nút Quiz trên header lesson */}
                         </Space>
                       </div>
-
-                      {/* Quiz preview inline */}
-                      {renderQuizInline(lesson.id)}
 
                       {/* Section list */}
                       {(lesson.sections || []).map((sec) => {
                         const contents = sec.contents || [];
                         const assetContent = contents.find(
-                          (c) => c.contentFormat === "ASSET"
+                          (c) =>
+                            (c.contentFormat || "").toUpperCase() === "ASSET"
                         );
                         const richTextContent = contents.find(
-                          (c) => c.contentFormat === "RICH_TEXT"
-                        );
-                        const otherContents = contents.filter(
                           (c) =>
-                            !["ASSET", "RICH_TEXT"].includes(c.contentFormat)
+                            (c.contentFormat || "").toUpperCase() ===
+                            "RICH_TEXT"
                         );
+                        const otherContents = contents.filter((c) => {
+                          const fmt = (c.contentFormat || "").toUpperCase();
+                          return !["ASSET", "RICH_TEXT"].includes(fmt);
+                        });
+
                         const isOpen = openSectionIds.includes(sec.id);
 
                         const buildAssetPreview = () => {
@@ -721,6 +714,9 @@ export default function CourseCurriculumView({
                             {/* Chỉ render nội dung khi section mở */}
                             {isOpen && (
                               <>
+                                {/* ✅ Quiz inline theo section */}
+                                {renderQuizInline(sec.id)}
+
                                 {(assetContent || richTextContent) && (
                                   <div className={styles.sectionContentGroup}>
                                     {buildAssetPreview()}
@@ -740,12 +736,24 @@ export default function CourseCurriculumView({
                                               ? styles.contentItemActive
                                               : styles.contentItem
                                           }
-                                          onClick={() => handleSelectContent(c)}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+
+                                            // ✅ Nếu là QUIZ content -> call theo sectionId
+                                            if (isQuizContent(c)) {
+                                              handleViewQuizBySection(sec);
+                                              return;
+                                            }
+
+                                            handleSelectContent(c);
+                                          }}
                                         >
                                           <Space>
                                             {renderContentIcon(c)}
                                             <span>
-                                              {c.contentFormat}
+                                              {isQuizContent(c)
+                                                ? "QUIZ"
+                                                : c.contentFormat}
                                               {c.primaryContent
                                                 ? " (primary)"
                                                 : ""}
@@ -753,17 +761,19 @@ export default function CourseCurriculumView({
                                           </Space>
                                         </List.Item>
 
-                                        {selectedContent?.id === c.id && (
-                                          <div
-                                            className={
-                                              styles.contentInlineWrapper
-                                            }
-                                          >
-                                            {renderContentInlinePreview(
-                                              selectedContent
-                                            )}
-                                          </div>
-                                        )}
+                                        {/* inline preview cho content thường */}
+                                        {selectedContent?.id === c.id &&
+                                          !isQuizContent(c) && (
+                                            <div
+                                              className={
+                                                styles.contentInlineWrapper
+                                              }
+                                            >
+                                              {renderContentInlinePreview(
+                                                selectedContent
+                                              )}
+                                            </div>
+                                          )}
                                       </React.Fragment>
                                     )}
                                   />
