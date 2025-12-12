@@ -1,0 +1,72 @@
+.row {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.aiRow {
+  justify-content: flex-start;
+}
+
+.userRow {
+  justify-content: flex-end;
+}
+
+.bubble {
+  max-width: 78%;
+  border-radius: 14px;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+.ai {
+  background: #ffffff;
+}
+
+.user {
+  background: #111827;
+  border-color: #111827;
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+  font-size: 0.82rem;
+  opacity: 0.9;
+}
+
+.role {
+  font-weight: 900;
+  color: #111827;
+}
+
+.time {
+  color: #6b7280;
+}
+
+.user .role,
+.user .jp,
+.user .vi {
+  color: #fff;
+}
+
+.user .time {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.jp {
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.vi {
+  margin-top: 6px;
+  font-size: 0.92rem;
+  color: #6b7280;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}

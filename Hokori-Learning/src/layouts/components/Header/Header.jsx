@@ -88,8 +88,7 @@ export const Header = () => {
           courseDropdownRef.current.contains(e.target)) ||
         (aboutDropdownRef.current &&
           aboutDropdownRef.current.contains(e.target)) ||
-        (aiDropdownRef.current &&
-          aiDropdownRef.current.contains(e.target))
+        (aiDropdownRef.current && aiDropdownRef.current.contains(e.target))
       ) {
         return;
       }
@@ -127,7 +126,7 @@ export const Header = () => {
   const handleOpenAiTool = (path) => {
     if (!user) return navigate(`/login?redirect=${path}`);
 
-    // ❗ KHÔNG fetch lại API → tránh flash modal
+    //  KHÔNG fetch lại API → tránh flash modal
     const data = aiPackage;
 
     const hasAi = data?.hasPackage && !data?.isExpired;
@@ -166,17 +165,20 @@ export const Header = () => {
   return (
     <header className={`${header} notification-light`}>
       <div className={container}>
-
         {/* LOGO */}
         <div className={logo} onClick={() => navigate("/")}>
-          <div className={logoBox}><span className={logoText}>H</span></div>
+          <div className={logoBox}>
+            <span className={logoText}>H</span>
+          </div>
           <span className={brand}>Hokori</span>
         </div>
 
         {/* ====================== NAVIGATION ====================== */}
         <nav className={nav}>
-
-          <NavLink to="/" className={({ isActive }) => (isActive ? active : "")}>
+          <NavLink
+            to="/"
+            className={({ isActive }) => (isActive ? active : "")}
+          >
             Trang chủ
           </NavLink>
 
@@ -189,7 +191,11 @@ export const Header = () => {
               }
             >
               Khóa học{" "}
-              <span className={`${arrow} ${openDropdown === "course" ? rotate : ""}`}>
+              <span
+                className={`${arrow} ${
+                  openDropdown === "course" ? rotate : ""
+                }`}
+              >
                 ▾
               </span>
             </button>
@@ -208,7 +214,9 @@ export const Header = () => {
                 </NavLink>
 
                 <NavLink
-                  to={user ? "/my-flashcards" : "/login?redirect=/my-flashcards"}
+                  to={
+                    user ? "/my-flashcards" : "/login?redirect=/my-flashcards"
+                  }
                   className={dropdownItem}
                 >
                   Flashcard của tôi
@@ -218,7 +226,10 @@ export const Header = () => {
           </div>
 
           {/* ===== JLPT ===== */}
-          <NavLink to="/JLPT" className={({ isActive }) => (isActive ? active : "")}>
+          <NavLink
+            to="/JLPT"
+            className={({ isActive }) => (isActive ? active : "")}
+          >
             Thi thử JLPT
           </NavLink>
 
@@ -231,14 +242,15 @@ export const Header = () => {
               }
             >
               Công cụ AI{" "}
-              <span className={`${arrow} ${openDropdown === "ai" ? rotate : ""}`}>
+              <span
+                className={`${arrow} ${openDropdown === "ai" ? rotate : ""}`}
+              >
                 ▾
               </span>
             </button>
 
             {openDropdown === "ai" && (
               <div className={dropdownMenu}>
-
                 {/* FIX: prevent dropdown from closing before click */}
                 <div
                   className={dropdownItem}
@@ -255,7 +267,13 @@ export const Header = () => {
                 >
                   Luyện nói (AI Kaiwa)
                 </div>
-
+                <div
+                  className={dropdownItem}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => handleOpenAiTool("/ai-conversation")}
+                >
+                  Trò chuyện cùng AI
+                </div>
               </div>
             )}
           </div>
@@ -269,22 +287,30 @@ export const Header = () => {
               }
             >
               Về Hokori{" "}
-              <span className={`${arrow} ${openDropdown === "about" ? rotate : ""}`}>
+              <span
+                className={`${arrow} ${openDropdown === "about" ? rotate : ""}`}
+              >
                 ▾
               </span>
             </button>
 
             {openDropdown === "about" && (
               <div className={dropdownMenu}>
-                <NavLink to="/about" className={dropdownItem}>Về chúng tôi</NavLink>
-                <NavLink to="/policies" className={dropdownItem}>Chính sách & Điều khoản</NavLink>
-                <NavLink to="/contact" className={({ isActive }) => (isActive ? active : "")}>
+                <NavLink to="/about" className={dropdownItem}>
+                  Về chúng tôi
+                </NavLink>
+                <NavLink to="/policies" className={dropdownItem}>
+                  Chính sách & Điều khoản
+                </NavLink>
+                <NavLink
+                  to="/contact"
+                  className={({ isActive }) => (isActive ? active : "")}
+                >
                   Liên hệ
                 </NavLink>
               </div>
             )}
           </div>
-
         </nav>
 
         {/* ====================== USER ACTIONS ====================== */}
@@ -294,13 +320,15 @@ export const Header = () => {
               <button className={loginBtn} onClick={() => navigate("/login")}>
                 Đăng nhập
               </button>
-              <button className={registerBtn} onClick={() => navigate("/register")}>
+              <button
+                className={registerBtn}
+                onClick={() => navigate("/register")}
+              >
                 Đăng ký
               </button>
             </>
           ) : (
             <Space size={24} align="center">
-
               {/* Cart */}
               <div
                 onClick={() => navigate("/cart")}
@@ -309,8 +337,12 @@ export const Header = () => {
                   cursor: "pointer",
                   transition: "transform 0.2s ease",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
-                onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1.0)")}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.transform = "scale(1.1)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.transform = "scale(1.0)")
+                }
               >
                 <FiShoppingCart size={21} color="#444" />
                 {cartCount > 0 && (
@@ -340,7 +372,12 @@ export const Header = () => {
               <NotificationBell />
 
               {/* Avatar */}
-              <Dropdown menu={userMenu} placement="bottomRight" arrow trigger={["click"]}>
+              <Dropdown
+                menu={userMenu}
+                placement="bottomRight"
+                arrow
+                trigger={["click"]}
+              >
                 <Space style={{ cursor: "pointer" }}>
                   <Avatar
                     size={36}
@@ -349,11 +386,9 @@ export const Header = () => {
                   />
                 </Space>
               </Dropdown>
-
             </Space>
           )}
         </div>
-
       </div>
     </header>
   );

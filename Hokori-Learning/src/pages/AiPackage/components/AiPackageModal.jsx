@@ -1,4 +1,3 @@
-// src/pages/AiPackage/components/AiPackageModal.jsx
 import React, { useEffect } from "react";
 import styles from "./AiPackageModal.module.scss";
 import { Button } from "../../../components/Button/Button";
@@ -21,6 +20,7 @@ export default function AiPackageModal() {
     useSelector((state) => state.aiPackage);
 
   const loadingCheckout = checkoutStatus === "loading";
+
   const formatPrice = (value) => {
     if (!value) return "0";
     return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -32,10 +32,6 @@ export default function AiPackageModal() {
   const activePackageId =
     hasActivePackage && (myPackage.packageId || myPackage.id || null);
 
-  /* ============================================================
-     Hooks phải gọi KHÔNG điều kiện → đúng quy tắc React
-     Chỉ fetch khi showModal === true và user đã login
-  ============================================================ */
   useEffect(() => {
     if (showModal && user) {
       dispatch(fetchMyAiPackage());
@@ -44,14 +40,8 @@ export default function AiPackageModal() {
     }
   }, [showModal, user, dispatch]);
 
-  /* ============================================================
-     Nếu modal chưa mở → return luôn (CHUẨN)
-  ============================================================ */
   if (!showModal) return null;
 
-  /* ============================================================
-     Nếu chưa đăng nhập → modal thông báo đăng nhập
-  ============================================================ */
   if (!user) {
     return (
       <div className={styles.overlay}>
@@ -88,9 +78,6 @@ export default function AiPackageModal() {
     );
   }
 
-  /* ============================================================
-     Checkout xử lý thanh toán
-  ============================================================ */
   const handleCheckout = async (pkgId) => {
     if (hasActivePackage) {
       toast.info(
@@ -104,7 +91,6 @@ export default function AiPackageModal() {
 
       if (!checkout.paymentLink) {
         toast.success("Gói AI được kích hoạt thành công!");
-
         dispatch(fetchMyAiPackage());
         dispatch(fetchAiQuota());
         dispatch(closeModal());
@@ -116,9 +102,6 @@ export default function AiPackageModal() {
     }
   };
 
-  /* ============================================================
-     Render từng gói AI
-  ============================================================ */
   const renderPackageCard = (pkg, highlight = false) => {
     const isActive = activePackageId === pkg.id;
 
@@ -136,15 +119,17 @@ export default function AiPackageModal() {
         <h3>{pkg.name}</h3>
         <p className={styles.duration}>{pkg.durationDays} ngày sử dụng</p>
 
-        {/* 🔹 MÔ TẢ GÓI AI */}
         {pkg.description && (
           <p className={styles.description}>{pkg.description}</p>
         )}
 
         <ul>
           <li>{pkg.grammarQuota} lượt kiểm tra chính tả</li>
-          <li>{pkg.kaiwaQuota} lượt Kaiwa</li>
-          <li>{pkg.pronunQuota} lượt phát âm</li>
+          <li>{pkg.kaiwaQuota} lượt luyện nói (Kaiwa)</li>
+
+          {pkg.conversationQuota > 0 && (
+            <li>{pkg.conversationQuota} lượt hội thoại cùng AI</li>
+          )}
         </ul>
 
         <div className={styles.price}>{formatPrice(pkg.priceCents)} đ</div>
@@ -164,9 +149,6 @@ export default function AiPackageModal() {
     );
   };
 
-  /* ============================================================
-     Render modal khi user đã login
-  ============================================================ */
   return (
     <div className={styles.overlay}>
       <div className={styles.modal}>

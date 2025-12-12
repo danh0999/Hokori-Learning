@@ -4,7 +4,10 @@ import { FaRobot } from "react-icons/fa6";
 import { Button } from "../../../components/Button/Button";
 
 import { useDispatch, useSelector } from "react-redux";
-import { openModal, fetchMyAiPackage } from "../../../redux/features/aiPackageSlice";
+import {
+  openModal,
+  fetchMyAiPackage,
+} from "../../../redux/features/aiPackageSlice";
 
 import { useNavigate } from "react-router-dom";
 
@@ -18,11 +21,14 @@ const AISidebar = () => {
   const goToServicePage = (serviceCode) => {
     if (serviceCode === "GRAMMAR") navigate("/ai-analyse");
     if (serviceCode === "KAIWA") navigate("/ai-kaiwa");
+    if (serviceCode === "CONVERSATION") navigate("/ai-conversation");
   };
 
   const handleClick = async (serviceCode) => {
     // Fetch real-time gói AI khi user click
-    const data = await dispatch(fetchMyAiPackage()).unwrap().catch(() => null);
+    const data = await dispatch(fetchMyAiPackage())
+      .unwrap()
+      .catch(() => null);
 
     const hasAI = data?.hasPackage && !data?.isExpired;
 
@@ -37,7 +43,9 @@ const AISidebar = () => {
   return (
     <aside className={styles.sidebar}>
       <section>
-        <h3><FaRobot /> Công cụ AI</h3>
+        <h3>
+          <FaRobot /> Công cụ AI
+        </h3>
 
         <div className={styles.buttons}>
           <Button
@@ -50,6 +58,12 @@ const AISidebar = () => {
           <Button
             content="Luyện nói cùng AI"
             onClick={() => handleClick("KAIWA")}
+            className={styles.aiButton}
+            containerClassName={styles.aiButtonContainer}
+          />
+          <Button
+            content="Trò chuyện cùng AI"
+            onClick={() => handleClick("CONVERSATION")}
             className={styles.aiButton}
             containerClassName={styles.aiButtonContainer}
           />

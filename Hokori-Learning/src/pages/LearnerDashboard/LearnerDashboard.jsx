@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./LearnerDashboard.module.scss";
 import api from "../../configs/axios";
-
+import AiQuotaOverview from "./components/AiQuotaOverview";
 // === Redux for AI Modal ===
 import { useSelector, useDispatch } from "react-redux";
 import AiPackageModal from "../AiPackage/components/AiPackageModal.jsx";
@@ -208,7 +208,9 @@ const LearnerDashboard = () => {
             </div>
 
             <AISidebar />
+             <AiQuotaOverview />
           </div>
+          
         </div>
       </div>
 
