@@ -50,6 +50,7 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
   }, [lesson, currentCourseTree]);
 
   const sectionsHook = useLessonSections(lessonFromTree);
+  const quizSection = sectionsHook.sectionsByType.QUIZ;
 
   // cập nhật totalDurationSec cho lesson, tránh loop
   const handleSectionDurationChange = useCallback(
@@ -107,32 +108,17 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
       onSave?.();
     } catch (err) {
       console.error(err);
-      toast.error("Có lỗi khi reload curriculum.");
+      toast.error("Không reload được course tree sau khi lưu.");
     }
   };
 
-  const handleReloadTreeAndClose = async () => {
-    try {
-      if (currentCourseMeta?.id) {
-        await dispatch(fetchCourseTree(currentCourseMeta.id)).unwrap();
-      }
-      toast.success("Đã cập nhật lesson.");
-      onSave?.();
-      onClose?.();
-    } catch (err) {
-      console.error(err);
-      toast.error("Có lỗi khi reload curriculum.");
-    }
-  };
-
-  const tabItems = [
+  const tabs = [
     {
       key: "grammar",
       label: (
-        <div className={styles.lessonTabLabel}>
-          <BookOutlined className={styles.tabIcon} />
-          <span>Grammar</span>
-        </div>
+        <span>
+          <BookOutlined /> Grammar
+        </span>
       ),
       children: (
         <GrammarKanjiTab
@@ -149,10 +135,9 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
     {
       key: "kanji",
       label: (
-        <div className={styles.lessonTabLabel}>
-          <FontSizeOutlined className={styles.tabIcon} />
-          <span>Kanji</span>
-        </div>
+        <span>
+          <FontSizeOutlined /> Kanji
+        </span>
       ),
       children: (
         <GrammarKanjiTab
@@ -169,16 +154,15 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
     {
       key: "vocab",
       label: (
-        <div className={styles.lessonTabLabel}>
-          <TranslationOutlined className={styles.tabIcon} />
-          <span>Vocabulary</span>
-        </div>
+        <span>
+          <TranslationOutlined /> Vocab / Flashcard
+        </span>
       ),
       children: (
         <VocabFlashcardTab
           lesson={lessonFromTree}
           sectionsHook={sectionsHook}
-          onSaved={handleChildSaved} // 👉 quan trọng: tạo flashcard xong thì reload tree
+          onSaved={handleChildSaved}
           onDurationComputed={(sec) =>
             handleSectionDurationChange("VOCABULARY", sec)
           }
@@ -188,14 +172,16 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
     {
       key: "quiz",
       label: (
-        <div className={styles.lessonTabLabel}>
-          <QuestionCircleOutlined className={styles.tabIcon} />
-          <span>Quiz</span>
-        </div>
+        <span>
+          <QuestionCircleOutlined /> Quiz
+        </span>
       ),
       children: (
         <QuizTab
           lesson={lessonFromTree}
+          sectionsHook={sectionsHook}
+          quizSection={quizSection}
+          onSaved={handleChildSaved}
           onDurationComputed={(sec) => handleSectionDurationChange("QUIZ", sec)}
         />
       ),
@@ -204,85 +190,34 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
 
   return (
     <Drawer
+      width={960}
+      title={
+        <div className={styles.header}>
+          <div>
+            <Text strong>Chỉnh sửa lesson</Text>
+            <div className={styles.meta}>
+              <span>ID: {lessonFromTree?.id}</span>
+              <span>{renderLessonMetaShort(lessonFromTree)}</span>
+            </div>
+          </div>
+        </div>
+      }
       open={open}
-      width={860}
       onClose={onClose}
       destroyOnClose={false}
-      title={
-        <div className={styles.drawerTitle}>
-          <div className={styles.drawerTitleBreadcrumb}>
-            <span className={styles.crumbDim}>Course</span>
-            <span> / Lesson</span>
-          </div>
-          <div className={styles.drawerTitleMain}>
-            {lessonFromTree?.title || "Untitled lesson"}
-          </div>
-          <div className={styles.drawerTitleSub}>
-            {currentCourseMeta?.title && (
-              <>
-                <span className={styles.courseTitle}>
-                  {currentCourseMeta.title}
-                </span>
-                <span className={styles.dot}>&bull;</span>
-              </>
-            )}
-            <span>{renderLessonMetaShort(lessonFromTree)}</span>
-          </div>
-        </div>
-      }
-      extra={
-        <Button type="primary" onClick={handleReloadTreeAndClose}>
-          Lưu bài học
-        </Button>
-      }
+      maskClosable={false}
       footer={
-        <div className={styles.footer}>
-          <Space>
-            <Button onClick={onClose}>Cancel</Button>
-            {activeTab === "grammar" && (
-              <span className={styles.footerHint}>
-                Đây là <b>Phần Ngữ pháp</b>. Nhấn &quot;Save Grammar&quot; để
-                lưu video & mô tả.
-              </span>
-            )}
-            {activeTab === "kanji" && (
-              <span className={styles.footerHint}>
-                Đây là <b>Phần Kanji</b>. Nhấn &quot;Save Kanji&quot; để lưu nội
-                dung.
-              </span>
-            )}
-            {activeTab === "vocab" && (
-              <span className={styles.footerHint}>
-                Đây là <b>Vocabulary section</b>. Flashcard được lưu trong modal
-                flashcard.
-              </span>
-            )}
-            {activeTab === "quiz" && (
-              <span className={styles.footerHint}>
-                Quiz được lưu bằng nút <b>Save</b> trong cửa sổ Quiz.
-              </span>
-            )}
-          </Space>
-        </div>
+        <Space style={{ justifyContent: "flex-end", width: "100%" }}>
+          <Button onClick={onClose}>Đóng</Button>
+        </Space>
       }
-      className={styles.lessonDrawer}
     >
-      <div className={styles.drawerInner}>
-        {/* <div className={styles.drawerStructureHint}>
-          <Text type="secondary" className={styles.structureText}>
-            <span className={styles.structureLabel}>Structure&nbsp;</span>
-            Chapter &gt; Lesson &gt; Section (Grammar / Kanji / Vocab) &gt;
-            Content (Video / Flashcard / Quiz)
-          </Text>
-        </div> */}
-
-        <Tabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
-          items={tabItems}
-          className={styles.lessonTabs}
-        />
-      </div>
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={tabs}
+        tabBarGutter={24}
+      />
     </Drawer>
   );
 }

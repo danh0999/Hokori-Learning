@@ -154,7 +154,7 @@ const routes = [
             element: <LessonPlayerPage />,
           },
           {
-            path: "learn/:courseId/:slug/lesson/:lessonId/quiz/attempt/:attemptId",
+            path: "learn/:courseId/:slug/lesson/:lessonId/section/:sectionId/quiz/attempt/:attemptId",
             element: <LessonQuizAttemptPage />,
           },
 

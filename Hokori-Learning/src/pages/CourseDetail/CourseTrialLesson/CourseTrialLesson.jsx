@@ -474,15 +474,24 @@ const CourseTrialLesson = () => {
     const lId = lessonDetail?.lessonId || activeLessonId;
     if (!lId) return;
 
+    // Tìm quiz section từ lessonDetail
+    const quizSection = lessonDetail?.sections?.find(
+      (s) => s.studyType === "QUIZ"
+    );
+    if (!quizSection?.id) {
+      setQuizError("Lesson này chưa có quiz section.");
+      return;
+    }
+
     setQuizLoading(true);
     setQuizError(null);
 
     try {
       // check info
-      await api.get(`/learner/lessons/${lId}/quiz/info`);
+      await api.get(`/learner/sections/${quizSection.id}/quiz/info`);
 
       const startRes = await api.post(
-        `/learner/lessons/${lId}/quiz/attempts/start`,
+        `/learner/sections/${quizSection.id}/quiz/attempts/start`,
         { forceNew: false }
       );
 
@@ -494,7 +503,7 @@ const CourseTrialLesson = () => {
         return;
       }
 
-      navigate(`/learner/trial-quiz/${lId}`);
+      navigate(`/learner/trial-quiz/${lId}/section/${quizSection.id}`);
     } catch (err) {
       console.error("Error starting trial quiz", err);
       const status = err?.response?.status;
@@ -779,8 +788,10 @@ const CourseTrialLesson = () => {
         </aside>
       </div>
 
-      {/* QUIZ: chỉ render nếu lessonDetail có quizId */}
-      {lessonDetail?.quizId && (
+      {/* QUIZ: chỉ render nếu lessonDetail có quiz section */}
+      {lessonDetail?.sections?.some(
+        (s) => s.studyType === "QUIZ" && s.quizId
+      ) && (
         <section className="trial-quiz" id="trial-quiz">
           <h2 className="trial-quiz-heading">
             Bài kiểm tra cho: {lessonDetail.title}

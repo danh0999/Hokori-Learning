@@ -1,12 +1,13 @@
 // src/pages/LessonPlayer/LessonQuizAttemptPage.jsx
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import api from "../../../configs/axios.js";
 import styles from "./LessonPlayerPage.module.scss";
 
 export default function LessonQuizAttemptPage() {
-  const { courseId, slug, lessonId, attemptId } = useParams();
+  const { courseId, slug, lessonId, sectionId, attemptId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [loadingQuestion, setLoadingQuestion] = useState(true);
   const [question, setQuestion] = useState(null);
@@ -17,10 +18,25 @@ export default function LessonQuizAttemptPage() {
   const [submittingQuiz, setSubmittingQuiz] = useState(false);
 
   const [isFinished, setIsFinished] = useState(false);
-  const [summary, setSummary] = useState(null); // tổng điểm, số câu
-  const [detail, setDetail] = useState(null); // chi tiết đúng/sai
+  const [summary, setSummary] = useState(null);
+  const [detail, setDetail] = useState(null);
+  const [noMoreQuestions, setNoMoreQuestions] = useState(false);
 
-  // ===== LẤY CÂU HỎI TIẾP THEO =====
+  const quizIdFromState = location.state?.quizId; // optional
+
+  const unwrap = (res) => {
+    const payload = res?.data;
+    if (!payload) return null;
+
+    // nếu response có field "data" thì lấy đúng field đó (kể cả null)
+    if (Object.prototype.hasOwnProperty.call(payload, "data")) {
+      return payload.data;
+    }
+
+    // fallback cho response không bọc
+    return payload;
+  };
+
   const fetchNextQuestion = async () => {
     try {
       setLoadingQuestion(true);
@@ -28,83 +44,71 @@ export default function LessonQuizAttemptPage() {
       setSelectedOptionId(null);
 
       const res = await api.get(
-        `/learner/lessons/${lessonId}/quiz/attempts/${attemptId}/next`
+        `/learner/sections/${sectionId}/quiz/attempts/${attemptId}/next`
       );
 
-      console.log("next question res", res.data);
+      const q = unwrap(res); // ✅ q có thể là object câu hỏi hoặc null
 
-      const wrapper = res.data || {};
-      const data = wrapper.data; // object câu hỏi thật sự nằm ở đây
-
-      // nếu null → hết câu hỏi
-      if (!data) {
+      if (q == null) {
         setQuestion(null);
-      } else {
-        setQuestion(data); // { questionId, content, options, ... }
+        setNoMoreQuestions(true);
+        return false;
       }
+
+      setNoMoreQuestions(false);
+      setQuestion(q);
+      return true;
     } catch (err) {
-      console.error("Lỗi load câu hỏi:", err);
+      console.error(err);
       setError("Không thể tải câu hỏi tiếp theo");
+      return false;
     } finally {
       setLoadingQuestion(false);
     }
   };
 
-  // ===== LẤY THÔNG TIN ATTEMPT BAN ĐẦU (quyết định resume hay xem kết quả) =====
   useEffect(() => {
-    const initAttempt = async () => {
+    const init = async () => {
       try {
         setLoadingQuestion(true);
         setError(null);
 
         const res = await api.get(
-          `/learner/lessons/${lessonId}/quiz/attempts/${attemptId}`
+          `/learner/sections/${sectionId}/quiz/attempts/${attemptId}`
         );
-        console.log("attempt detail res", res.data);
 
-        const wrapper = res.data || {};
-        const data = wrapper.data || wrapper;
+        const data = unwrap(res);
 
-        // object attempt thật sự (BE đang trả { data: { attempt: {...} } })
-        const attempt = data.attempt || data;
+        const attempt = data?.attempt ?? data;
 
-        const status = (attempt.status || "").toUpperCase();
-
+        const status = String(attempt?.status || "").toUpperCase();
         if (status === "IN_PROGRESS") {
-          // Attempt đang làm dở -> chỉ cần load câu tiếp theo
           setIsFinished(false);
           setSummary(null);
           setDetail(null);
           await fetchNextQuestion();
         } else {
-          // Attempt đã nộp -> không gọi /next, hiển thị kết quả luôn
           setIsFinished(true);
-
           setSummary({
-            score: attempt.scorePercent ?? attempt.score ?? null,
-            totalQuestions:
-              attempt.totalQuestions ??
-              (attempt.items ? attempt.items.length : null),
-            correctCount: attempt.correctCount ?? null,
+            scorePercent: attempt?.scorePercent ?? null,
+            passScorePercent: attempt?.passScorePercent ?? null,
+            totalQuestions: attempt?.totalQuestions ?? null,
+            correctCount: attempt?.correctCount ?? null,
           });
-
-          setDetail({
-            questions: attempt.items || [],
-          });
+          setDetail({ questions: attempt?.items || [] });
         }
       } catch (err) {
-        console.error("Lỗi tải thông tin attempt:", err);
+        console.error(err);
         setError("Không thể tải thông tin bài làm.");
       } finally {
         setLoadingQuestion(false);
       }
     };
 
-    initAttempt();
+    init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lessonId, attemptId]);
+  }, [sectionId, attemptId]);
 
-  // ===== CHỌN ĐÁP ÁN & LƯU =====
   const handleSubmitAnswer = async () => {
     if (!question || !selectedOptionId) return;
 
@@ -114,59 +118,50 @@ export default function LessonQuizAttemptPage() {
 
       const qId = question.questionId || question.id;
 
-      // SINGLE_CHOICE: BE nhận optionId
       await api.post(
-        `/learner/lessons/${lessonId}/quiz/attempts/${attemptId}/questions/${qId}/answer`,
+        `/learner/sections/${sectionId}/quiz/attempts/${attemptId}/questions/${qId}/answer`,
         { optionId: selectedOptionId }
       );
 
       await fetchNextQuestion();
     } catch (err) {
-      console.error("Lỗi lưu câu trả lời:", err);
+      console.error(err);
       setError("Không thể lưu câu trả lời. Vui lòng thử lại.");
     } finally {
       setSubmittingAnswer(false);
     }
   };
 
-  // ===== NỘP BÀI =====
   const handleSubmitQuiz = async () => {
     try {
       setSubmittingQuiz(true);
       setError(null);
 
       const submitRes = await api.post(
-        `/learner/lessons/${lessonId}/quiz/attempts/${attemptId}/submit`
+        `/learner/sections/${sectionId}/quiz/attempts/${attemptId}/submit`
       );
-      console.log("submit res", submitRes.data);
 
-      const submitWrapper = submitRes.data || {};
-      const submitData = submitWrapper.data || submitWrapper;
-      const submitAttempt = submitData.attempt || submitData;
+      const submitData = unwrap(submitRes);
+
+      const submitAttempt = submitData?.attempt ?? submitData;
 
       setSummary({
-        score: submitAttempt.scorePercent ?? submitAttempt.score ?? null,
-        totalQuestions:
-          submitAttempt.totalQuestions ??
-          (submitAttempt.items ? submitAttempt.items.length : null),
-        correctCount: submitAttempt.correctCount ?? null,
+        scorePercent: submitAttempt?.scorePercent ?? null,
+        passScorePercent: submitAttempt?.passScorePercent ?? null,
+        totalQuestions: submitAttempt?.totalQuestions ?? null,
+        correctCount: submitAttempt?.correctCount ?? null,
       });
 
       const detailRes = await api.get(
-        `/learner/lessons/${lessonId}/quiz/attempts/${attemptId}`
+        `/learner/sections/${sectionId}/quiz/attempts/${attemptId}`
       );
-      console.log("detail res after submit", detailRes.data);
-      const detailWrapper = detailRes.data || {};
-      const detailData = detailWrapper.data || detailWrapper;
-      const detailAttempt = detailData.attempt || detailData;
+      const detailData = unwrap(detailRes);
+      const detailAttempt = detailData?.attempt ?? detailData;
 
-      setDetail({
-        questions: detailAttempt.items || [],
-      });
-
+      setDetail({ questions: detailAttempt?.items || [] });
       setIsFinished(true);
     } catch (err) {
-      console.error("Lỗi nộp bài:", err);
+      console.error(err);
       setError("Không thể nộp bài. Vui lòng thử lại.");
     } finally {
       setSubmittingQuiz(false);
@@ -174,14 +169,9 @@ export default function LessonQuizAttemptPage() {
   };
 
   const handleBack = () => {
-    navigate(`/learn/${courseId}/${slug}/lesson/${lessonId}/content/${0}`, {
-      replace: false,
-    });
+    // quay về lesson (giữ behavior đơn giản)
+    navigate(`/learn/${courseId}/${slug}/lesson/${lessonId}/content/0`);
   };
-
-  /* =====================
-     RENDER
-  ====================== */
 
   return (
     <main className={styles.page}>
@@ -194,26 +184,26 @@ export default function LessonQuizAttemptPage() {
                 className={styles.secondaryBtn}
                 onClick={handleBack}
               >
-                ← Quay lại khóa học
+                ← Quay lại
               </button>
-              <h2>Làm quiz</h2>
+              <h2>Làm quiz{quizIdFromState ? ` (#${quizIdFromState})` : ""}</h2>
             </div>
 
             {error && <p className={styles.error}>{error}</p>}
 
-            {/* Đã nộp bài → hiển thị kết quả */}
             {isFinished ? (
               <div className={styles.quizResult}>
                 <h3>Kết quả bài làm</h3>
 
                 {summary && (
                   <div className={styles.quizMeta}>
-                    {summary.score != null &&
-                      summary.totalQuestions != null && (
-                        <p>
-                          Điểm: {summary.score}/{summary.totalQuestions}
-                        </p>
-                      )}
+                    {summary.scorePercent != null && (
+                      <p>
+                        Điểm: {summary.scorePercent}%
+                        {summary.passScorePercent != null &&
+                          ` (điểm đạt: ${summary.passScorePercent}%)`}
+                      </p>
+                    )}
                     {summary.correctCount != null &&
                       summary.totalQuestions != null && (
                         <p>
@@ -221,99 +211,15 @@ export default function LessonQuizAttemptPage() {
                           {summary.totalQuestions}
                         </p>
                       )}
-                  </div>
-                )}
-
-                {detail?.questions && detail.questions.length > 0 && (
-                  <div className={styles.quizDetail}>
-                    <h4 className={styles.quizDetailTitle}>Chi tiết câu hỏi</h4>
-                    <ol className={styles.quizQuestionList}>
-                      {detail.questions.map((q, idx) => {
-                        const options = q.options || [];
-                        const userOption = options.find(
-                          (op) =>
-                            op.optionId === q.chosenOptionId ||
-                            op.id === q.chosenOptionId
-                        );
-                        const correctOption = options.find(
-                          (op) =>
-                            op.optionId === q.correctOptionId ||
-                            op.id === q.correctOptionId
-                        );
-
-                        const userId =
-                          (userOption &&
-                            (userOption.optionId ?? userOption.id)) ??
-                          null;
-                        const correctId =
-                          (correctOption &&
-                            (correctOption.optionId ?? correctOption.id)) ??
-                          null;
-
-                        const isCorrect =
-                          userId != null &&
-                          correctId != null &&
-                          userId === correctId;
-
-                        return (
-                          <li
-                            key={q.questionId || q.id}
-                            className={styles.quizQuestionRow}
-                          >
-                            <div className={styles.quizQuestionHeader}>
-                              <span className={styles.quizQuestionIndex}>
-                                Câu {idx + 1}
-                              </span>
-                              <span
-                                className={`${styles.quizQuestionResultTag} ${
-                                  isCorrect
-                                    ? styles.quizQuestionResultCorrect
-                                    : styles.quizQuestionResultWrong
-                                }`}
-                              >
-                                {isCorrect ? "Đúng" : "Sai"}
-                              </span>
-                            </div>
-
-                            <p className={styles.quizQuestionText}>
-                              {q.content || q.text}
-                            </p>
-
-                            <div className={styles.quizAnswerRow}>
-                              <div className={styles.quizAnswerBlock}>
-                                <div className={styles.quizAnswerLabel}>
-                                  Bạn chọn
-                                </div>
-                                <div
-                                  className={`${styles.quizAnswerValue} ${
-                                    isCorrect
-                                      ? styles.quizAnswerCorrect
-                                      : styles.quizAnswerWrong
-                                  }`}
-                                >
-                                  {userOption?.content ||
-                                    userOption?.text ||
-                                    "Không chọn"}
-                                </div>
-                              </div>
-
-                              <div className={styles.quizAnswerBlock}>
-                                <div className={styles.quizAnswerLabel}>
-                                  Đáp án đúng
-                                </div>
-                                <div
-                                  className={`${styles.quizAnswerValue} ${styles.quizAnswerCorrect}`}
-                                >
-                                  {correctOption?.content ||
-                                    correctOption?.text ||
-                                    "Không có dữ liệu"}
-                                </div>
-                              </div>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ol>
+                    {summary.scorePercent != null && (
+                      <p>
+                        Trạng thái:{" "}
+                        {summary.passScorePercent == null ||
+                        summary.scorePercent >= summary.passScorePercent
+                          ? "Đạt yêu cầu"
+                          : "Chưa đạt yêu cầu"}
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -322,15 +228,14 @@ export default function LessonQuizAttemptPage() {
                   className={styles.primaryBtn}
                   onClick={handleBack}
                 >
-                  Quay lại khóa học
+                  Quay lại
                 </button>
               </div>
             ) : (
               <>
-                {/* Chưa nộp bài */}
                 {loadingQuestion ? (
                   <p>Đang tải câu hỏi...</p>
-                ) : !question ? (
+                ) : noMoreQuestions || !question ? (
                   <div className={styles.quizNoMoreQuestion}>
                     <p>Bạn đã trả lời tất cả câu hỏi.</p>
                     <button

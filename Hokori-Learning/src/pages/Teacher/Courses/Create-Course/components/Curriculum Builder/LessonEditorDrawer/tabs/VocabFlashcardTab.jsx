@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Button, Form, Input, Typography } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 import {
   createContentThunk,
@@ -51,6 +51,10 @@ export default function VocabFlashcardTab({
   const [sectionId, setSectionId] = useState(null);
   const [contentId, setContentId] = useState(null);
 
+  const { currentSet } = useSelector(
+    (state) => state.flashcardTeacher || state.flashcard
+  );
+
   // 🔹 Mỗi lần đổi lesson → clear currentSet, cards,… để không xài set của lesson trước
   useEffect(() => {
     dispatch(resetFlashcardState());
@@ -87,12 +91,11 @@ export default function VocabFlashcardTab({
     onDurationComputed(contentId ? 600 : 0);
   }, [contentId, onDurationComputed]);
 
-  const hasSet = !!contentId;
+  const hasSet = !!(contentId && currentSet?.id);
 
   const handleCreateOrOpen = useCallback(async () => {
     if (!lesson?.id) return toast.error("Missing lessonId");
 
-    // validate title
     let sectionTitle = "";
     try {
       const v = await form.validateFields();
@@ -139,8 +142,10 @@ export default function VocabFlashcardTab({
         cntId = extractContentId(createdContent);
         if (!cntId) throw new Error("Cannot extract sectionContentId");
         setContentId(cntId);
+      }
 
-        // 3) Tạo flashcard set cho content này
+      // 3) Nếu chưa có flashcard set (currentSet null) → tạo mới
+      if (!currentSet?.id) {
         const rs = await dispatch(
           createCourseVocabSet({
             title: `Từ vựng – ${lesson.title || "Lesson"}`,
@@ -172,6 +177,7 @@ export default function VocabFlashcardTab({
     dispatch,
     sectionsHook,
     onSaved,
+    currentSet, // nhớ thêm currentSet vào deps
   ]);
 
   return (

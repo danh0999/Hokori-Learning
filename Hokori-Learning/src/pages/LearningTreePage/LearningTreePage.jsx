@@ -102,10 +102,32 @@ export default function LearningTreePage() {
     });
   };
 
-  // Điều hướng khi bấm vào content → qua trang Player
-  const handleContentClick = (lessonId, content, chapterOrderIndex) => {
+  // Điều hướng khi bấm vào content → qua trang Player hoặc Quiz
+  const handleContentClick = (
+    lessonId,
+    content,
+    chapterOrderIndex,
+    sectionId
+  ) => {
     if (!courseSlug) return;
 
+    // Nếu là QUIZ content, navigate đến quiz page
+    if (content.contentFormat === "QUIZ" && sectionId) {
+      // Navigate đến quiz overview trong LessonPlayerPage
+      navigate(
+        `/learn/${courseId}/${courseSlug}/lesson/${lessonId}/content/0`,
+        {
+          state: {
+            chapterOrderIndex,
+            openQuiz: true,
+            quizSectionId: sectionId,
+          },
+        }
+      );
+      return;
+    }
+
+    // Content thường: navigate đến content page
     navigate(
       `/learn/${courseId}/${courseSlug}/lesson/${lessonId}/content/${content.contentId}`,
       {
@@ -242,7 +264,9 @@ export default function LearningTreePage() {
                               dung
                             </span>
                           )}
-                          {ls.quizId && <span>Bài quiz kèm theo</span>}
+                          {ls.sections?.some(
+                            (s) => s.studyType === "QUIZ" && s.quizId
+                          ) && <span>Bài quiz kèm theo</span>}
                         </div>
 
                         {ls.isCompleted && (
@@ -282,7 +306,8 @@ export default function LearningTreePage() {
                                         handleContentClick(
                                           ls.lessonId,
                                           ct,
-                                          activeChapter.orderIndex
+                                          activeChapter.orderIndex,
+                                          sec.sectionId
                                         )
                                       }
                                     >
@@ -297,6 +322,9 @@ export default function LearningTreePage() {
                                         )}
                                         {ct.contentFormat ===
                                           "FLASHCARD_SET" && <GiCardPick />}
+                                        {ct.contentFormat === "QUIZ" && (
+                                          <GiCardPick />
+                                        )}
                                       </span>
 
                                       <span className={styles.contentMainText}>
@@ -306,6 +334,8 @@ export default function LearningTreePage() {
                                           "Nội dung bài đọc"}
                                         {ct.contentFormat === "FLASHCARD_SET" &&
                                           "Từ vựng"}
+                                        {ct.contentFormat === "QUIZ" &&
+                                          "Bài quiz"}
                                       </span>
 
                                       {ct.isCompleted && (

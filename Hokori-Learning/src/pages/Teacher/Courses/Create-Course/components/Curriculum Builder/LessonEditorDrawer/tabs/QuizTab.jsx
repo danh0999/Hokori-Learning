@@ -1,37 +1,83 @@
 // LessonEditorDrawer/tabs/QuizTab.jsx
 import React, { useEffect, useState, useCallback } from "react";
-import { Button, Space, Typography, Spin } from "antd";
+import { Button, Space, Typography, Spin, message } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
 
 import {
   fetchLessonQuizThunk,
   clearCurrentQuiz,
 } from "../../../../../../../../redux/features/quizSlice.js";
+import { createSectionThunk } from "../../../../../../../../redux/features/teacherCourseSlice.js";
 
 import QuizList from "../../../../../../ManageDocument/Quiz/QuizList/QuizList.jsx";
 import QuizBuilderModal from "../../../../../../ManageDocument/Quiz/QuizBuilderModal/QuizBuilderModal.jsx";
 import BulkImportModal from "../../../../../../ManageDocument/Quiz/BulkImportModal/BulkImportModal.jsx";
 
 import styles from "../styles.module.scss";
-import { toast } from "react-toastify";
 
 const { Text } = Typography;
 
-export default function QuizTab({ lesson, onDurationComputed }) {
+/**
+ * Props:
+ *  - lesson: lessonFromTree
+ *  - quizSection: section có studyType = "QUIZ" (nếu đã tồn tại trong tree)
+ *  - onDurationComputed: (sec) => void
+ */
+export default function QuizTab({ lesson, quizSection, onDurationComputed }) {
   const dispatch = useDispatch();
-  const { currentQuiz, loading } = useSelector((state) => state.quiz || {});
+  const { currentQuiz, loading, saving } = useSelector(
+    (state) => state.quiz || {}
+  );
+
+  // section QUIZ: ưu tiên cái vừa tạo local, nếu không thì lấy từ tree
+  const [localSection, setLocalSection] = useState(null);
+  const effectiveSection = localSection || quizSection || null;
+  const sectionId = effectiveSection?.id;
 
   const [openBuilder, setOpenBuilder] = useState(false);
   const [openBulk, setOpenBulk] = useState(false);
   const [draftQuiz, setDraftQuiz] = useState(null);
 
-  // ── Load quiz khi mở/chọn lesson ─────────────────────────
+  // ── helper: đảm bảo luôn có section QUIZ ─────────────────
+  const ensureQuizSection = useCallback(async () => {
+    // đã có section thì xài luôn
+    if (sectionId) return effectiveSection;
+
+    if (!lesson?.id) {
+      toast.error("Thiếu lessonId để tạo section Quiz.");
+      return null;
+    }
+
+    try {
+      const created = await dispatch(
+        createSectionThunk({
+          lessonId: lesson.id,
+          data: {
+            title: quizSection?.title || `Quiz - ${lesson.title || ""}`,
+            orderIndex: (lesson.sections?.length || 0) + 1,
+            studyType: "QUIZ", // ⚠️ QUAN TRỌNG: phải là QUIZ
+          },
+        })
+      ).unwrap();
+
+      const sec = created.section || created;
+      setLocalSection(sec);
+      return sec;
+    } catch (err) {
+      console.error("Tạo section QUIZ thất bại", err);
+      toast.error("Không tạo được section cho Quiz.");
+      return null;
+    }
+  }, [dispatch, lesson, quizSection, sectionId, effectiveSection]);
+
+  // ── Load quiz khi có sectionId ────────────────────────────
   useEffect(() => {
     dispatch(clearCurrentQuiz());
-    if (!lesson?.id) return;
-    dispatch(fetchLessonQuizThunk(lesson.id));
-  }, [lesson?.id, dispatch]);
+    if (!sectionId) return;
+    dispatch(fetchLessonQuizThunk(sectionId));
+  }, [sectionId, dispatch]);
 
   // Nếu BE đã có quiz với timeLimitSec -> báo duration cho parent
   useEffect(() => {
@@ -65,13 +111,15 @@ export default function QuizTab({ lesson, onDurationComputed }) {
         typeof q.showExplanation === "boolean" ? q.showExplanation : true,
       isRequired: !!q.isRequired,
       tags: q.tags || [],
-      // câu hỏi sẽ để builder tự fetch
       questions: [],
     };
   }, []);
 
   // ── Tạo quiz mới ─────────────────────────────────────────
-  const handleCreate = () => {
+  const handleCreate = async () => {
+    const sec = await ensureQuizSection();
+    if (!sec?.id) return;
+
     setDraftQuiz(null);
     setOpenBuilder(true);
   };
@@ -86,10 +134,10 @@ export default function QuizTab({ lesson, onDurationComputed }) {
     setOpenBuilder(true);
   };
 
-  // ── Bulk import → đưa câu hỏi vào draftQuiz khi mở modal ─
+  // ── Bulk import → merge vào draftQuiz ────────────────────
   const handleBulkDone = (questions) => {
     setOpenBulk(false);
-    if (!questions?.length) return;
+    if (!questions || !questions.length) return;
 
     const base = draftQuiz ||
       mapQuizFromBE(currentQuiz) || {
@@ -110,20 +158,26 @@ export default function QuizTab({ lesson, onDurationComputed }) {
   // ── Sau khi modal lưu xong (đã gọi hết API) ───────────────
   // onSaved sẽ nhận meta (ít nhất có timeLimitMinutes)
   const handleSaved = async ({ timeLimitMinutes }) => {
-    // reload quiz từ BE để list luôn đúng
-    if (lesson?.id) {
-      await dispatch(fetchLessonQuizThunk(lesson.id));
-    }
+    try {
+      const sec = sectionId ? effectiveSection : await ensureQuizSection();
+      if (sec?.id) {
+        await dispatch(fetchLessonQuizThunk(sec.id)).unwrap();
+      }
 
-    setOpenBuilder(false);
-    toast.success("Đã lưu quiz.");
+      message.success("Đã lưu quiz.");
 
-    if (typeof onDurationComputed === "function") {
-      const minutes =
-        typeof timeLimitMinutes === "number" && timeLimitMinutes > 0
-          ? timeLimitMinutes
-          : 30;
-      onDurationComputed(minutes * 60);
+      if (typeof onDurationComputed === "function") {
+        const minutes =
+          typeof timeLimitMinutes === "number" && timeLimitMinutes > 0
+            ? timeLimitMinutes
+            : 30;
+        onDurationComputed(minutes * 60);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Không reload được quiz sau khi lưu.");
+    } finally {
+      setOpenBuilder(false);
     }
   };
 
@@ -154,7 +208,7 @@ export default function QuizTab({ lesson, onDurationComputed }) {
         </Space>
       </div>
 
-      <Spin spinning={loading}>
+      <Spin spinning={loading || saving}>
         <QuizList
           value={currentQuiz ? [currentQuiz] : []}
           onEdit={handleEdit}
@@ -170,7 +224,7 @@ export default function QuizTab({ lesson, onDurationComputed }) {
 
       <QuizBuilderModal
         open={openBuilder}
-        lessonId={lesson?.id}
+        sectionId={sectionId || localSection?.id}
         initial={draftQuiz}
         onCancel={() => setOpenBuilder(false)}
         onSaved={handleSaved}
