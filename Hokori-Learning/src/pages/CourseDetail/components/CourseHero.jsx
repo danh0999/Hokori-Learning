@@ -11,6 +11,14 @@ import api from "../../../configs/axios";
 
 const formatMoney = (value) => (Number(value) || 0).toLocaleString("vi-VN");
 
+const slugify = (str = "") =>
+  str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "");
+
 const CourseHero = ({ course }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -130,7 +138,9 @@ const CourseHero = ({ course }) => {
       return;
     }
 
-    navigate(`/my-courses/${id}/learn`);
+    const slug = slugify(title || "");
+    // bỏ trial => mặc định nhảy vào chapter orderIndex = 1
+    navigate(`/learn/${id}/${slug}/home/chapter/1`);
   };
 
   // 2. Đăng ký khóa **miễn phí**

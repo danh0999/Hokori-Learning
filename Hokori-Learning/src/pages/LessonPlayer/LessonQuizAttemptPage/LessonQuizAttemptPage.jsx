@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import api from "../../../configs/axios.js";
-import styles from "./LessonPlayerPage.module.scss";
+import styles from "./LessonQuizAttemptPage.module.scss";
 
 export default function LessonQuizAttemptPage() {
   const { courseId, slug, lessonId, sectionId, attemptId } = useParams();
@@ -22,18 +22,15 @@ export default function LessonQuizAttemptPage() {
   const [detail, setDetail] = useState(null);
   const [noMoreQuestions, setNoMoreQuestions] = useState(false);
 
-  const quizIdFromState = location.state?.quizId; // optional
+  const quizIdFromState = location.state?.quizId;
+  const returnContentId = location.state?.returnContentId; // ✅ quan trọng
+  const chapterOrderIndex = location.state?.chapterOrderIndex ?? 1;
 
   const unwrap = (res) => {
     const payload = res?.data;
     if (!payload) return null;
-
-    // nếu response có field "data" thì lấy đúng field đó (kể cả null)
-    if (Object.prototype.hasOwnProperty.call(payload, "data")) {
+    if (Object.prototype.hasOwnProperty.call(payload, "data"))
       return payload.data;
-    }
-
-    // fallback cho response không bọc
     return payload;
   };
 
@@ -47,7 +44,7 @@ export default function LessonQuizAttemptPage() {
         `/learner/sections/${sectionId}/quiz/attempts/${attemptId}/next`
       );
 
-      const q = unwrap(res); // ✅ q có thể là object câu hỏi hoặc null
+      const q = unwrap(res);
 
       if (q == null) {
         setQuestion(null);
@@ -78,7 +75,6 @@ export default function LessonQuizAttemptPage() {
         );
 
         const data = unwrap(res);
-
         const attempt = data?.attempt ?? data;
 
         const status = String(attempt?.status || "").toUpperCase();
@@ -142,7 +138,6 @@ export default function LessonQuizAttemptPage() {
       );
 
       const submitData = unwrap(submitRes);
-
       const submitAttempt = submitData?.attempt ?? submitData;
 
       setSummary({
@@ -169,8 +164,16 @@ export default function LessonQuizAttemptPage() {
   };
 
   const handleBack = () => {
-    // quay về lesson (giữ behavior đơn giản)
-    navigate(`/learn/${courseId}/${slug}/lesson/${lessonId}/content/0`);
+    // ✅ quay về đúng content quiz (để LessonPlayer tự refetch progress)
+    if (returnContentId) {
+      navigate(
+        `/learn/${courseId}/${slug}/lesson/${lessonId}/content/${returnContentId}`,
+        { state: { chapterOrderIndex } }
+      );
+      return;
+    }
+    // fallback
+    navigate(`/learn/${courseId}/${slug}/home/chapter/${chapterOrderIndex}`);
   };
 
   return (

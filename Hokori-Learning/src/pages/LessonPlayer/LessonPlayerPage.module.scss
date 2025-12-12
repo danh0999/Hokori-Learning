@@ -70,8 +70,8 @@
 /* ===== MAIN 2 CỘT ===== */
 .mainLayout {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
-  gap: 24px;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 28px;
   align-items: flex-start;
 }
 
@@ -638,4 +638,26 @@
 .flashcardError {
   color: #b91c1c;
   font-size: 13px;
+}
+.commentsSection {
+  margin-top: 16px;
+  width: 100%;
+  max-width: 100%;
+}
+/* LessonPlayerPage.module.scss */
+.commentsWrap {
+  width: 100%;
+  max-width: 100%;
+  padding: 0; /* hoặc cùng padding container nếu bạn muốn */
+}
+.commentsOuter {
+  width: 100%;
+  margin-top: 18px;
+}
+
+.commentsInner {
+  /* canh giống container của page (giữ đồng bộ bề ngang) */
+  max-width: 1200px; /* hoặc đúng max-width container của bạn */
+  margin: 0 auto;
+  padding: 0 16px; /* giống padding container */
 }
