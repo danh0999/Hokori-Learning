@@ -135,8 +135,9 @@ const aiPackageSlice = createSlice({
   initialState,
   reducers: {
     // <-- IMPORTANT for Home → open modal
-    openModal(state) {
+    openModal(state, action) {
       state.showModal = true;
+      state.serviceNeed = action.payload || null; // GRAMMAR | KAIWA | CONVERSATION
     },
 
     closeModal(state) {

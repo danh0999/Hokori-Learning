@@ -1,9 +1,8 @@
-// src/pages/AiPackage/components/AiPackageCard.jsx
 import React from "react";
 import styles from "./AiPackageModal.module.scss";
 import { Button } from "../../../components/Button/Button";
 
-const formatPrice = (priceCents, currency = "VND") => {
+const formatPrice = (priceCents) => {
   const value = (priceCents || 0) / 100;
   return `${value.toLocaleString("vi-VN")}đ`;
 };
@@ -31,8 +30,11 @@ export default function AiPackageCard({
 
       <ul>
         <li>{pkg.grammarQuota} lượt kiểm tra chính tả</li>
-        <li>{pkg.kaiwaQuota} lượt Kaiwa</li>
-        <li>{pkg.pronunQuota} lượt kiểm tra phát âm</li>
+        <li>{pkg.kaiwaQuota} lượt luyện nói (Kaiwa)</li>
+
+        {pkg.conversationQuota > 0 && (
+          <li>{pkg.conversationQuota} lượt hội thoại cùng AI</li>
+        )}
       </ul>
 
       <div className={styles.price}>{formatPrice(pkg.priceCents)}</div>
@@ -40,7 +42,6 @@ export default function AiPackageCard({
       {isActive ? (
         <Button content="Đang sử dụng" disabled />
       ) : hasActivePackage ? (
-        // Đã có gói khác đang active → không cho mua gói này
         <Button content="Không khả dụng" disabled />
       ) : (
         <Button

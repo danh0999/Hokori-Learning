@@ -37,6 +37,8 @@ import AiSucceedPage from "../pages/AiPackage/PaymentSuccess";
 import PaymentResultPage from "../pages/PaymentResultPage/PaymentResultPage";
 import CertificateDetail from "../pages/Certificate/CertificateDetail";
 import JLPTHistory from "../pages/JLPTTest/JLPTHistory";
+import AiConversationPage from "../pages/AiConversationPage/AiConversationPage";
+
 // ===== Teacher =====
 import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
 import ManageCourses from "../pages/Teacher/Courses/ManageCourses";
@@ -123,6 +125,7 @@ const routes = [
           { path: "profile", element: <ProfilePage /> },
           { path: "ai-kaiwa", element: <AiKaiwaPage /> },
           { path: "ai-analyse", element: <AiAnalysePage /> },
+          { path: "ai-conversation", element: <AiConversationPage /> },
           { path: "jlpt", element: <JLPTList /> },
           { path: "policies", element: <LearnerPolicies /> },
           { path: "payment/ai-package/success", element: <AiSucceedPage /> },

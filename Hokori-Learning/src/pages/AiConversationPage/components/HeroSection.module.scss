@@ -1,0 +1,40 @@
+.hero {
+  width: 100%;
+  padding: 22px 18px;
+  background: radial-gradient(900px 300px at 10% 10%, rgba(37, 99, 235, 0.18), transparent 60%),
+    radial-gradient(900px 300px at 90% 10%, rgba(99, 102, 241, 0.18), transparent 60%),
+    #0b1220;
+  color: #fff;
+}
+
+.inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 1.3rem;
+}
+
+.title {
+  margin: 0;
+  font-weight: 900;
+  letter-spacing: -0.4px;
+  font-size: 1.35rem;
+}
+
+.subtitle {
+  margin: 6px 0 0;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.5;
+  max-width: 980px;
+}

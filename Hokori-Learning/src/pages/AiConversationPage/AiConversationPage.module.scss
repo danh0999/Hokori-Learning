@@ -1,0 +1,215 @@
+.page {
+  width: 100%;
+  background: #f5f7fb;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main {
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 22px 18px 36px;
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 18px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(17, 24, 39, 0.05);
+}
+
+.leftCard {
+  padding: 16px;
+}
+
+.rightCard {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 520px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.sectionTitle {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+}
+
+.smallNote {
+  font-size: 0.88rem;
+  color: #6b7280;
+}
+
+.badge {
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  color: #1e3a8a;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+
+.formRow {
+  margin-bottom: 12px;
+}
+
+.label {
+  display: block;
+  font-weight: 700;
+  color: #111827;
+  font-size: 0.92rem;
+  margin-bottom: 6px;
+}
+
+.select,
+.textarea {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px 12px;
+  outline: none;
+  font-size: 0.95rem;
+  transition: 0.15s ease;
+}
+
+.select:focus,
+.textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.note {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.noteKey {
+  font-weight: 800;
+  color: #111827;
+}
+
+.noteVal {
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.primaryBtn,
+.secondaryBtn,
+.ghostBtn {
+  border: none;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+
+.primaryBtn {
+  background: #2563eb;
+  color: #fff;
+  flex: 1;
+}
+
+.primaryBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.secondaryBtn {
+  background: #111827;
+  color: #fff;
+  flex: 1;
+}
+
+.ghostBtn {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 14px 0;
+}
+
+.recorderBlock {
+  margin-top: 4px;
+}
+
+.subTitle {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.subDesc {
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+  color: #6b7280;
+  line-height: 1.45;
+}
+
+.hint {
+  margin-top: 8px;
+  font-size: 0.88rem;
+  color: #6b7280;
+}
+
+.errorBox {
+  margin-top: 12px;
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #991b1b;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.chatBox {
+  flex: 1;
+  border: 1px solid #e5e7eb;
+  background: #fbfdff;
+  border-radius: 14px;
+  padding: 12px;
+  overflow: auto;
+}
+
+.empty {
+  text-align: center;
+  padding: 28px 12px;
+  color: #6b7280;
+}
+
+.emptyIcon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 980px) {
+  .main {
+    grid-template-columns: 1fr;
+  }
+}
