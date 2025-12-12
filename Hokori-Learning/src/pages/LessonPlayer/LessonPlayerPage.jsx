@@ -1,9 +1,11 @@
 // src/pages/LessonPlayer/LessonPlayerPage.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useSelector } from "react-redux";
 import api from "../../configs/axios";
 import styles from "./LessonPlayerPage.module.scss";
 import { buildFileUrl } from "../../utils/fileUrl";
+import CourseComments from "../../components/CourseComments/CourseComments";
 
 // helper detect video / image
 const VIDEO_EXTS = [".mp4", ".mov", ".m4v", ".webm", ".ogg"];
@@ -20,40 +22,14 @@ const getExt = (path = "") => {
 const isVideoAsset = (path) => VIDEO_EXTS.includes(getExt(path));
 const isImageAsset = (path) => IMAGE_EXTS.includes(getExt(path));
 
-/**
- * ✅ QUY TẮC MỚI:
- * QuizId nằm ở CONTENT (contentFormat = "QUIZ"), không nằm ở section.quizId
- *
- * Return:
- * { sectionId, contentId, quizId }
- */
-const getQuizMetaFromLesson = (lessonLike) => {
-  if (!lessonLike?.sections?.length) return null;
-
-  for (const sec of lessonLike.sections) {
-    if (String(sec.studyType || "").toUpperCase() !== "QUIZ") continue;
-
-    const contents = sec.contents || [];
-    const quizContent = contents.find((ct) => {
-      const fmt = String(ct.contentFormat || "").toUpperCase();
-      return fmt === "QUIZ" && ct.quizId != null;
-    });
-
-    if (quizContent) {
-      return {
-        sectionId: sec.sectionId ?? sec.id,
-        contentId: quizContent.contentId ?? quizContent.id,
-        quizId: quizContent.quizId,
-      };
-    }
-  }
-  return null;
-};
-
 export default function LessonPlayerPage() {
   const { courseId, slug, lessonId, contentId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const currentUser = useSelector((state) => state.user);
+  const currentUserId = currentUser?.id || currentUser?.userId || null;
+
+  const isLoggedIn = !!currentUserId;
 
   const [lesson, setLesson] = useState(null);
   const [loadingLesson, setLoadingLesson] = useState(true);
@@ -75,10 +51,7 @@ export default function LessonPlayerPage() {
   const [flashcardIndex, setFlashcardIndex] = useState(0);
   const [flashcardFlipped, setFlashcardFlipped] = useState(false);
 
-  // QUIZ – view & data
-  // activeView: "content" | "quiz-info"
-  const [activeView, setActiveView] = useState("content");
-  const [quizLessonId, setQuizLessonId] = useState(null);
+  // QUIZ (quiz là content)
   const [quizSectionId, setQuizSectionId] = useState(null);
   const [quizId, setQuizId] = useState(null);
 
@@ -132,7 +105,7 @@ export default function LessonPlayerPage() {
     !globalSequence.length || currentGlobalIndex === globalSequence.length - 1;
 
   /* ===========================
-     FETCH COURSE TREE CHO SIDEBAR
+     FETCH COURSE TREE (SIDEBAR)
   ============================ */
   useEffect(() => {
     const fetchTree = async () => {
@@ -152,8 +125,7 @@ export default function LessonPlayerPage() {
         );
 
         if (currentChapter) {
-          const chapterSet = new Set([currentChapter.chapterId]);
-          setOpenChapterIds(chapterSet);
+          setOpenChapterIds(new Set([currentChapter.chapterId]));
 
           const currentLesson =
             currentChapter.lessons?.find(
@@ -184,74 +156,69 @@ export default function LessonPlayerPage() {
   /* ===========================
      FETCH LESSON DETAIL + CONTENT PROGRESS
   ============================ */
+  const fetchLesson = async () => {
+    try {
+      setLoadingLesson(true);
+
+      const [detailRes, contentsRes] = await Promise.all([
+        api.get(`/learner/lessons/${lessonId}/detail`),
+        api.get(`/learner/lessons/${lessonId}/contents`),
+      ]);
+
+      const detail = detailRes.data;
+      const contentsProgress = contentsRes.data || [];
+
+      const progressMap = new Map(
+        contentsProgress.map((c) => [c.contentId ?? c.id, c])
+      );
+
+      const lessonWithProgress = {
+        ...detail,
+        sections: detail.sections?.map((sec) => ({
+          ...sec,
+          contents: sec.contents?.map((ct) => {
+            const key = ct.contentId ?? ct.id;
+            const progress = progressMap.get(key);
+            return {
+              ...ct,
+              contentId: key,
+              ...(progress || {}),
+            };
+          }),
+        })),
+      };
+
+      setLesson(lessonWithProgress);
+      setErrorLesson(null);
+    } catch (err) {
+      console.error(err);
+      setErrorLesson("Không thể tải nội dung bài học");
+    } finally {
+      setLoadingLesson(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchLesson = async () => {
-      try {
-        setLoadingLesson(true);
-
-        const [detailRes, contentsRes] = await Promise.all([
-          api.get(`/learner/lessons/${lessonId}/detail`),
-          api.get(`/learner/lessons/${lessonId}/contents`),
-        ]);
-
-        const detail = detailRes.data;
-        const contentsProgress = contentsRes.data || [];
-
-        const progressMap = new Map(
-          contentsProgress.map((c) => [c.contentId ?? c.id, c])
-        );
-
-        const lessonWithProgress = {
-          ...detail,
-          sections: detail.sections?.map((sec) => ({
-            ...sec,
-            contents: sec.contents?.map((ct) => {
-              const key = ct.contentId ?? ct.id;
-              const progress = progressMap.get(key);
-              return {
-                ...ct,
-                contentId: key,
-                ...(progress || {}),
-              };
-            }),
-          })),
-        };
-
-        setLesson(lessonWithProgress);
-        setErrorLesson(null);
-      } catch (err) {
-        console.error(err);
-        setErrorLesson("Không thể tải nội dung bài học");
-      } finally {
-        setLoadingLesson(false);
-      }
-    };
-
     fetchLesson();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonId]);
-
-  // mỗi lần đổi lesson/content → về view "content"
-  useEffect(() => {
-    setActiveView("content");
-    setQuizLessonId(null);
-    setQuizSectionId(null);
-    setQuizId(null);
-    setQuizInfo(null);
-    setQuizAttempts([]);
-    setQuizError(null);
-  }, [numericLessonId, numericContentId]);
 
   /* ===========================
      FLATTEN CONTENTS TRONG 1 LESSON
+     (QUAN TRỌNG: phải có sectionId + quizId)
   ============================ */
   const flatContents = useMemo(() => {
     if (!lesson) return [];
     const items = [];
     lesson.sections?.forEach((sec) => {
+      const sectionId = sec.sectionId ?? sec.id;
       sec.contents?.forEach((ct) => {
         items.push({
+          sectionId,
           sectionTitle: sec.title,
+          quizId: ct.quizId ?? null,
           ...ct,
+          contentId: ct.contentId ?? ct.id,
         });
       });
     });
@@ -266,6 +233,11 @@ export default function LessonPlayerPage() {
 
   const activeContent =
     flatContents.length > 0 ? flatContents[currentIndex] : null;
+
+  const activeFmt = String(activeContent?.contentFormat || "").toUpperCase();
+  const isQuizContent = activeFmt === "QUIZ";
+  const isCurrentCompleted = !!activeContent?.isCompleted;
+  const canMarkCompleted = !isQuizContent && !isCurrentCompleted;
 
   /* ===========================
      NAVIGATION
@@ -304,6 +276,9 @@ export default function LessonPlayerPage() {
     )
       return;
 
+    // ✅ chặn next nếu đang ở quiz mà chưa hoàn thành
+    if (isQuizContent && !isCurrentCompleted) return;
+
     const target = globalSequence[currentGlobalIndex + 1];
     updateUrlForContent(
       target.lessonId,
@@ -313,16 +288,13 @@ export default function LessonPlayerPage() {
   };
 
   /* ===========================
-     MARK AS COMPLETED
+     MARK AS COMPLETED (content thường)
   ============================ */
   const handleMarkCompleted = async () => {
     if (!activeContent?.contentId) return;
 
     const fmt = String(activeContent?.contentFormat || "").toUpperCase();
-    if (fmt === "QUIZ") {
-      // quiz không mark completed tay
-      return;
-    }
+    if (fmt === "QUIZ") return; // quiz không mark tay
 
     try {
       await api.patch(`/learner/contents/${activeContent.contentId}/progress`, {
@@ -330,7 +302,7 @@ export default function LessonPlayerPage() {
         isCompleted: true,
       });
 
-      // Cập nhật lesson hiện tại
+      // Update lesson local
       setLesson((prev) => {
         if (!prev) return prev;
         return {
@@ -338,7 +310,7 @@ export default function LessonPlayerPage() {
           sections: prev.sections?.map((sec) => ({
             ...sec,
             contents: sec.contents?.map((ct) =>
-              ct.contentId === activeContent.contentId
+              (ct.contentId ?? ct.id) === activeContent.contentId
                 ? { ...ct, isCompleted: true }
                 : ct
             ),
@@ -346,7 +318,7 @@ export default function LessonPlayerPage() {
         };
       });
 
-      // Cập nhật courseTree (sidebar)
+      // Update courseTree local
       setCourseTree((prev) => {
         if (!prev?.chapters) return prev;
         return {
@@ -378,13 +350,14 @@ export default function LessonPlayerPage() {
   const getLessonContents = (ls) => {
     const arr = [];
     ls.sections?.forEach((sec) => {
+      const sectionId = sec.sectionId ?? sec.id;
       sec.contents?.forEach((ct) => {
         arr.push({
           lessonId: ls.lessonId,
           lessonTitle: ls.title,
 
-          sectionId: sec.sectionId ?? sec.id, // ✅ thêm
-          quizId: ct.quizId ?? null, // ✅ thêm (nếu contentFormat QUIZ)
+          sectionId,
+          quizId: ct.quizId ?? null,
 
           contentId: ct.contentId ?? ct.id,
           contentFormat: ct.contentFormat,
@@ -419,11 +392,6 @@ export default function LessonPlayerPage() {
     contentIdTarget,
     chapterOrderIndex
   ) => {
-    setActiveView("content");
-    setQuizLessonId(null);
-    setQuizSectionId(null);
-    setQuizId(null);
-
     updateUrlForContent(
       lessonIdTarget,
       { contentId: contentIdTarget },
@@ -432,36 +400,26 @@ export default function LessonPlayerPage() {
   };
 
   /* ===========================
-     QUIZ OVERVIEW (NEW STRUCTURE)
+     QUIZ: khi activeContent là QUIZ → set meta + fetch info/attempts
   ============================ */
-  const openQuizOverview = (lessonObj) => {
-    const meta = getQuizMetaFromLesson(lessonObj);
-    if (!meta) {
-      setQuizError("Bài học này hiện chưa có quiz.");
-      setActiveView("quiz-info");
-      setQuizLessonId(lessonObj?.lessonId ?? null);
+  useEffect(() => {
+    if (!activeContent) return;
+    if (!isQuizContent) {
       setQuizSectionId(null);
       setQuizId(null);
+      setQuizInfo(null);
+      setQuizAttempts([]);
+      setQuizError(null);
+      setQuizLoading(false);
       return;
     }
 
-    setQuizError(null);
-    setActiveView("quiz-info");
-    setQuizLessonId(lessonObj.lessonId);
-    setQuizSectionId(meta.sectionId);
-    setQuizId(meta.quizId);
-  };
-  const openQuizOverviewByMeta = ({ lessonId, sectionId, quizId }) => {
-    setQuizError(null);
-    setActiveView("quiz-info");
-    setQuizLessonId(lessonId);
-    setQuizSectionId(sectionId);
-    setQuizId(quizId ?? null);
-  };
+    setQuizSectionId(activeContent.sectionId);
+    setQuizId(activeContent.quizId ?? null);
+  }, [activeContent, isQuizContent]);
 
-  // khi đang ở view quiz-info + có quizSectionId → load info + lịch sử
   useEffect(() => {
-    if (activeView !== "quiz-info") return;
+    if (!isQuizContent) return;
     if (!quizSectionId) return;
 
     let cancelled = false;
@@ -482,6 +440,7 @@ export default function LessonPlayerPage() {
         const attemptsWrapper = attemptsRes.data || {};
 
         const infoData = infoWrapper.data || null;
+
         const attemptsDataRaw = attemptsWrapper.data || [];
         const attemptsData = Array.isArray(attemptsDataRaw)
           ? attemptsDataRaw
@@ -501,13 +460,14 @@ export default function LessonPlayerPage() {
     return () => {
       cancelled = true;
     };
-  }, [activeView, quizSectionId]);
+  }, [isQuizContent, quizSectionId]);
 
   const handleStartQuiz = async () => {
-    if (!quizSectionId || !quizLessonId) return;
+    if (!quizSectionId || !numericLessonId) return;
 
     try {
       setQuizLoading(true);
+      setQuizError(null);
 
       const res = await api.post(
         `/learner/sections/${quizSectionId}/quiz/attempts/start`
@@ -517,15 +477,18 @@ export default function LessonPlayerPage() {
       const attemptId = attempt.attemptId || attempt.id;
 
       if (!attemptId) {
-        console.error("Không tìm thấy attemptId từ API start", attempt);
         setQuizError("Không lấy được attemptId từ server");
         return;
       }
 
       navigate(
-        `/learn/${courseId}/${slug}/lesson/${quizLessonId}/section/${quizSectionId}/quiz/attempt/${attemptId}`,
+        `/learn/${courseId}/${slug}/lesson/${numericLessonId}/section/${quizSectionId}/quiz/attempt/${attemptId}`,
         {
-          state: { quizId }, // optional (để debug/đồng bộ)
+          state: {
+            quizId,
+            returnContentId: activeContent?.contentId, // ✅ quay lại đúng content quiz
+            chapterOrderIndex: chapterOrderIndexFromState,
+          },
         }
       );
     } catch (err) {
@@ -536,15 +499,9 @@ export default function LessonPlayerPage() {
     }
   };
 
-  const handleViewAttemptDetail = (attemptId) => {
-    if (!quizSectionId || !quizLessonId || !attemptId) return;
-    navigate(
-      `/learn/${courseId}/${slug}/lesson/${quizLessonId}/section/${quizSectionId}/quiz/attempt/${attemptId}`,
-      { state: { quizId } }
-    );
-  };
-
-  //===== FLASHCARD ==========
+  /* ===========================
+     FLASHCARD
+  ============================ */
   useEffect(() => {
     setFlashcardIndex(0);
     setFlashcardFlipped(false);
@@ -575,9 +532,7 @@ export default function LessonPlayerPage() {
           const setData = resSet.data;
           setId = setData?.id || setData?.setId;
 
-          if (!setId) {
-            throw new Error("Không tìm thấy flashcard set cho content này");
-          }
+          if (!setId) throw new Error("Không tìm thấy flashcard set");
         }
 
         const resCards = await api.get(`/flashcards/sets/${setId}/cards`);
@@ -640,11 +595,6 @@ export default function LessonPlayerPage() {
       <div className={styles.error}>{errorLesson || "Không có dữ liệu"}</div>
     );
   }
-  const activeFmt = String(activeContent?.contentFormat || "").toUpperCase();
-  const isQuizContent = activeFmt === "QUIZ";
-  const isCurrentCompleted = !!activeContent?.isCompleted;
-  const hasQuiz = !!getQuizMetaFromLesson(lesson);
-  const canMarkCompleted = !isQuizContent && !isCurrentCompleted;
 
   return (
     <main className={styles.page}>
@@ -726,36 +676,11 @@ export default function LessonPlayerPage() {
                               const contents = getLessonContents(ls);
                               const hasContents = contents.length > 0;
 
-                              // ✅ Lesson có quiz theo structure mới
-                              const metaQuiz = getQuizMetaFromLesson(ls);
-                              const lessonHasQuiz = !!metaQuiz;
-
-                              let isLessonCompleted = false;
-                              if (lessonHasQuiz) {
-                                if (typeof ls.quizPassed === "boolean") {
-                                  isLessonCompleted = ls.quizPassed;
-                                } else if (
-                                  typeof ls.progressPercent === "number"
-                                ) {
-                                  isLessonCompleted = ls.progressPercent >= 100;
-                                } else {
-                                  isLessonCompleted =
-                                    hasContents &&
+                              const isLessonCompleted =
+                                typeof ls.progressPercent === "number"
+                                  ? ls.progressPercent >= 100
+                                  : hasContents &&
                                     contents.every((c) => c.isCompleted);
-                                }
-                              } else {
-                                if (typeof ls.progressPercent === "number") {
-                                  isLessonCompleted = ls.progressPercent >= 100;
-                                } else {
-                                  isLessonCompleted =
-                                    hasContents &&
-                                    contents.every((c) => c.isCompleted);
-                                }
-                              }
-
-                              const isQuizActive =
-                                activeView === "quiz-info" &&
-                                quizLessonId === ls.lessonId;
 
                               return (
                                 <div
@@ -797,14 +722,11 @@ export default function LessonPlayerPage() {
 
                                   {isLessonOpen && (
                                     <ul className={styles.lessonContentList}>
-                                      {/* các content */}
                                       {hasContents &&
                                         contents.map((item) => {
                                           const isActive =
                                             item.lessonId === numericLessonId &&
-                                            item.contentId ===
-                                              numericContentId &&
-                                            activeView === "content";
+                                            item.contentId === numericContentId;
 
                                           return (
                                             <li
@@ -817,21 +739,7 @@ export default function LessonPlayerPage() {
                                                   : ""
                                               }`}
                                               onClick={() => {
-                                                const fmt = String(
-                                                  item.contentFormat || ""
-                                                ).toUpperCase();
-
-                                                if (fmt === "QUIZ") {
-                                                  // ✅ mở quiz overview (gọi info + attempts bằng sectionId)
-                                                  openQuizOverviewByMeta({
-                                                    lessonId: item.lessonId,
-                                                    sectionId: item.sectionId,
-                                                    quizId: item.quizId,
-                                                  });
-                                                  return;
-                                                }
-
-                                                // ✅ content khác vẫn navigate như cũ
+                                                // ✅ quiz cũng navigate như content khác
                                                 handleSidebarContentClick(
                                                   item.lessonId,
                                                   item.contentId,
@@ -844,11 +752,17 @@ export default function LessonPlayerPage() {
                                                   styles.lessonContentTitle
                                                 }
                                               >
-                                                {item.contentFormat ===
-                                                  "ASSET" && "Video / tài liệu"}
-                                                {item.contentFormat ===
+                                                {String(
+                                                  item.contentFormat || ""
+                                                ).toUpperCase() === "ASSET" &&
+                                                  "Video / tài liệu"}
+                                                {String(
+                                                  item.contentFormat || ""
+                                                ).toUpperCase() ===
                                                   "RICH_TEXT" && "Bài đọc"}
-                                                {item.contentFormat ===
+                                                {String(
+                                                  item.contentFormat || ""
+                                                ).toUpperCase() ===
                                                   "FLASHCARD_SET" && "Từ vựng"}
                                                 {String(
                                                   item.contentFormat || ""
@@ -890,194 +804,210 @@ export default function LessonPlayerPage() {
 
           {/* ========== PLAYER PANEL ========== */}
           <section className={styles.playerPanel}>
-            {activeView === "quiz-info" ? (
-              <div className={styles.quizOverview}>
-                <div className={styles.quizOverviewHeader}>
-                  <button
-                    type="button"
-                    className={styles.secondaryBtn}
-                    onClick={() => {
-                      setActiveView("content");
-                      setQuizLessonId(null);
-                      setQuizSectionId(null);
-                      setQuizId(null);
-                    }}
-                  >
-                    ← Quay lại nội dung bài học
-                  </button>
-                </div>
-
-                {quizLoading && <p>Đang tải thông tin quiz...</p>}
-                {quizError && <p className={styles.error}>{quizError}</p>}
-
-                {!quizLoading && !quizError && !quizInfo && (
-                  <p>Bài học này hiện chưa có quiz.</p>
-                )}
-
-                {!quizLoading && !quizError && quizInfo && (
-                  <>
-                    <h2 className={styles.quizTitle}>
-                      {quizInfo.title || "Bài quiz"}
-                    </h2>
-                    {quizInfo.description && (
-                      <p className={styles.quizDescription}>
-                        {quizInfo.description}
-                      </p>
-                    )}
-
-                    <div className={styles.quizMeta}>
-                      {quizInfo.totalQuestions != null && (
-                        <span>Số câu hỏi: {quizInfo.totalQuestions}</span>
-                      )}
-                      {quizInfo.timeLimitMinutes != null && (
-                        <span>Thời gian: {quizInfo.timeLimitMinutes} phút</span>
-                      )}
-                      {quizInfo.maxAttempts != null && (
-                        <span>Số lần làm tối đa: {quizInfo.maxAttempts}</span>
-                      )}
-                    </div>
-
-                    <button
-                      type="button"
-                      className={styles.primaryBtn}
-                      disabled={quizLoading}
-                      onClick={handleStartQuiz}
-                    >
-                      Bắt đầu làm bài
-                    </button>
-
-                    <hr className={styles.quizDivider} />
-
-                    <h3 className={styles.quizHistoryTitle}>Lịch sử làm bài</h3>
-
-                    {(!quizAttempts || quizAttempts.length === 0) && (
-                      <p>Chưa có lần làm nào.</p>
-                    )}
-
-                    {quizAttempts && quizAttempts.length > 0 && (
-                      <ul className={styles.quizAttemptList}>
-                        {quizAttempts.map((attempt) => {
-                          const status = (attempt.status || "").toUpperCase();
-                          const isInProgress = status === "IN_PROGRESS";
-
-                          return (
-                            <li
-                              key={attempt.attemptId || attempt.id}
-                              className={styles.quizAttemptItem}
-                            >
-                              <div className={styles.quizAttemptMain}>
-                                <span>
-                                  Lần làm{" "}
-                                  {attempt.attemptNumber ??
-                                    attempt.attemptIndex ??
-                                    ""}
-                                </span>
-                                {attempt.score != null &&
-                                  attempt.totalQuestions != null && (
-                                    <span>
-                                      Điểm: {attempt.score}/
-                                      {attempt.totalQuestions}
-                                    </span>
-                                  )}
-                                {attempt.createdAt && (
-                                  <span>
-                                    Thời gian:{" "}
-                                    {new Date(attempt.createdAt).toLocaleString(
-                                      "vi-VN"
-                                    )}
-                                  </span>
-                                )}
-                                {attempt.status && (
-                                  <span>Trạng thái: {attempt.status}</span>
-                                )}
-                              </div>
-
-                              <button
-                                type="button"
-                                className={styles.secondaryBtn}
-                                onClick={() =>
-                                  handleViewAttemptDetail(
-                                    attempt.attemptId || attempt.id
-                                  )
-                                }
-                              >
-                                {isInProgress ? "Tiếp tục làm" : "Xem chi tiết"}
-                              </button>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
-                  </>
-                )}
-              </div>
-            ) : activeContent ? (
+            {activeContent ? (
               <>
                 <div className={styles.playerBody}>
-                  {activeContent.contentFormat === "ASSET" && (
-                    <div className={styles.assetWrapper}>
-                      {isVideoAsset(activeContent.filePath) && (
-                        <video
-                          className={styles.video}
-                          controls
-                          src={buildFileUrl(activeContent.filePath)}
-                        />
+                  {/* ✅ QUIZ OVERVIEW (nằm trong content view) */}
+                  {isQuizContent && (
+                    <div className={styles.quizOverview}>
+                      {quizLoading && <p>Đang tải thông tin quiz...</p>}
+                      {quizError && <p className={styles.error}>{quizError}</p>}
+
+                      {!quizLoading && !quizError && !quizInfo && (
+                        <p>Không tìm thấy thông tin quiz.</p>
                       )}
 
-                      {isImageAsset(activeContent.filePath) && (
-                        <img
-                          className={styles.image}
-                          src={buildFileUrl(activeContent.filePath)}
-                          alt={activeContent.sectionTitle || "Course asset"}
-                        />
-                      )}
+                      {!quizLoading && !quizError && quizInfo && (
+                        <>
+                          <h2 className={styles.quizTitle}>
+                            {quizInfo.title || "Bài quiz"}
+                          </h2>
 
-                      {!isVideoAsset(activeContent.filePath) &&
-                        !isImageAsset(activeContent.filePath) && (
-                          <div className={styles.unknownAsset}>
-                            <p>Tệp nội dung không phải video hoặc ảnh.</p>
-                            <a
-                              href={buildFileUrl(activeContent.filePath)}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              Mở tệp
-                            </a>
+                          {!!quizInfo.description && (
+                            <p className={styles.quizDescription}>
+                              {quizInfo.description}
+                            </p>
+                          )}
+
+                          <div className={styles.quizMeta}>
+                            {quizInfo.totalQuestions != null && (
+                              <span>Số câu hỏi: {quizInfo.totalQuestions}</span>
+                            )}
+                            {quizInfo.timeLimitSec != null && (
+                              <span>
+                                Thời gian:{" "}
+                                {Math.ceil(quizInfo.timeLimitSec / 60)} phút
+                              </span>
+                            )}
+                            {quizInfo.passScorePercent != null && (
+                              <span>
+                                Điểm đạt: {quizInfo.passScorePercent}%
+                              </span>
+                            )}
+                            {quizInfo.attemptCount != null && (
+                              <span>Đã làm: {quizInfo.attemptCount} lần</span>
+                            )}
                           </div>
+
+                          <hr className={styles.quizDivider} />
+
+                          <h3 className={styles.quizHistoryTitle}>
+                            Lịch sử làm bài
+                          </h3>
+
+                          {(!quizAttempts || quizAttempts.length === 0) && (
+                            <p>Chưa có lần làm nào.</p>
+                          )}
+
+                          {quizAttempts && quizAttempts.length > 0 && (
+                            <ul className={styles.quizAttemptList}>
+                              {quizAttempts.map((attempt) => {
+                                const status = (
+                                  attempt.status || ""
+                                ).toUpperCase();
+                                const isInProgress = status === "IN_PROGRESS";
+
+                                return (
+                                  <li
+                                    key={attempt.attemptId || attempt.id}
+                                    className={styles.quizAttemptItem}
+                                  >
+                                    <div className={styles.quizAttemptMain}>
+                                      <span>
+                                        Lần làm{" "}
+                                        {attempt.attemptNumber ??
+                                          attempt.attemptIndex ??
+                                          ""}
+                                      </span>
+
+                                      {attempt.scorePercent != null && (
+                                        <span>
+                                          Điểm: {attempt.scorePercent}%
+                                        </span>
+                                      )}
+
+                                      {attempt.createdAt && (
+                                        <span>
+                                          Thời gian:{" "}
+                                          {new Date(
+                                            attempt.createdAt
+                                          ).toLocaleString("vi-VN")}
+                                        </span>
+                                      )}
+
+                                      {attempt.status && (
+                                        <span>
+                                          Trạng thái: {attempt.status}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    <button
+                                      type="button"
+                                      className={styles.secondaryBtn}
+                                      onClick={() => {
+                                        const attemptId =
+                                          attempt.attemptId || attempt.id;
+                                        if (!attemptId) return;
+                                        navigate(
+                                          `/learn/${courseId}/${slug}/lesson/${numericLessonId}/section/${quizSectionId}/quiz/attempt/${attemptId}`,
+                                          {
+                                            state: {
+                                              quizId,
+                                              returnContentId:
+                                                activeContent?.contentId,
+                                              chapterOrderIndex:
+                                                chapterOrderIndexFromState,
+                                            },
+                                          }
+                                        );
+                                      }}
+                                    >
+                                      {isInProgress
+                                        ? "Tiếp tục làm"
+                                        : "Xem chi tiết"}
+                                    </button>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ASSET */}
+                  {!isQuizContent &&
+                    activeContent.contentFormat === "ASSET" && (
+                      <div className={styles.assetWrapper}>
+                        {isVideoAsset(activeContent.filePath) && (
+                          <video
+                            className={styles.video}
+                            controls
+                            src={buildFileUrl(activeContent.filePath)}
+                          />
                         )}
-                    </div>
-                  )}
 
-                  {activeContent.contentFormat === "RICH_TEXT" && (
-                    <article
-                      className={styles.richText}
-                      dangerouslySetInnerHTML={{
-                        __html: activeContent.richText || "",
-                      }}
-                    />
-                  )}
+                        {isImageAsset(activeContent.filePath) && (
+                          <img
+                            className={styles.image}
+                            src={buildFileUrl(activeContent.filePath)}
+                            alt={activeContent.sectionTitle || "Course asset"}
+                          />
+                        )}
 
-                  {activeContent.contentFormat === "FLASHCARD_SET" && (
-                    <div className={styles.flashcardWrapper}>
-                      <p>
-                        Đây là tập flashcard cho phần{" "}
-                        <strong>{activeContent.sectionTitle}</strong>.
-                      </p>
-                      <button
-                        className={styles.primaryBtn}
-                        type="button"
-                        onClick={openFlashcardModal}
-                      >
-                        Bắt đầu học flashcard
-                      </button>
-                      <p className={styles.flashcardHint}>
-                        Bấm nút để mở bộ thẻ. Trong cửa sổ, click vào thẻ để
-                        lật.
-                      </p>
-                    </div>
-                  )}
+                        {!isVideoAsset(activeContent.filePath) &&
+                          !isImageAsset(activeContent.filePath) && (
+                            <div className={styles.unknownAsset}>
+                              <p>Tệp nội dung không phải video hoặc ảnh.</p>
+                              <a
+                                href={buildFileUrl(activeContent.filePath)}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                Mở tệp
+                              </a>
+                            </div>
+                          )}
+                      </div>
+                    )}
+
+                  {/* RICH_TEXT */}
+                  {!isQuizContent &&
+                    activeContent.contentFormat === "RICH_TEXT" && (
+                      <article
+                        className={styles.richText}
+                        dangerouslySetInnerHTML={{
+                          __html: activeContent.richText || "",
+                        }}
+                      />
+                    )}
+
+                  {/* FLASHCARD_SET */}
+                  {!isQuizContent &&
+                    activeContent.contentFormat === "FLASHCARD_SET" && (
+                      <div className={styles.flashcardWrapper}>
+                        <p>
+                          Đây là tập flashcard cho phần{" "}
+                          <strong>{activeContent.sectionTitle}</strong>.
+                        </p>
+                        <button
+                          className={styles.primaryBtn}
+                          type="button"
+                          onClick={openFlashcardModal}
+                        >
+                          Bắt đầu học flashcard
+                        </button>
+                        <p className={styles.flashcardHint}>
+                          Bấm nút để mở bộ thẻ. Trong cửa sổ, click vào thẻ để
+                          lật.
+                        </p>
+                      </div>
+                    )}
                 </div>
 
+                {/* FOOTER (quiz khác content thường) */}
                 <div className={styles.playerFooter}>
                   <button
                     className={styles.secondaryBtn}
@@ -1087,36 +1017,30 @@ export default function LessonPlayerPage() {
                     Nội dung trước
                   </button>
 
-                  <button
-                    className={styles.markBtn}
-                    onClick={() => {
-                      if (isQuizContent) {
-                        openQuizOverviewByMeta({
-                          lessonId: numericLessonId,
-                          sectionId: activeContent.sectionId, // nhớ đảm bảo activeContent có sectionId
-                          quizId: activeContent.quizId,
-                        });
-                        return;
-                      }
-                      handleMarkCompleted();
-                    }}
-                    disabled={
-                      isQuizContent
-                        ? false
-                        : !canMarkCompleted || !activeContent?.contentId
-                    }
-                  >
-                    {isCurrentCompleted
-                      ? "Đã hoàn thành"
-                      : isQuizContent
-                      ? "Làm quiz để hoàn thành"
-                      : "Đánh dấu đã học"}
-                  </button>
+                  {isQuizContent ? (
+                    <button
+                      className={styles.markBtn}
+                      onClick={handleStartQuiz}
+                      disabled={quizLoading || !quizSectionId}
+                    >
+                      Làm quiz để hoàn thành
+                    </button>
+                  ) : (
+                    <button
+                      className={styles.markBtn}
+                      onClick={handleMarkCompleted}
+                      disabled={!canMarkCompleted || !activeContent?.contentId}
+                    >
+                      {isCurrentCompleted ? "Đã hoàn thành" : "Đánh dấu đã học"}
+                    </button>
+                  )}
 
                   <button
                     className={styles.primaryBtn}
                     onClick={goNext}
-                    disabled={isLastGlobal}
+                    disabled={
+                      isLastGlobal || (isQuizContent && !isCurrentCompleted)
+                    }
                   >
                     Nội dung tiếp theo
                   </button>
@@ -1243,6 +1167,13 @@ export default function LessonPlayerPage() {
               </div>
             </div>
           )}
+        </section>
+        <section className={styles.commentsSection}>
+          <CourseComments
+            courseId={Number(courseId)}
+            currentUserId={currentUserId}
+            isLoggedIn={isLoggedIn}
+          />
         </section>
       </div>
     </main>

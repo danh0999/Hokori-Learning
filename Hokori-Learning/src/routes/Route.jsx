@@ -172,7 +172,7 @@ const routes = [
             element: <CourseTrialLesson />,
           },
           {
-            path: "learner/trial-quiz/:lessonId",
+            path: "learner/trial-quiz/:lessonId/section/:sectionId",
             element: <QuizTrialPage />,
           },
         ],

@@ -1,0 +1,292 @@
+/* CourseComments.module.scss */
+
+.wrap {
+  width: 100%;
+  max-width: 100%;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  padding: 16px;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.title {
+  margin: 0;
+  font-size: 18px; /* nhỏ hơn */
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.subTitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.count {
+  font-size: 13px;
+  color: #0f172a;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* composer compact */
+.composer {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #eef2f7;
+  border-radius: 14px;
+  background: #fafafa;
+  overflow: hidden;
+}
+
+.textarea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.45;
+  outline: none;
+  background: #fff;
+
+  resize: vertical; /* chỉ resize dọc */
+}
+
+.textarea:focus {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.composerActions {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hint {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.loginHint {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.primaryBtn,
+.secondaryBtn {
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.primaryBtn {
+  background: #2563eb;
+  color: #fff;
+}
+.primaryBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.secondaryBtn {
+  background: #fff;
+  border-color: #e5e7eb;
+  color: #0f172a;
+}
+
+/* list */
+.list {
+  margin-top: 14px;
+}
+
+.loading,
+.empty {
+  font-size: 13px;
+  color: #64748b;
+  padding: 10px 2px;
+}
+
+.error {
+  margin-top: 10px;
+  color: #ef4444;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* comment item compact */
+.commentItem {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+}
+
+.replyItem {
+  margin-left: 34px;
+  padding-top: 6px;
+  border-left: 2px solid #eef2f7;
+  padding-left: 12px;
+}
+
+.commentLeft {
+  flex: 0 0 auto;
+}
+
+.avatarImg {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid #e5e7eb;
+}
+
+.avatarFallback {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.commentRight {
+  flex: 1;
+  min-width: 0;
+}
+
+.commentBubble {
+  border: 1px solid #eef2f7;
+  background: #fff;
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.commentHeaderRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.authorName {
+  font-weight: 800;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.metaLine {
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.editedTag {
+  color: #7c3aed;
+  font-weight: 700;
+}
+
+.commentContent {
+  margin-top: 6px;
+  font-size: 14px;
+  color: #0f172a;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+/* action links */
+.actionsRow {
+  margin-top: 6px;
+  display: flex;
+  gap: 12px;
+}
+
+.linkBtn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: #2563eb;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.dangerLink {
+  color: #ef4444;
+}
+
+/* reply/editor */
+.replyBox,
+.editorBox {
+  margin-top: 10px;
+}
+
+.replyActions,
+.editorActions {
+  margin-top: 8px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* replies list */
+.replyList {
+  margin-top: 8px;
+}
+
+/* pagination compact center */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.pageArrow {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pageArrow:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pageInfo {
+  font-size: 13px;
+  color: #0f172a;
+  font-weight: 700;
+}

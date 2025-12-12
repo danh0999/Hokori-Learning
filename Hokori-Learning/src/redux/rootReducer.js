@@ -19,6 +19,7 @@ import jlptLearnerReducer from "./features/jlptLearnerSlice.js";
 import quizAttemptreducer from "./features/quizAttemptSlice.js";
 import moderatorCourseReducer from "./features/moderatorCourseSlice.js";
 import notificationReducer from "./features/notificationSlice.js";
+import commentsReducer from "./features/commentSlice.js";
 
 const rootReducer = combineReducers({
   user: userReducer,
@@ -41,6 +42,7 @@ const rootReducer = combineReducers({
   jlptModerator: jlptModeratorReducer,
   moderatorCourse: moderatorCourseReducer,
   notifications: notificationReducer,
+  comments: commentsReducer,
 });
 
 export default rootReducer;

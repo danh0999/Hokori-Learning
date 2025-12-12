@@ -69,7 +69,7 @@ export default function LearningTreePage() {
     if (!chapters.length) return null;
 
     if (!Number.isNaN(numericChapterIndex)) {
-      const found = chapters.find(
+      const found = nonTrialChapters.find(
         (ch) => ch.orderIndex === numericChapterIndex
       );
       if (found) return found;
@@ -86,6 +86,23 @@ export default function LearningTreePage() {
     () => (data ? slugify(data.courseTitle) : ""),
     [data]
   );
+
+  useEffect(() => {
+    if (!data) return;
+    if (numericChapterIndex === 0 && nonTrialChapters.length > 0) {
+      navigate(
+        `/learn/${courseId}/${courseSlug}/home/chapter/${nonTrialChapters[0].orderIndex}`,
+        { replace: true }
+      );
+    }
+  }, [
+    data,
+    numericChapterIndex,
+    nonTrialChapters,
+    navigate,
+    courseId,
+    courseSlug,
+  ]);
 
   const handleModuleClick = (chapter) => {
     if (!data || !courseSlug) return;
@@ -176,7 +193,7 @@ export default function LearningTreePage() {
             <h2 className={styles.sidebarTitle}>Nội dung khóa học</h2>
 
             <div className={styles.moduleList}>
-              {chapters.map((ch) => {
+              {nonTrialChapters.map((ch) => {
                 const isActive =
                   activeChapter && ch.chapterId === activeChapter.chapterId;
                 const isTrial = ch.orderIndex === 0;

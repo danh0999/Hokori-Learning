@@ -207,16 +207,18 @@ const CourseTrialLesson = () => {
   const [selectedFlashcardContent, setSelectedFlashcardContent] =
     useState(null);
 
-  // Quiz (dùng endpoint learner quiz)
-  const [quizLoading, setQuizLoading] = useState(false);
+  // Quiz error (trial)
   const [quizError, setQuizError] = useState(null);
+  const [activeQuizSectionId, setActiveQuizSectionId] = useState(null);
+  const [quizInfo, setQuizInfo] = useState(null);
+  const [quizInfoLoading, setQuizInfoLoading] = useState(false);
+  const [quizInfoError, setQuizInfoError] = useState(null);
 
   /* --------------------------
      1. Check login + trial tree
   -------------------------- */
   useEffect(() => {
     const fetchTrialTree = async () => {
-      // login kiểm tra ở đây luôn
       const token =
         localStorage.getItem("accessToken") ||
         sessionStorage.getItem("accessToken") ||
@@ -241,11 +243,9 @@ const CourseTrialLesson = () => {
         setTrialCourse(data);
 
         const chapters = Array.isArray(data?.chapters) ? data.chapters : [];
-        if (!chapters.length) {
+        if (!chapters.length)
           throw new Error("Khóa học chưa cấu hình chương học thử.");
-        }
 
-        // Ưu tiên isTrial, sau đó mới so sánh với chapterId trên URL, cuối cùng fallback chương đầu
         let chap =
           chapters.find((c) => c.isTrial) ||
           chapters.find(
@@ -258,13 +258,10 @@ const CourseTrialLesson = () => {
         setTrialChapter(chap);
 
         const lessons = Array.isArray(chap.lessons) ? chap.lessons : [];
-        if (!lessons.length) {
-          throw new Error("Chương học thử chưa có bài học.");
-        }
+        if (!lessons.length) throw new Error("Chương học thử chưa có bài học.");
 
         setTrialLessons(lessons);
 
-        // Bài active ban đầu là bài 1
         const firstLesson = lessons[0];
         const lId = firstLesson.id || firstLesson.lessonId;
         setActiveLessonId(lId || null);
@@ -303,9 +300,8 @@ const CourseTrialLesson = () => {
         const detail = unwrap(res);
         setLessonDetail(detail);
 
-        // Chọn default section + content cho lesson này
+        // chọn default section + content
         if (Array.isArray(detail.sections) && detail.sections.length) {
-          // nếu đang có activeSectionId thuộc lesson này thì ưu tiên, không thì lấy section đầu
           const sectionToUse =
             detail.sections.find(
               (s) =>
@@ -382,6 +378,25 @@ const CourseTrialLesson = () => {
     setFlashcardModalOpen(true);
   };
 
+  const fetchQuizInfo = async (sectionId) => {
+    setQuizInfoLoading(true);
+    setQuizInfoError(null);
+    setQuizInfo(null);
+
+    try {
+      const res = await api.get(`/learner/sections/${sectionId}/quiz/info`);
+      const data = res?.data && "data" in res.data ? res.data.data : res.data;
+
+      setQuizInfo(data);
+    } catch (err) {
+      setQuizInfoError(
+        err?.response?.data?.message || "Không tải được thông tin quiz."
+      );
+    } finally {
+      setQuizInfoLoading(false);
+    }
+  };
+
   /* --------------------------
      5. Render 1 content (LEFT)
   -------------------------- */
@@ -397,9 +412,10 @@ const CourseTrialLesson = () => {
     const key = `${section.sectionId || section.id}-${
       content.contentId || content.id
     }`;
+    const fmt = String(content.contentFormat || "").toUpperCase();
 
     // ASSET (video / ảnh)
-    if (content.contentFormat === "ASSET" && content.filePath) {
+    if (fmt === "ASSET" && content.filePath) {
       const fileUrl = buildFileUrl(content.filePath);
       const isVideo = /\.(mp4|webm|ogg)$/i.test(fileUrl || "");
 
@@ -431,7 +447,7 @@ const CourseTrialLesson = () => {
     }
 
     // RICH_TEXT
-    if (content.contentFormat === "RICH_TEXT" && content.richText) {
+    if (fmt === "RICH_TEXT" && content.richText) {
       return (
         <div
           key={key}
@@ -442,7 +458,7 @@ const CourseTrialLesson = () => {
     }
 
     // FLASHCARD_SET mở modal
-    if (content.contentFormat === "FLASHCARD_SET") {
+    if (fmt === "FLASHCARD_SET") {
       return (
         <div key={key} className="viewer-block viewer-flashcard">
           <p className="viewer-flashcard-text">
@@ -459,74 +475,39 @@ const CourseTrialLesson = () => {
       );
     }
 
+    // ✅ QUIZ: quizId nằm trong content, sectionId nằm trong section
+    if (fmt === "QUIZ") {
+      const sid = section.sectionId || section.id;
+      const lId = lessonDetail?.lessonId || activeLessonId;
+
+      return (
+        <div key={key} className="viewer-block viewer-quiz">
+          <p className="viewer-flashcard-text">
+            Đây là bài quiz của phần này. Bạn cần làm quiz để hoàn thành phần
+            luyện tập.
+          </p>
+
+          {quizError && <p className="trial-quiz-error">{quizError}</p>}
+
+          <button
+            type="button"
+            className="primary-outline-btn"
+            onClick={() =>
+              navigate(`/learner/trial-quiz/${lId}/section/${sid}`)
+            }
+          >
+            Làm quiz thử
+          </button>
+        </div>
+      );
+    }
+
     // Fallback
     return (
       <div key={key} className="viewer-empty">
         Nội dung thử (type: {content.contentFormat}) chưa được hỗ trợ hiển thị.
       </div>
     );
-  };
-
-  /* --------------------------
-     6. Start quiz cho lesson hiện tại
-  -------------------------- */
-  const handleStartTrialQuiz = async () => {
-    const lId = lessonDetail?.lessonId || activeLessonId;
-    if (!lId) return;
-
-    // Tìm quiz section từ lessonDetail
-    const quizSection = lessonDetail?.sections?.find(
-      (s) => s.studyType === "QUIZ"
-    );
-    if (!quizSection?.id) {
-      setQuizError("Lesson này chưa có quiz section.");
-      return;
-    }
-
-    setQuizLoading(true);
-    setQuizError(null);
-
-    try {
-      // check info
-      await api.get(`/learner/sections/${quizSection.id}/quiz/info`);
-
-      const startRes = await api.post(
-        `/learner/sections/${quizSection.id}/quiz/attempts/start`,
-        { forceNew: false }
-      );
-
-      const attempt = unwrap(startRes);
-      const attemptId = attempt?.id || attempt?.attemptId;
-
-      if (!attemptId) {
-        setQuizError("Không xác định được attempt của quiz.");
-        return;
-      }
-
-      navigate(`/learner/trial-quiz/${lId}/section/${quizSection.id}`);
-    } catch (err) {
-      console.error("Error starting trial quiz", err);
-      const status = err?.response?.status;
-      const msg =
-        err?.response?.data?.message ||
-        "Không bắt đầu được quiz. Vui lòng thử lại.";
-
-      if (status === 401) {
-        navigate("/login", {
-          state: { redirectTo: location.pathname },
-          replace: true,
-        });
-        return;
-      }
-
-      if (status === 404 || status === 400) {
-        setQuizError("Bài học này hiện chưa có quiz.");
-      } else {
-        setQuizError(msg);
-      }
-    } finally {
-      setQuizLoading(false);
-    }
   };
 
   /* --------------------------
@@ -563,13 +544,6 @@ const CourseTrialLesson = () => {
       String(l.id) === String(activeLessonId) ||
       String(l.lessonId) === String(activeLessonId)
   );
-  const activeLessonIndex = activeLesson
-    ? trialLessons.findIndex(
-        (l) =>
-          String(l.id) === String(activeLessonId) ||
-          String(l.lessonId) === String(activeLessonId)
-      )
-    : -1;
 
   return (
     <main className="trial-lesson-page">
@@ -619,8 +593,66 @@ const CourseTrialLesson = () => {
             {!lessonLoading &&
               !lessonError &&
               activeSection &&
-              activeContent &&
-              renderActiveContentBlock(activeSection, activeContent)}
+              (activeQuizSectionId ? (
+                // =====================
+                // ✅ QUIZ INFO VIEW
+                // =====================
+                <div className="viewer-block viewer-quiz-info">
+                  {quizInfoLoading && <p>Đang tải thông tin quiz…</p>}
+
+                  {quizInfoError && (
+                    <p className="trial-quiz-error">{quizInfoError}</p>
+                  )}
+
+                  {quizInfo && (
+                    <>
+                      <h2>{quizInfo.title}</h2>
+
+                      {quizInfo.description && (
+                        <p className="quiz-desc">{quizInfo.description}</p>
+                      )}
+
+                      <ul className="quiz-meta">
+                        <li>
+                          Tổng số câu:{" "}
+                          <strong>{quizInfo.totalQuestions}</strong>
+                        </li>
+                        <li>
+                          Điểm đạt:{" "}
+                          <strong>{quizInfo.passScorePercent}%</strong>
+                        </li>
+                        <li>
+                          Thời gian:{" "}
+                          <strong>
+                            {Math.round(quizInfo.timeLimitSec / 60)} phút
+                          </strong>
+                        </li>
+                        <li>
+                          Đã làm: <strong>{quizInfo.attemptCount}</strong> lần
+                        </li>
+                      </ul>
+
+                      <button
+                        type="button"
+                        className="primary-outline-btn"
+                        onClick={() =>
+                          navigate(
+                            `/learner/trial-quiz/${activeLessonId}/section/${activeQuizSectionId}`
+                          )
+                        }
+                      >
+                        Làm quiz thử
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : (
+                // =====================
+                // ✅ CONTENT BÌNH THƯỜNG
+                // =====================
+                activeContent &&
+                renderActiveContentBlock(activeSection, activeContent)
+              ))}
 
             {!lessonLoading &&
               !lessonError &&
@@ -645,7 +677,7 @@ const CourseTrialLesson = () => {
             </div>
 
             <div className="side-sections">
-              {trialLessons.map((lesson, lIdx) => {
+              {trialLessons.map((lesson) => {
                 const lId = lesson.id || lesson.lessonId;
                 const isActiveLesson = String(lId) === String(activeLessonId);
 
@@ -663,7 +695,7 @@ const CourseTrialLesson = () => {
                       isActiveLesson ? "is-active" : ""
                     }`}
                   >
-                    {/* Lesson header: bấm để load trial-detail */}
+                    {/* Lesson header */}
                     <button
                       type="button"
                       className="side-section-header"
@@ -688,7 +720,7 @@ const CourseTrialLesson = () => {
                       </div>
                     </button>
 
-                    {/* Section_title (không bấm được) + list content */}
+                    {/* Section + contents */}
                     {sectionsForThisLesson.length > 0 && (
                       <div className="side-lesson-body">
                         {sectionsForThisLesson.map((section) => {
@@ -699,7 +731,6 @@ const CourseTrialLesson = () => {
 
                           return (
                             <div key={sid} className="side-section-block">
-                              {/* section_title (label, không click) */}
                               <div className="side-section-title-row">
                                 <span className="section-dot" />
                                 <span className="section-title-text">
@@ -707,47 +738,39 @@ const CourseTrialLesson = () => {
                                 </span>
                               </div>
 
-                              {/* list content */}
                               {contents.length > 0 && (
                                 <ul className="side-contents">
                                   {contents.map((content) => {
                                     const cid = content.contentId || content.id;
+                                    const fmt = String(
+                                      content.contentFormat || ""
+                                    ).toUpperCase();
+
+                                    const isQuizItem = fmt === "QUIZ";
+
                                     const isActiveContent =
                                       isActiveLesson &&
                                       String(sid) === String(activeSectionId) &&
-                                      String(cid) === String(activeContentId);
+                                      (isQuizItem
+                                        ? String(activeQuizSectionId) ===
+                                          String(sid)
+                                        : String(cid) ===
+                                          String(activeContentId));
 
                                     let contentLabel = content.title || "";
                                     if (!contentLabel || !contentLabel.trim()) {
-                                      if (content.contentFormat === "ASSET") {
+                                      if (fmt === "ASSET")
                                         contentLabel = "Tài liệu xem";
-                                      } else if (
-                                        content.contentFormat === "RICH_TEXT"
-                                      ) {
+                                      else if (fmt === "RICH_TEXT")
                                         contentLabel = "Lý thuyết";
-                                      } else if (
-                                        content.contentFormat ===
-                                        "FLASHCARD_SET"
-                                      ) {
+                                      else if (fmt === "FLASHCARD_SET")
                                         contentLabel = "Flashcard từ vựng";
-                                      } else {
+                                      else if (fmt === "QUIZ")
+                                        contentLabel = "Quiz";
+                                      else
                                         contentLabel =
                                           content.contentFormat || "Nội dung";
-                                      }
                                     }
-
-                                    let typeTag = "";
-                                    if (content.contentFormat === "ASSET")
-                                      typeTag = "ASSET";
-                                    else if (
-                                      content.contentFormat === "RICH_TEXT"
-                                    )
-                                      typeTag = "TEXT";
-                                    else if (
-                                      content.contentFormat === "FLASHCARD_SET"
-                                    )
-                                      typeTag = "CARD";
-                                    else typeTag = content.contentFormat || "";
 
                                     return (
                                       <li key={cid}>
@@ -757,6 +780,24 @@ const CourseTrialLesson = () => {
                                             isActiveContent ? "is-active" : ""
                                           }`}
                                           onClick={() => {
+                                            if (fmt === "QUIZ") {
+                                              // ✅ KHÔNG navigate nữa
+                                              // 👉 chỉ set state để hiện Quiz Info
+
+                                              setActiveLessonId(lId);
+                                              setActiveSectionId(sid);
+                                              setActiveContentId(null); // quiz không coi là content thường
+
+                                              setActiveQuizSectionId(sid); // đánh dấu đang xem quiz
+                                              fetchQuizInfo(sid); // gọi API quiz info
+
+                                              return;
+                                            }
+
+                                            // ✅ content thường: reset quiz state + hiển thị content
+                                            setActiveQuizSectionId(null);
+                                            setQuizInfo(null);
+
                                             setActiveLessonId(lId);
                                             setActiveSectionId(sid);
                                             setActiveContentId(cid);
@@ -788,31 +829,7 @@ const CourseTrialLesson = () => {
         </aside>
       </div>
 
-      {/* QUIZ: chỉ render nếu lessonDetail có quiz section */}
-      {lessonDetail?.sections?.some(
-        (s) => s.studyType === "QUIZ" && s.quizId
-      ) && (
-        <section className="trial-quiz" id="trial-quiz">
-          <h2 className="trial-quiz-heading">
-            Bài kiểm tra cho: {lessonDetail.title}
-          </h2>
-          <p className="trial-quiz-note">
-            Đây là quiz của bài học này. Bạn có thể làm thử, hệ thống sẽ dùng
-            flow quiz bình thường.
-          </p>
-
-          {quizError && <p className="trial-quiz-error">{quizError}</p>}
-
-          <button
-            type="button"
-            className="primary-btn"
-            disabled={quizLoading}
-            onClick={handleStartTrialQuiz}
-          >
-            {quizLoading ? "Đang mở quiz..." : "Làm bài quiz thử"}
-          </button>
-        </section>
-      )}
+      {/* ✅ XÓA block trial-quiz cũ vì check sai s.quizId (quizId nằm trong content) */}
 
       {/* Flashcard Modal */}
       <TrialFlashcardModal
