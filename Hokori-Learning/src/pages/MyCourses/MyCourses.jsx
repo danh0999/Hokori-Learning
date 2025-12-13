@@ -6,7 +6,6 @@ import styles from "./MyCourses.module.scss";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { buildFileUrl } from "../../utils/fileUrl";
-import { ensureCertificateByCourse } from "../../services/certificateService";
 
 // Tạo slug giống coursera từ title
 const slugify = (str = "") =>
@@ -103,12 +102,28 @@ const MyCourses = () => {
 
   const handleViewCertificate = async (course) => {
     try {
-      const res = await ensureCertificateByCourse(course.courseId);
-      const certificateId = res.data.data.id;
-      navigate(`/certificates/${certificateId}`);
+      // ✅ BE confirm dùng GET này
+      const res = await api.get(
+        `/learner/certificates/course/${course.courseId}`
+      );
+      const cert = res.data?.data ?? res.data;
+
+      if (!cert?.id) {
+        toast.error("Không tìm thấy chứng chỉ cho khóa học này.");
+        return;
+      }
+
+      navigate(`/certificates/${cert.id}`);
     } catch (err) {
       console.error(err);
-      toast.error("Không thể tạo hoặc lấy chứng chỉ");
+
+      // tuỳ BE trả 404 khi chưa đủ điều kiện
+      if (err?.response?.status === 404) {
+        toast.info("Bạn chưa hoàn thành khóa học để nhận chứng chỉ.");
+        return;
+      }
+
+      toast.error("Không thể lấy chứng chỉ. Vui lòng thử lại.");
     }
   };
 

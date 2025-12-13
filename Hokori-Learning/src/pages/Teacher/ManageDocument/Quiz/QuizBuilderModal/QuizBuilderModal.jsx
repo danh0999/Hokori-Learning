@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Modal,
   Button,
@@ -62,18 +62,25 @@ function normalizeSingleChoiceOptions(options) {
 }
 
 function buildBaseFromInitial(initial) {
+  const timeLimitMinutes =
+    typeof initial?.timeLimit === "number"
+      ? initial.timeLimit
+      : typeof initial?.timeLimitSec === "number"
+      ? Math.round(initial.timeLimitSec / 60)
+      : 30;
+
+  const passScore =
+    typeof initial?.passingScore === "number"
+      ? initial.passingScore
+      : typeof initial?.passScorePercent === "number"
+      ? initial.passScorePercent
+      : 60;
   return {
     id: initial?.id ?? null,
     title: initial?.title ?? "",
     description: initial?.description ?? "",
-    timeLimit:
-      typeof initial?.timeLimitSec === "number"
-        ? Math.round(initial.timeLimitSec / 60)
-        : 30,
-    passingScore:
-      typeof initial?.passScorePercent === "number"
-        ? initial.passScorePercent
-        : 60,
+    timeLimit: timeLimitMinutes,
+    passingScore: passScore,
   };
 }
 
@@ -438,7 +445,10 @@ export default function QuizBuilderModal({
           return Number.isFinite(n) && String(n) === String(o.id);
         });
 
-        const newOpts = normalizedOpts.filter((o) => !existingOpts.includes(o));
+        const existingIdSet = new Set(existingOpts.map((o) => String(o.id)));
+        const newOpts = normalizedOpts.filter(
+          (o) => !existingIdSet.has(String(o.id))
+        );
 
         // 2a) Update option existing (PUT)
         for (let i = 0; i < existingOpts.length; i++) {
@@ -506,6 +516,7 @@ export default function QuizBuilderModal({
             isCorrect: !!o.isCorrect,
           }))
         ),
+        originalOptionIds: (q.options || []).map((o) => String(o.id)),
       }));
 
       setQuestions(mapped);

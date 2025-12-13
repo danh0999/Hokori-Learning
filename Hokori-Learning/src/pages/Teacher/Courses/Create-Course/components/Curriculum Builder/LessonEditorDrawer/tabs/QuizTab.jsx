@@ -1,15 +1,14 @@
-// LessonEditorDrawer/tabs/QuizTab.jsx
 import React, { useEffect, useState, useCallback } from "react";
-import { Button, Space, Typography, Spin, message } from "antd";
+import { Button, Space, Typography, Spin, message, Modal } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 
 import {
   fetchLessonQuizThunk,
+  deleteLessonQuizThunk,
   clearCurrentQuiz,
 } from "../../../../../../../../redux/features/quizSlice.js";
-import { createSectionThunk } from "../../../../../../../../redux/features/teacherCourseSlice.js";
 
 import QuizList from "../../../../../../ManageDocument/Quiz/QuizList/QuizList.jsx";
 import QuizBuilderModal from "../../../../../../ManageDocument/Quiz/QuizBuilderModal/QuizBuilderModal.jsx";
@@ -19,15 +18,9 @@ import styles from "../styles.module.scss";
 
 const { Text } = Typography;
 
-/**
- * Props:
- *  - lesson: lessonFromTree
- *  - quizSection: section có studyType = "QUIZ" (nếu đã tồn tại trong tree)
- *  - onDurationComputed: (sec) => void
- */
 export default function QuizTab({
   lesson,
-  quizSection,
+  section,
   onDurationComputed,
   onSaved,
 }) {
@@ -36,68 +29,28 @@ export default function QuizTab({
     (state) => state.quiz || {}
   );
 
-  // section QUIZ: ưu tiên cái vừa tạo local, nếu không thì lấy từ tree
-  const [localSection, setLocalSection] = useState(null);
-  const effectiveSection = localSection || quizSection || null;
-  const sectionId = effectiveSection?.id;
+  const sectionId = section?.id;
 
   const [openBuilder, setOpenBuilder] = useState(false);
   const [openBulk, setOpenBulk] = useState(false);
   const [draftQuiz, setDraftQuiz] = useState(null);
 
-  // ── helper: đảm bảo luôn có section QUIZ ─────────────────
-  const ensureQuizSection = useCallback(async () => {
-    // đã có section thì xài luôn
-    if (sectionId) return effectiveSection;
-
-    if (!lesson?.id) {
-      toast.error("Thiếu lessonId để tạo section Quiz.");
-      return null;
-    }
-
-    try {
-      const created = await dispatch(
-        createSectionThunk({
-          lessonId: lesson.id,
-          data: {
-            title: quizSection?.title || `Quiz - ${lesson.title || ""}`,
-            orderIndex: (lesson.sections?.length || 0) + 1,
-            studyType: "QUIZ", // ⚠️ QUAN TRỌNG: phải là QUIZ
-          },
-        })
-      ).unwrap();
-
-      const sec = created.section || created;
-      setLocalSection(sec);
-      return sec;
-    } catch (err) {
-      console.error("Tạo section QUIZ thất bại", err);
-      toast.error("Không tạo được section cho Quiz.");
-      return null;
-    }
-  }, [dispatch, lesson, quizSection, sectionId, effectiveSection]);
-
-  // ── Load quiz khi có sectionId ────────────────────────────
   useEffect(() => {
     dispatch(clearCurrentQuiz());
     if (!sectionId) return;
     dispatch(fetchLessonQuizThunk(sectionId));
   }, [sectionId, dispatch]);
 
-  // Nếu BE đã có quiz với timeLimitSec -> báo duration cho parent
   useEffect(() => {
     if (!currentQuiz || typeof onDurationComputed !== "function") return;
-
     const sec =
       typeof currentQuiz.timeLimitSec === "number" &&
       currentQuiz.timeLimitSec > 0
         ? currentQuiz.timeLimitSec
-        : 30 * 60; // default 30 phút
-
+        : 30 * 60;
     onDurationComputed(sec);
   }, [currentQuiz, onDurationComputed]);
 
-  // map QuizDto từ BE -> format cho builder (meta only)
   const mapQuizFromBE = useCallback((q) => {
     if (!q) return null;
     return {
@@ -120,36 +73,27 @@ export default function QuizTab({
     };
   }, []);
 
-  // ── Tạo quiz mới ─────────────────────────────────────────
   const handleCreate = async () => {
-    const sec = await ensureQuizSection();
-    if (!sec?.id) return;
-
+    if (!sectionId) return toast.error("Chưa có section Quiz.");
     setDraftQuiz(null);
     setOpenBuilder(true);
   };
 
-  // ── Sửa quiz đang có ─────────────────────────────────────
   const handleEdit = () => {
-    if (!currentQuiz) {
-      setDraftQuiz(null);
-    } else {
-      setDraftQuiz(mapQuizFromBE(currentQuiz));
-    }
+    setDraftQuiz(currentQuiz || null);
     setOpenBuilder(true);
   };
 
-  // ── Bulk import → merge vào draftQuiz ────────────────────
   const handleBulkDone = (questions) => {
     setOpenBulk(false);
     if (!questions || !questions.length) return;
 
     const base = draftQuiz ||
-      mapQuizFromBE(currentQuiz) || {
+      currentQuiz || {
         title: lesson?.title || "Quiz",
         description: "",
-        timeLimit: 30,
-        passingScore: 60,
+        timeLimitSec: 30 * 60,
+        passScorePercent: 60,
         questions: [],
       };
 
@@ -160,13 +104,10 @@ export default function QuizTab({
     setOpenBuilder(true);
   };
 
-  // ── Sau khi modal lưu xong (đã gọi hết API) ───────────────
-  // onSaved sẽ nhận meta (ít nhất có timeLimitMinutes)
   const handleSaved = async ({ timeLimitMinutes }) => {
     try {
-      const sec = sectionId ? effectiveSection : await ensureQuizSection();
-      if (sec?.id) {
-        await dispatch(fetchLessonQuizThunk(sec.id)).unwrap();
+      if (sectionId) {
+        await dispatch(fetchLessonQuizThunk(sectionId)).unwrap();
       }
 
       message.success("Đã lưu quiz.");
@@ -187,15 +128,27 @@ export default function QuizTab({
     }
   };
 
-  const handleRemove = async () => {
-    toast.error("Chưa implement delete quiz 😅");
+  const handleRemove = async (quizId) => {
+    try {
+      console.log("[REMOVE QUIZ] deleting...", { sectionId, quizId });
+
+      await dispatch(deleteLessonQuizThunk({ sectionId, quizId })).unwrap();
+
+      message.success("Đã xóa quiz.");
+      await dispatch(fetchLessonQuizThunk(sectionId)).unwrap();
+      dispatch(clearCurrentQuiz());
+      await onSaved?.(); // reload curriculum nếu cần
+    } catch (err) {
+      console.error(err);
+      toast.error(err || "Không thể xóa quiz.");
+    }
   };
 
   return (
     <div className={styles.tabBody}>
       <Text>
-        Mỗi lesson chỉ có <b>1 quiz tổng hợp</b>, học viên làm sau khi học xong
-        Grammar / Kanji / Vocabulary.
+        Mỗi lesson chỉ có <b>1 quiz tổng hợp</b>. Quiz nằm trong section QUIZ
+        (tạo từ nút +).
       </Text>
 
       <div style={{ marginTop: 16, marginBottom: 12 }}>
@@ -204,7 +157,7 @@ export default function QuizTab({
             type="primary"
             icon={<PlusOutlined />}
             onClick={handleCreate}
-            disabled={!!currentQuiz} // đã có quiz → không cho tạo mới
+            disabled={!!currentQuiz}
           >
             Tạo quiz
           </Button>
@@ -230,7 +183,7 @@ export default function QuizTab({
 
       <QuizBuilderModal
         open={openBuilder}
-        sectionId={sectionId || localSection?.id}
+        sectionId={sectionId}
         initial={draftQuiz}
         onCancel={() => setOpenBuilder(false)}
         onSaved={handleSaved}

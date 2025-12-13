@@ -1,3 +1,4 @@
+// teacherprofileSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../configs/axios";
 
@@ -25,10 +26,13 @@ const extractTeacherPart = (teacher = {}) => ({
   bio: teacher.bio,
   websiteUrl: teacher.websiteUrl,
   linkedin: teacher.linkedin,
+
+  // bank
   bankAccountNumber: teacher.bankAccountNumber,
   bankAccountName: teacher.bankAccountName,
   bankName: teacher.bankName,
   bankBranchName: teacher.bankBranchName,
+
   lastPayoutDate: teacher.lastPayoutDate,
 });
 
@@ -39,20 +43,15 @@ export const fetchTeacherProfile = createAsyncThunk(
     try {
       const [userRes, teacherRes] = await Promise.all([
         api.get("profile/me"),
-        api.get("profile/me/teacher").catch(() => null), // phòng trường hợp 404
+        api.get("profile/me/teacher").catch(() => null),
       ]);
 
-      // user luôn lấy từ /profile/me
       const rawUser = userRes?.data?.data || userRes?.data || {};
 
-      // ƯU TIÊN: lấy teacher từ /profile/me/teacher
       let teacherRaw = {};
       const wrapper = teacherRes?.data?.data;
-      if (wrapper) {
-        teacherRaw = wrapper.teacher || wrapper || {};
-      }
+      if (wrapper) teacherRaw = wrapper.teacher || wrapper || {};
 
-      // Nếu /profile/me/teacher rỗng → fallback dùng teacher trong /profile/me
       if (!teacherRaw || Object.keys(teacherRaw).length === 0) {
         teacherRaw = rawUser.teacher || {};
       }
@@ -80,12 +79,9 @@ export const updateUserProfile = createAsyncThunk(
   async (payload, { rejectWithValue }) => {
     try {
       const res = await api.put("profile/me", payload);
-
       const raw = res?.data;
-      // nếu có raw.data (wrapper) thì lấy raw.data, còn không thì lấy raw luôn
       const rawUser =
         raw?.data && typeof raw.data === "object" ? raw.data : raw || {};
-
       return extractUserPart(rawUser);
     } catch (err) {
       return rejectWithValue(
@@ -112,8 +108,24 @@ export const updateTeacherSection = createAsyncThunk(
   }
 );
 
-/* ================== CERTIFICATES (Approval) ================== */
+/* ================== NEW: UPDATE teacher bank account (/teacher/revenue/bank-account) ================== */
+export const updateTeacherBankAccount = createAsyncThunk(
+  "teacherProfile/updateTeacherBankAccount",
+  async (payload, { rejectWithValue }) => {
+    try {
+      // BE: PUT /api/teacher/revenue/bank-account
+      await api.put("teacher/revenue/bank-account", payload);
+      // API trả data null → FE tự merge payload vào state để UI cập nhật ngay
+      return payload || {};
+    } catch (err) {
+      return rejectWithValue(
+        err?.response?.data || { message: "Update bank account failed" }
+      );
+    }
+  }
+);
 
+/* ================== CERTIFICATES (Approval) ================== */
 export const fetchTeacherCertificates = createAsyncThunk(
   "teacherProfile/fetchTeacherCertificates",
   async (_, { rejectWithValue }) => {
@@ -192,7 +204,6 @@ export const submitTeacherProfile = createAsyncThunk(
   }
 );
 
-// ================== UPLOAD AVATAR (/profile/me/avatar) ==================
 export const uploadTeacherAvatar = createAsyncThunk(
   "teacherProfile/uploadAvatar",
   async (file, { rejectWithValue }) => {
@@ -204,7 +215,6 @@ export const uploadTeacherAvatar = createAsyncThunk(
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      // BE trả { avatarUrl: "..." } hoặc { data: { avatarUrl: "..." } }
       const raw = res?.data || {};
       const avatarUrl =
         raw.avatarUrl || raw.data?.avatarUrl || raw.data || null;
@@ -219,7 +229,6 @@ export const uploadTeacherAvatar = createAsyncThunk(
 );
 
 /* ================== SLICE ================== */
-
 const initialState = {
   data: null,
   status: "idle",
@@ -240,8 +249,11 @@ const initialState = {
 
   updatingUser: false,
   updatingTeacher: false,
+  updatingBank: false,
+
   updateUserError: null,
   updateTeacherError: null,
+  updateBankError: null,
 
   uploadingAvatar: false,
   uploadAvatarError: null,
@@ -257,7 +269,6 @@ const teacherprofileSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // ==== fetch profile ====
       .addCase(fetchTeacherProfile.pending, (state) => {
         state.status = "loading";
         state.error = null;
@@ -271,7 +282,6 @@ const teacherprofileSlice = createSlice({
         state.error = action.payload || action.error;
       })
 
-      // ==== update user profile ====
       .addCase(updateUserProfile.pending, (state) => {
         state.updatingUser = true;
         state.updateUserError = null;
@@ -280,11 +290,7 @@ const teacherprofileSlice = createSlice({
         state.updatingUser = false;
         const userPart = action.payload || {};
         if (!state.data) {
-          state.data = {
-            ...userPart,
-            user: userPart,
-            teacher: {},
-          };
+          state.data = { ...userPart, user: userPart, teacher: {} };
         } else {
           state.data = {
             ...state.data,
@@ -299,7 +305,6 @@ const teacherprofileSlice = createSlice({
         state.updateUserError = action.payload || action.error;
       })
 
-      // ==== update teacher section ====
       .addCase(updateTeacherSection.pending, (state) => {
         state.updatingTeacher = true;
         state.updateTeacherError = null;
@@ -308,11 +313,7 @@ const teacherprofileSlice = createSlice({
         state.updatingTeacher = false;
         const teacherPart = action.payload || {};
         if (!state.data) {
-          state.data = {
-            ...teacherPart,
-            user: {},
-            teacher: teacherPart,
-          };
+          state.data = { ...teacherPart, user: {}, teacher: teacherPart };
         } else {
           state.data = {
             ...state.data,
@@ -325,6 +326,38 @@ const teacherprofileSlice = createSlice({
       .addCase(updateTeacherSection.rejected, (state, action) => {
         state.updatingTeacher = false;
         state.updateTeacherError = action.payload || action.error;
+      })
+
+      // ===== NEW: update bank =====
+      .addCase(updateTeacherBankAccount.pending, (state) => {
+        state.updatingBank = true;
+        state.updateBankError = null;
+      })
+      .addCase(updateTeacherBankAccount.fulfilled, (state, action) => {
+        state.updatingBank = false;
+        const bank = action.payload || {};
+        if (!state.data) return;
+        const nextTeacher = { ...(state.data.teacher || {}) };
+
+        nextTeacher.bankAccountNumber =
+          bank.bankAccountNumber ?? nextTeacher.bankAccountNumber;
+        nextTeacher.bankAccountName =
+          bank.bankAccountName ?? nextTeacher.bankAccountName;
+        nextTeacher.bankName = bank.bankName ?? nextTeacher.bankName;
+        nextTeacher.bankBranchName =
+          bank.bankBranchName ?? nextTeacher.bankBranchName;
+
+        state.data.teacher = nextTeacher;
+
+        // nếu bạn đang dùng root-level mapping (state.data.bankName...) thì sync luôn
+        state.data.bankAccountNumber = nextTeacher.bankAccountNumber;
+        state.data.bankAccountName = nextTeacher.bankAccountName;
+        state.data.bankName = nextTeacher.bankName;
+        state.data.bankBranchName = nextTeacher.bankBranchName;
+      })
+      .addCase(updateTeacherBankAccount.rejected, (state, action) => {
+        state.updatingBank = false;
+        state.updateBankError = action.payload || action.error;
       })
 
       // ==== certificates list ====
@@ -343,7 +376,6 @@ const teacherprofileSlice = createSlice({
         state.certError = action.payload || action.error;
       })
 
-      // ==== certificates upsert ====
       .addCase(upsertTeacherCertificate.pending, (state) => {
         state.savingCert = true;
         state.certError = null;
@@ -361,7 +393,6 @@ const teacherprofileSlice = createSlice({
         state.certError = action.payload || action.error;
       })
 
-      // ==== certificates delete ====
       .addCase(deleteTeacherCertificate.pending, (state) => {
         state.deletingCert = true;
         state.certError = null;
@@ -376,7 +407,6 @@ const teacherprofileSlice = createSlice({
         state.certError = action.payload || action.error;
       })
 
-      // ==== latest approval ====
       .addCase(fetchLatestApproval.pending, (state) => {
         state.latestStatus = "loading";
         state.latestError = null;
@@ -390,14 +420,12 @@ const teacherprofileSlice = createSlice({
         state.latestError = action.payload || action.error;
       })
 
-      // ==== submit approval ====
       .addCase(submitTeacherProfile.pending, (state) => {
         state.submitting = true;
         state.submitError = null;
       })
       .addCase(submitTeacherProfile.fulfilled, (state, action) => {
         state.submitting = false;
-        // nếu BE trả phần teacher mới thì update lại
         if (action.payload) {
           const teacherPart = extractTeacherPart(
             action.payload.teacher || action.payload
@@ -417,7 +445,6 @@ const teacherprofileSlice = createSlice({
         state.submitError = action.payload || action.error;
       })
 
-      // ==== upload avatar ====
       .addCase(uploadTeacherAvatar.pending, (state) => {
         state.uploadingAvatar = true;
         state.uploadAvatarError = null;
@@ -425,17 +452,10 @@ const teacherprofileSlice = createSlice({
       .addCase(uploadTeacherAvatar.fulfilled, (state, action) => {
         state.uploadingAvatar = false;
         const newUrl = action.payload;
-
         if (!newUrl) return;
-
-        // nếu state.data tồn tại thì cập nhật user.avatarUrl
         if (state.data) {
-          if (!state.data.user) {
-            state.data.user = {};
-          }
+          if (!state.data.user) state.data.user = {};
           state.data.user.avatarUrl = newUrl;
-
-          // nếu bạn có lưu avatarUrl ở level root (state.data.avatarUrl) thì update luôn
           state.data.avatarUrl = newUrl;
         }
       })
@@ -447,8 +467,6 @@ const teacherprofileSlice = createSlice({
 });
 
 export const { resetTeacherProfile } = teacherprofileSlice.actions;
-
-/* ================== SELECTORS ================== */
 
 export const selectTeacherProfile = (state) => state.teacherProfile?.data;
 export const selectTeacherProfileStatus = (state) =>
@@ -476,6 +494,7 @@ export const selectTeacherProfileSubmitting = (state) =>
 export const selectUpdatingUser = (state) => state.teacherProfile?.updatingUser;
 export const selectUpdatingTeacher = (state) =>
   state.teacherProfile?.updatingTeacher;
+export const selectUpdatingBank = (state) => state.teacherProfile?.updatingBank;
 
 export const selectUploadingAvatar = (state) =>
   state.teacherProfile?.uploadingAvatar;

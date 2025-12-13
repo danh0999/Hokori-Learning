@@ -251,3 +251,63 @@
   border-radius: 12px;
   padding: 20px;
 }
+/* ===== LessonEditorDrawer - dynamic tabs ===== */
+
+.emptyWrap {
+  padding: 18px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.tabWrap {
+  background: #fff;
+  border-radius: 12px;
+  padding: 18px;
+  border: 1px solid #e5e7eb;
+}
+
+.lessonTabLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lessonTabLabelLeft {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.tabDeleteBtn {
+  margin-left: 10px;
+  padding: 0 6px;
+}
+
+.drawerHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.drawerTitle {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.drawerMeta {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.drawerFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footerHint {
+  font-size: 12px;
+  color: #64748b;
+}

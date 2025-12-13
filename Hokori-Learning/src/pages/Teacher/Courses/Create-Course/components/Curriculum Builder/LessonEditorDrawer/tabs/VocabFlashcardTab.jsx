@@ -1,13 +1,14 @@
-// src/pages/Teacher/Courses/Create-Course/components/Curriculum Builder/LessonEditorDrawer/tabs/VocabFlashcardTab.jsx
 import React, { useCallback, useEffect, useState } from "react";
 import { Button, Form, Input, Typography } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
 
 import {
   createContentThunk,
   updateSectionThunk,
 } from "../../../../../../../../redux/features/teacherCourseSlice.js";
+
 import {
   createCourseVocabSet,
   resetFlashcardState,
@@ -17,11 +18,9 @@ import FlashcardList from "../../../../../../ManageDocument/Flashcard/FlashcardL
 import FlashcardBuilderModal from "../../../../../../ManageDocument/Flashcard/FlashcardBuilderModal.jsx";
 
 import styles from "../styles.module.scss";
-import { toast } from "react-toastify";
 
 const { Text } = Typography;
 
-// Helper lấy id content từ response createContentThunk
 function extractContentId(created) {
   if (!created) return null;
   if (created.content?.id) return created.content.id;
@@ -29,16 +28,9 @@ function extractContentId(created) {
   return null;
 }
 
-/**
- * Props:
- *  - lesson: lessonFromTree
- *  - sectionsHook
- *  - onSaved: gọi để LessonEditorDrawer fetchCourseTree
- *  - onDurationComputed: set duration cho VOCAB
- */
 export default function VocabFlashcardTab({
   lesson,
-  sectionsHook,
+  section, // ✅ section đã được tạo từ Drawer
   onSaved,
   onDurationComputed,
 }) {
@@ -48,44 +40,33 @@ export default function VocabFlashcardTab({
   const [opening, setOpening] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
 
-  const [sectionId, setSectionId] = useState(null);
   const [contentId, setContentId] = useState(null);
 
   const { currentSet } = useSelector(
     (state) => state.flashcardTeacher || state.flashcard
   );
 
-  // 🔹 Mỗi lần đổi lesson → clear currentSet, cards,… để không xài set của lesson trước
+  // clear state khi đổi lesson
   useEffect(() => {
     dispatch(resetFlashcardState());
   }, [dispatch, lesson?.id]);
 
-  // 🔹 Đồng bộ section + content từ lesson.sections
+  // sync contentId từ section.contents
   useEffect(() => {
-    if (!lesson?.sections) {
-      setSectionId(null);
-      setContentId(null);
-      form.setFieldsValue({
-        sectionTitle: `Vocabulary – ${lesson?.title || "Lesson"}`,
-      });
-      return;
-    }
+    if (!section?.id) return;
 
-    const vocabSec = lesson.sections.find((s) => s.studyType === "VOCABULARY");
-    setSectionId(vocabSec?.id || null);
-
-    const flashContent = vocabSec?.contents?.find(
+    const flashContent = (section.contents || []).find(
       (c) => c.contentFormat === "FLASHCARD_SET"
     );
     setContentId(flashContent?.id || null);
 
     form.setFieldsValue({
       sectionTitle:
-        vocabSec?.title || `Vocabulary – ${lesson?.title || "Lesson"}`,
+        section.title || `Vocabulary – ${lesson?.title || "Lesson"}`,
     });
-  }, [lesson?.id, lesson?.title, lesson?.sections, form]);
+  }, [section?.id, section?.title, section?.contents, lesson?.title, form]);
 
-  // 🔹 Duration: 1 flashcard set = 10 phút
+  // duration: có set => 10 phút
   useEffect(() => {
     if (!onDurationComputed) return;
     onDurationComputed(contentId ? 600 : 0);
@@ -95,6 +76,8 @@ export default function VocabFlashcardTab({
 
   const handleCreateOrOpen = useCallback(async () => {
     if (!lesson?.id) return toast.error("Missing lessonId");
+    if (!section?.id)
+      return toast.error("Chưa có section. Hãy tạo phần từ nút + trước.");
 
     let sectionTitle = "";
     try {
@@ -107,31 +90,22 @@ export default function VocabFlashcardTab({
     setOpening(true);
 
     try {
-      let secId = sectionId;
-
-      // 1) Tạo / update section VOCABULARY
-      if (!secId) {
-        const createdSec = await sectionsHook.ensureSection("VOCABULARY", {
-          title: sectionTitle,
-          studyType: "VOCABULARY",
-        });
-        secId = createdSec?.id;
-        setSectionId(secId);
-      } else {
+      // 1) update title section
+      if (sectionTitle && sectionTitle !== section.title) {
         await dispatch(
           updateSectionThunk({
-            sectionId: secId,
+            sectionId: section.id,
             data: { title: sectionTitle },
           })
         ).unwrap();
       }
 
-      // 2) Tạo content FLASHCARD_SET nếu chưa có
+      // 2) tạo content FLASHCARD_SET nếu chưa có
       let cntId = contentId;
       if (!cntId) {
         const createdContent = await dispatch(
           createContentThunk({
-            sectionId: secId,
+            sectionId: section.id,
             data: {
               orderIndex: 0,
               contentFormat: "FLASHCARD_SET",
@@ -144,7 +118,7 @@ export default function VocabFlashcardTab({
         setContentId(cntId);
       }
 
-      // 3) Nếu chưa có flashcard set (currentSet null) → tạo mới
+      // 3) tạo flashcard set nếu chưa có
       if (!currentSet?.id) {
         const rs = await dispatch(
           createCourseVocabSet({
@@ -157,10 +131,10 @@ export default function VocabFlashcardTab({
         }
       }
 
-      // 4) Reload tree cho lesson / curriculum
+      // 4) reload tree
       await onSaved?.();
 
-      // 5) Mở modal builder
+      // 5) mở modal
       setModalOpen(true);
     } catch (err) {
       console.error(err);
@@ -171,13 +145,13 @@ export default function VocabFlashcardTab({
   }, [
     lesson?.id,
     lesson?.title,
-    sectionId,
+    section?.id,
+    section?.title,
     contentId,
     form,
     dispatch,
-    sectionsHook,
     onSaved,
-    currentSet, // nhớ thêm currentSet vào deps
+    currentSet,
   ]);
 
   return (
