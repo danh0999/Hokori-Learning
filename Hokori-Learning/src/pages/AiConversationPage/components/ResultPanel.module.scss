@@ -6,74 +6,89 @@
 
 .header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .title {
   margin: 0;
-  font-size: 1.1rem;
-  font-weight: 900;
+  font-size: 1.05rem;
+  font-weight: 800;
   color: #111827;
 }
 
 .btn {
   border: none;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-weight: 750;
+  cursor: pointer;
+
   background: #2563eb;
   color: #fff;
-  padding: 10px 12px;
-  border-radius: 12px;
-  font-weight: 800;
-  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.16);
+  transition: transform 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+}
+
+.btn:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(37, 99, 235, 0.18);
 }
 
 .card {
-  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  border: 1px solid rgba(229, 231, 235, 0.85);
   border-radius: 16px;
-  background: #fff;
-  padding: 14px;
+  padding: 16px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.04);
 }
 
 .overall {
   display: flex;
-  gap: 12px;
   align-items: center;
+  gap: 12px;
   margin-bottom: 12px;
 }
 
 .circle {
-  width: 54px;
-  height: 54px;
+  width: 56px;
+  height: 56px;
   border-radius: 999px;
   background: #111827;
   color: #fff;
-  font-weight: 900;
-  display: grid;
-  place-items: center;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-weight: 850;
   font-size: 1.1rem;
 }
 
 .overallLabel {
-  font-weight: 900;
+  font-weight: 800;
   color: #111827;
 }
 
 .overallDesc {
+  margin-top: 3px;
+  font-size: 0.9rem;
   color: #6b7280;
-  font-size: 0.92rem;
-  margin-top: 2px;
+  line-height: 1.45;
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
+  margin-top: 12px;
 }
 
 .scoreRow {
   background: #f9fafb;
-  border: 1px solid #eef2f7;
+  border: 1px solid rgba(229, 231, 235, 0.9);
   border-radius: 14px;
   padding: 10px 12px;
 }
@@ -81,9 +96,12 @@
 .scoreHeader {
   display: flex;
   justify-content: space-between;
-  font-weight: 800;
+  gap: 10px;
+
+  font-weight: 750;
   color: #111827;
   margin-bottom: 8px;
+  font-size: 0.9rem;
 }
 
 .bar {
@@ -101,43 +119,44 @@
 }
 
 .feedbackGrid {
-  margin-top: 12px;
+  margin-top: 14px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
 }
 
 .fbBlock {
-  border: 1px solid #e5e7eb;
+  border: 1px solid rgba(229, 231, 235, 0.9);
   border-radius: 14px;
-  padding: 10px 12px;
-  background: #fff;
+  background: #ffffff;
+  padding: 12px;
 }
 
 .fbTitle {
-  font-weight: 900;
+  font-weight: 800;
   color: #111827;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .fbBlock ul {
   margin: 0;
   padding-left: 18px;
-  color: #374151;
-  line-height: 1.55;
+  color: #334155;
+  line-height: 1.6;
 }
 
 .convCard {
-  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  border: 1px solid rgba(229, 231, 235, 0.85);
   border-radius: 16px;
-  background: #fff;
-  padding: 14px;
+  padding: 16px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.035);
 }
 
 .convTitle {
-  font-weight: 900;
+  font-weight: 850;
   color: #111827;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .convList {
@@ -147,41 +166,36 @@
 }
 
 .convItem {
-  border: 1px solid #e5e7eb;
   border-radius: 14px;
   padding: 10px 12px;
-  background: #fbfdff;
+  border: 1px solid rgba(229, 231, 235, 0.9);
+  background: #f9fafb;
 }
 
 .convItem.user {
-  background: #111827;
-  border-color: #111827;
+  background: #2563eb;
+  border-color: rgba(37, 99, 235, 0.9);
+  color: #fff;
 }
 
 .convRole {
-  font-weight: 900;
+  font-weight: 800;
   margin-bottom: 6px;
-  color: #111827;
 }
 
 .convJp {
-  font-weight: 800;
-  color: #111827;
-  line-height: 1.45;
-  white-space: pre-wrap;
+  font-weight: 750;
+  line-height: 1.55;
 }
 
 .convVi {
   margin-top: 6px;
-  color: #6b7280;
-  line-height: 1.45;
-  white-space: pre-wrap;
+  opacity: 0.85;
+  line-height: 1.55;
 }
 
-.convItem.user .convRole,
-.convItem.user .convJp,
 .convItem.user .convVi {
-  color: #fff;
+  color: rgba(255, 255, 255, 0.88);
 }
 
 @media (max-width: 980px) {

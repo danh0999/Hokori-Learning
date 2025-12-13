@@ -1,215 +1,302 @@
 .page {
   width: 100%;
-  background: #f5f7fb;
-  display: flex;
-  flex-direction: column;
   min-height: 100vh;
+  background: #f5f7fb;
 }
 
+/* ===== MAIN LAYOUT ===== */
 .main {
-  width: 100%;
-  max-width: 1240px;
+  max-width: 1320px;
   margin: 0 auto;
-  padding: 22px 18px 36px;
+  padding: 36px 24px 56px;
+
   display: grid;
   grid-template-columns: 420px 1fr;
-  gap: 18px;
+  gap: 28px;
 }
 
+/* ===== CARD BASE ===== */
 .card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: #ffffff;
   border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(17, 24, 39, 0.05);
+  border: 1px solid rgba(229, 231, 235, 0.82);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.045);
 }
 
+/* Left / Right padding */
 .leftCard {
-  padding: 16px;
+  padding: 24px;
 }
 
 .rightCard {
-  padding: 16px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  min-height: 520px;
 }
 
+/* ===== HEADERS ===== */
 .cardHeader {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 14px;
+  margin-bottom: 14px;
 }
 
 .sectionTitle {
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: #111827;
   margin: 0;
+  font-size: 1.05rem;
+  font-weight: 750;
+  color: #111827;
+  letter-spacing: -0.2px;
 }
 
 .smallNote {
   font-size: 0.88rem;
   color: #6b7280;
+  line-height: 1.4;
+  padding-top: 2px;
 }
 
 .badge {
-  background: #eef2ff;
-  border: 1px solid #c7d2fe;
-  color: #1e3a8a;
+  flex-shrink: 0;
+  font-size: 0.82rem;
   font-weight: 700;
-  padding: 6px 10px;
+  color: #1e3a8a;
+
+  background: #eef2ff;
+  border: 1px solid rgba(199, 210, 254, 0.9);
   border-radius: 999px;
-  font-size: 0.85rem;
+  padding: 6px 10px;
 }
 
+/* ===== FORM ===== */
 .formRow {
-  margin-bottom: 12px;
+  margin-bottom: 18px;
 }
 
 .label {
   display: block;
-  font-weight: 700;
-  color: #111827;
-  font-size: 0.92rem;
-  margin-bottom: 6px;
+  font-size: 0.9rem;
+  font-weight: 650;
+  color: #374151;
+  margin-bottom: 7px;
 }
 
 .select,
 .textarea {
-  width: 100%;
-  border: 1px solid #e5e7eb;
+  width: 95%;
+  padding: 12px 14px;
   border-radius: 12px;
-  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  font-size: 0.92rem;
   outline: none;
-  font-size: 0.95rem;
-  transition: 0.15s ease;
+  background: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.textarea {
+  min-height: 98px;
+  resize: vertical;
 }
 
 .select:focus,
 .textarea:focus {
   border-color: #2563eb;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
+/* Scenario note when started */
 .note {
-  margin-top: 8px;
-  font-size: 0.9rem;
+  margin-top: 10px;
+  font-size: 0.88rem;
   color: #6b7280;
+  line-height: 1.45;
 }
 
 .noteKey {
-  font-weight: 800;
+  font-weight: 750;
   color: #111827;
 }
 
 .noteVal {
-  font-weight: 600;
+  font-weight: 650;
+  color: #334155;
 }
 
+/* ===== ACTIONS ===== */
 .actions {
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 6px;
+  gap: 12px;
+  margin-top: 14px;
 }
 
 .primaryBtn,
 .secondaryBtn,
 .ghostBtn {
-  border: none;
   border-radius: 12px;
-  padding: 10px 12px;
-  font-weight: 800;
+  padding: 12px 12px;
+  font-weight: 700;
+  font-size: 0.92rem;
   cursor: pointer;
-  transition: 0.15s ease;
+  transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
 }
 
 .primaryBtn {
+  flex: 1;
   background: #2563eb;
   color: #fff;
-  flex: 1;
+  border: 1px solid rgba(37, 99, 235, 0.9);
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.16);
 }
 
-.primaryBtn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.primaryBtn:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(37, 99, 235, 0.18);
 }
 
 .secondaryBtn {
-  background: #111827;
-  color: #fff;
   flex: 1;
+  background: #f3f4f6;
+  color: #111827;
+  border: 1px solid #d1d5db;
+}
+
+.secondaryBtn:hover {
+  background: #eef2f7;
+  transform: translateY(-1px);
 }
 
 .ghostBtn {
-  background: #f3f4f6;
+  background: #ffffff;
   color: #111827;
+  border: 1px solid #e5e7eb;
 }
 
+.ghostBtn:hover {
+  background: #f9fafb;
+  transform: translateY(-1px);
+}
+
+.primaryBtn:disabled,
+.secondaryBtn:disabled,
+.ghostBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ===== DIVIDER ===== */
 .divider {
   height: 1px;
-  background: #e5e7eb;
-  margin: 14px 0;
+  background: rgba(229, 231, 235, 0.75);
+  margin: 18px 0;
 }
 
+/* ===== RECORDER BLOCK ===== */
 .recorderBlock {
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .subTitle {
-  margin: 0 0 4px;
-  font-size: 0.95rem;
-  font-weight: 800;
+  margin: 0 0 6px 0;
+  font-size: 0.98rem;
+  font-weight: 750;
   color: #111827;
 }
 
 .subDesc {
-  margin: 0 0 10px;
+  margin: 0 0 12px 0;
   font-size: 0.9rem;
   color: #6b7280;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
 .hint {
-  margin-top: 8px;
+  margin: 10px 0 0;
   font-size: 0.88rem;
   color: #6b7280;
 }
 
+/* Error box */
 .errorBox {
-  margin-top: 12px;
-  border: 1px solid #fecaca;
-  background: #fff1f2;
+  margin-top: 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(254, 202, 202, 0.95);
+  background: rgba(255, 241, 242, 0.9);
   color: #991b1b;
   padding: 10px 12px;
-  border-radius: 12px;
   font-weight: 700;
 }
 
+/* ===== CHAT BOX ===== */
 .chatBox {
   flex: 1;
-  border: 1px solid #e5e7eb;
-  background: #fbfdff;
+  background: #fafafa;
   border-radius: 14px;
-  padding: 12px;
-  overflow: auto;
+  border: 1px solid rgba(229, 231, 235, 0.7);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+
+  padding: 20px;
+  overflow-y: auto;
+
+  /* quan trọng: có history thì stack từ trên xuống */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
+/* Empty state: tự căn giữa khi chỉ có 1 block */
 .empty {
+  margin: auto;
   text-align: center;
-  padding: 28px 12px;
+  max-width: 440px;
+
   color: #6b7280;
+  font-size: 0.92rem;
+  line-height: 1.55;
 }
 
 .emptyIcon {
-  font-size: 2rem;
-  margin-bottom: 8px;
+  font-size: 2.05rem;
+  opacity: 0.35;
+  margin-bottom: 10px;
 }
 
-@media (max-width: 980px) {
+/* Scrollbar */
+.chatBox::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chatBox::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 999px;
+}
+
+.chatBox::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
   .main {
     grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 28px 16px 44px;
+  }
+
+  .leftCard,
+  .rightCard {
+    padding: 18px;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .badge {
+    padding: 6px 9px;
   }
 }

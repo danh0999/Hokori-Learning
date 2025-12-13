@@ -1,6 +1,30 @@
+/* ===== ANIMATIONS ===== */
+@keyframes bubbleIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes userPop {
+  0% {
+    transform: scale(0.97);
+  }
+  60% {
+    transform: scale(1.01);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ===== ROW ===== */
 .row {
   display: flex;
-  margin-bottom: 10px;
 }
 
 .aiRow {
@@ -11,62 +35,89 @@
   justify-content: flex-end;
 }
 
+/* ===== BUBBLE BASE ===== */
 .bubble {
   max-width: 78%;
   border-radius: 14px;
-  padding: 10px 12px;
-  border: 1px solid #e5e7eb;
-  background: #fff;
+  padding: 12px 14px;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  word-break: break-word;
+
+  /* animation khi render */
+  animation: bubbleIn 0.22s ease-out both;
+
+  /* hover rất nhẹ */
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
+.bubble:hover {
+  transform: translateY(-1px);
+}
+
+/* ===== AI BUBBLE ===== */
 .ai {
   background: #ffffff;
+  border: 1px solid rgba(229, 231, 235, 0.9);
+  color: #111827;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.03);
 }
 
+/* ===== USER BUBBLE ===== */
 .user {
-  background: #111827;
-  border-color: #111827;
+  background: #2563eb;
+  border: 1px solid rgba(37, 99, 235, 0.9);
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.18);
+
+  /* pop nhẹ cho lượt trả lời */
+  animation: userPop 0.18s ease-out both;
 }
 
+/* ===== META ===== */
 .meta {
   display: flex;
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 6px;
-  font-size: 0.82rem;
-  opacity: 0.9;
+
+  font-size: 0.75rem;
+  opacity: 0.75;
 }
 
 .role {
-  font-weight: 900;
-  color: #111827;
+  font-weight: 750;
 }
 
 .time {
-  color: #6b7280;
+  white-space: nowrap;
 }
 
-.user .role,
-.user .jp,
-.user .vi {
-  color: #fff;
-}
-
-.user .time {
-  color: rgba(255, 255, 255, 0.65);
-}
-
+/* ===== CONTENT ===== */
 .jp {
-  font-weight: 800;
-  color: #111827;
-  line-height: 1.45;
-  white-space: pre-wrap;
+  font-weight: 700;
+  line-height: 1.55;
 }
 
 .vi {
   margin-top: 6px;
-  font-size: 0.92rem;
-  color: #6b7280;
-  line-height: 1.45;
-  white-space: pre-wrap;
+  font-size: 0.86rem;
+  opacity: 0.85;
 }
+
+/* color fix */
+.user .jp,
+.user .vi,
+.user .role,
+.user .time {
+  color: #ffffff;
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 640px) {
+  .bubble {
+    max-width: 92%;
+    padding: 11px 12px;
+  }
+}
+ 

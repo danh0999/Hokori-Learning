@@ -1,6 +1,7 @@
 // src/pages/AiKaiwaPage/AiKaiwaPage.jsx
 import React, { useState, useCallback } from "react";
 import styles from "./AiKaiwaPage.module.scss";
+import useAiService from "../../hooks/useAiService";
 
 import HeroSection from "./components/HeroSection";
 import AudioRecorder from "./components/AudioRecorder";
@@ -23,7 +24,7 @@ const AiKaiwaPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
-
+  const { runService } = useAiService("KAIWA");
   // Khi recorder trả blob mới
   const handleAudioReady = useCallback((blob) => {
     setAudioBlob(blob);
@@ -46,25 +47,25 @@ const AiKaiwaPage = () => {
 
       const base64 = await convertBlobToBase64(audioBlob);
       const audioFormat = getAudioFormat(audioBlob);
-
-      const response = await kaiwaService.practiceKaiwa({
-        targetText,
-        audioData: base64,
-        level,
-        language: KAIWA_DEFAULTS.LANGUAGE,
-        audioFormat,
-        voice: KAIWA_DEFAULTS.VOICE,
-        speed: KAIWA_DEFAULTS.SPEED,
-        validAudioFormat: true,
-        validSpeed: true,
-        validLevel: true,
-      });
+      const response = await runService("KAIWA", () =>
+        kaiwaService.practiceKaiwa({
+          targetText,
+          audioData: base64,
+          level,
+          language: KAIWA_DEFAULTS.LANGUAGE,
+          audioFormat,
+          voice: KAIWA_DEFAULTS.VOICE,
+          speed: KAIWA_DEFAULTS.SPEED,
+          validAudioFormat: true,
+          validSpeed: true,
+          validLevel: true,
+        })
+      );
 
       setResult(response);
     } catch (err) {
       console.error("Kaiwa practice error:", err);
 
-      // ÉP HIỆN TIẾNG VIỆT THÂN THIỆN
       let message = err?.message || "";
 
       if (message.includes("Could not transcribe audio")) {
