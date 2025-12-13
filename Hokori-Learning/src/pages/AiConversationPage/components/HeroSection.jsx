@@ -1,17 +1,21 @@
 // src/pages/AiConversationPage/components/HeroSection.jsx
 import React from "react";
+import { HiOutlineChatBubbleLeftRight } from "react-icons/hi2";
 import styles from "./HeroSection.module.scss";
 
 export default function HeroSection() {
   return (
     <section className={styles.hero}>
       <div className={styles.inner}>
-        <div className={styles.icon}>💬</div>
-        <div>
-          <h1 className={styles.title}>Trò chuyện cùng AI (Conversation Practice)</h1>
+        <div className={styles.icon}>
+          <HiOutlineChatBubbleLeftRight />
+        </div>
+
+        <div className={styles.text}>
+          <h1 className={styles.title}>Trò chuyện cùng AI</h1>
           <p className={styles.subtitle}>
-            Chọn trình độ + tình huống, AI sẽ hỏi và trò chuyện cùng mày khoảng 6–7 lượt. Mỗi câu AI đều có
-            tiếng Nhật và bản dịch tiếng Việt kèm audio.
+            Luyện hội thoại tiếng Nhật theo trình độ và tình huống. AI sẽ hỏi –
+            bạn trả lời bằng giọng nói, kèm bản dịch và audio.
           </p>
         </div>
       </div>

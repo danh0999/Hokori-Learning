@@ -8,6 +8,7 @@ import {
   fetchRandomSentence,
 } from "../../services/aiAnalyseService";
 import styles from "./AiAnalysePage.module.scss";
+import useAiService from "../../hooks/useAiService";
 
 const AiAnalysePage = () => {
   const [sentence, setSentence] = useState("");
@@ -16,7 +17,7 @@ const AiAnalysePage = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
-
+  const { runService } = useAiService("GRAMMAR");
   // ================================================
   // 1) LOAD STATE TỪ LOCAL STORAGE
   // ================================================
@@ -70,15 +71,18 @@ const AiAnalysePage = () => {
     setLoading(true);
 
     try {
-      const apiRes = await analyseSentence(trimmed, level);
+      const apiRes = await runService("GRAMMAR", () =>
+        analyseSentence(trimmed, level)
+      );
 
       if (!apiRes?.success) {
         setError(apiRes?.message || "Phân tích câu thất bại.");
         setResult(null);
       } else {
-        setResult(apiRes.data); // data = SentenceAnalysisResponse
+        setResult(apiRes.data);
       }
-    } catch {
+    } catch (err) {
+      console.error(err);
       setError("Lỗi phân tích câu.");
       setResult(null);
     } finally {
@@ -97,12 +101,20 @@ const AiAnalysePage = () => {
     try {
       const apiRes = await fetchRandomSentence(level);
       const rnd = apiRes?.data?.sentence;
+
       if (rnd) {
         setSentence(rnd);
-        const analysisRes = await analyseSentence(rnd, level);
-        if (analysisRes?.success) setResult(analysisRes.data);
+
+        const analysisRes = await runService("GRAMMAR", () =>
+          analyseSentence(rnd, level)
+        );
+
+        if (analysisRes?.success) {
+          setResult(analysisRes.data);
+        }
       }
-    } catch {
+    } catch (err) {
+      console.error(err);
       setError("Không lấy được câu ngẫu nhiên.");
     } finally {
       setLoading(false);

@@ -13,7 +13,7 @@ const SERVICE_ORDER = ["GRAMMAR", "KAIWA", "CONVERSATION"];
 
 const AiQuotaOverview = () => {
   const dispatch = useDispatch();
-  const quotas = useSelector((state) => state.aiPackage.quotas);
+  const quotas = useSelector((state) => state.aiPackage.quota || {});
 
   useEffect(() => {
     dispatch(fetchAiQuota());
@@ -30,26 +30,19 @@ const AiQuotaOverview = () => {
           const q = quotas[code];
           if (!q || q.totalQuota === 0) return null;
 
-          const percent = Math.round(
-            (q.remainingQuota / q.totalQuota) * 100
-          );
+          const percent = Math.round((q.remainingQuota / q.totalQuota) * 100);
 
           return (
             <div key={code} className={styles.item}>
               <div className={styles.row}>
-                <span className={styles.label}>
-                  {SERVICE_LABEL[code]}
-                </span>
+                <span className={styles.label}>{SERVICE_LABEL[code]}</span>
                 <span className={styles.value}>
                   {q.remainingQuota}/{q.totalQuota}
                 </span>
               </div>
 
               <div className={styles.bar}>
-                <div
-                  className={styles.fill}
-                  style={{ width: `${percent}%` }}
-                />
+                <div className={styles.fill} style={{ width: `${percent}%` }} />
               </div>
             </div>
           );
