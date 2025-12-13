@@ -25,7 +25,12 @@ const { Text } = Typography;
  *  - quizSection: section có studyType = "QUIZ" (nếu đã tồn tại trong tree)
  *  - onDurationComputed: (sec) => void
  */
-export default function QuizTab({ lesson, quizSection, onDurationComputed }) {
+export default function QuizTab({
+  lesson,
+  quizSection,
+  onDurationComputed,
+  onSaved,
+}) {
   const dispatch = useDispatch();
   const { currentQuiz, loading, saving } = useSelector(
     (state) => state.quiz || {}
@@ -165,6 +170,7 @@ export default function QuizTab({ lesson, quizSection, onDurationComputed }) {
       }
 
       message.success("Đã lưu quiz.");
+      await onSaved?.();
 
       if (typeof onDurationComputed === "function") {
         const minutes =

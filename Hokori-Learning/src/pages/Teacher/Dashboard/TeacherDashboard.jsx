@@ -254,15 +254,6 @@ export default function TeacherDashboard() {
           </Card>
         </Col>
 
-        <Col xs={24} sm={12} md={6}>
-          <Card className={styles.kpiCard}>
-            <div className={styles.kpiIcon}>
-              <MessageOutlined />
-            </div>
-            <Statistic title="Bình luận" value={data.newComments} />
-          </Card>
-        </Col>
-
         {/* ✅ NEW: Doanh thu tháng hiện tại */}
         <Col xs={24} sm={12} md={6}>
           <Card className={styles.kpiCard}>
@@ -274,12 +265,6 @@ export default function TeacherDashboard() {
               value={data.monthlyRevenue || 0}
               suffix="VNĐ"
             />
-            {data.nextPayoutDate && (
-              <div className={styles.kpiHint}>
-                Ngày trả dự kiến:{" "}
-                {new Date(data.nextPayoutDate).toLocaleDateString("vi-VN")}
-              </div>
-            )}
           </Card>
         </Col>
       </Row>

@@ -1,16 +1,13 @@
-// src/pages/Teacher/ManageDocument/Quiz/_shared/QuestionCard.jsx
-import React from "react";
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Button,
   Card,
   Collapse,
   Col,
-  Dropdown,
   Form,
   Input,
   InputNumber,
   Row,
-  Select,
   Space,
   Tag,
   Typography,
@@ -18,136 +15,156 @@ import {
 import {
   CopyOutlined,
   DeleteOutlined,
-  MoreOutlined,
   ArrowUpOutlined,
   ArrowDownOutlined,
 } from "@ant-design/icons";
+import debounce from "lodash.debounce";
+
 import OptionsEditor from "../OptionsEditor/OptionsEditor.jsx";
-import { newQuestion } from "../quizUtils/quizUtils.js";
 import styles from "./styles.module.scss";
+
 const { Text } = Typography;
 
-export default function QuestionCard({
+function QuestionCard({
   q,
-  idx,
-  total,
+  idx = 0,
+  total = 1,
   onChange,
   onDuplicate,
   onDelete,
   onMove,
 }) {
-  const items = [
-    {
-      key: q.id,
-      label: (
-        <Space>
-          <Tag color="blue">Q{idx + 1}</Tag>
-          <Text strong className={styles?.qTitlePreview}>
-            {q.text?.trim() || "Câu hỏi chưa có nội dung"}
-          </Text>
-          <Text type="secondary">· {q.points} pt</Text>
-          <Tag>{q.type}</Tag>
-        </Space>
-      ),
-      children: (
-        <div className={styles?.qBody}>
-          <Row gutter={16}>
-            <Col span={16}>
-              <Form layout="vertical">
-                <Form.Item label="Nội dung câu hỏi">
-                  <Input.TextArea
-                    autoSize={{ minRows: 2, maxRows: 6 }}
-                    placeholder="Nhập nội dung câu hỏi…"
-                    value={q.text}
-                    onChange={(e) => onChange({ ...q, text: e.target.value })}
-                  />
-                </Form.Item>
+  const [localQ, setLocalQ] = useState(q);
 
-                <Row gutter={12}>
-                  <Col span={12}>
-                    <Form.Item label="Loại câu hỏi">
-                      <Select
-                        value={q.type}
-                        onChange={(type) => {
-                          // giữ text/points, chỉ reset phần cấu trúc theo type mới
-                          const next = newQuestion(type);
-                          onChange({
-                            ...next,
-                            id: q.id,
-                            text: q.text,
-                            points: q.points,
-                          });
-                        }}
-                        options={[{ value: "single", label: "Single choice" }]}
-                      />
-                    </Form.Item>
-                  </Col>
-                  <Col span={12}>
-                    <Form.Item label="Điểm">
-                      <InputNumber
-                        min={0}
-                        value={q.points}
-                        onChange={(v) => onChange({ ...q, points: v ?? 0 })}
-                      />
-                    </Form.Item>
-                  </Col>
-                </Row>
+  useEffect(() => {
+    setLocalQ(q);
+  }, [q.id]);
 
-                <OptionsEditor q={q} onChange={onChange} styles={styles} />
+  const commitChange = useMemo(
+    () =>
+      debounce((next) => {
+        onChange(next);
+      }, 250),
+    [onChange]
+  );
 
-                <Form.Item label="Giải thích (hiển thị sau khi nộp)">
-                  <Input.TextArea
-                    placeholder="Giải thích đáp án / mẹo ghi nhớ…"
-                    autoSize={{ minRows: 2, maxRows: 6 }}
-                    value={q.explanation}
-                    onChange={(e) =>
-                      onChange({ ...q, explanation: e.target.value })
-                    }
-                  />
-                </Form.Item>
-              </Form>
-            </Col>
-
-            <Col span={8}>
-              <Card size="small" className={styles?.sideCard}>
-                <Space
-                  direction="vertical"
-                  className={styles?.block}
-                  size="middle"
-                >
-                  <Text strong>Thao tác</Text>
-                  <Space wrap>
-                    <Button icon={<CopyOutlined />} onClick={onDuplicate}>
-                      Duplicate
-                    </Button>
-                    <Button
-                      icon={<ArrowUpOutlined />}
-                      disabled={idx === 0}
-                      onClick={() => onMove("up")}
-                    />
-                    <Button
-                      icon={<ArrowDownOutlined />}
-                      disabled={idx === total - 1}
-                      onClick={() => onMove("down")}
-                    />
-                    <Button danger icon={<DeleteOutlined />} onClick={onDelete}>
-                      Delete
-                    </Button>
-                  </Space>
-                </Space>
-              </Card>
-            </Col>
-          </Row>
-        </div>
-      ),
+  const updateLocal = useCallback(
+    (patch) => {
+      setLocalQ((prev) => {
+        const next = { ...prev, ...patch, type: "SINGLE_CHOICE", points: 1 };
+        commitChange(next);
+        return next;
+      });
     },
-  ];
+    [commitChange]
+  );
+
+  const items = useMemo(
+    () => [
+      {
+        key: localQ.id,
+        label: (
+          <Space>
+            <Tag color="blue">Q{idx + 1}</Tag>
+            <Text strong className={styles.qTitlePreview}>
+              {localQ.text?.trim() || "Câu hỏi chưa có nội dung"}
+            </Text>
+            <Text type="secondary">· 1 pt</Text>
+            <Tag>SINGLE</Tag>
+          </Space>
+        ),
+        children: (
+          <div className={styles.qBody}>
+            <Row gutter={16}>
+              <Col span={16}>
+                <Form layout="vertical">
+                  <Form.Item label="Nội dung câu hỏi">
+                    <Input.TextArea
+                      autoSize={{ minRows: 2, maxRows: 6 }}
+                      value={localQ.text}
+                      onChange={(e) => updateLocal({ text: e.target.value })}
+                    />
+                  </Form.Item>
+
+                  <Row gutter={12}>
+                    <Col span={12}>
+                      <Form.Item label="Loại câu hỏi">
+                        <Input disabled value="Single choice" />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item label="Điểm">
+                        <InputNumber
+                          disabled
+                          value={1}
+                          style={{ width: "100%" }}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+
+                  <OptionsEditor
+                    q={localQ}
+                    onChange={(next) => updateLocal(next)}
+                    styles={styles}
+                  />
+
+                  <Form.Item label="Giải thích (hiển thị sau khi nộp)">
+                    <Input.TextArea
+                      autoSize={{ minRows: 2, maxRows: 6 }}
+                      value={localQ.explanation}
+                      onChange={(e) =>
+                        updateLocal({ explanation: e.target.value })
+                      }
+                    />
+                  </Form.Item>
+                </Form>
+              </Col>
+
+              <Col span={8}>
+                <Card size="small" className={styles.sideCard}>
+                  <Space direction="vertical" size="middle">
+                    <Text strong>Thao tác</Text>
+                    <Space wrap>
+                      <Button icon={<CopyOutlined />} onClick={onDuplicate}>
+                        Duplicate
+                      </Button>
+                      <Button
+                        icon={<ArrowUpOutlined />}
+                        disabled={idx === 0}
+                        onClick={() => onMove?.("up")}
+                      />
+                      <Button
+                        icon={<ArrowDownOutlined />}
+                        disabled={idx === total - 1}
+                        onClick={() => onMove?.("down")}
+                      />
+                      <Button
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={onDelete}
+                      >
+                        Delete
+                      </Button>
+                    </Space>
+                  </Space>
+                </Card>
+              </Col>
+            </Row>
+          </div>
+        ),
+      },
+    ],
+    [localQ, idx, total, onDuplicate, onDelete, onMove, updateLocal]
+  );
 
   return (
     <Collapse
       items={items}
-      defaultActiveKey={[q.id]}
-      className={styles.qCollapse} // <-- thêm class
+      defaultActiveKey={[localQ.id]}
+      className={styles.qCollapse}
     />
   );
 }
+
+export default memo(QuestionCard);

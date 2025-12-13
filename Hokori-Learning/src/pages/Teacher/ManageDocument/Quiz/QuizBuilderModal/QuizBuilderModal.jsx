@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   Modal,
   Button,
@@ -9,7 +9,6 @@ import {
   InputNumber,
   Row,
   Col,
-  Switch,
   Divider,
   Typography,
   message,
@@ -28,34 +27,55 @@ import {
   deleteQuizQuestionThunk,
   createQuizQuestionThunk,
   createQuestionOptionsThunk,
+  updateQuizQuestionThunk,
+  updateQuestionOptionThunk,
+  deleteQuestionOptionThunk,
 } from "../../../../../redux/features/quizSlice.js";
 
 import styles from "./styles.module.scss";
 
 const { Text } = Typography;
 
-/* ================= UTIL ================= */
+function normalizeSingleChoiceOptions(options) {
+  const cleaned = (options || []).map((o) => ({
+    ...o,
+    text: String(o.text || "").trim(),
+    isCorrect: !!o.isCorrect,
+  }));
 
-const buildBaseFromInitial = (initial) => ({
-  id: initial?.id ?? null,
-  title: initial?.title ?? "",
-  description: initial?.description ?? "",
-  timeLimit:
-    typeof initial?.timeLimitSec === "number"
-      ? Math.round(initial.timeLimitSec / 60)
-      : 30,
-  passingScore: initial?.passScorePercent ?? 60,
-  shuffleQuestions: !!initial?.shuffleQuestions,
-  shuffleOptions: initial?.shuffleOptions !== false,
-  showExplanation:
-    typeof initial?.showExplanation === "boolean"
-      ? initial.showExplanation
-      : true,
-  isRequired: !!initial?.isRequired,
-  questions: [],
-});
+  let next = cleaned.filter((o) => o.text.length > 0);
 
-/* ================= COMPONENT ================= */
+  if (next.length < 2) return next;
+
+  const correctIdxs = next
+    .map((o, idx) => (o.isCorrect ? idx : -1))
+    .filter((x) => x !== -1);
+
+  if (correctIdxs.length === 0) {
+    next = next.map((o, idx) => ({ ...o, isCorrect: idx === 0 }));
+  } else if (correctIdxs.length > 1) {
+    const keep = correctIdxs[0];
+    next = next.map((o, idx) => ({ ...o, isCorrect: idx === keep }));
+  }
+
+  return next;
+}
+
+function buildBaseFromInitial(initial) {
+  return {
+    id: initial?.id ?? null,
+    title: initial?.title ?? "",
+    description: initial?.description ?? "",
+    timeLimit:
+      typeof initial?.timeLimitSec === "number"
+        ? Math.round(initial.timeLimitSec / 60)
+        : 30,
+    passingScore:
+      typeof initial?.passScorePercent === "number"
+        ? initial.passScorePercent
+        : 60,
+  };
+}
 
 export default function QuizBuilderModal({
   open,
@@ -68,66 +88,164 @@ export default function QuizBuilderModal({
   const [metaForm] = Form.useForm();
 
   const [quizId, setQuizId] = useState(null);
-  const [questions, setQuestions] = useState([]);
   const [hasQuizCreated, setHasQuizCreated] = useState(false);
+
+  const [questions, setQuestions] = useState([]);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
 
   const [creatingQuiz, setCreatingQuiz] = useState(false);
   const [savingAll, setSavingAll] = useState(false);
+
   const [openBulk, setOpenBulk] = useState(false);
 
   const watchedTitle = Form.useWatch("title", metaForm);
 
-  /* ===== INIT ===== */
   useEffect(() => {
     if (!open) return;
 
     const base = buildBaseFromInitial(initial);
     setQuizId(base.id);
     setHasQuizCreated(!!base.id);
-    setQuestions([]);
 
     metaForm.setFieldsValue(base);
 
     if (sectionId && base.id) {
-      dispatch(fetchQuizQuestionsThunk({ sectionId, quizId: base.id })).then(
-        (res) => {
+      setLoadingQuestions(true);
+      dispatch(fetchQuizQuestionsThunk({ sectionId, quizId: base.id }))
+        .then((res) => {
           if (!fetchQuizQuestionsThunk.fulfilled.match(res)) return;
 
-          const mapped = (res.payload || []).map((q) => ({
-            id: q.id,
-            text: q.content,
-            explanation: q.explanation,
-            points: q.points ?? 1,
-            options: (q.options || []).map((o) => ({
-              id: o.id,
-              text: o.content,
-              isCorrect: o.isCorrect,
-            })),
-          }));
+          const mapped = (res.payload || []).map((q) => {
+            const opts = (q.options || []).map((o) => ({
+              id: String(o.id), // giữ id server
+              text: o.content || "",
+              isCorrect: !!o.isCorrect,
+            }));
+
+            return {
+              id: String(q.id),
+              serverId: q.id,
+              type: "SINGLE_CHOICE",
+              text: q.content || "",
+              explanation: q.explanation || "",
+              points: 1,
+              options: normalizeSingleChoiceOptions(opts),
+              originalOptionIds: opts.map((o) => o.id), // ✅ thêm dòng này
+            };
+          });
 
           setQuestions(mapped);
-        }
-      );
+        })
+        .finally(() => setLoadingQuestions(false));
+    } else {
+      setQuestions([]);
     }
   }, [open, initial, sectionId, dispatch, metaForm]);
 
-  /* ===== QUESTION HANDLERS (MEMOIZED → KHÔNG LAG) ===== */
-
+  // ===== Add/Update =====
   const addQuestion = useCallback(() => {
-    setQuestions((prev) => [...prev, newQuestion("single")]);
+    const nq = newQuestion("single"); // bạn giữ util cũ, nhưng FE sẽ ép SINGLE_CHOICE
+    setQuestions((prev) => [
+      ...prev,
+      {
+        id: nq.id || crypto.randomUUID(),
+        type: "SINGLE_CHOICE",
+        text: nq.text || "",
+        explanation: nq.explanation || "",
+        points: 1,
+        options: normalizeSingleChoiceOptions(
+          (nq.options || []).map((o) => ({
+            id: o.id || crypto.randomUUID(),
+            text: o.text || "",
+            isCorrect: !!o.correct || !!o.isCorrect,
+          }))
+        ),
+      },
+    ]);
   }, []);
 
   const updateQuestion = useCallback((id, next) => {
-    setQuestions((prev) => prev.map((q) => (q.id === id ? next : q)));
+    const normalized = {
+      ...next,
+      type: "SINGLE_CHOICE",
+      points: 1,
+      options: normalizeSingleChoiceOptions(
+        (next.options || []).map((o) => ({
+          ...o,
+          text: o.text,
+          isCorrect: !!o.isCorrect || !!o.correct,
+        }))
+      ),
+    };
+    setQuestions((prev) => prev.map((q) => (q.id === id ? normalized : q)));
   }, []);
 
-  const deleteQuestionLocal = useCallback((id) => {
-    setQuestions((prev) => prev.filter((q) => q.id !== id));
+  const deleteQuestionLocal = useCallback(
+    async (id) => {
+      const q = questions.find((x) => x.id === id);
+
+      if (q?.serverId && quizId && sectionId) {
+        try {
+          await dispatch(
+            deleteQuizQuestionThunk({
+              sectionId,
+              quizId,
+              questionId: q.serverId,
+            })
+          ).unwrap();
+          setQuestions((prev) => prev.filter((x) => x.id !== id));
+          message.success("Đã xoá câu hỏi");
+        } catch (e) {
+          console.error(e);
+          message.error("Xoá câu hỏi thất bại");
+        }
+      } else {
+        setQuestions((prev) => prev.filter((x) => x.id !== id));
+      }
+    },
+    [questions, quizId, sectionId, dispatch]
+  );
+
+  // Duplicate + Move (để nút trên UI hoạt động)
+  const duplicateQuestion = useCallback((id) => {
+    setQuestions((prev) => {
+      const idx = prev.findIndex((x) => x.id === id);
+      if (idx < 0) return prev;
+      const src = prev[idx];
+      const copy = {
+        ...src,
+        serverId: undefined, // duplicate là local mới
+        id: crypto.randomUUID(),
+        text: src.text ? `${src.text} (copy)` : "",
+        options: (src.options || []).map((o) => ({
+          ...o,
+          id: crypto.randomUUID(),
+        })),
+      };
+      const next = [...prev];
+      next.splice(idx + 1, 0, copy);
+      return next;
+    });
   }, []);
 
-  /* ===== CREATE QUIZ ===== */
+  const moveQuestion = useCallback((id, dir) => {
+    setQuestions((prev) => {
+      const idx = prev.findIndex((x) => x.id === id);
+      if (idx < 0) return prev;
 
+      const to = dir === "up" ? idx - 1 : idx + 1;
+      if (to < 0 || to >= prev.length) return prev;
+
+      const next = [...prev];
+      const [item] = next.splice(idx, 1);
+      next.splice(to, 0, item);
+      return next;
+    });
+  }, []);
+
+  // ===== Create Quiz meta =====
   const handleCreateQuiz = async () => {
+    if (!sectionId) return message.error("Thiếu sectionId");
     try {
       const meta = await metaForm.validateFields();
       setCreatingQuiz(true);
@@ -151,104 +269,257 @@ export default function QuizBuilderModal({
 
       setQuizId(action.payload.id);
       setHasQuizCreated(true);
-      message.success("Đã tạo quiz, giờ có thể thêm câu hỏi");
+      message.success("Đã tạo quiz");
     } finally {
       setCreatingQuiz(false);
     }
   };
 
-  /* ===== BULK IMPORT (SAU KHI CÓ QUIZ) ===== */
+  // ===== Bulk import -> local only =====
+  const handleBulkDone = useCallback((importedQuestions) => {
+    if (!Array.isArray(importedQuestions) || importedQuestions.length === 0) {
+      message.warning("Không có câu hỏi để import.");
+      return;
+    }
 
-  const handleBulkDone = async (importedQuestions) => {
-    if (!quizId) return;
+    const mapped = importedQuestions.map((q) => {
+      const opts = (q.options || []).map((o) => ({
+        id: o.id || crypto.randomUUID(),
+        text: o.text || "",
+        isCorrect: !!o.isCorrect || !!o.correct, // parseQuizText trả correct
+      }));
+
+      return {
+        id: q.id || crypto.randomUUID(),
+        type: "SINGLE_CHOICE",
+        text: String(q.text || "").trim(),
+        explanation: String(q.explanation || "").trim(),
+        points: 1,
+        options: normalizeSingleChoiceOptions(opts), // ✅ auto tick đúng 1 đáp án
+      };
+    });
+
+    setQuestions((prev) => [...prev, ...mapped]);
+    setOpenBulk(false);
+    message.success(`Đã import ${mapped.length} câu. Kiểm tra rồi bấm Lưu.`);
+  }, []);
+
+  const validateQuestions = (qs) => {
+    for (let i = 0; i < qs.length; i++) {
+      const q = qs[i];
+      if (!String(q.text || "").trim()) {
+        throw new Error(`Câu #${i + 1} đang bị trống nội dung.`);
+      }
+
+      const opts = normalizeSingleChoiceOptions(q.options || []);
+      if (opts.length < 2) {
+        throw new Error(`Câu #${i + 1} cần ít nhất 2 đáp án.`);
+      }
+
+      const correctCount = opts.filter((o) => o.isCorrect).length;
+      if (correctCount !== 1) {
+        throw new Error(`Câu #${i + 1} phải có đúng 1 đáp án đúng.`);
+      }
+    }
+  };
+
+  // ===== Save all (create quiz if needed) =====
+  const handleSaveAll = async () => {
+    if (!sectionId) return message.error("Thiếu sectionId");
 
     try {
-      for (let i = 0; i < importedQuestions.length; i++) {
-        const q = importedQuestions[i];
+      const meta = await metaForm.validateFields();
+      let ensuredQuizId = quizId;
 
-        const qAction = await dispatch(
-          createQuizQuestionThunk({
+      setSavingAll(true);
+
+      if (!ensuredQuizId) {
+        const created = await dispatch(
+          createLessonQuizThunk({
             sectionId,
-            quizId,
-            question: {
-              content: q.content,
-              explanation: q.explanation || "",
-              questionType: "SINGLE_CHOICE",
-              orderIndex: i,
-              points: 1,
+            meta: {
+              title: meta.title,
+              description: meta.description,
+              timeLimit: meta.timeLimit,
+              passingScore: meta.passingScore,
             },
           })
-        );
+        ).unwrap();
 
-        const newQ = qAction.payload;
+        ensuredQuizId = created.id;
+        setQuizId(created.id);
+        setHasQuizCreated(true);
+      } else {
+        await dispatch(
+          updateLessonQuizThunk({
+            sectionId,
+            quizId: ensuredQuizId,
+            meta: {
+              title: meta.title,
+              description: meta.description,
+              timeLimit: meta.timeLimit,
+              passingScore: meta.passingScore,
+            },
+          })
+        ).unwrap();
+      }
+
+      validateQuestions(questions);
+
+      const unsaved = questions.filter((q) => !q.serverId);
+
+      for (let k = 0; k < unsaved.length; k++) {
+        const q = unsaved[k];
+
+        const createdQ = await dispatch(
+          createQuizQuestionThunk({
+            sectionId,
+            quizId: ensuredQuizId,
+            question: {
+              content: String(q.text || "").trim(),
+              explanation: String(q.explanation || "").trim(),
+              questionType: "SINGLE_CHOICE",
+              orderIndex: questions.findIndex((x) => x.id === q.id),
+            },
+          })
+        ).unwrap();
+
+        const fixedOptions = normalizeSingleChoiceOptions(q.options || []).map(
+          (o, orderIndex) => ({
+            content: String(o.text || "").trim(),
+            isCorrect: !!o.isCorrect,
+            orderIndex,
+          })
+        );
 
         await dispatch(
           createQuestionOptionsThunk({
             sectionId,
-            questionId: newQ.id,
-            options: q.options.map((o, idx) => ({
-              content: o.content,
-              isCorrect: o.isCorrect,
-              orderIndex: idx,
-            })),
+            questionId: createdQ.id,
+            options: fixedOptions,
           })
+        ).unwrap();
+
+        setQuestions((prev) =>
+          prev.map((x) =>
+            x.id === q.id
+              ? { ...x, serverId: createdQ.id, id: String(createdQ.id) }
+              : x
+          )
         );
       }
 
-      message.success("Bulk import thành công");
-      setOpenBulk(false);
+      const saved = questions.filter((q) => q.serverId);
 
-      const reload = await dispatch(
-        fetchQuizQuestionsThunk({ sectionId, quizId })
-      );
-      setQuestions(
-        reload.payload.map((q) => ({
-          id: q.id,
-          text: q.content,
-          explanation: q.explanation,
-          points: q.points ?? 1,
-          options: q.options.map((o) => ({
-            id: o.id,
-            text: o.content,
-            isCorrect: o.isCorrect,
-          })),
-        }))
-      );
-    } catch (e) {
-      console.error(e);
-      message.error("Bulk import thất bại");
-    }
-  };
+      for (let k = 0; k < saved.length; k++) {
+        const q = saved[k];
+        const questionId = q.serverId;
 
-  /* ===== SAVE ===== */
+        // 1) Update question (content/explanation/orderIndex)
+        await dispatch(
+          updateQuizQuestionThunk({
+            sectionId,
+            questionId,
+            question: {
+              content: String(q.text || "").trim(),
+              explanation: String(q.explanation || "").trim(),
+              questionType: "SINGLE_CHOICE",
+              orderIndex: questions.findIndex((x) => x.id === q.id),
+            },
+          })
+        ).unwrap();
 
-  const handleSaveAll = async () => {
-    try {
-      const meta = await metaForm.validateFields();
-      setSavingAll(true);
+        // 2) Sync options
+        const normalizedOpts = normalizeSingleChoiceOptions(q.options || []);
 
-      await dispatch(
-        updateLessonQuizThunk({
-          sectionId,
-          quizId,
-          meta: {
-            title: meta.title,
-            description: meta.description,
-            timeLimit: meta.timeLimit,
-            passingScore: meta.passingScore,
-          },
-        })
-      );
+        // tách option “đã có trên server” vs “mới tạo local”
+        const existingOpts = normalizedOpts.filter((o) => {
+          const n = Number(o.id);
+          return Number.isFinite(n) && String(n) === String(o.id);
+        });
+
+        const newOpts = normalizedOpts.filter((o) => !existingOpts.includes(o));
+
+        // 2a) Update option existing (PUT)
+        for (let i = 0; i < existingOpts.length; i++) {
+          const o = existingOpts[i];
+          await dispatch(
+            updateQuestionOptionThunk({
+              sectionId,
+              optionId: Number(o.id),
+              option: {
+                content: String(o.text || "").trim(),
+                isCorrect: !!o.isCorrect,
+                orderIndex: i,
+              },
+            })
+          ).unwrap();
+        }
+
+        // 2b) Create option mới (POST bulk)
+        if (newOpts.length > 0) {
+          await dispatch(
+            createQuestionOptionsThunk({
+              sectionId,
+              questionId,
+              options: newOpts.map((o, i) => ({
+                content: String(o.text || "").trim(),
+                isCorrect: !!o.isCorrect,
+                orderIndex: existingOpts.length + i,
+              })),
+            })
+          ).unwrap();
+        }
+
+        // 2c) Delete option bị remove (DELETE)
+        const originalIds = q.originalOptionIds || [];
+        const currentExistingIds = existingOpts.map((o) => o.id);
+        const removedIds = originalIds.filter(
+          (id) => !currentExistingIds.includes(id)
+        );
+
+        for (const removedId of removedIds) {
+          await dispatch(
+            deleteQuestionOptionThunk({
+              sectionId,
+              optionId: Number(removedId),
+            })
+          ).unwrap();
+        }
+      }
+
+      const reloaded = await dispatch(
+        fetchQuizQuestionsThunk({ sectionId, quizId: ensuredQuizId })
+      ).unwrap();
+
+      const mapped = (reloaded || []).map((q) => ({
+        id: String(q.id),
+        serverId: q.id,
+        type: "SINGLE_CHOICE",
+        text: q.content || "",
+        explanation: q.explanation || "",
+        points: 1,
+        options: normalizeSingleChoiceOptions(
+          (q.options || []).map((o) => ({
+            id: String(o.id),
+            text: o.content || "",
+            isCorrect: !!o.isCorrect,
+          }))
+        ),
+      }));
+
+      setQuestions(mapped);
 
       message.success("Đã lưu quiz");
       onSaved?.({ timeLimitMinutes: meta.timeLimit });
       onCancel?.();
+    } catch (e) {
+      console.error(e);
+      message.error(e?.message || "Lưu quiz thất bại");
     } finally {
       setSavingAll(false);
     }
   };
-
-  /* ===== RENDER ===== */
 
   return (
     <Modal
@@ -259,22 +530,12 @@ export default function QuizBuilderModal({
       onCancel={onCancel}
       title={`Quiz – ${watchedTitle || "Untitled"}`}
     >
-      {/* TOP BAR */}
       <div className={styles.topBar}>
         <Space>
-          <Button
-            icon={<PlusOutlined />}
-            onClick={addQuestion}
-            disabled={!hasQuizCreated}
-          >
+          <Button icon={<PlusOutlined />} onClick={addQuestion}>
             Thêm câu hỏi
           </Button>
-
-          <Button
-            icon={<ImportOutlined />}
-            onClick={() => setOpenBulk(true)}
-            disabled={!quizId}
-          >
+          <Button icon={<ImportOutlined />} onClick={() => setOpenBulk(true)}>
             Bulk import
           </Button>
         </Space>
@@ -284,7 +545,6 @@ export default function QuizBuilderModal({
           icon={<SaveOutlined />}
           onClick={handleSaveAll}
           loading={savingAll}
-          disabled={!hasQuizCreated}
         >
           Lưu
         </Button>
@@ -292,19 +552,32 @@ export default function QuizBuilderModal({
 
       <Divider />
 
-      {/* META FORM */}
       <Form form={metaForm} layout="vertical">
         <Row gutter={16}>
-          <Col span={16}>
+          <Col span={12}>
             <Form.Item
               name="title"
               label="Tiêu đề quiz"
-              rules={[{ required: true }]}
+              rules={[{ required: true, message: "Nhập tiêu đề quiz" }]}
             >
               <Input />
             </Form.Item>
           </Col>
-          <Col span={8}>
+
+          <Col span={6}>
+            <Form.Item
+              name="passingScore"
+              label="Điểm đạt (%)"
+              rules={[
+                { required: true, message: "Nhập điểm đạt" },
+                { type: "number", min: 0, max: 100, message: "0-100" },
+              ]}
+            >
+              <InputNumber min={0} max={100} style={{ width: "100%" }} />
+            </Form.Item>
+          </Col>
+
+          <Col span={6}>
             <Form.Item name="timeLimit" label="Thời gian (phút)">
               <InputNumber min={0} style={{ width: "100%" }} />
             </Form.Item>
@@ -312,30 +585,39 @@ export default function QuizBuilderModal({
         </Row>
 
         {!hasQuizCreated && (
-          <Button
-            type="primary"
-            onClick={handleCreateQuiz}
-            loading={creatingQuiz}
-          >
-            Tạo quiz
-          </Button>
+          <Space>
+            <Button
+              type="primary"
+              onClick={handleCreateQuiz}
+              loading={creatingQuiz}
+              disabled={!sectionId}
+            >
+              Tạo quiz
+            </Button>
+            <Text type="secondary">
+              (Bạn có thể thêm/bulk import câu hỏi trước, rồi bấm Lưu.)
+            </Text>
+          </Space>
         )}
       </Form>
 
       <Divider />
 
-      {/* QUESTIONS */}
-      {!hasQuizCreated ? (
-        <Empty description="Tạo quiz trước để thêm câu hỏi" />
+      {loadingQuestions ? (
+        <Empty description="Đang tải câu hỏi..." />
       ) : questions.length === 0 ? (
-        <Empty description="Chưa có câu hỏi" />
+        <Empty description="Chưa có câu hỏi (thêm thủ công hoặc bulk import)" />
       ) : (
-        questions.map((q) => (
+        questions.map((q, idx) => (
           <QuestionCard
             key={q.id}
             q={q}
+            idx={idx} // ✅ FIX QNaN
+            total={questions.length} // ✅ FIX QNaN
             onChange={(next) => updateQuestion(q.id, next)}
             onDelete={() => deleteQuestionLocal(q.id)}
+            onDuplicate={() => duplicateQuestion(q.id)}
+            onMove={(dir) => moveQuestion(q.id, dir)}
           />
         ))
       )}
