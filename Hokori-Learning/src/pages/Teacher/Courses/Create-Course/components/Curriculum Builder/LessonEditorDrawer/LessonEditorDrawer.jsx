@@ -1,4 +1,3 @@
-// LessonEditorDrawer/LessonEditorDrawer.jsx
 import React, { useMemo, useState, useCallback } from "react";
 import { Drawer, Tabs, Button, Space, Typography } from "antd";
 import { useDispatch, useSelector } from "react-redux";
@@ -31,7 +30,8 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
   );
 
   const [activeTab, setActiveTab] = useState("grammar");
-  //eslint-disable-next-line no-unused-vars
+
+  // ✅ state để dedupe duration, tránh dispatch lặp
   const [sectionDurations, setSectionDurations] = useState({
     GRAMMAR: 0,
     KANJI: 0,
@@ -52,35 +52,30 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
   const sectionsHook = useLessonSections(lessonFromTree);
   const quizSection = sectionsHook.sectionsByType.QUIZ;
 
-  // cập nhật totalDurationSec cho lesson, tránh loop
+  // ✅ chỉ update lesson duration khi studyType đó thật sự thay đổi
   const handleSectionDurationChange = useCallback(
     (studyType, seconds) => {
       if (!lessonFromTree?.id) return;
 
+      const nextVal = Math.max(seconds || 0, 0);
+
       setSectionDurations((prev) => {
-        const nextVal = seconds || 0;
         const currentVal = prev[studyType] || 0;
-        if (nextVal === currentVal) return prev; // không đổi → khỏi dispatch
+        if (currentVal === nextVal) return prev; // ✅ không đổi → khỏi dispatch
 
         const next = { ...prev, [studyType]: nextVal };
         const total = Object.values(next).reduce((sum, v) => sum + (v || 0), 0);
-
-        const safeTitle =
-          lessonFromTree.title && lessonFromTree.title.trim().length > 0
-            ? lessonFromTree.title
-            : "Untitled lesson";
 
         dispatch(
           updateLessonThunk({
             lessonId: lessonFromTree.id,
             data: {
-              title: safeTitle, // BE bắt buộc không được rỗng
+              title: lessonFromTree.title || "Untitled lesson",
               totalDurationSec: total,
             },
           })
-        ).catch((err) => {
-          console.error(err);
-          toast.error("Không cập nhật được tổng thời lượng lesson.");
+        ).catch(() => {
+          toast.error("Không cập nhật được thời lượng lesson.");
         });
 
         return next;
@@ -89,36 +84,52 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
     [lessonFromTree?.id, lessonFromTree?.title, dispatch]
   );
 
+  // ✅ memoized callbacks để không làm đổi reference mỗi render
+  const onGrammarDuration = useCallback(
+    (s) => handleSectionDurationChange("GRAMMAR", s),
+    [handleSectionDurationChange]
+  );
+  const onKanjiDuration = useCallback(
+    (s) => handleSectionDurationChange("KANJI", s),
+    [handleSectionDurationChange]
+  );
+  const onVocabDuration = useCallback(
+    (s) => handleSectionDurationChange("VOCABULARY", s),
+    [handleSectionDurationChange]
+  );
+  const onQuizDuration = useCallback(
+    (s) => handleSectionDurationChange("QUIZ", s),
+    [handleSectionDurationChange]
+  );
+
   const renderLessonMetaShort = (les) => {
-    if (!les) return null;
-    const sectionCount = les.sections?.length || 0;
-    const contentCount = (les.sections || []).reduce(
-      (sum, s) => sum + (s.contents?.length || 0),
+    if (!les) return "";
+    const s = les.sections?.length || 0;
+    const c = (les.sections || []).reduce(
+      (sum, sec) => sum + (sec.contents?.length || 0),
       0
     );
-    if (!sectionCount && !contentCount) return "Chưa có section / content";
-    return `${sectionCount} section(s) · ${contentCount} content item(s)`;
+    return `${s} section · ${c} content`;
   };
 
-  const handleChildSaved = async () => {
+  const handleChildSaved = useCallback(async () => {
     try {
       if (currentCourseMeta?.id) {
         await dispatch(fetchCourseTree(currentCourseMeta.id)).unwrap();
       }
       onSave?.();
-    } catch (err) {
-      console.error(err);
-      toast.error("Không reload được course tree sau khi lưu.");
+    } catch {
+      toast.error("Không reload được curriculum.");
     }
-  };
+  }, [currentCourseMeta?.id, dispatch, onSave]);
 
   const tabs = [
     {
       key: "grammar",
       label: (
-        <span>
+        <div className={styles.lessonTabLabel}>
           <BookOutlined /> Grammar
-        </span>
+        </div>
       ),
       children: (
         <GrammarKanjiTab
@@ -126,18 +137,16 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
           lesson={lessonFromTree}
           sectionsHook={sectionsHook}
           onSaved={handleChildSaved}
-          onDurationComputed={(sec) =>
-            handleSectionDurationChange("GRAMMAR", sec)
-          }
+          onDurationComputed={onGrammarDuration}
         />
       ),
     },
     {
       key: "kanji",
       label: (
-        <span>
+        <div className={styles.lessonTabLabel}>
           <FontSizeOutlined /> Kanji
-        </span>
+        </div>
       ),
       children: (
         <GrammarKanjiTab
@@ -145,44 +154,39 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
           lesson={lessonFromTree}
           sectionsHook={sectionsHook}
           onSaved={handleChildSaved}
-          onDurationComputed={(sec) =>
-            handleSectionDurationChange("KANJI", sec)
-          }
+          onDurationComputed={onKanjiDuration}
         />
       ),
     },
     {
       key: "vocab",
       label: (
-        <span>
-          <TranslationOutlined /> Vocab / Flashcard
-        </span>
+        <div className={styles.lessonTabLabel}>
+          <TranslationOutlined /> Vocab
+        </div>
       ),
       children: (
         <VocabFlashcardTab
           lesson={lessonFromTree}
           sectionsHook={sectionsHook}
           onSaved={handleChildSaved}
-          onDurationComputed={(sec) =>
-            handleSectionDurationChange("VOCABULARY", sec)
-          }
+          onDurationComputed={onVocabDuration}
         />
       ),
     },
     {
       key: "quiz",
       label: (
-        <span>
+        <div className={styles.lessonTabLabel}>
           <QuestionCircleOutlined /> Quiz
-        </span>
+        </div>
       ),
       children: (
         <QuizTab
           lesson={lessonFromTree}
-          sectionsHook={sectionsHook}
           quizSection={quizSection}
           onSaved={handleChildSaved}
-          onDurationComputed={(sec) => handleSectionDurationChange("QUIZ", sec)}
+          onDurationComputed={onQuizDuration}
         />
       ),
     },
@@ -191,25 +195,29 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
   return (
     <Drawer
       width={960}
-      title={
-        <div className={styles.header}>
-          <div>
-            <Text strong>Chỉnh sửa lesson</Text>
-            <div className={styles.meta}>
-              <span>ID: {lessonFromTree?.id}</span>
-              <span>{renderLessonMetaShort(lessonFromTree)}</span>
-            </div>
-          </div>
-        </div>
-      }
+      className={styles.lessonDrawer}
       open={open}
       onClose={onClose}
       destroyOnClose={false}
       maskClosable={false}
+      title={
+        <div className={styles.drawerHeader}>
+          <div className={styles.drawerTitle}>Soạn bài học</div>
+          <div className={styles.drawerMeta}>
+            Lesson #{lessonFromTree?.id} ·{" "}
+            {renderLessonMetaShort(lessonFromTree)}
+          </div>
+        </div>
+      }
       footer={
-        <Space style={{ justifyContent: "flex-end", width: "100%" }}>
-          <Button onClick={onClose}>Đóng</Button>
-        </Space>
+        <div className={styles.drawerFooter}>
+          <span className={styles.footerHint}>
+            Grammar / Kanji lưu trực tiếp · Quiz & Flashcard lưu trong modal
+          </span>
+          <Space>
+            <Button onClick={onClose}>Đóng</Button>
+          </Space>
+        </div>
       }
     >
       <Tabs

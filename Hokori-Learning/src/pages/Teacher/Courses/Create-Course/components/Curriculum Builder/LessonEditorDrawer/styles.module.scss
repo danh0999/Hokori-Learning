@@ -202,3 +202,52 @@
 .flashcardListWrapper {
   margin-top: 26px;
 }
+/* ============================= */
+/* LessonEditorDrawer – NEW UI */
+/* ============================= */
+
+.lessonDrawer {
+  .ant-drawer-body {
+    background: #f8fafc;
+  }
+}
+
+.drawerHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.drawerTitle {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.drawerMeta {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.drawerFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footerHint {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.lessonTabLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.tabBody {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+}
