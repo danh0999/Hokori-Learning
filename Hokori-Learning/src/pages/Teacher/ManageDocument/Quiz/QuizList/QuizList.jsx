@@ -1,6 +1,6 @@
 // components/quiz/QuizList.jsx
 import React from "react";
-import { Button, Card, List, Space } from "antd";
+import { Popconfirm, Button, Card, List, Space } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import styles from "./styles.module.scss";
 
@@ -71,9 +71,33 @@ export default function QuizList({
                 <Button size="small" onClick={() => onEdit?.(qz)}>
                   Sửa
                 </Button>
-                <Button size="small" danger onClick={() => onRemove?.(qz.id)}>
-                  Xóa
-                </Button>
+                <Popconfirm
+                  title="Xóa quiz này?"
+                  description="Quiz sẽ bị xóa (soft delete), toàn bộ câu hỏi sẽ mất."
+                  okText="Xóa"
+                  cancelText="Hủy"
+                  okButtonProps={{ danger: true }}
+                  onConfirm={(e) => {
+                    e?.stopPropagation?.();
+                    onRemove?.(qz.id);
+                  }}
+                  onPopupClick={(e) => e.stopPropagation()}
+                >
+                  <Button
+                    size="small"
+                    danger
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                  >
+                    Xóa
+                  </Button>
+                </Popconfirm>
               </div>
             </List.Item>
           )}

@@ -131,6 +131,22 @@ export const updateLessonQuizThunk = createAsyncThunk(
   }
 );
 
+/**
+ * DELETE /api/teacher/sections/{sectionId}/quizzes/{quizId}
+ * Xóa quiz (soft delete, cascade)
+ */
+export const deleteLessonQuizThunk = createAsyncThunk(
+  "quiz/deleteLessonQuiz",
+  async ({ sectionId, quizId }, { rejectWithValue }) => {
+    try {
+      await api.delete(`teacher/sections/${sectionId}/quizzes/${quizId}`);
+      return quizId;
+    } catch (err) {
+      return rejectWithValue(getError(err));
+    }
+  }
+);
+
 /* =========================================================
  *                 QUESTION + OPTION LEVEL
  * ======================================================= */
@@ -342,6 +358,22 @@ const quizSlice = createSlice({
         state.currentQuiz = action.payload;
       })
       .addCase(updateLessonQuizThunk.rejected, (state, action) => {
+        state.saving = false;
+        state.error = action.payload;
+      });
+
+    /* ------- DELETE QUIZ ------- */
+    builder
+      .addCase(deleteLessonQuizThunk.pending, (state) => {
+        state.saving = true;
+        state.error = null;
+      })
+      .addCase(deleteLessonQuizThunk.fulfilled, (state) => {
+        state.saving = false;
+        state.currentQuiz = null;
+        state.questions = [];
+      })
+      .addCase(deleteLessonQuizThunk.rejected, (state, action) => {
         state.saving = false;
         state.error = action.payload;
       });

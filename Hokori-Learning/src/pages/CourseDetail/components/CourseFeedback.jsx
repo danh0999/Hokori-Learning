@@ -13,18 +13,22 @@ const CourseFeedback = ({ courseId }) => {
     const fetchFeedback = async () => {
       try {
         const res = await api.get(`/courses/${courseId}/feedbacks`);
-        setReviews(res.data.data || []);
+        const list = res.data?.data ?? res.data; // ✅
+        setReviews(Array.isArray(list) ? list : []);
       } catch (e) {
         console.error("Error loading feedback", e);
+        setReviews([]);
       }
     };
 
     const fetchSummary = async () => {
       try {
         const res = await api.get(`/courses/${courseId}/feedbacks/summary`);
-        setSummary(res.data.data);
+        const sum = res.data?.data ?? res.data; // ✅
+        setSummary(sum ?? null);
       } catch (e) {
         console.error("Error loading summary", e);
+        setSummary(null);
       }
     };
 

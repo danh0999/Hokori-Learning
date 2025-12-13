@@ -104,6 +104,12 @@ export default function LessonPlayerPage() {
   const isLastGlobal =
     !globalSequence.length || currentGlobalIndex === globalSequence.length - 1;
 
+  const isCourseCompleted = (courseTree?.progressPercent ?? 0) >= 100;
+
+  const goCourseCompletedPage = () => {
+    navigate(`/learn/${courseId}/${slug}/completed`);
+  };
+
   /* ===========================
      FETCH COURSE TREE (SIDEBAR)
   ============================ */
@@ -1037,12 +1043,24 @@ export default function LessonPlayerPage() {
 
                   <button
                     className={styles.primaryBtn}
-                    onClick={goNext}
+                    onClick={() => {
+                      // ✅ nếu đang ở content cuối và progress = 100% → qua trang hoàn thành
+                      if (isLastGlobal && isCourseCompleted) {
+                        goCourseCompletedPage();
+                        return;
+                      }
+                      goNext();
+                    }}
                     disabled={
-                      isLastGlobal || (isQuizContent && !isCurrentCompleted)
+                      // ✅ nếu chưa completed thì last content vẫn disable như cũ
+                      (!isCourseCompleted && isLastGlobal) ||
+                      // ✅ chặn next khi đang quiz mà chưa completed
+                      (isQuizContent && !isCurrentCompleted)
                     }
                   >
-                    Nội dung tiếp theo
+                    {isLastGlobal && isCourseCompleted
+                      ? "Đã hoàn thành khóa học"
+                      : "Nội dung tiếp theo"}
                   </button>
                 </div>
               </>

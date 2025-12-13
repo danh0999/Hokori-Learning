@@ -1,8 +1,8 @@
-// LessonEditorDrawer/tabs/GrammarKanjiTab.jsx
 import React, { useEffect, useState } from "react";
 import { Form, Input, Upload, Button, Typography, Space } from "antd";
 import { InboxOutlined } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
+import { toast } from "react-toastify";
 
 import api from "../../../../../../../../configs/axios.js";
 import {
@@ -11,11 +11,10 @@ import {
   createContentThunk,
   updateContentThunk,
   updateSectionThunk,
-  deleteContentThunk, // ✅ thêm
+  deleteContentThunk,
 } from "../../../../../../../../redux/features/teacherCourseSlice.js";
 
 import styles from "../styles.module.scss";
-import { toast } from "react-toastify";
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -30,84 +29,70 @@ const buildFileUrl = (filePath) => {
   return `${API_BASE_URL}/files/${filePath}`.replace(/([^:]\/)\/+/g, "$1");
 };
 
-// thêm 60s cho phần mô tả text nếu có
 const DESC_BASE_SEC = 60;
 
 export default function GrammarKanjiTab({
-  type,
+  type, // "GRAMMAR" | "KANJI"
   lesson,
-  sectionsHook,
+  section, // ✅ section đã được tạo từ Drawer
+  sectionsHook, // vẫn dùng để extract info
   onSaved,
   onDurationComputed,
 }) {
   const dispatch = useDispatch();
   const [form] = Form.useForm();
 
-  const { sectionsByType, grammarInfo, kanjiInfo, ensureSection } =
-    sectionsHook;
-  const info = type === "GRAMMAR" ? grammarInfo : kanjiInfo;
-  const sectionForType = sectionsByType?.[type] || null;
+  const { extractContentFromSection } = sectionsHook;
 
-  const [videoState, setVideoState] = useState({
+  const info = extractContentFromSection(section);
+
+  const [mediaState, setMediaState] = useState({
     file: null,
     previewUrl: null,
-    contentId: null, // content ASSET hiện tại
-    descId: null, // content RICH_TEXT hiện tại
-    removeExisting: false, // ✅ đánh dấu khi user muốn xoá video cũ
+    contentId: null, // ASSET
+    descId: null, // RICH_TEXT
+    removeExisting: false,
   });
-  const [videoDurationSec, setVideoDurationSec] = useState(0);
+
+  const [mediaDurationSec, setMediaDurationSec] = useState(0);
   const [saving, setSaving] = useState(false);
 
-  // ============================
-  // INIT FORM + VIDEO PREVIEW
-  // ============================
   useEffect(() => {
-    if (!lesson) return;
-
-    const defaultSectionTitle =
-      sectionForType?.title || (type === "GRAMMAR" ? "Grammar" : "Kanji");
+    if (!lesson || !section?.id) return;
 
     form.setFieldsValue({
       title: lesson.title,
-      sectionTitle: defaultSectionTitle,
+      sectionTitle: section.title || (type === "GRAMMAR" ? "Grammar" : "Kanji"),
       description: info?.descContent?.richText || "",
     });
 
-    setVideoState({
+    setMediaState({
       file: null,
       previewUrl: buildFileUrl(info?.assetContent?.filePath),
       contentId: info?.assetContent?.id || null,
       descId: info?.descContent?.id || null,
-      removeExisting: false, // ✅ reset flag khi đổi lesson / type
+      removeExisting: false,
     });
-    setVideoDurationSec(0);
-  }, [lesson?.id, type, form]);
 
-  // ============================
-  // HANDLE chọn video
-  // ============================
-  const handleSelectVideo = ({ file, onSuccess }) => {
+    setMediaDurationSec(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lesson?.id, section?.id, type]);
+
+  const handleSelectMedia = ({ file, onSuccess }) => {
     const url = URL.createObjectURL(file);
-    setVideoState((prev) => {
+    setMediaState((prev) => {
       if (prev.previewUrl && prev.previewUrl.startsWith("blob:")) {
         URL.revokeObjectURL(prev.previewUrl);
       }
-      return {
-        ...prev,
-        file,
-        previewUrl: url,
-        // ✅ nếu trước đó user bấm remove thì chọn file mới coi như replace luôn, không xoá content
-        removeExisting: false,
-      };
+      return { ...prev, file, previewUrl: url, removeExisting: false };
     });
     onSuccess?.("ok");
   };
 
-  // ============================
-  // SAVE
-  // ============================
   const handleSave = async () => {
     if (!lesson?.id) return;
+    if (!section?.id)
+      return toast.error("Chưa có section. Hãy tạo phần từ nút + trước.");
 
     const values = await form.validateFields();
     const lessonTitle = values.title;
@@ -117,7 +102,7 @@ export default function GrammarKanjiTab({
     try {
       setSaving(true);
 
-      // 1. Update LESSON title nếu đổi
+      // 1) update lesson title nếu đổi
       if (lessonTitle && lessonTitle !== lesson.title) {
         await dispatch(
           updateLessonThunk({
@@ -127,13 +112,8 @@ export default function GrammarKanjiTab({
         ).unwrap();
       }
 
-      // 2. Đảm bảo SECTION + update title section nếu cần
-      let section = sectionForType;
-      if (!section) {
-        section = await ensureSection(type, {
-          title: sectionTitle || (type === "GRAMMAR" ? "Grammar" : "Kanji"),
-        });
-      } else if (sectionTitle && sectionTitle !== section.title) {
+      // 2) update section title nếu đổi
+      if (sectionTitle && sectionTitle !== section.title) {
         await dispatch(
           updateSectionThunk({
             sectionId: section.id,
@@ -142,38 +122,27 @@ export default function GrammarKanjiTab({
         ).unwrap();
       }
 
-      if (!section?.id) {
-        toast.error("Không tìm được section để lưu nội dung.");
-        return;
-      }
-
-      // 3. XỬ LÝ ASSET (video / hình / audio)
-      // -------------------------------------------------
-      // BE validate: mỗi GRAMMAR section chỉ có 1 primary content
-      // => ở đây luôn đảm bảo 1 content ASSET với primaryContent = true
-
-      let currentContentId = videoState.contentId;
+      // 3) ASSET
+      let currentContentId = mediaState.contentId;
       let filePath = info?.assetContent?.filePath || null;
 
-      // 3.1 Trường hợp user REMOVE video cũ và KHÔNG upload file mới
-      if (videoState.removeExisting && currentContentId && !videoState.file) {
+      // remove existing asset (không upload file mới)
+      if (mediaState.removeExisting && currentContentId && !mediaState.file) {
         await dispatch(
           deleteContentThunk({
             sectionId: section.id,
             contentId: currentContentId,
           })
         ).unwrap();
-
         currentContentId = null;
         filePath = null;
       }
 
-      // 3.2 Trường hợp user có chọn file mới
-      if (videoState.file) {
+      if (mediaState.file) {
         const uploadRes = await dispatch(
           uploadSectionFileThunk({
             sectionId: section.id,
-            file: videoState.file,
+            file: mediaState.file,
           })
         ).unwrap();
 
@@ -186,7 +155,7 @@ export default function GrammarKanjiTab({
         if (filePath) {
           const baseData = {
             contentFormat: "ASSET",
-            primaryContent: true, // ✅ luôn là primary cho section này
+            primaryContent: true,
             filePath,
             richText: null,
             quizId: null,
@@ -194,7 +163,6 @@ export default function GrammarKanjiTab({
           };
 
           if (currentContentId) {
-            // ✅ Scenario 3 - Option 2: update content với filePath mới
             await dispatch(
               updateContentThunk({
                 contentId: currentContentId,
@@ -202,7 +170,6 @@ export default function GrammarKanjiTab({
               })
             ).unwrap();
           } else {
-            // ✅ Scenario 2: chưa có ASSET → tạo mới với primaryContent = true
             const created = await dispatch(
               createContentThunk({
                 sectionId: section.id,
@@ -212,12 +179,10 @@ export default function GrammarKanjiTab({
                 },
               })
             ).unwrap();
-            const c = created.content || created;
-            currentContentId = c.id;
+            currentContentId = (created.content || created).id;
           }
 
-          // update lại local state
-          setVideoState((prev) => ({
+          setMediaState((prev) => ({
             ...prev,
             contentId: currentContentId,
             removeExisting: false,
@@ -225,7 +190,7 @@ export default function GrammarKanjiTab({
         }
       }
 
-      // 4. DESCRIPTION (RICH_TEXT)
+      // 4) RICH_TEXT
       if (description.trim()) {
         const baseDesc = {
           contentFormat: "RICH_TEXT",
@@ -236,12 +201,9 @@ export default function GrammarKanjiTab({
           flashcardSetId: null,
         };
 
-        if (videoState.descId) {
+        if (mediaState.descId) {
           await dispatch(
-            updateContentThunk({
-              contentId: videoState.descId,
-              data: baseDesc,
-            })
+            updateContentThunk({ contentId: mediaState.descId, data: baseDesc })
           ).unwrap();
         } else {
           const created = await dispatch(
@@ -254,43 +216,37 @@ export default function GrammarKanjiTab({
             })
           ).unwrap();
           const c = created.content || created;
-          setVideoState((prev) => ({ ...prev, descId: c.id }));
+          setMediaState((prev) => ({ ...prev, descId: c.id }));
         }
       }
 
-      // 5. Duration cho parent (LessonEditorDrawer)
+      // 5) duration
       if (typeof onDurationComputed === "function") {
         const descSec = description.trim() ? DESC_BASE_SEC : 0;
-        const totalSec = (videoDurationSec || 0) + descSec;
-        onDurationComputed(totalSec);
+        onDurationComputed((mediaDurationSec || 0) + descSec);
       }
 
       toast.success(
-        type === "GRAMMAR" ? "Đã lưu phần ngữ pháp." : "Đã lưu phần Kanji."
+        type === "GRAMMAR" ? "Đã lưu phần Grammar." : "Đã lưu phần Kanji."
       );
-      onSaved?.();
-    } catch (err) {
-      console.error(err);
+      await onSaved?.();
+    } catch (e) {
+      console.error(e);
       toast.error("Lưu thất bại.");
     } finally {
       setSaving(false);
     }
   };
 
-  // ============================
-  // RENDER
-  // ============================
   return (
     <div className={styles.tabBody}>
-      {/* video ẩn để đọc metadata duration */}
-      {videoState.previewUrl && (
+      {mediaState.previewUrl && (
         <video
-          src={videoState.previewUrl}
+          src={mediaState.previewUrl}
           style={{ display: "none" }}
-          onLoadedMetadata={(e) => {
-            const d = Math.round(e.target.duration || 0);
-            setVideoDurationSec(d);
-          }}
+          onLoadedMetadata={(e) =>
+            setMediaDurationSec(Math.round(e.target.duration || 0))
+          }
         />
       )}
 
@@ -308,50 +264,41 @@ export default function GrammarKanjiTab({
         <Form.Item
           name="sectionTitle"
           label={
-            type === "GRAMMAR" ? "Tiêu đề phần ngữ pháp" : "Tiêu đề phần Kanji"
+            type === "GRAMMAR" ? "Tiêu đề phần Grammar" : "Tiêu đề phần Kanji"
           }
           rules={[{ required: true, message: "Vui lòng nhập tiêu đề phần." }]}
         >
-          <Input
-            placeholder={
-              type === "GRAMMAR"
-                ? "Ví dụ: Ngữ pháp – Thì hiện tại tiếp diễn"
-                : "Ví dụ: Kanji – Chủ đề Gia đình"
-            }
-          />
+          <Input />
         </Form.Item>
 
         <Form.Item
           label={
-            type === "GRAMMAR"
-              ? "Tài liệu xem phần ngữ pháp"
-              : "Tài liệu xem phần Kanji"
+            type === "GRAMMAR" ? "Tài liệu xem Grammar" : "Tài liệu xem Kanji"
           }
         >
-          {videoState.previewUrl ? (
+          {mediaState.previewUrl ? (
             <div className={styles.videoBox}>
               <Text strong>File hiện tại</Text>
               <br />
-              <a href={videoState.previewUrl} target="_blank" rel="noreferrer">
-                {videoState.previewUrl}
+              <a href={mediaState.previewUrl} target="_blank" rel="noreferrer">
+                {mediaState.previewUrl}
               </a>
               <div style={{ marginTop: 8 }}>
                 <Space>
                   <Upload
                     multiple={false}
                     showUploadList={false}
-                    customRequest={handleSelectVideo}
+                    customRequest={handleSelectMedia}
                   >
                     <Button>Thay đổi file</Button>
                   </Upload>
                   <Button
                     danger
                     onClick={() =>
-                      setVideoState((prev) => ({
+                      setMediaState((prev) => ({
                         ...prev,
                         file: null,
                         previewUrl: null,
-                        // ✅ đánh dấu xoá content ASSET hiện tại
                         removeExisting: !!prev.contentId,
                       }))
                     }
@@ -365,7 +312,7 @@ export default function GrammarKanjiTab({
             <Upload.Dragger
               multiple={false}
               showUploadList={false}
-              customRequest={handleSelectVideo}
+              customRequest={handleSelectMedia}
             >
               <p className="ant-upload-drag-icon">
                 <InboxOutlined />
@@ -380,17 +327,15 @@ export default function GrammarKanjiTab({
         <Form.Item
           name="description"
           label={
-            type === "GRAMMAR"
-              ? "Tài liệu đọc phần ngữ pháp"
-              : "Tài liệu đọc phần Kanji"
+            type === "GRAMMAR" ? "Tài liệu đọc Grammar" : "Tài liệu đọc Kanji"
           }
         >
           <TextArea rows={5} placeholder="Mô tả nội dung, ví dụ, ghi chú..." />
         </Form.Item>
 
         <Form.Item>
-          <Button type="default" onClick={handleSave} loading={saving}>
-            Lưu {type === "GRAMMAR" ? "Grammar" : "Kanji"}
+          <Button type="primary" onClick={handleSave} loading={saving}>
+            Lưu
           </Button>
         </Form.Item>
       </Form>

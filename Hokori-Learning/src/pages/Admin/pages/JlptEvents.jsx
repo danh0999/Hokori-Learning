@@ -4,6 +4,19 @@ import s from "./JlptEvents.module.scss";
 import { toast } from "react-toastify";
 import api from "../../../configs/axios";
 
+// datetime-local: "YYYY-MM-DDTHH:mm"  ->  "YYYY-MM-DDTHH:mm:00" (LocalDateTime)
+const toLocalDateTime = (dtLocal) => {
+  if (!dtLocal) return dtLocal;
+  return `${dtLocal}:00`;
+};
+
+// Lấy "now" theo giờ HCM để set min cho input datetime-local
+// (input datetime-local cần format "YYYY-MM-DDTHH:mm")
+const nowHcmLocalInputValue = () => {
+  const nowHcm = new Date(Date.now() + 7 * 60 * 60 * 1000); // UTC+7
+  return nowHcm.toISOString().slice(0, 16); // "YYYY-MM-DDTHH:mm"
+};
+
 // =====================
 // MODAL TẠO SỰ KIỆN
 // =====================
@@ -16,6 +29,7 @@ const CreateEventModal = ({ open, onClose, onSubmit }) => {
     endAt: "",
   });
   const [minDateTime, setMinDateTime] = useState("");
+
   const change = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
   };
@@ -26,8 +40,11 @@ const CreateEventModal = ({ open, onClose, onSubmit }) => {
     if (!form.title.trim()) return toast.error("Tiêu đề sự kiện là bắt buộc");
     if (!form.startAt) return toast.error("Thời gian bắt đầu là bắt buộc");
     if (!form.endAt) return toast.error("Thời gian kết thúc là bắt buộc");
-    if (new Date(form.startAt) >= new Date(form.endAt))
+
+    // so sánh theo local time (đúng với datetime-local)
+    if (new Date(form.startAt) >= new Date(form.endAt)) {
       return toast.error("Thời gian bắt đầu phải trước thời gian kết thúc");
+    }
 
     onSubmit(form);
   };
@@ -44,12 +61,8 @@ const CreateEventModal = ({ open, onClose, onSubmit }) => {
       return;
     }
 
-    // Khi mở modal: set min = thời điểm hiện tại (local) cho datetime-local
-    const now = new Date();
-    // Chuyển về local ISO string dạng YYYY-MM-DDTHH:mm cho input datetime-local
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    const localISO = now.toISOString().slice(0, 16);
-    setMinDateTime(localISO);
+    // min theo HCM để tránh “quá khứ” do lệch múi giờ
+    setMinDateTime(nowHcmLocalInputValue());
   }, [open]);
 
   if (!open) return null;
@@ -285,7 +298,7 @@ export default function JlptEvents() {
 
       const map = {};
       results.forEach((item) => {
-        map[item.id] = item.count; // lưu số đề, không phải boolean
+        map[item.id] = item.count;
       });
       setTestStatus(map);
     } catch (err) {
@@ -309,8 +322,9 @@ export default function JlptEvents() {
         title: form.title,
         level: form.level,
         description: form.description,
-        startAt: new Date(form.startAt).toISOString(),
-        endAt: new Date(form.endAt).toISOString(),
+        // ✅ LocalDateTime format, không timezone
+        startAt: toLocalDateTime(form.startAt),
+        endAt: toLocalDateTime(form.endAt),
         status: "DRAFT",
       };
 
@@ -320,7 +334,12 @@ export default function JlptEvents() {
       fetchEvents();
     } catch (err) {
       console.error(err);
-      toast.error("Tạo sự kiện thất bại");
+      // Nếu BE có message cụ thể thì show luôn cho dễ debug
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        "Tạo sự kiện thất bại";
+      toast.error(msg);
     }
   };
 
@@ -434,7 +453,6 @@ export default function JlptEvents() {
                         : "-"}
                     </td>
 
-                    {/* Cột số đề */}
                     <td>
                       {hasTest ? (
                         <span className={s.ready}>{testCount} đề</span>

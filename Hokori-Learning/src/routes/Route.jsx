@@ -80,6 +80,7 @@ import FlaggedCoursesPage from "../pages/Moderator/FlaggedCoursesPage/FlaggedCou
 import QuizTrialPage from "../pages/CourseDetail/QuizTrialPage/QuizTrialPage";
 import LessonPlayerPage from "../pages/LessonPlayer/LessonPlayerPage";
 import LessonQuizAttemptPage from "../pages/LessonPlayer/LessonQuizAttemptPage/LessonQuizAttemptPage";
+import CourseCompletionPage from "../pages/CourseCompletionPage/CourseCompletionPage";
 
 const routes = [
   // ============================
@@ -103,16 +104,15 @@ const routes = [
       { path: "about", element: <AboutPage /> },
       { path: "contact", element: <Contact /> },
       { path: "information", element: <Information /> },
-      {
-        path: "learner/flashcards/:sectionContentId",
-        element: <FlashcardPage />,
-      },
+      // {
+      //   path: "learner/flashcards/:sectionContentId",
+      //   element: <FlashcardPage />,
+      // },
       // { path: "my-courses/:courseId/learn", element: <LearningTreePage /> },
 
       { path: "payment/result", element: <PaymentResultPage /> },
       { path: "payment/success", element: <PaymentResultPage /> },
       { path: "payment/cancel", element: <PaymentResultPage /> },
-      { path: "certificates/:certificateId", element: <CertificateDetail /> },
 
       // Protected Routes (Learner/Teacher/Admin/Moderator)
       {
@@ -130,6 +130,14 @@ const routes = [
           { path: "policies", element: <LearnerPolicies /> },
           { path: "payment/ai-package/success", element: <AiSucceedPage /> },
           { path: "jlpt/events/:eventId", element: <JLPTEventTests /> },
+          {
+            path: "certificates/:certificateId",
+            element: <CertificateDetail />,
+          },
+          {
+            path: "learn/:courseId/:slug/completed",
+            element: <CourseCompletionPage />,
+          },
 
           // ==== FLOW 3 PHẦN THI ====
           { path: "jlpt/test/:testId/grammar", element: <MultipleChoice /> },

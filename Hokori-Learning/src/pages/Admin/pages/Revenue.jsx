@@ -1,507 +1,371 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+// Revenue.jsx (Admin)
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  Card,
+  DatePicker,
+  Table,
+  Tag,
+  Modal,
+  Descriptions,
+  Input,
+  Button,
+  Space,
+  Statistic,
+  message,
+} from "antd";
+import dayjs from "dayjs";
+import api from "../../../configs/axios.js";
 import s from "./Revenue.module.scss";
 
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js";
-import { Line } from "react-chartjs-2";
-
-import DataTable from "../components/DataTable";
-import { toast } from "react-toastify";
-import { AiOutlineMoneyCollect } from "react-icons/ai";
-import { FaShoppingCart } from "react-icons/fa";
-import api from "../../../configs/axios.js";
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
-
-// ========================
-// Modal xem chi tiết giao dịch
-// ========================
-const DetailModal = ({ open, data, onClose }) => {
-  if (!open || !data) return null;
-
-  return (
-    <div className={s.modalOverlay}>
-      <div className={s.modal}>
-        <h2 className={s.modalTitle}>Chi tiết giao dịch</h2>
-
-        <div className={s.modalBlock}>
-          <p>
-            <strong>Người mua:</strong> {data.buyer}
-          </p>
-          <p>
-            <strong>Người nhận:</strong> {data.teacher}
-          </p>
-          <p>
-            <strong>Loại:</strong> {data.type}
-          </p>
-          <p>
-            <strong>Sản phẩm:</strong> {data.item}
-          </p>
-          <p>
-            <strong>Số tiền:</strong> {data.amount.toLocaleString("vi-VN")}₫
-          </p>
-          <p>
-            <strong>Phí nền tảng:</strong> {data.fee.toLocaleString("vi-VN")}₫
-          </p>
-          <p>
-            <strong>Ngày thanh toán:</strong> {data.date}
-          </p>
-          <p>
-            <strong>Trạng thái:</strong> {data.status}
-          </p>
-        </div>
-
-        <div className={s.modalActions}>
-          <button className={s.btnGhost} onClick={onClose}>
-            Đóng
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+const fmtVnd = (n) => Number(n || 0).toLocaleString("vi-VN");
 
 export default function Revenue() {
-  const { teacherId, courseId } = useParams();
-
-  // =========================
-  // SUMMARY DATA
-  // =========================
-  const [summary, setSummary] = useState({
-    totalRevenue: 0,
-    monthRevenue: 0,
-    completedCount: 0,
-    platformFee: 0,
-  });
-
-  // =========================
-  // CHART DATA
-  // =========================
-  const [chartData, setChartData] = useState({
-    labels: [],
-    values: [],
-  });
-
-  // =========================
-  // TRANSACTION TABLE
-  // =========================
-  const [txList, setTxList] = useState([]);
-  const [detailItem, setDetailItem] = useState(null);
+  const [yearMonth, setYearMonth] = useState(dayjs().format("YYYY-MM"));
   const [loading, setLoading] = useState(false);
 
-  // =========================
-  // FETCH REVENUE DATA
-  // =========================
+  const [commissionCents, setCommissionCents] = useState(0);
+  const [rows, setRows] = useState([]);
+
+  // detail modal
+  const [openDetail, setOpenDetail] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detail, setDetail] = useState(null);
+
+  // mark paid modal
+  const [openPaid, setOpenPaid] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const [note, setNote] = useState("");
+  const [target, setTarget] = useState(null); // { teacherId, teacherName, yearMonth }
+
+  const fetchCommission = async (ym) => {
+    const res = await api.get("admin/payments/admin-commission", {
+      params: { yearMonth: ym },
+    });
+    setCommissionCents(res?.data?.data ?? 0);
+  };
+
+  const fetchPending = async (ym) => {
+    const res = await api.get("admin/payments/pending-payouts", {
+      params: { yearMonth: ym },
+    });
+    setRows(Array.isArray(res?.data?.data) ? res.data.data : []);
+  };
+
+  const reload = async (ym = yearMonth) => {
+    try {
+      setLoading(true);
+      await Promise.all([fetchCommission(ym), fetchPending(ym)]);
+    } catch (e) {
+      console.error(e);
+      message.error(
+        e?.response?.data?.message || "Không tải được dữ liệu payout."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchRevenue = async () => {
-      try {
-        setLoading(true);
+    reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = now.getMonth() + 1; // 1-12
+  const openTeacherDetail = async (r) => {
+    try {
+      setOpenDetail(true);
+      setDetail(null);
+      setDetailLoading(true);
 
-        // ===== MODE 0: Tổng doanh thu toàn hệ thống (/admin/revenue) =====
-        if (!teacherId) {
-          const res = await api.get("/admin/revenue/total", {
-            params: { year, month },
-          });
-
-          const data = res.data?.data;
-
-          if (!data) {
-            setSummary({
-              totalRevenue: 0,
-              monthRevenue: 0,
-              completedCount: 0,
-              platformFee: 0,
-            });
-            setChartData({ labels: [], values: [] });
-            setTxList([]);
-            return;
-          }
-
-          // BE trả: revenue, revenueCents, transactionCount, teacherCount, courseCount, transactions[]
-          const revenue =
-            typeof data.revenue === "number"
-              ? data.revenue
-              : typeof data.revenueCents === "number"
-              ? data.revenueCents
-              : 0;
-
-          setSummary({
-            totalRevenue: revenue, // tổng doanh thu trong kỳ
-            monthRevenue: revenue,
-            completedCount: data.transactionCount || 0,
-            platformFee: 0, // chưa có field fee
-          });
-
-          setChartData({
-            labels: [
-              data.period || `${year}-${String(month).padStart(2, "0")}`,
-            ],
-            values: [revenue],
-          });
-
-          const rows = Array.isArray(data.transactions)
-            ? data.transactions
-            : [];
-
-          const mappedRows = rows.map((tx) => {
-            const amount =
-              typeof tx.amount === "number"
-                ? tx.amount
-                : typeof tx.amountCents === "number"
-                ? tx.amountCents
-                : 0;
-
-            const rawDate = tx.createdAt;
-            const formattedDate = rawDate
-              ? rawDate.replace("T", " ").slice(0, 16)
-              : "";
-
-            return {
-              id: tx.id,
-              buyer: "-", // BE chưa trả learnerName
-              teacher: tx.teacherName || "-",
-              type: "Khóa học",
-              item: tx.courseTitle || "-",
-              amount,
-              fee: 0,
-              date: formattedDate,
-              status: "COMPLETED",
-            };
-          });
-
-          setTxList(mappedRows);
-          return;
+      const res = await api.get(
+        `admin/payments/teacher/${r.teacherId}/pending-details`,
+        {
+          params: { yearMonth },
         }
+      );
+      setDetail(res?.data?.data || null);
+    } catch (e) {
+      console.error(e);
+      message.error(
+        e?.response?.data?.message || "Không tải được chi tiết teacher."
+      );
+      setDetail(null);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
 
-        // ===== MODE 1: Revenue theo 1 course cụ thể =====
-        if (courseId) {
-          const res = await api.get(
-            `/admin/teachers/${teacherId}/courses/${courseId}/revenue`,
-            {
-              params: { year, month },
-            }
-          );
+  const openMarkPaid = (r) => {
+    setTarget({
+      teacherId: r.teacherId,
+      teacherName: r.teacherName,
+      yearMonth,
+    });
+    setNote("");
+    setOpenPaid(true);
+  };
 
-          const data = res.data?.data;
+  const submitMarkPaid = async () => {
+    if (!target?.teacherId) return;
+    try {
+      setPaying(true);
+      await api.post("admin/payments/mark-paid", {
+        teacherId: target.teacherId,
+        yearMonth: target.yearMonth,
+        note: note?.trim() || null,
+      });
+      message.success("Đã đánh dấu đã chuyển tiền.");
+      setOpenPaid(false);
+      setTarget(null);
+      await reload(yearMonth);
+    } catch (e) {
+      console.error(e);
+      message.error(e?.response?.data?.message || "Mark-paid thất bại.");
+    } finally {
+      setPaying(false);
+    }
+  };
 
-          if (!data) {
-            setSummary({
-              totalRevenue: 0,
-              monthRevenue: 0,
-              completedCount: 0,
-              platformFee: 0,
-            });
-            setChartData({ labels: [], values: [] });
-            setTxList([]);
-            return;
-          }
-
-          const monthRevenue =
-            typeof data.revenue === "number"
-              ? data.revenue
-              : typeof data.revenueCents === "number"
-              ? data.revenueCents
-              : 0;
-
-          setSummary({
-            // Tổng all-time của 1 course BE chưa trả → dùng luôn doanh thu tháng
-            totalRevenue: monthRevenue,
-            monthRevenue,
-            completedCount: data.transactionCount || 0,
-            platformFee: 0, // chưa có field fee
-          });
-
-          setChartData({
-            labels: [
-              data.period || `${year}-${String(month).padStart(2, "0")}`,
-            ],
-            values: [monthRevenue],
-          });
-
-          const rows = Array.isArray(data.transactions)
-            ? data.transactions
-            : [];
-
-          const mappedRows = rows.map((tx) => {
-            const amount =
-              typeof tx.amount === "number"
-                ? tx.amount
-                : typeof tx.amountCents === "number"
-                ? tx.amountCents
-                : 0;
-
-            const rawDate = tx.createdAt;
-            const formattedDate = rawDate
-              ? rawDate.replace("T", " ").slice(0, 16)
-              : "";
-
-            return {
-              id: tx.id,
-              buyer: "-", // BE chưa trả learnerName
-              teacher: data.teacherName || "-",
-              type: "Khóa học",
-              item: data.courseTitle || "-",
-              amount,
-              fee: 0,
-              date: formattedDate,
-              status: "COMPLETED",
-            };
-          });
-
-          setTxList(mappedRows);
-          return;
-        }
-
-        // ===== MODE 2: Revenue theo teacher (tất cả courses) =====
-        const [teacherRes, revRes] = await Promise.all([
-          api.get(`/admin/teachers/${teacherId}`),
-          api.get(`/admin/teachers/${teacherId}/revenue`, {
-            params: { year, month },
-          }),
-        ]);
-
-        const teacherData = teacherRes.data?.data;
-        const revData = revRes.data?.data;
-
-        const totalRevenue =
-          typeof teacherData?.revenue?.totalRevenue === "number"
-            ? teacherData.revenue.totalRevenue
-            : typeof teacherData?.revenue?.totalRevenueCents === "number"
-            ? teacherData.revenue.totalRevenueCents
-            : 0;
-
-        const monthRevenue =
-          typeof teacherData?.revenue?.monthlyRevenue === "number"
-            ? teacherData.revenue.monthlyRevenue
-            : typeof teacherData?.revenue?.monthlyRevenueCents === "number"
-            ? teacherData.revenue.monthlyRevenueCents
-            : typeof revData?.revenue === "number"
-            ? revData.revenue
-            : typeof revData?.revenueCents === "number"
-            ? revData.revenueCents
-            : 0;
-
-        setSummary({
-          totalRevenue,
-          monthRevenue,
-          completedCount: revData?.transactionCount || 0,
-          platformFee: 0,
-        });
-
-        const monthlyRev =
-          typeof revData?.revenue === "number"
-            ? revData.revenue
-            : typeof revData?.revenueCents === "number"
-            ? revData.revenueCents
-            : 0;
-
-        setChartData({
-          labels: [
-            revData?.period || `${year}-${String(month).padStart(2, "0")}`,
-          ],
-          values: [monthlyRev],
-        });
-
-        const rows = Array.isArray(revData?.transactions)
-          ? revData.transactions
-          : [];
-
-        const mappedRows = rows.map((tx) => {
-          const amount =
-            typeof tx.amount === "number"
-              ? tx.amount
-              : typeof tx.amountCents === "number"
-              ? tx.amountCents
-              : 0;
-
-          const rawDate = tx.createdAt;
-          const formattedDate = rawDate
-            ? rawDate.replace("T", " ").slice(0, 16)
-            : "";
-
-          return {
-            id: tx.id,
-            buyer: "-", // BE chưa trả learnerName
-            teacher:
-              revData?.teacherName || teacherData?.teacher?.displayName || "-",
-            type: "Khóa học",
-            item: tx.courseTitle || "-",
-            amount,
-            fee: 0,
-            date: formattedDate,
-            status: "COMPLETED",
-          };
-        });
-
-        setTxList(mappedRows);
-      } catch (err) {
-        console.error(err);
-        toast.error("Không tải được dữ liệu doanh thu, vui lòng thử lại.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRevenue();
-  }, [teacherId, courseId]);
-
-  // =========================
-  // COLUMNS TABLE
-  // =========================
   const columns = [
-    { header: "Người mua", accessor: "buyer" },
-    { header: "Giáo viên", accessor: "teacher" },
-    { header: "Loại", accessor: "type" },
-    { header: "Sản phẩm", accessor: "item" },
     {
-      header: "Số tiền",
-      render: (r) => r.amount.toLocaleString("vi-VN") + "₫",
+      title: "Teacher",
+      dataIndex: "teacherName",
+      key: "teacherName",
+      render: (t) => <b>{t}</b>,
+    },
+    { title: "Email", dataIndex: "teacherEmail", key: "teacherEmail" },
+    {
+      title: "Tháng",
+      dataIndex: "yearMonth",
+      key: "yearMonth",
+      render: (v) => <Tag>{v}</Tag>,
+      width: 110,
     },
     {
-      header: "Phí nền tảng",
-      render: (r) => r.fee.toLocaleString("vi-VN") + "₫",
-    },
-    { header: "Ngày", accessor: "date" },
-    {
-      header: "Trạng thái",
-      render: (r) => (
-        <span
-          className={
-            r.status === "COMPLETED" || r.status === "SUCCESS"
-              ? `${s.status} ${s.success}`
-              : `${s.status} ${s.failed}`
-          }
-        >
-          {r.status}
-        </span>
-      ),
+      title: "Cần chuyển",
+      dataIndex: "totalUnpaidRevenueCents",
+      key: "totalUnpaidRevenueCents",
+      render: (v) => `${fmtVnd((v || 0) / 100)} VNĐ`,
+      align: "right",
     },
     {
-      header: "Chi tiết",
-      render: (row) => (
-        <button className={s.btnSmall} onClick={() => setDetailItem(row)}>
-          Xem
-        </button>
+      title: "Số khóa",
+      dataIndex: "courseCount",
+      key: "courseCount",
+      align: "right",
+      width: 90,
+    },
+    {
+      title: "Ngân hàng",
+      key: "bank",
+      render: (_, r) =>
+        r.bankName ? (
+          <span>
+            {r.bankName} - {r.bankAccountNumber}
+          </span>
+        ) : (
+          <Tag color="warning">Chưa có</Tag>
+        ),
+    },
+    {
+      title: "Hành động",
+      key: "action",
+      width: 210,
+      render: (_, r) => (
+        <Space>
+          <Button onClick={() => openTeacherDetail(r)}>Xem chi tiết</Button>
+          <Button type="primary" onClick={() => openMarkPaid(r)}>
+            Đã chuyển tiền
+          </Button>
+        </Space>
       ),
     },
   ];
 
-  const titleText = !teacherId
-    ? "Doanh thu hệ thống"
-    : courseId
-    ? "Doanh thu khóa học"
-    : "Doanh thu giáo viên";
+  const detailCourses = useMemo(() => detail?.courses || [], [detail]);
+
+  const detailCourseColumns = [
+    {
+      title: "Khóa học",
+      dataIndex: "courseTitle",
+      key: "courseTitle",
+      render: (t) => <b>{t}</b>,
+    },
+    {
+      title: "Số GD",
+      dataIndex: "transactionCount",
+      key: "transactionCount",
+      align: "right",
+      width: 90,
+    },
+    {
+      title: "Teacher nhận",
+      dataIndex: "teacherRevenueCents",
+      key: "teacherRevenueCents",
+      render: (v) => `${fmtVnd((v || 0) / 100)} VNĐ`,
+      align: "right",
+      width: 160,
+    },
+    {
+      title: "Commission admin",
+      dataIndex: "adminCommissionCents",
+      key: "adminCommissionCents",
+      render: (v) => `${fmtVnd((v || 0) / 100)} VNĐ`,
+      align: "right",
+      width: 170,
+    },
+    {
+      title: "Trạng thái",
+      dataIndex: "isPaid",
+      key: "isPaid",
+      width: 120,
+      render: (v) =>
+        v ? (
+          <Tag color="success">Đã trả</Tag>
+        ) : (
+          <Tag color="warning">Chưa trả</Tag>
+        ),
+    },
+  ];
 
   return (
     <div className={s.page}>
-      <h1 className={s.title}>{titleText}</h1>
+      <div className={s.titleRow}>
+        <h1 className={s.title}>Payout giáo viên</h1>
 
-      {!teacherId && (
-        <p className={s.systemHint}>
-          Đang hiển thị tổng doanh thu toàn hệ thống theo tháng hiện tại.
-        </p>
-      )}
+        <Space>
+          <span>Chọn tháng</span>
+          <DatePicker
+            picker="month"
+            value={dayjs(yearMonth + "-01")}
+            onChange={(v) => {
+              const ym = (v || dayjs()).format("YYYY-MM");
+              setYearMonth(ym);
+              reload(ym);
+            }}
+            format="MM/YYYY"
+            allowClear={false}
+          />
+        </Space>
+      </div>
 
-      {teacherId && !courseId && (
-        <p className={s.systemHint}>
-          Đang hiển thị doanh thu tổng hợp của giáo viên ID {teacherId}.
-        </p>
-      )}
-
-      {teacherId && courseId && (
-        <p className={s.systemHint}>
-          Đang hiển thị doanh thu khóa học ID {courseId} của giáo viên ID{" "}
-          {teacherId}.
-        </p>
-      )}
-
-      {/* ===== SUMMARY CARDS ===== */}
       <div className={s.summaryGrid}>
-        <SummaryCard
-          icon={<AiOutlineMoneyCollect />}
-          label="Tổng doanh thu"
-          value={summary.totalRevenue.toLocaleString("vi-VN") + "₫"}
-        />
-        <SummaryCard
-          icon={<FaShoppingCart />}
-          label="Doanh thu tháng"
-          value={summary.monthRevenue.toLocaleString("vi-VN") + "₫"}
-        />
-        <SummaryCard
-          icon={<FaShoppingCart />}
-          label="Giao dịch hoàn tất"
-          value={summary.completedCount}
-        />
+        <Card className={s.summaryCard} loading={loading}>
+          <Statistic
+            title={`Admin commission (${yearMonth})`}
+            value={fmtVnd((commissionCents || 0) / 100)}
+            suffix="VNĐ"
+          />
+          <div className={s.summaryHint}>
+            Commission = 20% doanh thu hệ thống.
+          </div>
+        </Card>
+
+        <Card className={s.summaryCard} loading={loading}>
+          <Statistic
+            title={`Teacher cần payout (${yearMonth})`}
+            value={rows.length}
+          />
+          <div className={s.summaryHint}>
+            Danh sách teachers có revenue chưa trả.
+          </div>
+        </Card>
       </div>
 
-      {/* ===== CHART ===== */}
-      <div className={s.chartCard}>
-        <div className={s.chartHeader}>
-          <h3>Biểu đồ doanh thu theo tháng</h3>
-          {loading && <span className={s.loadingText}>Đang tải...</span>}
-        </div>
-
-        <Line
-          data={{
-            labels: chartData.labels,
-            datasets: [
-              {
-                label: "Doanh thu",
-                data: chartData.values,
-                borderColor: "#2563eb",
-                backgroundColor: "rgba(37,99,235,0.2)",
-                tension: 0.35,
-              },
-            ],
-          }}
-          options={{ animation: false }}
+      <Card className={s.tableWrap}>
+        <Table
+          loading={loading}
+          columns={columns}
+          dataSource={rows}
+          rowKey={(r) => `${r.teacherId}-${r.yearMonth}`}
+          pagination={{ pageSize: 10 }}
         />
-      </div>
+      </Card>
 
-      {/* ===== TABLE ===== */}
-      <h2 className={s.sectionTitle}>Lịch sử giao dịch</h2>
+      <Modal
+        open={openDetail}
+        onCancel={() => {
+          setOpenDetail(false);
+          setDetail(null);
+        }}
+        footer={null}
+        width={980}
+        destroyOnClose
+        title={
+          detail ? `Chi tiết payout - ${detail.teacherName}` : "Chi tiết payout"
+        }
+      >
+        <Card loading={detailLoading}>
+          {detail && (
+            <>
+              <Descriptions bordered size="small" column={2}>
+                <Descriptions.Item label="Teacher">
+                  {detail.teacherName}
+                </Descriptions.Item>
+                <Descriptions.Item label="Email">
+                  {detail.teacherEmail}
+                </Descriptions.Item>
+                <Descriptions.Item label="Tháng">
+                  {detail.yearMonth}
+                </Descriptions.Item>
+                <Descriptions.Item label="Tổng chưa trả">
+                  {fmtVnd((detail.totalUnpaidRevenueCents || 0) / 100)} VNĐ
+                </Descriptions.Item>
+                <Descriptions.Item label="Ngân hàng">
+                  {detail.bankName || "—"}
+                </Descriptions.Item>
+                <Descriptions.Item label="Số TK">
+                  {detail.bankAccountNumber || "—"}
+                </Descriptions.Item>
+                <Descriptions.Item label="Chủ TK">
+                  {detail.bankAccountName || "—"}
+                </Descriptions.Item>
+                <Descriptions.Item label="Chi nhánh">
+                  {detail.bankBranchName || "—"}
+                </Descriptions.Item>
+              </Descriptions>
 
-      <div className={s.tableWrap}>
-        <DataTable columns={columns} data={txList} loading={loading} />
-      </div>
+              <div style={{ marginTop: 16 }}>
+                <h3 style={{ marginBottom: 8 }}>Theo khóa học</h3>
+                <Table
+                  columns={detailCourseColumns}
+                  dataSource={detailCourses}
+                  rowKey={(r) => r.courseId}
+                  pagination={false}
+                />
+              </div>
+            </>
+          )}
+        </Card>
+      </Modal>
 
-      <DetailModal
-        open={!!detailItem}
-        data={detailItem}
-        onClose={() => setDetailItem(null)}
-      />
+      <Modal
+        open={openPaid}
+        onCancel={() => {
+          setOpenPaid(false);
+          setTarget(null);
+          setNote("");
+        }}
+        title={
+          target
+            ? `Đánh dấu đã chuyển tiền - ${target.teacherName}`
+            : "Đánh dấu đã chuyển tiền"
+        }
+        okText="Xác nhận"
+        cancelText="Hủy"
+        confirmLoading={paying}
+        onOk={submitMarkPaid}
+        destroyOnClose
+      >
+        <p>
+          Tháng: <b>{target?.yearMonth}</b>
+        </p>
+        <Input.TextArea
+          rows={3}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Ghi chú (vd: Đã chuyển khoản ngày ...)"
+        />
+      </Modal>
     </div>
   );
 }
-
-const SummaryCard = ({ icon, label, value }) => (
-  <div className={s.summaryCard}>
-    <div className={s.icon}>{icon}</div>
-
-    <div className={s.info}>
-      <p className={s.label}>{label}</p>
-      <h3 className={s.value}>{value}</h3>
-    </div>
-  </div>
-);
