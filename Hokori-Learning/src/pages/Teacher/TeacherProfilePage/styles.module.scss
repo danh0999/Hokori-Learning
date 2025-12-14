@@ -1,130 +1,140 @@
-.wrapper {
-  padding: 16px;
-}
-.headerRow {
+/* styles.module.scss */
+
+.page {
+  width: 100%;
+  min-height: calc(100vh - 64px);
+  background: #f3f4f6;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
+  justify-content: center;
 }
-.title {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-}
-.banner {
-  margin-bottom: 12px;
-}
-.topInfo {
+
+.container {
+  width: 100%;
+  max-width: 1180px;
+  margin: 28px 0 44px;
+  padding: 0 24px;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 16px;
-}
-.displayName {
-  font-size: 18px;
-  font-weight: 700;
-}
-.headline {
-  color: #666;
-  font-size: 14px;
-}
-.grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-.field {
-  background: #fafafa;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 10px;
-}
-.fieldFull {
-  grid-column: 1 / -1;
-  @extend .field;
-}
-.field label {
-  display: block;
-  font-size: 12px;
-  color: #888;
-  margin-bottom: 4px;
-}
-.status {
-}
-/* Layout mới cho phần giảng viên */
-.teacherSection {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 20px;
+  flex-direction: column;
+  gap: 18px;
 }
 
-.teacherRow {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 20px;
-}
-
-.fieldCard {
-  padding: 16px;
-  background: #fafafa;
-  border-radius: 10px;
-  border: 1px solid #eee;
-}
-
-.fieldCard label {
-  font-weight: 600;
-  color: #333;
-  display: block;
-  margin-bottom: 6px;
-}
-
-.fieldCard div {
-  color: #555;
-  white-space: pre-line;
-}
-
-/* Bio full width */
-.fullWidth {
-  grid-column: 1 / -1;
-}
-
-.avatarBlock {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.avatarWrapper {
-  position: relative;
-  cursor: pointer;
-  border-radius: 999px;
+/* ===== Header card ===== */
+.headerCard {
+  border-radius: 14px;
   overflow: hidden;
 }
 
-.avatar {
-  display: block;
-}
-
-.avatarOverlay {
-  position: absolute;
-  inset: 0;
+.headerLeft {
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  font-size: 12px;
-  padding-bottom: 6px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent 60%);
-  color: #fff;
-  opacity: 0;
-  transition: opacity 0.2s ease;
+  gap: 16px;
+  align-items: flex-start;
 }
 
-.avatarWrapper:hover .avatarOverlay {
-  opacity: 1;
-}
-
-.nameBlock {
+.avatarWrap {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  min-width: 120px;
+}
+
+.headerInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.name {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.subRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.headerActions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ===== Section cards ===== */
+.sectionCard {
+  border-radius: 14px;
+}
+
+/* 2-column grid for info blocks */
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.infoBox {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 14px 16px;
+  min-height: 64px;
+}
+
+.label {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.55);
+  margin-bottom: 6px;
+}
+
+.value {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.88);
+  word-break: break-word;
+}
+
+/* Make Antd card body spacing feel like old UI */
+:global(.ant-card-body) {
+  padding: 16px 16px;
+}
+
+:global(.ant-card-head) {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+:global(.ant-card-head-title) {
+  font-weight: 650;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+  .headerLeft {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .avatarWrap {
+    align-items: flex-start;
+    min-width: unset;
+  }
+  .headerActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
