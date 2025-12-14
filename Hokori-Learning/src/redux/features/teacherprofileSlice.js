@@ -1,6 +1,6 @@
-// teacherprofileSlice.js
+// redux/features/teacherprofileSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import api from "../../configs/axios";
+import api from "../../configs/axios"; // nếu path dự án bạn khác thì sửa lại cho đúng
 
 /* ================== Helpers ================== */
 const extractUserPart = (rawUser = {}) => ({
@@ -21,6 +21,7 @@ const extractTeacherPart = (teacher = {}) => ({
   approvalStatus: teacher.approvalStatus,
   approvedAt: teacher.approvedAt,
   currentApproveRequestId: teacher.currentApproveRequestId,
+
   yearsOfExperience: teacher.yearsOfExperience,
   headline: teacher.headline,
   bio: teacher.bio,
@@ -35,6 +36,19 @@ const extractTeacherPart = (teacher = {}) => ({
 
   lastPayoutDate: teacher.lastPayoutDate,
 });
+
+const mergeProfile = (state, { user, teacher } = {}) => {
+  if (!state.data) state.data = { user: {}, teacher: {} };
+  state.data = {
+    ...state.data,
+    user: user
+      ? { ...(state.data.user || {}), ...user }
+      : state.data.user || {},
+    teacher: teacher
+      ? { ...(state.data.teacher || {}), ...teacher }
+      : state.data.teacher || {},
+  };
+};
 
 /* ================== FETCH PROFILE (user + teacher) ================== */
 export const fetchTeacherProfile = createAsyncThunk(
@@ -51,19 +65,13 @@ export const fetchTeacherProfile = createAsyncThunk(
       let teacherRaw = {};
       const wrapper = teacherRes?.data?.data;
       if (wrapper) teacherRaw = wrapper.teacher || wrapper || {};
-
       if (!teacherRaw || Object.keys(teacherRaw).length === 0) {
         teacherRaw = rawUser.teacher || {};
       }
 
-      const userPart = extractUserPart(rawUser);
-      const teacherPart = extractTeacherPart(teacherRaw);
-
       return {
-        ...userPart,
-        ...teacherPart,
-        user: userPart,
-        teacher: teacherPart,
+        user: extractUserPart(rawUser),
+        teacher: extractTeacherPart(teacherRaw),
       };
     } catch (err) {
       return rejectWithValue(
@@ -108,14 +116,15 @@ export const updateTeacherSection = createAsyncThunk(
   }
 );
 
-/* ================== NEW: UPDATE teacher bank account (/teacher/revenue/bank-account) ================== */
+/* ================== UPDATE teacher bank account (/teacher/revenue/bank-account) ================== */
 export const updateTeacherBankAccount = createAsyncThunk(
   "teacherProfile/updateTeacherBankAccount",
   async (payload, { rejectWithValue }) => {
     try {
       // BE: PUT /api/teacher/revenue/bank-account
       await api.put("teacher/revenue/bank-account", payload);
-      // API trả data null → FE tự merge payload vào state để UI cập nhật ngay
+
+      // nhiều BE trả data null -> FE merge payload để UI cập nhật ngay
       return payload || {};
     } catch (err) {
       return rejectWithValue(
@@ -269,6 +278,7 @@ const teacherprofileSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // fetch profile
       .addCase(fetchTeacherProfile.pending, (state) => {
         state.status = "loading";
         state.error = null;
@@ -282,94 +292,56 @@ const teacherprofileSlice = createSlice({
         state.error = action.payload || action.error;
       })
 
+      // update user
       .addCase(updateUserProfile.pending, (state) => {
         state.updatingUser = true;
         state.updateUserError = null;
       })
       .addCase(updateUserProfile.fulfilled, (state, action) => {
         state.updatingUser = false;
-        const userPart = action.payload || {};
-        if (!state.data) {
-          state.data = { ...userPart, user: userPart, teacher: {} };
-        } else {
-          state.data = {
-            ...state.data,
-            ...userPart,
-            user: userPart,
-            teacher: state.data.teacher || {},
-          };
-        }
+        mergeProfile(state, { user: action.payload || {} });
       })
       .addCase(updateUserProfile.rejected, (state, action) => {
         state.updatingUser = false;
         state.updateUserError = action.payload || action.error;
       })
 
+      // update teacher section
       .addCase(updateTeacherSection.pending, (state) => {
         state.updatingTeacher = true;
         state.updateTeacherError = null;
       })
       .addCase(updateTeacherSection.fulfilled, (state, action) => {
         state.updatingTeacher = false;
-        const teacherPart = action.payload || {};
-        if (!state.data) {
-          state.data = { ...teacherPart, user: {}, teacher: teacherPart };
-        } else {
-          state.data = {
-            ...state.data,
-            ...teacherPart,
-            user: state.data.user || {},
-            teacher: teacherPart,
-          };
-        }
+        mergeProfile(state, { teacher: action.payload || {} });
       })
       .addCase(updateTeacherSection.rejected, (state, action) => {
         state.updatingTeacher = false;
         state.updateTeacherError = action.payload || action.error;
       })
 
-      // ===== NEW: update bank =====
+      // update bank
       .addCase(updateTeacherBankAccount.pending, (state) => {
         state.updatingBank = true;
         state.updateBankError = null;
       })
       .addCase(updateTeacherBankAccount.fulfilled, (state, action) => {
         state.updatingBank = false;
-        const bank = action.payload || {};
-        if (!state.data) return;
-        const nextTeacher = { ...(state.data.teacher || {}) };
-
-        nextTeacher.bankAccountNumber =
-          bank.bankAccountNumber ?? nextTeacher.bankAccountNumber;
-        nextTeacher.bankAccountName =
-          bank.bankAccountName ?? nextTeacher.bankAccountName;
-        nextTeacher.bankName = bank.bankName ?? nextTeacher.bankName;
-        nextTeacher.bankBranchName =
-          bank.bankBranchName ?? nextTeacher.bankBranchName;
-
-        state.data.teacher = nextTeacher;
-
-        // nếu bạn đang dùng root-level mapping (state.data.bankName...) thì sync luôn
-        state.data.bankAccountNumber = nextTeacher.bankAccountNumber;
-        state.data.bankAccountName = nextTeacher.bankAccountName;
-        state.data.bankName = nextTeacher.bankName;
-        state.data.bankBranchName = nextTeacher.bankBranchName;
+        mergeProfile(state, { teacher: action.payload || {} });
       })
       .addCase(updateTeacherBankAccount.rejected, (state, action) => {
         state.updatingBank = false;
         state.updateBankError = action.payload || action.error;
       })
 
-      // ==== certificates list ====
+      // certificates
       .addCase(fetchTeacherCertificates.pending, (state) => {
         state.certStatus = "loading";
         state.certError = null;
       })
       .addCase(fetchTeacherCertificates.fulfilled, (state, action) => {
         state.certStatus = "succeeded";
-        state.certificates = Array.isArray(action.payload)
-          ? action.payload
-          : [];
+        state.certificates = action.payload || [];
       })
       .addCase(fetchTeacherCertificates.rejected, (state, action) => {
         state.certStatus = "failed";
@@ -382,11 +354,11 @@ const teacherprofileSlice = createSlice({
       })
       .addCase(upsertTeacherCertificate.fulfilled, (state, action) => {
         state.savingCert = false;
-        const cert = action.payload;
-        if (!cert) return;
-        const idx = state.certificates.findIndex((c) => c.id === cert.id);
-        if (idx >= 0) state.certificates[idx] = cert;
-        else state.certificates.unshift(cert);
+        const saved = action.payload;
+        if (!saved?.id) return;
+        const idx = state.certificates.findIndex((c) => c.id === saved.id);
+        if (idx >= 0) state.certificates[idx] = saved;
+        else state.certificates.unshift(saved);
       })
       .addCase(upsertTeacherCertificate.rejected, (state, action) => {
         state.savingCert = false;
@@ -407,6 +379,7 @@ const teacherprofileSlice = createSlice({
         state.certError = action.payload || action.error;
       })
 
+      // latest approval
       .addCase(fetchLatestApproval.pending, (state) => {
         state.latestStatus = "loading";
         state.latestError = null;
@@ -420,24 +393,18 @@ const teacherprofileSlice = createSlice({
         state.latestError = action.payload || action.error;
       })
 
+      // submit approval
       .addCase(submitTeacherProfile.pending, (state) => {
         state.submitting = true;
         state.submitError = null;
       })
       .addCase(submitTeacherProfile.fulfilled, (state, action) => {
         state.submitting = false;
-        if (action.payload) {
-          const teacherPart = extractTeacherPart(
-            action.payload.teacher || action.payload
-          );
-          if (state.data) {
-            state.data = {
-              ...state.data,
-              ...teacherPart,
-              teacher: teacherPart,
-              user: state.data.user || {},
-            };
-          }
+        // nếu BE trả teacher object về thì merge lại
+        const payload = action.payload;
+        const teacherRaw = payload?.teacher || payload || null;
+        if (teacherRaw) {
+          mergeProfile(state, { teacher: extractTeacherPart(teacherRaw) });
         }
       })
       .addCase(submitTeacherProfile.rejected, (state, action) => {
@@ -445,6 +412,7 @@ const teacherprofileSlice = createSlice({
         state.submitError = action.payload || action.error;
       })
 
+      // avatar
       .addCase(uploadTeacherAvatar.pending, (state) => {
         state.uploadingAvatar = true;
         state.uploadAvatarError = null;
@@ -453,11 +421,7 @@ const teacherprofileSlice = createSlice({
         state.uploadingAvatar = false;
         const newUrl = action.payload;
         if (!newUrl) return;
-        if (state.data) {
-          if (!state.data.user) state.data.user = {};
-          state.data.user.avatarUrl = newUrl;
-          state.data.avatarUrl = newUrl;
-        }
+        mergeProfile(state, { user: { avatarUrl: newUrl } });
       })
       .addCase(uploadTeacherAvatar.rejected, (state, action) => {
         state.uploadingAvatar = false;
@@ -477,16 +441,12 @@ export const selectTeacherCertificates = (state) =>
   state.teacherProfile?.certificates || [];
 export const selectTeacherCertificatesStatus = (state) =>
   state.teacherProfile?.certStatus;
-export const selectSavingCertificate = (state) =>
-  state.teacherProfile?.savingCert;
-export const selectDeletingCertificate = (state) =>
-  state.teacherProfile?.deletingCert;
 
 export const selectLatestApproval = (state) =>
   state.teacherProfile?.latestApproval;
 
 export const selectTeacherApproved = (state) =>
-  (state.teacherProfile?.data?.approvalStatus || "") === "APPROVED";
+  (state.teacherProfile?.data?.teacher?.approvalStatus || "") === "APPROVED";
 
 export const selectTeacherProfileSubmitting = (state) =>
   state.teacherProfile?.submitting;
@@ -500,3 +460,8 @@ export const selectUploadingAvatar = (state) =>
   state.teacherProfile?.uploadingAvatar;
 
 export default teacherprofileSlice.reducer;
+export const selectSavingCertificate = (state) =>
+  state.teacherProfile?.savingCert;
+
+export const selectDeletingCertificate = (state) =>
+  state.teacherProfile?.deletingCert;

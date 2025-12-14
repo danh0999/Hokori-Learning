@@ -1,297 +1,382 @@
-// ProfileEditModal.jsx
-import React, { useEffect } from "react";
-import {
-  Modal,
-  Form,
-  Input,
-  InputNumber,
-  Button,
-  Space,
-  Row,
-  Col,
-  Divider,
-  Card,
-  Alert,
-} from "antd";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  updateUserProfile,
-  updateTeacherSection,
-  updateTeacherBankAccount,
-  selectTeacherProfile,
-  selectUpdatingUser,
-  selectUpdatingTeacher,
-  selectUpdatingBank,
   fetchTeacherProfile,
+  fetchTeacherCertificates,
+  submitTeacherProfile,
+  selectTeacherProfile,
+  selectTeacherProfileStatus,
+  selectTeacherProfileError,
+  selectTeacherApproved,
+  selectTeacherProfileSubmitting,
+  selectTeacherCertificates,
+  selectTeacherCertificatesStatus,
+  selectUploadingAvatar,
+  uploadTeacherAvatar,
 } from "../../../redux/features/teacherprofileSlice.js";
-import { toast } from "react-toastify";
+import {
+  Card,
+  Tag,
+  Button,
+  Space,
+  Skeleton,
+  Alert,
+  Popconfirm,
+  message,
+  List,
+  Avatar,
+  Upload,
+  Image,
+} from "antd";
+import {
+  IdcardOutlined,
+  EditOutlined,
+  CameraOutlined,
+} from "@ant-design/icons";
+import styles from "./styles.module.scss";
+import ModalCertificates from "./components/ModalQualifications.jsx";
+import ProfileEditModal from "./components/ProfileEditModal.jsx";
+import api from "../../../configs/axios.js";
 
-export default function ProfileEditModal({ open, onClose }) {
-  const [form] = Form.useForm();
+const buildAvatarUrl = (avatarUrl) => {
+  if (!avatarUrl) return null;
+  if (avatarUrl.startsWith("http")) return avatarUrl;
+  const apiBase = api.defaults.baseURL || "";
+  const rootBase = apiBase.replace(/\/api\/?$/, "");
+  return rootBase + avatarUrl;
+};
+
+const buildFileUrl = (fileUrl) => {
+  if (!fileUrl) return null;
+  if (fileUrl.startsWith("http")) return fileUrl;
+  const apiBase = api.defaults.baseURL || "";
+  const rootBase = apiBase.replace(/\/api\/?$/, "");
+  return rootBase + fileUrl;
+};
+
+const statusMap = {
+  DRAFT: { color: "default", text: "Draft" },
+  PENDING: { color: "processing", text: "Pending" },
+  REJECTED: { color: "error", text: "Rejected" },
+  APPROVED: { color: "success", text: "Approved" },
+};
+
+export default function TeacherProfilePage() {
   const dispatch = useDispatch();
   const profile = useSelector(selectTeacherProfile);
+  const status = useSelector(selectTeacherProfileStatus);
+  const error = useSelector(selectTeacherProfileError);
+  const isApproved = useSelector(selectTeacherApproved);
+  const submitting = useSelector(selectTeacherProfileSubmitting);
+  const certificates = useSelector(selectTeacherCertificates);
+  const certStatus = useSelector(selectTeacherCertificatesStatus);
+  const uploadingAvatar = useSelector(selectUploadingAvatar);
 
-  const updatingUser = useSelector(selectUpdatingUser);
-  const updatingTeacher = useSelector(selectUpdatingTeacher);
-  const updatingBank = useSelector(selectUpdatingBank);
+  const [openCertModal, setOpenCertModal] = useState(false);
+  const [openEditModal, setOpenEditModal] = useState(false);
+
+  useEffect(() => {
+    dispatch(fetchTeacherProfile());
+    dispatch(fetchTeacherCertificates());
+  }, [dispatch]);
 
   const user = profile?.user || {};
   const teacher = profile?.teacher || {};
-  const isApproved = (teacher?.approvalStatus || "") === "APPROVED";
 
-  useEffect(() => {
-    if (!open) return;
+  const approvalStatus = teacher?.approvalStatus || "DRAFT";
+  const isPendingApproval = approvalStatus === "PENDING";
 
-    form.setFieldsValue({
-      // USER
-      email: user.email,
-      username: user.username,
-      displayName: user.displayName,
-      phoneNumber: user.phoneNumber,
-      country: user.country,
+  const hasCertificate = (certificates?.length || 0) > 0;
 
-      // TEACHER (non-bank)
-      bio: teacher.bio,
-      yearsOfExperience: teacher.yearsOfExperience,
-      websiteUrl: teacher.websiteUrl,
-      linkedin: teacher.linkedin,
+  // ✅ Submit chỉ cần certificate
+  const canSubmit = !isPendingApproval && hasCertificate;
 
-      // BANK
-      bankAccountNumber: teacher.bankAccountNumber,
-      bankAccountName: teacher.bankAccountName,
-      bankName: teacher.bankName,
-      bankBranchName: teacher.bankBranchName,
-    });
-  }, [open, user, teacher, form]);
+  const statusInfo = statusMap[approvalStatus] || statusMap.DRAFT;
 
-  const handleOk = async () => {
-    try {
-      const values = await form.validateFields();
-
-      // 1) /profile/me
-      const userPayload = {
-        displayName: values.displayName?.trim(),
-        phoneNumber: values.phoneNumber?.trim() || null,
-        country: values.country || null,
-      };
-
-      // 2) /profile/me/teacher (bio/exp/link/web)
-      const teacherPayload = {
-        bio: values.bio?.trim() || null,
-        yearsOfExperience:
-          values.yearsOfExperience !== undefined &&
-          values.yearsOfExperience !== null
-            ? Number(values.yearsOfExperience)
-            : null,
-        websiteUrl: values.websiteUrl?.trim() || null,
-        linkedin: values.linkedin?.trim() || null,
-      };
-
-      // 3) /teacher/revenue/bank-account (bank only)
-      const bankPayload = {
-        bankAccountNumber: values.bankAccountNumber?.trim() || null,
-        bankAccountName: values.bankAccountName?.trim() || null,
-        bankName: values.bankName?.trim() || null,
-        bankBranchName: values.bankBranchName?.trim() || null,
-      };
-
-      const [resUser, resTeacher] = await Promise.all([
-        dispatch(updateUserProfile(userPayload)),
-        dispatch(updateTeacherSection(teacherPayload)),
-      ]);
-
-      const okUser = resUser.meta.requestStatus === "fulfilled";
-      const okTeacher = resTeacher.meta.requestStatus === "fulfilled";
-
-      if (!okUser || !okTeacher) {
-        toast.error(
-          resUser?.payload?.message ||
-            resTeacher?.payload?.message ||
-            "Cập nhật thất bại"
-        );
-        return;
-      }
-
-      // Bank: chỉ gọi khi teacher APPROVED (BE yêu cầu)
-      if (isApproved) {
-        const resBank = await dispatch(updateTeacherBankAccount(bankPayload));
-        const okBank = resBank.meta.requestStatus === "fulfilled";
-        if (!okBank) {
-          toast.error(
-            resBank?.payload?.message || "Cập nhật ngân hàng thất bại"
-          );
-          return;
-        }
-      }
-
-      await dispatch(fetchTeacherProfile());
-      toast.success("Cập nhật hồ sơ thành công!");
-      onClose?.();
-    } catch (err) {
-      // validate error -> ignore
+  const handleUploadAvatar = async ({ file }) => {
+    const res = await dispatch(uploadTeacherAvatar(file));
+    if (res.meta.requestStatus === "fulfilled") {
+      message.success("Cập nhật avatar thành công!");
+      dispatch(fetchTeacherProfile());
+    } else {
+      message.error(res?.payload?.message || "Upload avatar thất bại");
     }
   };
 
-  const loading = updatingUser || updatingTeacher || updatingBank;
+  const handleSubmit = async () => {
+    if (!hasCertificate) {
+      message.error("Bạn cần tải lên ít nhất 1 chứng chỉ trước khi gửi duyệt.");
+      return;
+    }
+
+    const res = await dispatch(submitTeacherProfile({ message: "" }));
+    if (res.meta.requestStatus === "fulfilled") {
+      message.success("Đã gửi duyệt thành công!");
+      dispatch(fetchTeacherProfile());
+      dispatch(fetchTeacherCertificates());
+    } else {
+      message.error(res?.payload?.message || "Gửi duyệt thất bại");
+    }
+  };
+
+  const avatarUrl = buildAvatarUrl(user.avatarUrl);
 
   return (
-    <Modal
-      title="Cập nhật hồ sơ"
-      open={open}
-      onCancel={() => {
-        form.resetFields();
-        onClose?.();
-      }}
-      onOk={handleOk}
-      okText="Lưu"
-      cancelText="Hủy"
-      confirmLoading={loading}
-      width={900}
-      destroyOnClose
-    >
-      {!isApproved && (
-        <Alert
-          type="warning"
-          showIcon
-          style={{ marginBottom: 12 }}
-          message="Chưa thể cập nhật thông tin ngân hàng"
-          description="Theo quy định, chỉ giáo viên đã được APPROVED mới có thể cập nhật tài khoản ngân hàng. Bạn vẫn có thể cập nhật bio/kinh nghiệm/website/LinkedIn."
-        />
-      )}
+    <div className={styles.page}>
+      <div className={styles.container}>
+        {status === "loading" ? (
+          <Skeleton active />
+        ) : error ? (
+          <Alert
+            type="error"
+            message="Không thể tải hồ sơ"
+            description={error?.message || "Có lỗi xảy ra"}
+            showIcon
+          />
+        ) : (
+          <>
+            <Card className={styles.headerCard}>
+              <div className={styles.headerLeft}>
+                <div className={styles.avatarWrap}>
+                  <Avatar
+                    size={96}
+                    src={
+                      avatarUrl ? (
+                        <Image src={avatarUrl} preview={false} />
+                      ) : null
+                    }
+                  >
+                    {user?.displayName?.[0]?.toUpperCase() || "T"}
+                  </Avatar>
 
-      <Form form={form} layout="vertical">
-        <Row gutter={[24, 16]}>
-          <Col xs={24} md={12}>
-            <Card
-              title="Thông tin tài khoản"
-              bordered
-              style={{ borderRadius: 10 }}
-            >
-              <Form.Item label="Email" name="email">
-                <Input disabled />
-              </Form.Item>
+                  <Upload
+                    showUploadList={false}
+                    customRequest={handleUploadAvatar}
+                    accept="image/*"
+                    disabled={uploadingAvatar || isPendingApproval}
+                  >
+                    <Button
+                      icon={<CameraOutlined />}
+                      size="small"
+                      loading={uploadingAvatar}
+                      disabled={isPendingApproval}
+                      style={{ marginTop: 8 }}
+                    >
+                      Đổi avatar
+                    </Button>
+                  </Upload>
+                </div>
 
-              <Form.Item label="Username" name="username">
-                <Input disabled />
-              </Form.Item>
+                <div className={styles.headerInfo}>
+                  <div className={styles.nameRow}>
+                    <h2 className={styles.name}>
+                      {user.displayName || user.username}
+                    </h2>
+                    <Tag color={statusInfo.color}>{statusInfo.text}</Tag>
+                    {isApproved && <Tag color="success">Teacher</Tag>}
+                  </div>
 
-              <Form.Item
-                label="Display Name"
-                name="displayName"
-                rules={[
-                  { required: true, message: "Vui lòng nhập tên hiển thị" },
-                ]}
-              >
-                <Input />
-              </Form.Item>
+                  <div className={styles.subRow}>
+                    <span>{user.email}</span>
+                    {user.phoneNumber ? (
+                      <span>• {user.phoneNumber}</span>
+                    ) : null}
+                  </div>
 
-              <Form.Item label="Số điện thoại" name="phoneNumber">
-                <Input />
-              </Form.Item>
+                  {isPendingApproval && (
+                    <Alert
+                      type="info"
+                      showIcon
+                      style={{ marginTop: 12 }}
+                      message="Hồ sơ đang chờ duyệt"
+                      description="Trong trạng thái Pending, bạn không thể chỉnh sửa hồ sơ hoặc chứng chỉ."
+                    />
+                  )}
+                </div>
+              </div>
 
-              <Form.Item label="Country" name="country">
-                <Input />
-              </Form.Item>
+              <div className={styles.headerActions}>
+                <Space>
+                  <Button
+                    icon={<EditOutlined />}
+                    onClick={() => setOpenEditModal(true)}
+                    disabled={isPendingApproval}
+                  >
+                    Cập nhật hồ sơ
+                  </Button>
+
+                  <Button
+                    icon={<IdcardOutlined />}
+                    onClick={() => setOpenCertModal(true)}
+                    disabled={isPendingApproval}
+                  >
+                    Cập nhật chứng chỉ
+                  </Button>
+
+                  <Popconfirm
+                    title="Xác nhận gửi duyệt?"
+                    description="Sau khi gửi duyệt, hồ sơ sẽ chuyển sang Pending và bạn sẽ không thể chỉnh sửa cho đến khi có kết quả."
+                    onConfirm={handleSubmit}
+                    okText="Gửi duyệt"
+                    cancelText="Hủy"
+                    disabled={!canSubmit}
+                  >
+                    <Button
+                      type="primary"
+                      disabled={!canSubmit}
+                      loading={submitting}
+                    >
+                      Gửi duyệt
+                    </Button>
+                  </Popconfirm>
+                </Space>
+
+                {!hasCertificate ? (
+                  <div style={{ marginTop: 10, color: "#ff4d4f" }}>
+                    • Thiếu chứng chỉ (bắt buộc)
+                  </div>
+                ) : null}
+              </div>
             </Card>
-          </Col>
 
-          <Col xs={24} md={12}>
-            <Card
-              title="Thông tin giảng viên"
-              bordered
-              style={{ borderRadius: 10 }}
-            >
-              <Form.Item
-                label="Bio"
-                name="bio"
-                rules={[
-                  { required: true, message: "Vui lòng nhập bio" },
-                  { min: 50, message: "Bio phải từ 50 ký tự" },
-                ]}
-              >
-                <Input.TextArea rows={4} />
-              </Form.Item>
-
-              <Form.Item label="Số năm kinh nghiệm" name="yearsOfExperience">
-                <InputNumber min={0} style={{ width: "100%" }} />
-              </Form.Item>
-
-              <Form.Item label="Website" name="websiteUrl">
-                <Input placeholder="https://..." />
-              </Form.Item>
-
-              <Form.Item label="LinkedIn" name="linkedin">
-                <Input placeholder="https://www.linkedin.com/..." />
-              </Form.Item>
-
-              <Divider />
-
-              <Row gutter={[16, 8]}>
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    label="Số tài khoản"
-                    name="bankAccountNumber"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập số tài khoản" },
-                    ]}
-                  >
-                    <Input disabled={!isApproved} />
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    label="Tên chủ tài khoản"
-                    name="bankAccountName"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng nhập tên chủ tài khoản",
-                      },
-                    ]}
-                  >
-                    <Input disabled={!isApproved} />
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    label="Ngân hàng"
-                    name="bankName"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng nhập tên ngân hàng",
-                      },
-                    ]}
-                  >
-                    <Input disabled={!isApproved} />
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    label="Chi nhánh"
-                    name="bankBranchName"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng nhập tên chi nhánh",
-                      },
-                    ]}
-                  >
-                    <Input disabled={!isApproved} />
-                  </Form.Item>
-                </Col>
-              </Row>
+            <Card title="Thông tin tài khoản" className={styles.sectionCard}>
+              <div className={styles.grid2}>
+                <div className={styles.infoBox}>
+                  <div className={styles.label}>Email</div>
+                  <div className={styles.value}>{user.email || "—"}</div>
+                </div>
+                <div className={styles.infoBox}>
+                  <div className={styles.label}>Username</div>
+                  <div className={styles.value}>{user.username || "—"}</div>
+                </div>
+                <div className={styles.infoBox}>
+                  <div className={styles.label}>Số điện thoại</div>
+                  <div className={styles.value}>{user.phoneNumber || "—"}</div>
+                </div>
+                <div className={styles.infoBox}>
+                  <div className={styles.label}>Role</div>
+                  <div className={styles.value}>{user.role || "—"}</div>
+                </div>
+              </div>
             </Card>
-          </Col>
-        </Row>
 
-        <Space style={{ marginTop: 10 }}>
-          <Button onClick={() => form.resetFields()}>Reset</Button>
-        </Space>
-      </Form>
-    </Modal>
+            <Card title="Thông tin giảng viên" className={styles.sectionCard}>
+              <div className={styles.infoBox}>
+                <div className={styles.label}>Giới thiệu</div>
+                <div className={styles.value}>{teacher.bio || "—"}</div>
+              </div>
+
+              <div className={styles.grid2}>
+                <div className={styles.infoBox}>
+                  <div className={styles.label}>Số năm kinh nghiệm</div>
+                  <div className={styles.value}>
+                    {teacher.yearsOfExperience ?? "—"}
+                  </div>
+                </div>
+                <div className={styles.infoBox}>
+                  <div className={styles.label}>Website</div>
+                  <div className={styles.value}>
+                    {teacher.websiteUrl || "—"}
+                  </div>
+                </div>
+                <div className={styles.infoBox}>
+                  <div className={styles.label}>LinkedIn</div>
+                  <div className={styles.value}>{teacher.linkedin || "—"}</div>
+                </div>
+              </div>
+            </Card>
+
+            <Card title="Tài khoản ngân hàng" className={styles.sectionCard}>
+              {!isApproved && (
+                <Alert
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: 12 }}
+                  message="Ngân hàng chỉ cập nhật sau khi APPROVED"
+                  description="Theo BE, chỉ giáo viên đã được APPROVED mới có thể cập nhật thông tin ngân hàng."
+                />
+              )}
+
+              <div className={styles.grid2}>
+                <div className={styles.infoBox}>
+                  <div className={styles.label}>Số tài khoản</div>
+                  <div className={styles.value}>
+                    {teacher.bankAccountNumber || "—"}
+                  </div>
+                </div>
+                <div className={styles.infoBox}>
+                  <div className={styles.label}>Tên chủ tài khoản</div>
+                  <div className={styles.value}>
+                    {teacher.bankAccountName || "—"}
+                  </div>
+                </div>
+                <div className={styles.infoBox}>
+                  <div className={styles.label}>Ngân hàng</div>
+                  <div className={styles.value}>{teacher.bankName || "—"}</div>
+                </div>
+                <div className={styles.infoBox}>
+                  <div className={styles.label}>Chi nhánh</div>
+                  <div className={styles.value}>
+                    {teacher.bankBranchName || "—"}
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <Card
+              title="Chứng chỉ"
+              className={styles.sectionCard}
+              extra={
+                certStatus === "loading" ? (
+                  <Tag color="processing">Đang tải…</Tag>
+                ) : (
+                  <Tag color={hasCertificate ? "success" : "default"}>
+                    {hasCertificate ? "Đã có chứng chỉ" : "Chưa có chứng chỉ"}
+                  </Tag>
+                )
+              }
+            >
+              <List
+                dataSource={certificates || []}
+                locale={{ emptyText: "Chưa có chứng chỉ" }}
+                renderItem={(item) => (
+                  <List.Item>
+                    <List.Item.Meta
+                      title={item.title || "Certificate"}
+                      description={
+                        item.fileUrl ? (
+                          <a
+                            href={buildFileUrl(item.fileUrl)}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Xem file
+                          </a>
+                        ) : (
+                          "—"
+                        )
+                      }
+                    />
+                  </List.Item>
+                )}
+              />
+            </Card>
+
+            <ProfileEditModal
+              open={openEditModal}
+              onClose={() => setOpenEditModal(false)}
+            />
+            <ModalCertificates
+              open={openCertModal}
+              onClose={() => {
+                setOpenCertModal(false);
+                dispatch(fetchTeacherCertificates()); // ✅ refresh list cho page
+              }}
+              locked={isPendingApproval}
+            />
+          </>
+        )}
+      </div>
+    </div>
   );
 }
