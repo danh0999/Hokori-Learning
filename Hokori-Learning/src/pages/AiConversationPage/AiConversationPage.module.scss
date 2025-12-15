@@ -300,3 +300,26 @@
     padding: 6px 9px;
   }
 }
+.guide {
+  max-width: 420px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.guideTitle {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.guideList {
+  padding-left: 18px;
+  font-size: 0.85rem;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+.guideList li {
+  margin-bottom: 6px;
+}

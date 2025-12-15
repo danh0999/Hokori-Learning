@@ -6,36 +6,47 @@ import HeroSection from "./components/HeroSection";
 import ChatBubble from "./components/ChatBubble";
 import ResultPanel from "./components/ResultPanel";
 
-// Reuse recorder + utils từ Kaiwa (đỡ duplicate)
 import AudioRecorder from "../../pages/AiKaiwa/components/AudioRecorder";
 import { convertBlobToBase64, getAudioFormat } from "../../utils/audioUtils";
 
 import useAiService from "../../hooks/useAiService";
 import { conversationService } from "../../services/conversationService";
-const LEVELS = ["N5", "N4", "N3", "N2", "N1"];
 
+const LEVELS = ["N5", "N4", "N3", "N2", "N1"];
 const safeText = (v) => (typeof v === "string" ? v : "");
 
-const playBase64Mp3 = async (base64) => {
-  if (!base64) return;
+/* ===============================
+   Helper: bỏ romaji trong ngoặc ()
+================================ */
+const stripRomaji = (text = "") => {
+  if (!text) return "";
+  return text.split("(")[0].trim();
+};
+
+/* ===============================
+   FE TTS – chỉ đọc tiếng Nhật
+================================ */
+const speakJapanese = (jpText) => {
+  if (!jpText) return;
   try {
-    // BE trả audioUrl base64 mp3
-    const audio = new Audio(`data:audio/mpeg;base64,${base64}`);
-    await audio.play();
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(jpText);
+    utter.lang = "ja-JP";
+    utter.rate = 0.95;
+    window.speechSynthesis.speak(utter);
   } catch (e) {
-    // không crash UI nếu browser chặn autoplay
-    console.warn("Audio autoplay blocked:", e);
+    console.warn("TTS error:", e);
   }
 };
 
 export default function AiConversationPage() {
   const { runService } = useAiService();
 
-  // input (pre-start)
+  // input
   const [level, setLevel] = useState("N5");
   const [scenario, setScenario] = useState("");
 
-  // session state
+  // session
   const [conversationId, setConversationId] = useState(null);
   const [history, setHistory] = useState([]);
   const [turnNumber, setTurnNumber] = useState(0);
@@ -45,7 +56,7 @@ export default function AiConversationPage() {
   // audio
   const [audioBlob, setAudioBlob] = useState(null);
 
-  // UI state
+  // UI
   const [loading, setLoading] = useState(false);
   const [ending, setEnding] = useState(false);
   const [error, setError] = useState(null);
@@ -64,9 +75,12 @@ export default function AiConversationPage() {
     return `Turn ${turnNumber}/${maxTurns}`;
   }, [started, turnNumber, maxTurns]);
 
+  /* ===============================
+     START
+  ================================ */
   const handleStart = async () => {
     if (!scenario.trim()) {
-      setError("Nhập tình huống trước đã (ví dụ: nhà hàng, mua sắm, xin việc, ...).");
+      setError("Vui lòng nhập tình huống trước (ví dụ: nhà hàng, mua sắm, xin việc…).");
       return;
     }
 
@@ -83,8 +97,7 @@ export default function AiConversationPage() {
     );
 
     setLoading(false);
-
-    if (!res) return; // hết quota -> modal tự bật
+    if (!res) return;
 
     const data = res?.data?.data;
     if (!data) {
@@ -98,15 +111,18 @@ export default function AiConversationPage() {
     setMaxTurns(data.maxTurns || 7);
     setOriginalScenario(data.originalScenario || scenario.trim());
 
-    // play first AI audio
-    playBase64Mp3(data.audioUrl);
+    const firstAI = data.conversationHistory?.[0];
+    speakJapanese(stripRomaji(firstAI?.text));
   };
 
+  /* ===============================
+     RESPOND
+  ================================ */
   const handleRespond = async () => {
     if (!started) return;
 
     if (!audioBlob) {
-      setError("Mày phải ghi âm câu trả lời trước đã.");
+      setError("Bạn cần ghi âm câu trả lời trước.");
       return;
     }
 
@@ -122,15 +138,14 @@ export default function AiConversationPage() {
           conversationId,
           audioData: base64,
           audioFormat,
-          conversationHistory: history, // IMPORTANT: FE tự maintain & gửi mỗi lần
+          conversationHistory: history,
           level,
           scenario: originalScenario || scenario.trim(),
         })
       );
 
       setLoading(false);
-
-      if (!res) return; // hết quota -> modal
+      if (!res) return;
 
       const data = res?.data?.data;
       if (!data) {
@@ -138,27 +153,32 @@ export default function AiConversationPage() {
         return;
       }
 
-      // IMPORTANT: lấy history từ BE (đã update đủ AI/User/AI)
       setHistory(data.conversationHistory || []);
       setTurnNumber(data.turnNumber || turnNumber + 1);
-
-      // reset recorder
       setAudioBlob(null);
 
-      // play next AI audio
-      playBase64Mp3(data.audioUrl);
+      const lastAI = [...(data.conversationHistory || [])]
+        .reverse()
+        .find((m) => m.role === "AI");
 
-      // auto end nếu BE báo kết thúc
-      if (data.isEnding || (data.turnNumber || 0) >= (data.maxTurns || maxTurns)) {
+      speakJapanese(stripRomaji(lastAI?.text));
+
+      if (
+        data.isEnding ||
+        (data.turnNumber || 0) >= (data.maxTurns || maxTurns)
+      ) {
         await handleEnd(true);
       }
     } catch (e) {
       console.error(e);
       setLoading(false);
-      setError("Lỗi xử lý audio / hội thoại. Thử ghi âm lại hoặc kiểm tra mic.");
+      setError("Lỗi xử lý hội thoại. Kiểm tra mic và thử lại.");
     }
   };
 
+  /* ===============================
+     END
+  ================================ */
   const handleEnd = async (silent = false) => {
     if (!conversationId) return;
 
@@ -173,12 +193,11 @@ export default function AiConversationPage() {
     );
 
     setEnding(false);
-
-    if (!res) return; // hết quota -> modal
+    if (!res) return;
 
     const data = res?.data?.data;
-    if (!data) {
-      if (!silent) setError("Không thể kết thúc & lấy đánh giá. Vui lòng thử lại.");
+    if (!data && !silent) {
+      setError("Không thể kết thúc & lấy đánh giá.");
       return;
     }
 
@@ -198,12 +217,15 @@ export default function AiConversationPage() {
     setEndResult(null);
   };
 
+  /* ===============================
+     RENDER
+  ================================ */
   return (
     <div className={styles.page}>
       <HeroSection />
 
       <main className={styles.main}>
-        {/* LEFT: Setup + Recorder */}
+        {/* LEFT */}
         <section className={`${styles.card} ${styles.leftCard}`}>
           <div className={styles.cardHeader}>
             <h3 className={styles.sectionTitle}>Thiết lập hội thoại</h3>
@@ -234,19 +256,24 @@ export default function AiConversationPage() {
               onChange={(e) => setScenario(e.target.value)}
               disabled={started || loading || ending}
               rows={3}
-              placeholder='Ví dụ: "nhà hàng", "mua sắm", "gọi cảnh sát", ...'
             />
             {started && (
               <div className={styles.note}>
                 <span className={styles.noteKey}>Scenario:</span>{" "}
-                <span className={styles.noteVal}>{safeText(originalScenario)}</span>
+                <span className={styles.noteVal}>
+                  {safeText(originalScenario)}
+                </span>
               </div>
             )}
           </div>
 
           <div className={styles.actions}>
             {!started ? (
-              <button className={styles.primaryBtn} onClick={handleStart} disabled={loading || ending}>
+              <button
+                className={styles.primaryBtn}
+                onClick={handleStart}
+                disabled={loading || ending}
+              >
                 {loading ? "Đang bắt đầu..." : "Bắt đầu trò chuyện"}
               </button>
             ) : (
@@ -258,8 +285,11 @@ export default function AiConversationPage() {
                 >
                   {ending ? "Đang kết thúc..." : "Kết thúc sớm"}
                 </button>
-
-                <button className={styles.ghostBtn} onClick={handleReset} disabled={loading || ending}>
+                <button
+                  className={styles.ghostBtn}
+                  onClick={handleReset}
+                  disabled={loading || ending}
+                >
                   Làm lại
                 </button>
               </>
@@ -269,13 +299,7 @@ export default function AiConversationPage() {
           <div className={styles.divider} />
 
           <div className={styles.recorderBlock}>
-            <h4 className={styles.subTitle}>Ghi âm câu trả lời</h4>
-            <p className={styles.subDesc}>
-              AI hỏi xong thì mày ghi âm trả lời. Xong bấm <b>Gửi câu trả lời</b>.
-            </p>
-
             <AudioRecorder onAudioReady={handleAudioReady} />
-
             <button
               className={styles.primaryBtn}
               onClick={handleRespond}
@@ -284,41 +308,47 @@ export default function AiConversationPage() {
             >
               {loading ? "Đang gửi..." : "Gửi câu trả lời"}
             </button>
-
-            {!audioBlob && started && <p className={styles.hint}>Chưa có audio mới. Hãy ghi âm trước.</p>}
           </div>
 
           {error && <div className={styles.errorBox}>❌ {error}</div>}
         </section>
 
-        {/* RIGHT: Chat / Result */}
+        {/* RIGHT */}
         <section className={`${styles.card} ${styles.rightCard}`}>
           {!endResult ? (
-            <>
-              <div className={styles.cardHeader}>
-                <h3 className={styles.sectionTitle}>Trò chuyện cùng AI</h3>
-                <div className={styles.smallNote}>AI sẽ hiển thị tiếng Nhật + dịch Việt.</div>
-              </div>
+            <div className={styles.chatBox}>
+              {history?.length ? (
+                history.map((m, idx) => (
+                  <ChatBubble
+                    key={`${m.role}-${idx}`}
+                    role={m.role}
+                    jp={m.text}
+                    vi={m.textVi}
+                    ts={m.timestamp}
+                  />
+                ))
+              ) : (
+                <div className={styles.empty}>
+                  <div className={styles.emptyIcon}>💬</div>
 
-              <div className={styles.chatBox}>
-                {history?.length ? (
-                  history.map((m, idx) => (
-                    <ChatBubble
-                      key={`${m.role || "msg"}-${idx}`}
-                      role={m.role}
-                      jp={m.text || m.aiQuestion || m.userTranscript}
-                      vi={m.textVi || m.aiQuestionVi || m.userTranscriptVi}
-                      ts={m.timestamp}
-                    />
-                  ))
-                ) : (
-                  <div className={styles.empty}>
-                    <div className={styles.emptyIcon}>💬</div>
-                    <p>Chưa có hội thoại. Bấm “Bắt đầu trò chuyện” để AI hỏi câu đầu tiên.</p>
+                  <div className={styles.guide}>
+                    <p className={styles.guideTitle}>
+                      Cách bắt đầu trò chuyện cùng AI
+                    </p>
+
+                    <ol className={styles.guideList}>
+                      <li>Chọn trình độ JLPT phù hợp.</li>
+                      <li>Nhập tình huống hội thoại bạn muốn luyện tập.</li>
+                      <li>
+                        Bấm <b>Bắt đầu trò chuyện</b> để AI hỏi câu đầu tiên.
+                      </li>
+                      <li>Nghe câu hỏi và ghi âm câu trả lời của bạn.</li>
+                      <li>Gửi câu trả lời để tiếp tục hội thoại.</li>
+                    </ol>
                   </div>
-                )}
-              </div>
-            </>
+                </div>
+              )}
+            </div>
           ) : (
             <ResultPanel result={endResult} onRestart={handleReset} />
           )}
