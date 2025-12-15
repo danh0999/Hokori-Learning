@@ -1,9 +1,7 @@
-/* ==============================
-   AI KAIWA — HOKORI PREMIUM
-   ============================== */
+
 
 .page {
-
+  background-color: rgb(245, 247, 251);
   min-height: 100vh;
 }
 
@@ -65,7 +63,8 @@
   border: 1px solid #dbe3f0;
   resize: vertical;
 
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease,
+    background 0.18s ease;
 
   &:focus {
     background: #ffffff;

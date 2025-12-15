@@ -265,7 +265,7 @@ export const Header = () => {
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleOpenAiTool("/ai-kaiwa")}
                 >
-                  Luyện nói (AI Kaiwa)
+                  Luyện nói 
                 </div>
                 <div
                   className={dropdownItem}

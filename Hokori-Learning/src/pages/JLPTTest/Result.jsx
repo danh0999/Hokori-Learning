@@ -3,6 +3,7 @@ import React, { useEffect } from "react";
 import styles from "./Result.module.scss";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
+import { toast } from "react-toastify"; // 🔴 ADD
 
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -45,12 +46,38 @@ const Result = () => {
   );
 
   // =======================================
-  // FIX LỖI: reset result trước khi fetch mới
+  // RESET RESULT TRƯỚC KHI FETCH
   // =======================================
   useEffect(() => {
-    dispatch(clearResult()); // <-- xoá kết quả cũ khỏi redux
-    dispatch(fetchMyJlptResult(numericTestId)); // fetch kết quả mới nhất
+    dispatch(clearResult());
+    dispatch(fetchMyJlptResult(numericTestId));
   }, [dispatch, numericTestId]);
+
+  /* ========================================================================== 
+      🔴 BLOCK BACK TRÌNH DUYỆT – CHỈ TOAST, KHÔNG REDIRECT
+      - Chỉ trigger khi user bấm nút BACK
+      - Không ảnh hưởng button trong UI
+  ========================================================================== */
+  useEffect(() => {
+    const handlePopState = () => {
+      toast.info(
+        "Bạn đã nộp bài rồi, không thể quay lại làm tiếp. Vui lòng thi lại.",
+        { autoClose: 2500 }
+      );
+
+      // đẩy history lại để giữ nguyên trang Result
+      window.history.pushState(null, "", window.location.href);
+    };
+
+    // push state ban đầu để chặn back
+    window.history.pushState(null, "", window.location.href);
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+  /* ========================================================================== */
 
   // ===== ERROR STATE =====
   if (resultError) {
@@ -87,7 +114,7 @@ const Result = () => {
     );
   }
 
-  // ===== SAFE ACCESS ====
+  // ===== SAFE ACCESS =====
   const g = {
     ...result.grammarVocab,
     score: Math.round(result?.grammarVocab?.score ?? 0),
@@ -113,10 +140,10 @@ const Result = () => {
   };
 
   const totalQuestions =
-    (g.totalQuestions ?? 0) + (r.totalQuestions ?? 0) + (l.totalQuestions ?? 0);
+    g.totalQuestions + r.totalQuestions + l.totalQuestions;
 
   const correctCount =
-    (g.correctCount ?? 0) + (r.correctCount ?? 0) + (l.correctCount ?? 0);
+    g.correctCount + r.correctCount + l.correctCount;
 
   const totalScore = Math.round(result.score ?? 0);
   const percent = Math.round((totalScore / 180) * 100);
@@ -128,15 +155,16 @@ const Result = () => {
     <div className={styles.resultWrapper}>
       <div className={styles.resultCard}>
         <h1 className={styles.title}>Kết quả bài thi JLPT</h1>
+        <p className={styles.subtitle}>
+          Dưới đây là kết quả tổng hợp của bạn.
+        </p>
 
-        <p className={styles.subtitle}>Dưới đây là kết quả tổng hợp của bạn.</p>
-
-        {/* ===== OVERALL SCORE BOX ===== */}
+        {/* ===== OVERALL SCORE ===== */}
         <div className={styles.overallBox}>
           <div className={styles.chart}>
             <CircularProgressbar
               value={percent}
-              text={`${percent.toFixed(0)}%`}
+              text={`${percent}%`}
               styles={buildStyles({
                 textColor: "#2563eb",
                 pathColor: "#2563eb",
@@ -150,7 +178,6 @@ const Result = () => {
             <p>
               Bạn đạt <strong>{totalScore}</strong> / 180 điểm.
             </p>
-
             <p>
               Tổng số câu hỏi: <strong>{totalQuestions}</strong> – Số câu đúng:{" "}
               <strong>{correctCount}</strong>.
@@ -170,52 +197,38 @@ const Result = () => {
           </div>
         </div>
 
-        {/* ===== BREAKDOWN 3 PARTS ===== */}
+        {/* ===== BREAKDOWN ===== */}
         <div className={styles.breakdownBox}>
           <h2>Chi tiết từng phần</h2>
 
           <div className={styles.breakdownGrid}>
             <div className={styles.breakdownItem}>
               <h3>Từ vựng & Ngữ pháp</h3>
-              <p>
-                {g.correctCount} / {g.totalQuestions} câu đúng
-              </p>
-              <p>
-                Điểm: <strong>{g.score}</strong> / {g.maxScore}
-              </p>
+              <p>{g.correctCount} / {g.totalQuestions} câu đúng</p>
+              <p>Điểm: <strong>{g.score}</strong> / {g.maxScore}</p>
             </div>
 
             <div className={styles.breakdownItem}>
               <h3>Đọc hiểu</h3>
-              <p>
-                {r.correctCount} / {r.totalQuestions} câu đúng
-              </p>
-              <p>
-                Điểm: <strong>{r.score}</strong> / {r.maxScore}
-              </p>
+              <p>{r.correctCount} / {r.totalQuestions} câu đúng</p>
+              <p>Điểm: <strong>{r.score}</strong> / {r.maxScore}</p>
             </div>
 
             <div className={styles.breakdownItem}>
               <h3>Nghe hiểu</h3>
-              <p>
-                {l.correctCount} / {l.totalQuestions} câu đúng
-              </p>
-              <p>
-                Điểm: <strong>{l.score}</strong> / {l.maxScore}
-              </p>
+              <p>{l.correctCount} / {l.totalQuestions} câu đúng</p>
+              <p>Điểm: <strong>{l.score}</strong> / {l.maxScore}</p>
             </div>
           </div>
         </div>
 
-        {/* ===== ACTION BUTTONS ===== */}
+        {/* ===== ACTIONS ===== */}
         <div className={styles.actions}>
           <button
             className={styles.retryBtn}
             onClick={() => {
               if (!attemptId) {
-                alert(
-                  "Không tìm được attempt để xem chi tiết. Vui lòng làm lại bài hoặc mở từ kết quả mới nhất."
-                );
+                alert("Không tìm được attempt hợp lệ.");
                 return;
               }
               navigate(
