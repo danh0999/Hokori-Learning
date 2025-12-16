@@ -283,7 +283,7 @@ const handleModalConfirm = async () => {
           }
           message={
             answered < total
-              ? `Bạn đã trả lời ${answered}/${total} câu. Câu chưa làm = tính sai.`
+              ? `Bạn đã trả lời ${answered}/${total} câu. Câu chưa làm sẽ tính sai.`
               : "Bạn đã hoàn thành toàn bộ phần này."
           }
           confirmLabel={
