@@ -16,7 +16,7 @@ export const SearchBar = ({ placeholder, onSearch, value }) => {
       <input
         className={input}
         type="text"
-        value={value} // ⭐ controlled từ Filters
+        value={value} //  controlled từ Filters
         placeholder={placeholder}
         onChange={handleChange}
       />

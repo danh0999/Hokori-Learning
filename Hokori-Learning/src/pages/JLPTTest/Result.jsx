@@ -3,7 +3,7 @@ import React, { useEffect } from "react";
 import styles from "./Result.module.scss";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
-import { toast } from "react-toastify"; // 🔴 ADD
+import { toast } from "react-toastify"; //  ADD
 
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -54,7 +54,7 @@ const Result = () => {
   }, [dispatch, numericTestId]);
 
   /* ========================================================================== 
-      🔴 BLOCK BACK TRÌNH DUYỆT – CHỈ TOAST, KHÔNG REDIRECT
+      BLOCK BACK TRÌNH DUYỆT – CHỈ TOAST, KHÔNG REDIRECT
       - Chỉ trigger khi user bấm nút BACK
       - Không ảnh hưởng button trong UI
   ========================================================================== */
@@ -190,7 +190,7 @@ const Result = () => {
                 </span>
               ) : (
                 <span style={{ color: "#ef4444" }}>
-                  ✘ Bạn chưa đạt yêu cầu. Điểm đạt là {passScore}.
+                  ✘ Bạn chưa đạt yêu cầu. Điểm cần để đạt là {passScore}.
                 </span>
               )}
             </p>

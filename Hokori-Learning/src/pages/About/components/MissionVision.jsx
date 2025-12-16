@@ -7,7 +7,7 @@ const MissionVision = () => (
     <div className={styles.grid2}>
       <div className={styles.card}>
         <div className={styles.icon}><FaBullseye /></div>
-        <h3>Sứ mệnh</h3>
+        <h3 className={styles.title}>Sứ mệnh</h3>
         <p>
           Hỗ trợ người Việt Nam học tiếng Nhật một cách hiệu quả và thú vị thông
           qua việc ứng dụng công nghệ hiện đại, phương pháp giảng dạy khoa học và
