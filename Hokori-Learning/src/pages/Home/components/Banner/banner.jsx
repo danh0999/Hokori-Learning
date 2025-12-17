@@ -10,7 +10,7 @@ const Banner = () => {
   const navigate = useNavigate();
 
   const handleClick = () => {
-    navigate("/course");
+    navigate("/my-courses");
   };
 
   return (
