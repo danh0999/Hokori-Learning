@@ -13,15 +13,22 @@ import {
   Tag,
   Empty,
   Avatar,
+  Rate,
+  Popconfirm,
+  message,
+  Divider,
 } from "antd";
 import api from "../../../configs/axios.js";
 import { buildFileUrl } from "../../../utils/fileUrl.js";
+
+import styles from "./ModeratorDashboard.module.scss";
 
 const { Title, Text } = Typography;
 const { Search } = Input;
 
 const PAGE_SIZE = 9;
 const COMMENT_PAGE_SIZE = 5;
+const FEEDBACK_PAGE_SIZE = 5;
 
 const ModeratorDashboard = () => {
   const [courses, setCourses] = useState([]);
@@ -43,16 +50,31 @@ const ModeratorDashboard = () => {
   // preview node (chapter / lesson / section)
   const [selectedNode, setSelectedNode] = useState(null);
 
-  // comments state
+  // comments state (giữ nguyên logic cũ của bạn)
   const [comments, setComments] = useState([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [commentsPage, setCommentsPage] = useState(0);
   const [commentsTotal, setCommentsTotal] = useState(0);
 
+  // ===== Feedback state (NEW) =====
+  const [feedbackSummary, setFeedbackSummary] = useState(null);
+  const [feedbackSummaryLoading, setFeedbackSummaryLoading] = useState(false);
+
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [feedbackPage, setFeedbackPage] = useState(0); // local pagination (client-side)
+  const [deletingFeedbackId, setDeletingFeedbackId] = useState(null);
+
   const totalPages = Math.max(1, Math.ceil(totalElements / PAGE_SIZE));
   const commentTotalPages = Math.max(
     1,
     Math.ceil(commentsTotal / COMMENT_PAGE_SIZE)
+  );
+
+  // Feedback total pages (client-side)
+  const feedbackTotalPages = Math.max(
+    1,
+    Math.ceil((feedbacks?.length || 0) / FEEDBACK_PAGE_SIZE)
   );
 
   /* ---------------- Fetch PUBLIC courses (pagination) ---------------- */
@@ -102,6 +124,61 @@ const ModeratorDashboard = () => {
     }
   };
 
+  // ===== Feedback APIs (NEW) =====
+  const fetchFeedbackSummary = async (courseId) => {
+    if (!courseId) return;
+    try {
+      setFeedbackSummaryLoading(true);
+      const res = await api.get(`/courses/${courseId}/feedbacks/summary`);
+      const payload = res.data || {};
+      const data = payload.data ?? payload; // support both shapes
+      setFeedbackSummary(data);
+    } catch (e) {
+      console.error("Failed to fetch feedback summary", e);
+      setFeedbackSummary(null);
+    } finally {
+      setFeedbackSummaryLoading(false);
+    }
+  };
+
+  const fetchFeedbacks = async (courseId) => {
+    if (!courseId) return;
+    try {
+      setFeedbackLoading(true);
+      const res = await api.get(`/courses/${courseId}/feedbacks`);
+      const payload = res.data || {};
+      const list = payload.data ?? payload;
+      setFeedbacks(Array.isArray(list) ? list : []);
+      setFeedbackPage(0);
+    } catch (e) {
+      console.error("Failed to fetch feedback list", e);
+      setFeedbacks([]);
+      setFeedbackPage(0);
+    } finally {
+      setFeedbackLoading(false);
+    }
+  };
+
+  const deleteFeedback = async (courseId, feedbackId) => {
+    if (!courseId || !feedbackId) return;
+    try {
+      setDeletingFeedbackId(feedbackId);
+      await api.delete(`/courses/${courseId}/feedbacks/${feedbackId}`);
+      message.success("Đã xóa feedback.");
+
+      // refresh list + summary
+      await Promise.all([
+        fetchFeedbacks(courseId),
+        fetchFeedbackSummary(courseId),
+      ]);
+    } catch (e) {
+      console.error("Failed to delete feedback", e);
+      message.error(e?.response?.data?.message || "Xóa feedback thất bại.");
+    } finally {
+      setDeletingFeedbackId(null);
+    }
+  };
+
   /* ---------------- Fetch full tree of one course ---------------- */
   const fetchCourseTree = async (courseId, title) => {
     try {
@@ -109,12 +186,15 @@ const ModeratorDashboard = () => {
       setSelectedCourseId(courseId);
       setSelectedCourseTitle(title);
       setSelectedNode(null);
+
       const res = await api.get(`/courses/${courseId}/tree`);
       setCourseTree(res.data);
       setOpenDrawer(true);
 
-      // load comments luôn
+      // load comments + feedback luôn
       fetchCourseComments(courseId, 0);
+      fetchFeedbackSummary(courseId);
+      fetchFeedbacks(courseId);
     } catch (e) {
       console.error("Failed to fetch course tree", e);
     } finally {
@@ -430,7 +510,10 @@ const ModeratorDashboard = () => {
                     title={
                       <Space direction="horizontal" size={8}>
                         <Text strong>{cmt.authorName}</Text>
-                        <Text type="secondary" style={{ fontSize: 12 }}>
+                        <Text
+                          type="secondary"
+                          className={styles.commentMetaTime}
+                        >
                           {cmt.createdAt &&
                             new Date(cmt.createdAt).toLocaleString()}
                         </Text>
@@ -444,15 +527,7 @@ const ModeratorDashboard = () => {
             />
 
             {commentTotalPages > 1 && (
-              <div
-                style={{
-                  marginTop: 8,
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  gap: 12,
-                }}
-              >
+              <div className={styles.paginationBar}>
                 <Button
                   size="small"
                   disabled={commentsPage === 0}
@@ -486,166 +561,307 @@ const ModeratorDashboard = () => {
     );
   };
 
-  return (
-    <div style={{ padding: 20 }}>
-      <Space
-        style={{ width: "100%", justifyContent: "space-between" }}
-        align="center"
+  // ===== Render Feedback card (NEW) =====
+  const renderFeedbackCard = () => {
+    if (!selectedCourseId) {
+      return (
+        <Card title="Feedback" size="small">
+          <Text type="secondary">Chọn một course để xem feedback.</Text>
+        </Card>
+      );
+    }
+
+    const avg = feedbackSummary?.ratingAvg ?? 0;
+    const count = feedbackSummary?.ratingCount ?? 0;
+
+    const startIndex = feedbackPage * FEEDBACK_PAGE_SIZE;
+    const endIndex = startIndex + FEEDBACK_PAGE_SIZE;
+    const pageItems = (feedbacks || []).slice(startIndex, endIndex);
+
+    return (
+      <Card
+        title="Feedback (rating + comment)"
+        size="small"
+        extra={
+          <Space>
+            <Button
+              size="small"
+              onClick={() => {
+                fetchFeedbackSummary(selectedCourseId);
+                fetchFeedbacks(selectedCourseId);
+              }}
+            >
+              Reload
+            </Button>
+          </Space>
+        }
       >
-        <Title level={3} style={{ marginBottom: 0 }}>
+        {/* Summary */}
+        {feedbackSummaryLoading ? (
+          <Spin size="small" />
+        ) : (
+          <div style={{ marginBottom: 10 }}>
+            <Space align="center" size={10} wrap>
+              <Text strong>Điểm trung bình:</Text>
+              <Rate disabled allowHalf value={Number(avg) || 0} />
+              <Tag color="blue">{(Number(avg) || 0).toFixed(2)}</Tag>
+              <Text type="secondary">({count} lượt đánh giá)</Text>
+            </Space>
+          </div>
+        )}
+
+        <Divider style={{ margin: "10px 0" }} />
+
+        {/* List */}
+        {feedbackLoading ? (
+          <Spin size="small" />
+        ) : feedbacks.length === 0 ? (
+          <Empty
+            description="Chưa có feedback nào."
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+          />
+        ) : (
+          <>
+            <List
+              itemLayout="horizontal"
+              dataSource={pageItems}
+              renderItem={(fb) => {
+                const avatarUrl = fb.learnerAvatarUrl
+                  ? buildFileUrl(fb.learnerAvatarUrl)
+                  : null;
+
+                const createdAt = fb.createdAt
+                  ? new Date(fb.createdAt).toLocaleString()
+                  : null;
+
+                return (
+                  <List.Item
+                    key={fb.id}
+                    actions={[
+                      <Popconfirm
+                        key="del"
+                        title="Xóa feedback này?"
+                        okText="Xóa"
+                        cancelText="Hủy"
+                        onConfirm={() =>
+                          deleteFeedback(selectedCourseId, fb.id)
+                        }
+                      >
+                        <Button
+                          danger
+                          size="small"
+                          loading={deletingFeedbackId === fb.id}
+                        >
+                          Xóa
+                        </Button>
+                      </Popconfirm>,
+                    ]}
+                  >
+                    <List.Item.Meta
+                      avatar={
+                        avatarUrl ? (
+                          <Avatar src={avatarUrl} />
+                        ) : (
+                          <Avatar>{(fb.learnerName || "?")[0]}</Avatar>
+                        )
+                      }
+                      title={
+                        <Space size={10} wrap>
+                          <Text strong>{fb.learnerName || "Learner"}</Text>
+                          <Rate
+                            disabled
+                            allowHalf
+                            value={Number(fb.rating) || 0}
+                          />
+                          {createdAt && (
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              {createdAt}
+                            </Text>
+                          )}
+                        </Space>
+                      }
+                      description={
+                        <div style={{ whiteSpace: "pre-wrap" }}>
+                          {fb.comment ? (
+                            fb.comment
+                          ) : (
+                            <Text type="secondary">—</Text>
+                          )}
+                        </div>
+                      }
+                    />
+                  </List.Item>
+                );
+              }}
+            />
+
+            {feedbackTotalPages > 1 && (
+              <div className={styles.paginationBar}>
+                <Button
+                  size="small"
+                  disabled={feedbackPage === 0}
+                  onClick={() => setFeedbackPage((p) => Math.max(0, p - 1))}
+                >
+                  Prev
+                </Button>
+
+                <span style={{ fontSize: 12 }}>
+                  Page <b>{feedbackPage + 1}</b> / {feedbackTotalPages}
+                </span>
+
+                <Button
+                  size="small"
+                  disabled={feedbackPage + 1 >= feedbackTotalPages}
+                  onClick={() =>
+                    setFeedbackPage((p) =>
+                      Math.min(feedbackTotalPages - 1, p + 1)
+                    )
+                  }
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </Card>
+    );
+  };
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.topBar}>
+        <Title level={3} className={styles.title}>
           Moderator – Những khóa học công khai
         </Title>
-        <Tag color="blue">
+
+        <Tag color="blue" className={styles.pageTag}>
           Page {page + 1} • {Array.isArray(courses) ? courses.length : 0} /{" "}
           {totalElements} courses
         </Tag>
-      </Space>
+      </div>
 
       {/* FILTER BAR */}
-      <Space style={{ marginTop: 16, marginBottom: 16 }} wrap>
+      <div className={styles.filterBar}>
         <Search
+          className={styles.search}
           placeholder="Search by course title"
           allowClear
           onChange={(e) => setSearchTerm(e.target.value)}
           onSearch={(value) => setSearchTerm(value)}
-          style={{ width: 260 }}
         />
 
         <Select
+          className={styles.select}
           allowClear
           placeholder="Filter by level"
-          style={{ width: 160 }}
           options={levelOptions}
           value={selectedLevel}
           onChange={setSelectedLevel}
         />
 
         <Button onClick={() => fetchCourses(page)}>Reload</Button>
-      </Space>
+      </div>
 
       {/* COURSE LIST + CUSTOM PAGINATION */}
-      {loading ? (
-        <Spin size="large" />
-      ) : filteredCourses.length === 0 ? (
-        <Empty description="Không tìm thấy khóa học nào" />
-      ) : (
-        <>
-          <List
-            grid={{ gutter: 16, column: 3 }}
-            dataSource={filteredCourses}
-            pagination={false}
-            renderItem={(course) => (
-              <List.Item style={{ display: "flex" }}>
-                <Card
-                  hoverable
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                  bodyStyle={{
-                    display: "flex",
-                    flexDirection: "column",
-                    flex: 1,
-                    padding: 16,
-                  }}
-                  cover={
-                    <div
-                      style={{
-                        height: 250,
-                        overflow: "hidden",
-                        background: "#f5f5f5",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      {course.coverImagePath ? (
-                        <img
-                          src={buildFileUrl(course.coverImagePath)}
-                          alt={course.title}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                          }}
-                        />
-                      ) : (
-                        <span style={{ color: "#999", fontSize: 12 }}>
-                          No cover image
-                        </span>
-                      )}
+      <div className={styles.content}>
+        {loading ? (
+          <Spin size="large" />
+        ) : filteredCourses.length === 0 ? (
+          <Empty description="Không tìm thấy khóa học nào" />
+        ) : (
+          <>
+            <List
+              grid={{ gutter: 16, column: 3 }}
+              dataSource={filteredCourses}
+              pagination={false}
+              renderItem={(course) => (
+                <List.Item className={styles.listItem}>
+                  <Card
+                    hoverable
+                    className={styles.courseCard}
+                    bodyStyle={{ padding: 0 }}
+                    cover={
+                      <div className={styles.cover}>
+                        {course.coverImagePath ? (
+                          <img
+                            src={buildFileUrl(course.coverImagePath)}
+                            alt={course.title}
+                            className={styles.coverImg}
+                          />
+                        ) : (
+                          <span className={styles.noCover}>No cover image</span>
+                        )}
+                      </div>
+                    }
+                  >
+                    <div className={styles.courseCardBody}>
+                      <div className={styles.courseMeta}>
+                        <Text className={styles.courseTitle}>
+                          {course.title}
+                        </Text>
+
+                        <p className={styles.metaRow}>
+                          <b>Trình độ:</b> {course.level || "—"}
+                        </p>
+                        <p className={styles.metaRow}>
+                          <b>Giá:</b> {course.priceCents} {course.currency}
+                        </p>
+                        <p className={styles.metaRow}>
+                          <b>Trạng thái:</b> {course.status}
+                        </p>
+                        <p className={styles.metaRow}>
+                          <b>Giáo viên:</b> {course.teacherName}
+                        </p>
+                      </div>
+
+                      <div className={styles.cardActions}>
+                        <Button
+                          type="primary"
+                          size="small"
+                          onClick={() =>
+                            fetchCourseTree(course.id, course.title)
+                          }
+                        >
+                          Xem chi tiết
+                        </Button>
+                      </div>
                     </div>
+                  </Card>
+                </List.Item>
+              )}
+            />
+
+            {totalPages > 1 && (
+              <div className={styles.paginationBar}>
+                <Button
+                  size="small"
+                  disabled={page === 0}
+                  onClick={() => page > 0 && fetchCourses(page - 1)}
+                >
+                  Trước
+                </Button>
+
+                <span>
+                  Trang <b>{page + 1}</b> / {totalPages}
+                </span>
+
+                <Button
+                  size="small"
+                  disabled={page + 1 >= totalPages}
+                  onClick={() =>
+                    page + 1 < totalPages && fetchCourses(page + 1)
                   }
                 >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ marginBottom: 1 }}>
-                      <Text strong>{course.title}</Text>
-                    </div>
-
-                    <p>
-                      <b>Trình độ:</b> {course.level || "—"}
-                    </p>
-                    <p>
-                      <b>Giá:</b> {course.priceCents} {course.currency}
-                    </p>
-                    <p>
-                      <b>Trạng thái:</b> {course.status}
-                    </p>
-                    <p>
-                      <b>Giáo viên:</b> {course.teacherName}
-                    </p>
-                  </div>
-
-                  <div style={{ marginTop: 12, textAlign: "right" }}>
-                    <Button
-                      type="primary"
-                      size="small"
-                      onClick={() => fetchCourseTree(course.id, course.title)}
-                    >
-                      Xem chi tiết
-                    </Button>
-                  </div>
-                </Card>
-              </List.Item>
+                  Tiếp
+                </Button>
+              </div>
             )}
-          />
+          </>
+        )}
+      </div>
 
-          {totalPages > 1 && (
-            <div
-              style={{
-                marginTop: 16,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                gap: 12,
-              }}
-            >
-              <Button
-                size="small"
-                disabled={page === 0}
-                onClick={() => page > 0 && fetchCourses(page - 1)}
-              >
-                Trước
-              </Button>
-
-              <span>
-                Trang <b>{page + 1}</b> / {totalPages}
-              </span>
-
-              <Button
-                size="small"
-                disabled={page + 1 >= totalPages}
-                onClick={() => page + 1 < totalPages && fetchCourses(page + 1)}
-              >
-                Tiếp
-              </Button>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* DRAWER: TREE + PREVIEW + COMMENTS */}
+      {/* DRAWER: TREE + PREVIEW + FEEDBACK + COMMENTS */}
       <Drawer
         title={`Chi tiết khóa học: ${selectedCourseTitle || ""}`}
         open={openDrawer}
@@ -657,15 +873,9 @@ const ModeratorDashboard = () => {
         ) : !courseTree ? (
           <Empty description="Không có dữ liệu cây khóa học" />
         ) : (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1.1fr 1.9fr",
-              gap: 16,
-            }}
-          >
-            <Card title="Khóa học" size="small" bodyStyle={{ padding: 8 }}>
-              <div style={{ maxHeight: "70vh", overflow: "auto" }}>
+          <div className={styles.drawerGrid}>
+            <Card title="Khóa học" size="small" className={styles.treeCard}>
+              <div className={styles.treeScroll}>
                 <Tree
                   treeData={buildTreeData(courseTree)}
                   defaultExpandAll
@@ -674,10 +884,12 @@ const ModeratorDashboard = () => {
               </div>
             </Card>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div className={styles.rightCol}>
               <Card title="Xem trước" size="small">
                 {renderContentPreview()}
               </Card>
+
+              {renderFeedbackCard()}
 
               {renderCommentsCard()}
             </div>

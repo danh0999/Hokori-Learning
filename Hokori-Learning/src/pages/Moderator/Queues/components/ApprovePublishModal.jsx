@@ -54,11 +54,11 @@ export default function ApprovePublishModal({
       open={open}
       onCancel={onCancel}
       onOk={onConfirm}
-      okText="Approve & Publish"
-      cancelText="Cancel"
+      okText="Duyệt"
+      cancelText="Hủy"
       confirmLoading={confirmLoading}
       width={520}
-      title={<div style={{ fontWeight: 600 }}>Approve & Publish</div>}
+      title={<div style={{ fontWeight: 600 }}>Duyệt & Xuất bản</div>}
       destroyOnClose
     >
       <p
@@ -69,15 +69,15 @@ export default function ApprovePublishModal({
           marginBottom: 16,
         }}
       >
-        Are you sure you want to make this course publicly available?
+        Xác nhận duyệt và xuất bản khoá học dưới các thông tin sau:
       </p>
 
       <Descriptions bordered size="small" column={1}>
-        <Descriptions.Item label="Course Title">
+        <Descriptions.Item label="Tiêu đề khóa học">
           {courseSummary.title}
         </Descriptions.Item>
-        <Descriptions.Item label="Price (VND)">{priceLabel}</Descriptions.Item>
-        <Descriptions.Item label="Visibility">
+        <Descriptions.Item label="Giá (VND)">{priceLabel}</Descriptions.Item>
+        <Descriptions.Item label="Hiển thị">
           {visibilityLabel}
         </Descriptions.Item>
       </Descriptions>
@@ -94,8 +94,7 @@ export default function ApprovePublishModal({
           marginTop: 16,
         }}
       >
-        After approval, this course will be visible in the marketplace and
-        available to learners. This action will be logged.
+        Sau khi duyệt, khoá học sẽ được hiển thị công khai trên nền tảng
       </div>
     </Modal>
   );

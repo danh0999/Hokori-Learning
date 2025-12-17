@@ -500,3 +500,65 @@ s
   white-space: normal !important;
   display: block !important; /* Ngăn Google Translate đổi inline-block thành vertical layout */
 }
+
+/* =========================
+   FIX CHỮ BỊ DỌC KHI THU HẸP
+   ========================= */
+
+/* 1) chặn break từng ký tự cho toàn trang */
+.reviewPageWrapper {
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
+/* 2) Fix riêng cho antd Descriptions (table bị bóp làm chữ dọc) */
+.metaBlock {
+  :global {
+    .ant-descriptions-view table {
+      table-layout: fixed; /* giữ layout ổn định khi co */
+      width: 100%;
+    }
+
+    /* label không bị dọc */
+    .ant-descriptions-item-label {
+      white-space: nowrap;
+      word-break: keep-all;
+      overflow-wrap: normal;
+    }
+
+    /* content xuống dòng theo từ, không bẻ từng ký tự */
+    .ant-descriptions-item-content {
+      white-space: normal;
+      word-break: break-word; /* bẻ theo từ nếu cần */
+      overflow-wrap: anywhere; /* chống tràn, nhưng không break-all */
+      min-width: 0;
+    }
+  }
+}
+
+/* 3) Fix cho các Tag/Text trong side AI bị dọc khi panel hẹp */
+.reviewSideColumn,
+.detailBox,
+.aiReviewBox {
+  min-width: 0; /* cực quan trọng khi dùng flex/grid */
+}
+
+.aiHeaderRow,
+.aiSection,
+.aiIssueHeader,
+.aiIssueMeta,
+.aiErrorItem {
+  min-width: 0;
+}
+
+.aiCourseTitle,
+.headerSubtitle {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* 4) Nếu trong CSS cũ của bạn có break-all ở đâu đó, ép override lại */
+.reviewPageWrapper * {
+  word-break: normal;
+}

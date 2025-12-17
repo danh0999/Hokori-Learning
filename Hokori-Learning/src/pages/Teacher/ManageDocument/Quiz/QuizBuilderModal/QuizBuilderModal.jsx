@@ -33,6 +33,7 @@ import {
 } from "../../../../../redux/features/quizSlice.js";
 
 import styles from "./styles.module.scss";
+import { toast } from "react-toastify";
 
 const { Text } = Typography;
 
@@ -312,6 +313,9 @@ export default function QuizBuilderModal({
   }, []);
 
   const validateQuestions = (qs) => {
+    if (!Array.isArray(qs) || qs.length === 0) {
+      throw new Error("Quiz phải có ít nhất 1 câu hỏi.");
+    }
     for (let i = 0; i < qs.length; i++) {
       const q = qs[i];
       if (!String(q.text || "").trim()) {
@@ -525,8 +529,7 @@ export default function QuizBuilderModal({
       onSaved?.({ timeLimitMinutes: meta.timeLimit });
       onCancel?.();
     } catch (e) {
-      console.error(e);
-      message.error(e?.message || "Lưu quiz thất bại");
+      toast.error(e?.message || "Lưu quiz thất bại");
     } finally {
       setSavingAll(false);
     }

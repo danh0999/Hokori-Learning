@@ -225,14 +225,14 @@ export default function CourseReviewPage() {
           />
           <div>
             <Title level={4} className={styles.headerTitle}>
-              Duyệt khóa #{courseId}
+              Duyệt khóa học
             </Title>
             <Text type="secondary" className={styles.headerSubtitle}>
               {course?.title || "—"}
               {course && (
                 <>
                   {" · "}
-                  Teacher: {course.teacherName || `User #${course.userId}`}
+                  {course.teacherName || `User #${course.userId}`}
                 </>
               )}
             </Text>
@@ -301,10 +301,6 @@ export default function CourseReviewPage() {
           <div className={styles.curriculumBlock}>
             <div className={styles.blockHeader}>
               <h3>Xem trước nội dung khoá học</h3>
-              <Paragraph type="secondary">
-                Xem trước đầy đủ như màn Curriculum của Teacher (chapter,
-                lesson, content, video, quiz, flashcard…).
-              </Paragraph>
             </div>
 
             <CourseCurriculumView

@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
-import { Button, message } from "antd";
+import React, { useState, useMemo, useEffect } from "react";
+import { Button } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -11,7 +11,6 @@ import PublishStep from "./components/PublishStep/PublishStep.jsx";
 import SidebarWizardNav from "./components/SideWizardNav/SidebarWizardNav.jsx";
 
 import {
-  createCourseThunk,
   fetchCourseTree,
   clearCourseTree,
 } from "../../../../redux/features/teacherCourseSlice.js";
@@ -28,9 +27,6 @@ export default function CreateCoursePage() {
   const { currentCourseMeta, currentCourseTree, loadingTree } = useSelector(
     (state) => state.teacherCourse
   );
-
-  // flag chống double-create trong StrictMode
-  const createdRef = useRef(false);
 
   // ----- 1. STEP STATE + PERSIST -----
   const [step, setStep] = useState(0);
@@ -74,7 +70,7 @@ export default function CreateCoursePage() {
   // Nếu course đã publish / archived thì xoá step cache
   useEffect(() => {
     if (!courseId || !currentCourseMeta?.status) return;
-    const doneStatuses = ["PUBLISHED", "ARCHIVED"];
+    const doneStatuses = ["PUBLISHED"];
     if (doneStatuses.includes(currentCourseMeta.status)) {
       try {
         window.localStorage.removeItem(`course-wizard-step-${courseId}`);
@@ -89,7 +85,7 @@ export default function CreateCoursePage() {
 
     const status = currentCourseMeta?.status || "DRAFT";
     // 👉 Coi PENDING_APPROVAL cũng là "xong rồi", không còn là draft
-    const nonDraftStatuses = ["PUBLISHED", "ARCHIVED", "PENDING_APPROVAL"];
+    const nonDraftStatuses = ["PUBLISHED", "PENDING_APPROVAL"];
     const isDone = nonDraftStatuses.includes(status);
 
     try {
@@ -128,35 +124,11 @@ export default function CreateCoursePage() {
     dispatch(fetchCourseTree(courseId));
   }, [courseId, dispatch]);
 
-  // 3. Nếu KHÔNG có courseId trên URL ⇒ tạo nháp 1 lần rồi điều hướng sang /:id
   useEffect(() => {
-    if (courseId) return; // đã có id trên URL thì thôi
-    if (createdRef.current) return; // đã gửi request rồi thì thôi (chống StrictMode)
-
-    createdRef.current = true;
-
-    const payload = {
-      title: "Untitled course",
-      subtitle: "",
-      description: "",
-      level: "N5",
-      currency: "VND",
-      priceCents: 0,
-      discountedPriceCents: 0,
-      coverAssetId: null,
-    };
-
-    dispatch(createCourseThunk(payload))
-      .unwrap()
-      .then((course) => {
-        navigate(`/teacher/create-course/${course.id}`, { replace: true });
-      })
-      .catch((err) => {
-        createdRef.current = false;
-        console.error(err);
-        message.error("Tạo nháp khoá học thất bại, thử lại nhé.");
-      });
-  }, [courseId, dispatch, navigate]);
+    if (courseId) return;
+    // đi "đúng đường" là tạo draft từ ManageCourses rồi vào đây với :courseId
+    navigate("/teacher/manage-courses", { replace: true });
+  }, [courseId, navigate]);
 
   // trạng thái cho SidebarWizardNav
   const status = useMemo(() => {

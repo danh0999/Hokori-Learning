@@ -1,5 +1,5 @@
 // FlashcardBuilderModal.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import {
   Modal,
   Button,
@@ -25,6 +25,7 @@ import {
 } from "../../../../redux/features/flashcardSlice";
 
 import styles from "./styles.module.scss";
+import { toast } from "react-toastify";
 
 const { Text, Title } = Typography;
 
@@ -49,6 +50,9 @@ export default function FlashcardBuilderModal({
 
   const [editingCard, setEditingCard] = useState(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+
+  // ✅ Container để ép Modal.confirm render vào trong modal này (tránh chìm z-index/portal)
+  const confirmContainerRef = useRef(null);
 
   // Nếu mở modal mà không truyền sẵn set, thì fetch theo sectionContentId (flow cũ)
   useEffect(() => {
@@ -149,6 +153,16 @@ export default function FlashcardBuilderModal({
     }
   };
 
+  const handleFinish = () => {
+    if (totalCards === 0) {
+      toast.warning(
+        "Bạn chưa thêm flashcard nào. Hãy thêm ít nhất 1 thẻ trước khi hoàn tất."
+      );
+      return;
+    }
+    onCancel?.();
+  };
+
   return (
     <>
       <Modal
@@ -159,153 +173,158 @@ export default function FlashcardBuilderModal({
         title={null}
         destroyOnClose={false}
       >
-        <Spin spinning={loadingSet && !effectiveSet}>
-          <div className={styles.header}>
-            <div>
-              <Title level={4} className={styles.title}>
-                {effectiveSet?.title || "Flashcards – Từ vựng"}
-              </Title>
-              <Text type="secondary">Đây là bộ flashcard của bài học này.</Text>
+        {/* ✅ wrapper ref để confirm render đúng stacking context */}
+        <div ref={confirmContainerRef}>
+          <Spin spinning={loadingSet && !effectiveSet}>
+            <div className={styles.header}>
+              <div>
+                <Title level={4} className={styles.title}>
+                  {effectiveSet?.title || "Flashcards – Từ vựng"}
+                </Title>
+                <Text type="secondary">
+                  Đây là bộ flashcard của bài học này.
+                </Text>
+              </div>
             </div>
-          </div>
 
-          <Divider />
+            <Divider />
 
-          {/* Form thêm card */}
-          <div className={styles.addBox}>
-            <Text strong className={styles.addLabel}>
-              Thêm flashcard mới
-            </Text>
+            {/* Form thêm card */}
+            <div className={styles.addBox}>
+              <Text strong className={styles.addLabel}>
+                Thêm flashcard mới
+              </Text>
 
-            <Form form={form} layout="vertical">
-              <div className={styles.row}>
-                <Form.Item
-                  name="front"
-                  label="Mặt trước"
-                  rules={[{ required: true }]}
-                  className={styles.half}
-                >
-                  <Input placeholder="Từ vựng / Kanji" />
-                </Form.Item>
+              <Form form={form} layout="vertical">
+                <div className={styles.row}>
+                  <Form.Item
+                    name="front"
+                    label="Mặt trước"
+                    rules={[{ required: true }]}
+                    className={styles.half}
+                  >
+                    <Input placeholder="Từ vựng / Kanji" />
+                  </Form.Item>
 
-                <Form.Item
-                  name="back"
-                  label="Mặt sau"
-                  rules={[{ required: true }]}
-                  className={styles.half}
-                >
-                  <Input placeholder="Nghĩa hoặc giải thích" />
-                </Form.Item>
-              </div>
+                  <Form.Item
+                    name="back"
+                    label="Mặt sau"
+                    rules={[{ required: true }]}
+                    className={styles.half}
+                  >
+                    <Input placeholder="Nghĩa hoặc giải thích" />
+                  </Form.Item>
+                </div>
 
-              <div className={styles.row}>
-                <Form.Item
-                  name="reading"
-                  label="Cách đọc"
-                  className={styles.half}
-                >
-                  <Input placeholder="Cách đọc" />
-                </Form.Item>
+                <div className={styles.row}>
+                  <Form.Item
+                    name="reading"
+                    label="Cách đọc"
+                    className={styles.half}
+                  >
+                    <Input placeholder="Cách đọc" />
+                  </Form.Item>
 
-                <Form.Item
-                  name="exampleSentence"
-                  label="Câu ví dụ"
-                  className={styles.half}
-                >
-                  <Input placeholder="Câu ví dụ" />
-                </Form.Item>
-              </div>
+                  <Form.Item
+                    name="exampleSentence"
+                    label="Câu ví dụ"
+                    className={styles.half}
+                  >
+                    <Input placeholder="Câu ví dụ" />
+                  </Form.Item>
+                </div>
 
-              <div className={styles.addBtnRow}>
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={handleAddCard}
-                >
-                  Thêm flashcard
-                </Button>
-              </div>
-            </Form>
-          </div>
+                <div className={styles.addBtnRow}>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={handleAddCard}
+                  >
+                    Thêm flashcard
+                  </Button>
+                </div>
+              </Form>
+            </div>
 
-          <Divider />
+            <Divider />
 
-          {/* Card list */}
-          <div className={styles.listHeader}>
-            <Text strong>Danh sách flashcards</Text>
-            <Text type="secondary">
-              ({totalCards === 0 ? "Chưa có thẻ nào" : `${totalCards} thẻ`})
-            </Text>
-          </div>
+            {/* Card list */}
+            <div className={styles.listHeader}>
+              <Text strong>Danh sách flashcards</Text>
+              <Text type="secondary">
+                ({totalCards === 0 ? "Chưa có thẻ nào" : `${totalCards} thẻ`})
+              </Text>
+            </div>
 
-          <Spin spinning={loadingCards}>
-            {totalCards === 0 ? (
-              <div className={styles.empty}>Chưa có flashcard nào.</div>
-            ) : (
-              <List
-                grid={{ gutter: 12, column: 2 }}
-                dataSource={cards}
-                renderItem={(card, index) => (
-                  <List.Item>
-                    <div className={styles.cardItem}>
-                      <div>
-                        <Space className={styles.cardFrontRow}>
-                          <Text type="secondary" strong>
-                            {index + 1}.
-                          </Text>
-                          <Text strong>{card.frontText}</Text>
-                          {card.reading && (
-                            <Text type="secondary">({card.reading})</Text>
+            <Spin spinning={loadingCards}>
+              {totalCards === 0 ? (
+                <div className={styles.empty}>Chưa có flashcard nào.</div>
+              ) : (
+                <List
+                  grid={{ gutter: 12, column: 2 }}
+                  dataSource={cards}
+                  renderItem={(card, index) => (
+                    <List.Item>
+                      <div className={styles.cardItem}>
+                        <div>
+                          <Space className={styles.cardFrontRow}>
+                            <Text type="secondary" strong>
+                              {index + 1}.
+                            </Text>
+                            <Text strong>{card.frontText}</Text>
+                            {card.reading && (
+                              <Text type="secondary">({card.reading})</Text>
+                            )}
+                          </Space>
+
+                          <div className={styles.cardBack}>
+                            <Text type="secondary">Nghĩa: </Text>
+                            {card.backText}
+                          </div>
+
+                          {card.exampleSentence && (
+                            <div className={styles.cardExample}>
+                              <Text type="secondary">Ví dụ: </Text>{" "}
+                              {card.exampleSentence}
+                            </div>
                           )}
-                        </Space>
-
-                        <div className={styles.cardBack}>
-                          <Text type="secondary">Nghĩa: </Text>
-                          {card.backText}
                         </div>
 
-                        {card.exampleSentence && (
-                          <div className={styles.cardExample}>
-                            <Text type="secondary">Ví dụ: </Text>{" "}
-                            {card.exampleSentence}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className={styles.cardActions}>
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<EditOutlined />}
-                          onClick={() => openEditModal(card)}
-                        />
-
-                        <Popconfirm
-                          title="Bạn có chắc muốn xóa?"
-                          okText="Xóa"
-                          cancelText="Hủy"
-                          okType="danger"
-                          onConfirm={() => handleDeleteCard(card)}
-                        >
+                        <div className={styles.cardActions}>
                           <Button
                             type="text"
-                            danger
                             size="small"
-                            icon={<DeleteOutlined />}
+                            icon={<EditOutlined />}
+                            onClick={() => openEditModal(card)}
                           />
-                        </Popconfirm>
-                      </div>
-                    </div>
-                  </List.Item>
-                )}
-              />
-            )}
-          </Spin>
 
-          <div className={styles.footer}>
-            <Button onClick={onCancel}>Hoàn tất</Button>
-          </div>
-        </Spin>
+                          <Popconfirm
+                            title="Bạn có chắc muốn xóa?"
+                            okText="Xóa"
+                            cancelText="Hủy"
+                            okType="danger"
+                            onConfirm={() => handleDeleteCard(card)}
+                          >
+                            <Button
+                              type="text"
+                              danger
+                              size="small"
+                              icon={<DeleteOutlined />}
+                            />
+                          </Popconfirm>
+                        </div>
+                      </div>
+                    </List.Item>
+                  )}
+                />
+              )}
+            </Spin>
+
+            <div className={styles.footer}>
+              <Button onClick={handleFinish}>Hoàn tất</Button>
+            </div>
+          </Spin>
+        </div>
       </Modal>
 
       {/* EDIT MODAL */}

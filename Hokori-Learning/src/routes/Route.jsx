@@ -216,20 +216,15 @@ const routes = [
       },
 
       //  Trang tách riêng, không dùng RoleLayout
-      {
-        path: "create-course",
-        element: <CreateCoursePage />,
-      },
+
       {
         path: "create-course/:courseId",
         element: <CreateCoursePage />,
       },
       {
-        path: "create-quiz",
-        element: <CreateQuizPage />,
+        path: "create-course",
+        element: <Navigate to="/teacher/manage-courses" replace />,
       },
-      { path: "create-course", element: <CreateCoursePage /> },
-      { path: "create-quiz", element: <CreateQuizPage /> },
       {
         path: "jlptevents/:eventId/tests",
         element: <JlptTestBuilderPage />,
