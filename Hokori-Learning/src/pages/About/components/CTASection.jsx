@@ -8,7 +8,7 @@ const CTASection = () => (
     <p>
       Khám phá phương pháp học tiếng Nhật hiện đại và hiệu quả với sự hỗ trợ của công nghệ AI
     </p>
-    <Button to="/course" content="Khám phá ngay" />
+    <Button to="/marketplace" content="Khám phá ngay" />
   </section>
 );
 
