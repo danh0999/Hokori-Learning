@@ -43,7 +43,6 @@ export default function GrammarKanjiTab({
   const [form] = Form.useForm();
 
   const { extractContentFromSection } = sectionsHook;
-
   const info = extractContentFromSection(section);
 
   const [mediaState, setMediaState] = useState({
@@ -91,13 +90,32 @@ export default function GrammarKanjiTab({
 
   const handleSave = async () => {
     if (!lesson?.id) return;
-    if (!section?.id)
-      return toast.error("Chưa có section. Hãy tạo phần từ nút + trước.");
+    if (!section?.id) {
+      toast.error("Chưa có section. Hãy tạo phần từ nút + trước.");
+      return;
+    }
 
     const values = await form.validateFields();
     const lessonTitle = values.title;
     const sectionTitle = values.sectionTitle;
     const description = values.description || "";
+
+    // ✅ NEW: validate không cho rỗng hoàn toàn
+    // - Asset hợp lệ nếu có file mới, hoặc có file cũ và không bấm xóa
+    const hasAsset =
+      (!!mediaState.file || !!info?.assetContent?.filePath) &&
+      !mediaState.removeExisting;
+
+    const hasRichText = !!String(description).trim();
+
+    if (!hasAsset && !hasRichText) {
+      toast.error(
+        type === "GRAMMAR"
+          ? "Phần Grammar đang trống. Hãy upload file hoặc nhập tài liệu đọc."
+          : "Phần Kanji đang trống. Hãy upload file hoặc nhập tài liệu đọc."
+      );
+      return;
+    }
 
     try {
       setSaving(true);
@@ -122,7 +140,7 @@ export default function GrammarKanjiTab({
         ).unwrap();
       }
 
-      // 3) ASSET
+      // 3) ASSET (primaryContent=true) — giữ nguyên như cũ
       let currentContentId = mediaState.contentId;
       let filePath = info?.assetContent?.filePath || null;
 
@@ -190,11 +208,11 @@ export default function GrammarKanjiTab({
         }
       }
 
-      // 4) RICH_TEXT
+      // 4) RICH_TEXT (primaryContent=false) — giữ nguyên như cũ
       if (description.trim()) {
         const baseDesc = {
           contentFormat: "RICH_TEXT",
-          primaryContent: false,
+          primaryContent: false, // ✅ BE bắt buộc false
           filePath: null,
           richText: description,
           quizId: null,
@@ -273,7 +291,9 @@ export default function GrammarKanjiTab({
 
         <Form.Item
           label={
-            type === "GRAMMAR" ? "Tài liệu xem Grammar" : "Tài liệu xem Kanji"
+            type === "GRAMMAR"
+              ? "Nội dung chính (Video/Audio/Image/File)"
+              : "Nội dung chính (Video/Audio/Image/File)"
           }
         >
           {mediaState.previewUrl ? (
@@ -318,8 +338,12 @@ export default function GrammarKanjiTab({
                 <InboxOutlined />
               </p>
               <p className="ant-upload-text">
-                Click hoặc kéo thả file media (video / ảnh / audio) vào đây
+                Click hoặc kéo thả file (video / ảnh / audio / tài liệu) vào đây
               </p>
+              <Text type="secondary">
+                Bạn có thể chỉ upload file, hoặc chỉ nhập tài liệu đọc (phía
+                dưới), hoặc dùng cả hai.
+              </Text>
             </Upload.Dragger>
           )}
         </Form.Item>
@@ -327,10 +351,15 @@ export default function GrammarKanjiTab({
         <Form.Item
           name="description"
           label={
-            type === "GRAMMAR" ? "Tài liệu đọc Grammar" : "Tài liệu đọc Kanji"
+            type === "GRAMMAR"
+              ? "Tài liệu đọc (Rich text)"
+              : "Tài liệu đọc (Rich text)"
           }
         >
-          <TextArea rows={5} placeholder="Mô tả nội dung, ví dụ, ghi chú..." />
+          <TextArea
+            rows={5}
+            placeholder="Nhập nội dung bài đọc / giải thích / ví dụ / ghi chú..."
+          />
         </Form.Item>
 
         <Form.Item>

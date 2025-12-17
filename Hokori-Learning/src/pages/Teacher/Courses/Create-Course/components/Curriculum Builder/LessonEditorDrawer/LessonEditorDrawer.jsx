@@ -260,6 +260,18 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
     },
     [dispatch, handleChildSaved, lessonFromTree?.id]
   );
+  const isSectionEmpty = (sec) => !(sec?.contents?.length > 0);
+
+  const handleCloseDrawer = () => {
+    const emptySecs = sections.filter(isSectionEmpty);
+    if (emptySecs.length > 0) {
+      const names = emptySecs
+        .map((s) => TYPE_META[s.studyType]?.label || s.studyType)
+        .join(", ");
+      toast.warning(`Bạn còn phần chưa có nội dung: ${names}.`);
+    }
+    onClose?.();
+  };
 
   const tabItems = useMemo(() => {
     return sections.map((sec) => {
@@ -362,7 +374,7 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
       width={980}
       className={styles.lessonDrawer}
       open={open}
-      onClose={onClose}
+      onClose={handleCloseDrawer}
       destroyOnClose={false}
       maskClosable={false}
       title={
@@ -381,7 +393,7 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
             trong.
           </span>
           <Space>
-            <Button onClick={onClose}>Đóng</Button>
+            <Button onClick={handleCloseDrawer}>Đóng</Button>
           </Space>
         </div>
       }

@@ -1,0 +1,190 @@
+.page {
+  padding: 20px;
+}
+
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.title {
+  margin: 0 !important;
+}
+
+.pageTag {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-weight: 600;
+}
+
+.filterBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.search {
+  width: 260px;
+}
+
+.select {
+  width: 160px;
+}
+
+.content {
+  width: 100%;
+}
+
+.listItem {
+  display: flex;
+}
+
+.courseCard {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #f0f0f0;
+}
+
+.courseCardBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 16px !important;
+}
+
+.cover {
+  height: 250px;
+  overflow: hidden;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.coverImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.noCover {
+  color: #999;
+  font-size: 12px;
+}
+
+.courseMeta {
+  flex: 1;
+  min-width: 0;
+}
+
+.courseTitle {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metaRow {
+  margin: 0 0 6px;
+  color: rgba(0, 0, 0, 0.72);
+}
+
+.metaRow b {
+  color: rgba(0, 0, 0, 0.9);
+}
+
+.cardActions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.paginationBar {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Drawer layout */
+.drawerGrid {
+  display: grid;
+  grid-template-columns: 1.1fr 1.9fr;
+  gap: 16px;
+}
+
+.treeCard :global(.ant-card-body) {
+  padding: 8px !important;
+}
+
+.treeScroll {
+  max-height: 70vh;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.rightCol {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.commentMetaTime {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .drawerGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .cover {
+    height: 220px;
+  }
+}
+
+@media (max-width: 900px) {
+  .page {
+    padding: 16px;
+  }
+
+  .search {
+    width: 100%;
+  }
+
+  .select {
+    width: 100%;
+  }
+}
+
+.richTextBox {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #f0f0f0;
+  background: #fafafa;
+  white-space: pre-wrap;
+}
+
+.jsonBox {
+  margin-top: 10px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  background: #0b1020;
+  color: #e6edf3;
+  padding: 12px;
+  border-radius: 10px;
+  overflow: auto;
+}

@@ -25,8 +25,8 @@ export default function RejectModal({ open, onCancel, onSubmit, courseTitle }) {
       open={open}
       onCancel={onCancel}
       onOk={handleOk}
-      okText="Reject Course"
-      cancelText="Cancel"
+      okText="Từ chối "
+      cancelText="Hủy"
       okButtonProps={{
         disabled: !reason.trim(),
         danger: true,
@@ -36,7 +36,7 @@ export default function RejectModal({ open, onCancel, onSubmit, courseTitle }) {
       destroyOnClose
       title={
         <div style={{ fontWeight: 600, color: "#b91c1c" }}>
-          Reject "{courseTitle}"
+          Từ chối "{courseTitle}"
         </div>
       }
     >
@@ -48,8 +48,8 @@ export default function RejectModal({ open, onCancel, onSubmit, courseTitle }) {
           marginBottom: 12,
         }}
       >
-        Please explain why this course is being rejected. The teacher will be
-        notified.
+        Giải thích lý do từ chối khoá học để giáo viên có thể cải thiện trong
+        lần nộp tiếp theo.
       </p>
 
       <Input.TextArea
@@ -71,8 +71,7 @@ export default function RejectModal({ open, onCancel, onSubmit, courseTitle }) {
           marginTop: 12,
         }}
       >
-        Rejected submissions are considered closed. The teacher must revise and
-        submit a new version for review.
+        Lưu ý: Hành động từ chối này sẽ được ghi lại và thông báo cho giáo viên.
       </div>
     </Modal>
   );

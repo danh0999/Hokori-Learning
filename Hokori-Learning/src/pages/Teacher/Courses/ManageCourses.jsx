@@ -25,6 +25,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   fetchTeacherCourses,
   deleteCourseThunk,
+  createCourseThunk,
 } from "../../../redux/features/teacherCourseSlice";
 import {
   fetchTeacherProfile,
@@ -181,6 +182,38 @@ export default function ManageCourses() {
     }
 
     navigate("/teacher/create-course");
+    const payload = {
+      title: "Untitled course",
+      subtitle: "",
+      description: "",
+      level: "N5",
+      currency: "VND",
+      priceCents: 0,
+      discountedPriceCents: 0,
+      coverAssetId: null,
+    };
+
+    message.loading({
+      content: "Đang tạo khoá học nháp...",
+      key: "create-course",
+    });
+
+    dispatch(createCourseThunk(payload))
+      .unwrap()
+      .then((course) => {
+        message.success({
+          content: "Đã tạo khoá học nháp.",
+          key: "create-course",
+        });
+        navigate(`/teacher/create-course/${course.id}`);
+      })
+      .catch((err) => {
+        console.error(err);
+        message.error({
+          content: "Tạo nháp khoá học thất bại, thử lại nhé.",
+          key: "create-course",
+        });
+      });
   };
 
   const columns = [

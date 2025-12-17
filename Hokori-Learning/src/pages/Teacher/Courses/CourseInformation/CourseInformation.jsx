@@ -1,7 +1,7 @@
 // src/pages/Teacher/Courses/CourseInformation/CourseInformation.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Card, Tabs, Button, Tag, Space, message } from "antd";
+import { Card, Tabs, Button, Tag, Space } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 
 import CourseOverview from "../Create-Course/components/CourseOverview/CourseOverview.jsx";
@@ -17,7 +17,6 @@ import {
   submitforapprovalCourseThunk,
   unpublishCourseThunk,
   clearTeacherCourseState,
-  // 🔽 thêm 2 hàm mới
   fetchFlagReasonThunk,
   resubmitFlaggedCourseThunk,
 } from "../../../../redux/features/teacherCourseSlice.js";
@@ -32,7 +31,6 @@ const statusColor = {
   REJECTED: "error",
   FLAGGED: "warning",
   ARCHIVED: "default",
-  // fallback cho tên cũ nếu BE/DB còn dùng
   REVIEW: "gold",
 };
 
@@ -67,19 +65,51 @@ export default function CourseInformation() {
     loadingMeta,
     loadingTree,
     saving,
-    // 🔽 lấy thêm 2 state mới
     flagInfo,
     loadingFlagInfo,
   } = useSelector((state) => state.teacherCourse);
 
   const [activeKey, setActiveKey] = useState("basic");
-  // ====== LOCAL STATE: lesson editor drawer ======
+
+  // drawer
   const [lessonDrawerOpen, setLessonDrawerOpen] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState(null);
 
+  // ====== LOAD COURSE DATA ======
+  useEffect(() => {
+    dispatch(clearTeacherCourseState());
+    if (courseId) dispatch(fetchCourseTree(courseId));
+  }, [courseId, dispatch]);
+
+  // ====== STATUS FLAGS ======
+  const status = currentCourseMeta?.status || "DRAFT";
+  const isPendingApproval = status === "PENDING_APPROVAL";
+  const isPublished = status === "PUBLISHED";
+  const isRejected = status === "REJECTED";
+  const isFlagged = status === "FLAGGED";
+
+  /**
+   * Rule:
+   * - pending_approval, published: khóa toàn bộ
+   * - flagged: chỉ cho sửa curriculum (drawer), khóa meta + giá
+   * - rejected, draft: sửa toàn bộ
+   */
+  const lockAll = isPendingApproval || isPublished; // khóa toàn bộ UI edit
+  const lockMeta = lockAll || isFlagged; // khóa overview + pricing + header save (vì save header là meta)
+  const lockCurriculum = lockAll; // khóa curriculum chỉ khi pending/published; FLAGGED vẫn được sửa curriculum
+
+  // ====== FETCH FLAG REASON ======
+  useEffect(() => {
+    if (!courseId) return;
+    if (isFlagged) dispatch(fetchFlagReasonThunk(courseId));
+  }, [courseId, isFlagged, dispatch]);
+
+  // ====== DRAWER HANDLERS ======
   const handleEditLesson = (lesson) => {
-    if (disableEditing) {
-      toast.warning("Khóa học đang chờ duyệt, không thể chỉnh sửa");
+    if (lockCurriculum) {
+      toast.warning(
+        "Khóa học đang Published hoặc Pending approval, không thể chỉnh sửa nội dung."
+      );
       return;
     }
     setSelectedLesson(lesson);
@@ -88,13 +118,11 @@ export default function CourseInformation() {
 
   const handleCloseLessonDrawer = async () => {
     setLessonDrawerOpen(false);
-
-    if (courseId) {
-      try {
-        await dispatch(fetchCourseTree(courseId)).unwrap();
-      } catch (e) {
-        console.error("Reload course tree on close failed", e);
-      }
+    if (!courseId) return;
+    try {
+      await dispatch(fetchCourseTree(courseId)).unwrap();
+    } catch (e) {
+      console.error("Reload course tree on close failed", e);
     }
   };
 
@@ -107,86 +135,77 @@ export default function CourseInformation() {
     }
   };
 
-  useEffect(() => {
-    // reset trước khi load course mới
-    dispatch(clearTeacherCourseState());
-
-    if (courseId) {
-      dispatch(fetchCourseTree(courseId));
-    }
-  }, [courseId, dispatch]);
-
-  // ====== LOAD COURSE DATA ======
-  useEffect(() => {
-    if (!courseId) return;
-    dispatch(fetchCourseTree(courseId)); // /detail: vừa meta vừa tree
-  }, [courseId, dispatch]);
-
-  const status = currentCourseMeta?.status || "DRAFT";
-  const isPendingApproval = status === "PENDING_APPROVAL";
-
-  // Không cho chỉnh sửa nếu đang chờ duyệt
-  const disableEditing = isPendingApproval;
-
-  const isRejected = status === "REJECTED";
-  const isFlagged = status === "FLAGGED";
-
-  // ====== FETCH FLAG REASON KHI STATUS = FLAGGED ======
-  useEffect(() => {
-    if (!courseId) return;
-    if (isFlagged) {
-      dispatch(fetchFlagReasonThunk(courseId));
-    }
-  }, [courseId, isFlagged, dispatch]);
-
-  // ====== ACTIONS ======
+  // ====== HEADER ACTIONS ======
+  /**
+   * Header "Lưu" = save lại meta đang có trong store (để chắc chắn sync BE).
+   * - FLAGGED: không cho dùng vì teacher chỉ được sửa nội dung (curriculum).
+   * - PUBLISHED/PENDING: khóa.
+   */
   const handleSaveDraft = async () => {
+    if (lockMeta) {
+      toast.warning(
+        isFlagged
+          ? "Khóa học đang FLAGGED: chỉ được chỉnh sửa nội dung (Curriculum), không được lưu thay đổi thông tin khóa học."
+          : "Khóa học đang Published hoặc Pending approval, không thể lưu."
+      );
+      return;
+    }
     if (!courseId || !currentCourseMeta) return;
 
-    const payload = {
-      ...currentCourseMeta,
-    };
+    const payload = { ...currentCourseMeta };
 
     const action = await dispatch(
       updateCourseThunk({ courseId, data: payload })
     );
-
     if (updateCourseThunk.fulfilled.match(action)) {
-      toast.success("Đã lưu");
+      toast.success("Đã lưu.");
       dispatch(fetchCourseTree(courseId));
     } else {
-      toast.error("Lưu thất bại, vui lòng thử lại");
+      toast.error("Lưu thất bại, vui lòng thử lại.");
     }
   };
 
   const handleSubmitForReview = async () => {
+    // pending/published: khóa; flagged: dùng nút riêng resubmit
+    if (lockAll || isFlagged) {
+      toast.warning(
+        isFlagged
+          ? "Khóa học đang FLAGGED: hãy sửa nội dung và bấm “Nộp lại sau khi sửa”."
+          : "Khóa học đang Published hoặc Pending approval, không thể nộp duyệt."
+      );
+      return;
+    }
     if (!courseId) return;
 
     const previousStatus = status;
-
     const action = await dispatch(submitforapprovalCourseThunk(courseId));
 
     if (submitforapprovalCourseThunk.fulfilled.match(action)) {
-      if (previousStatus === "REJECTED") {
-        toast.success("Khóa học đã được nộp lại để duyệt");
-      } else {
-        toast.success("Đã nộp để duyệt");
-      }
+      toast.success(
+        previousStatus === "REJECTED"
+          ? "Khóa học đã được nộp lại để duyệt."
+          : "Đã nộp để duyệt."
+      );
       dispatch(fetchCourseTree(courseId));
     } else {
-      toast.error("Nộp duyệt thất bại, vui lòng thử lại");
+      toast.error("Nộp duyệt thất bại, vui lòng thử lại.");
     }
   };
 
   const handleUnpublish = async () => {
+    // bạn đang dùng disableEditing check, giữ logic: pending thì không cho
+    if (isPendingApproval) {
+      toast.warning("Khóa học đang Pending approval, không thể thao tác.");
+      return;
+    }
     if (!courseId) return;
 
     const action = await dispatch(unpublishCourseThunk(courseId));
     if (unpublishCourseThunk.fulfilled.match(action)) {
-      toast.success("Đã hủy xuất bản");
+      toast.success("Đã hủy xuất bản.");
       dispatch(fetchCourseTree(courseId));
     } else {
-      toast.error("Hủy xuất bản thất bại, vui lòng thử lại");
+      toast.error("Hủy xuất bản thất bại, vui lòng thử lại.");
     }
   };
 
@@ -194,24 +213,28 @@ export default function CourseInformation() {
     if (!courseId) return;
 
     const action = await dispatch(resubmitFlaggedCourseThunk(courseId));
-
     if (resubmitFlaggedCourseThunk.fulfilled.match(action)) {
-      toast.success("Đã nộp lại khóa học để duyệt");
+      toast.success("Đã nộp lại khóa học để duyệt.");
       dispatch(fetchCourseTree(courseId));
     } else {
-      toast.error(action.payload || "Nộp lại thất bại, vui lòng thử lại");
+      toast.error(action.payload || "Nộp lại thất bại, vui lòng thử lại.");
     }
   };
 
-  // ====== VALIDATION ĐỂ ENABLE SUBMIT ======
+  // ====== VALIDATION: ENABLE SUBMIT ======
   const canSubmit = useMemo(() => {
-    const isRejectedLocal = currentCourseMeta?.status === "REJECTED";
-    const isFlaggedLocal = currentCourseMeta?.status === "FLAGGED";
+    const st = currentCourseMeta?.status;
 
-    // Khi bị REJECTED hoặc FLAGGED → cho resubmit, không check cứng description nữa
-    if (isRejectedLocal || isFlaggedLocal) return true;
+    // REJECTED: cho nộp lại, không check cứng
+    if (st === "REJECTED") return true;
 
-    // Rule bình thường cho submit lần đầu
+    // FLAGGED: dùng nút nộp lại riêng
+    if (st === "FLAGGED") return true;
+
+    // pending/published: không submit
+    if (st === "PENDING_APPROVAL" || st === "PUBLISHED") return false;
+
+    // rule bình thường
     const basicsDone =
       !!currentCourseMeta?.title &&
       !!currentCourseMeta?.description &&
@@ -237,7 +260,7 @@ export default function CourseInformation() {
       : "Nộp để duyệt";
 
   const disableSubmitButton =
-    !canSubmit || saving || status === "PENDING_APPROVAL";
+    !canSubmit || saving || status === "PENDING_APPROVAL" || lockAll;
 
   if (!courseId) {
     return (
@@ -274,26 +297,31 @@ export default function CourseInformation() {
             {statusLabel[status] || status}
           </Tag>
 
+          {/* Header save: chỉ dùng cho DRAFT/REJECTED (meta editable) */}
           <Button
             onClick={handleSaveDraft}
             loading={saving || loadingMeta}
-            disabled={disableEditing}
+            disabled={lockMeta}
+            title={
+              isFlagged
+                ? "FLAGGED: chỉ được sửa nội dung, không được lưu thay đổi thông tin khóa học."
+                : undefined
+            }
           >
-            {status === "PUBLISHED" ? "Lưu thay đổi" : "Lưu "}
+            Lưu
           </Button>
 
+          {/* FLAGGED: nút nộp lại riêng */}
           {isFlagged ? (
-            // Khi bị FLAGGED → hiển thị nút nộp lại
             <Button
               type="primary"
-              disabled={disableSubmitButton}
+              disabled={saving}
               onClick={handleResubmitFlagged}
               loading={saving}
             >
               Nộp lại sau khi sửa
             </Button>
           ) : status === "PUBLISHED" ? (
-            // Khi đã PUBLISHED → KHÔNG cho teacher làm gì (ẩn nút)
             <></>
           ) : status === "PENDING_APPROVAL" ? null : (
             <Button
@@ -398,7 +426,7 @@ export default function CourseInformation() {
               <Button
                 type="primary"
                 onClick={handleResubmitFlagged}
-                disabled={disableSubmitButton}
+                disabled={saving}
                 loading={saving}
               >
                 Nộp lại để duyệt
@@ -422,7 +450,7 @@ export default function CourseInformation() {
                   key={courseId}
                   courseId={courseId}
                   loading={loadingMeta}
-                  disableEditing={disableEditing}
+                  disableEditing={lockMeta}
                 />
               ),
             },
@@ -435,7 +463,7 @@ export default function CourseInformation() {
                   courseTree={currentCourseTree}
                   loading={loadingTree}
                   onEditLesson={handleEditLesson}
-                  disableEditing={disableEditing}
+                  disableEditing={lockCurriculum}
                 />
               ),
             },
@@ -466,12 +494,14 @@ export default function CourseInformation() {
                 <PricingStep
                   courseId={courseId}
                   courseMeta={currentCourseMeta}
+                  disableEditing={lockMeta}
                 />
               ),
             },
           ]}
         />
       </Card>
+
       <LessonEditorDrawer
         open={lessonDrawerOpen}
         lesson={selectedLesson}

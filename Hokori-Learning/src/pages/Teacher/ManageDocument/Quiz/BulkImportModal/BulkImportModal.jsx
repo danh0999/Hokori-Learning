@@ -19,7 +19,6 @@ const { Text } = Typography;
 
 export default function BulkImportModal({ open, onCancel, onDone }) {
   const [raw, setRaw] = useState("");
-  const [ocring, setOcring] = useState(false);
 
   const handleParse = (text) => {
     try {
@@ -32,22 +31,6 @@ export default function BulkImportModal({ open, onCancel, onDone }) {
     } catch (e) {
       console.error(e);
       message.error("Lỗi khi phân tích văn bản");
-    }
-  };
-
-  const doOCR = async (file) => {
-    setOcring(true);
-    try {
-      const Tesseract = (await import("tesseract.js")).default;
-      const res = await Tesseract.recognize(file, "eng");
-      const text = res.data.text || "";
-      setRaw(text);
-      message.success("OCR hoàn tất! Kiểm tra tab Paste để xem & chỉnh.");
-    } catch (e) {
-      console.error(e);
-      message.error("OCR thất bại");
-    } finally {
-      setOcring(false);
     }
   };
 
@@ -66,55 +49,9 @@ export default function BulkImportModal({ open, onCancel, onDone }) {
             onChange={(e) => setRaw(e.target.value)}
           />
           <Button type="primary" onClick={() => handleParse()}>
-            Parse & Add
+            Phân tích và thêm
           </Button>
         </Space>
-      ),
-    },
-    {
-      key: "txt",
-      label: ".txt",
-      children: (
-        <Dragger
-          accept=".txt"
-          beforeUpload={(file) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              const text = String(e.target.result || "");
-              setRaw(text);
-              message.success("Đã đọc file .txt, chuyển qua tab Paste để xem.");
-            };
-            reader.readAsText(file);
-            return false;
-          }}
-        >
-          <p className="ant-upload-drag-icon">
-            <InboxOutlined />
-          </p>
-          <p className="ant-upload-text">Kéo thả hoặc chọn file .txt</p>
-        </Dragger>
-      ),
-    },
-    {
-      key: "image",
-      label: "Image OCR",
-      children: (
-        <Dragger
-          accept="image/*"
-          disabled={ocring}
-          beforeUpload={(file) => {
-            doOCR(file);
-            return false;
-          }}
-        >
-          <p className="ant-upload-drag-icon">
-            <ScanOutlined />
-          </p>
-          <p className="ant-upload-text">
-            Kéo thả ảnh đề (JPG/PNG). Hệ thống sẽ OCR → tab Paste.
-          </p>
-          {ocring && <Text type="secondary">Đang OCR…</Text>}
-        </Dragger>
       ),
     },
   ];
