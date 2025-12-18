@@ -22,21 +22,26 @@ import {
   Skeleton,
   Alert,
   Popconfirm,
-  message,
   List,
   Avatar,
   Upload,
   Image,
+  Tooltip,
 } from "antd";
 import {
   IdcardOutlined,
   EditOutlined,
   CameraOutlined,
+  BankOutlined,
 } from "@ant-design/icons";
 import styles from "./styles.module.scss";
 import ModalCertificates from "./components/ModalQualifications.jsx";
 import ProfileEditModal from "./components/ProfileEditModal.jsx";
+import BankAccountModal from "./components/BankAccountModal.jsx";
 import api from "../../../configs/axios.js";
+
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const buildAvatarUrl = (avatarUrl) => {
   if (!avatarUrl) return null;
@@ -74,6 +79,7 @@ export default function TeacherProfilePage() {
 
   const [openCertModal, setOpenCertModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
+  const [openBankModal, setOpenBankModal] = useState(false);
 
   useEffect(() => {
     dispatch(fetchTeacherProfile());
@@ -88,7 +94,7 @@ export default function TeacherProfilePage() {
 
   const hasCertificate = (certificates?.length || 0) > 0;
 
-  // ✅ Submit chỉ cần certificate
+  // ✅ Submit chỉ cần certificate + không phải pending
   const canSubmit = !isPendingApproval && hasCertificate;
 
   const statusInfo = statusMap[approvalStatus] || statusMap.DRAFT;
@@ -96,30 +102,32 @@ export default function TeacherProfilePage() {
   const handleUploadAvatar = async ({ file }) => {
     const res = await dispatch(uploadTeacherAvatar(file));
     if (res.meta.requestStatus === "fulfilled") {
-      message.success("Cập nhật avatar thành công!");
+      toast.success("Cập nhật avatar thành công!");
       dispatch(fetchTeacherProfile());
     } else {
-      message.error(res?.payload?.message || "Upload avatar thất bại");
+      toast.error(res?.payload?.message || "Upload avatar thất bại");
     }
   };
 
   const handleSubmit = async () => {
     if (!hasCertificate) {
-      message.error("Bạn cần tải lên ít nhất 1 chứng chỉ trước khi gửi duyệt.");
+      toast.error("Bạn cần tải lên ít nhất 1 chứng chỉ trước khi gửi duyệt.");
       return;
     }
 
     const res = await dispatch(submitTeacherProfile({ message: "" }));
     if (res.meta.requestStatus === "fulfilled") {
-      message.success("Đã gửi duyệt thành công!");
+      toast.success("Đã gửi duyệt thành công!");
       dispatch(fetchTeacherProfile());
       dispatch(fetchTeacherCertificates());
     } else {
-      message.error(res?.payload?.message || "Gửi duyệt thất bại");
+      toast.error(res?.payload?.message || "Gửi duyệt thất bại");
     }
   };
 
   const avatarUrl = buildAvatarUrl(user.avatarUrl);
+
+  const bankDisabled = !isApproved; // đúng yêu cầu BE: chỉ APPROVED mới nhập bank
 
   return (
     <div className={styles.page}>
@@ -196,7 +204,7 @@ export default function TeacherProfilePage() {
               </div>
 
               <div className={styles.headerActions}>
-                <Space>
+                <Space wrap>
                   <Button
                     icon={<EditOutlined />}
                     onClick={() => setOpenEditModal(true)}
@@ -212,6 +220,30 @@ export default function TeacherProfilePage() {
                   >
                     Cập nhật chứng chỉ
                   </Button>
+
+                  <Tooltip
+                    title={
+                      bankDisabled
+                        ? "Chỉ giáo viên đã được APPROVED mới có thể cập nhật ngân hàng."
+                        : ""
+                    }
+                  >
+                    <Button
+                      icon={<BankOutlined />}
+                      onClick={() => {
+                        if (bankDisabled) {
+                          toast.warning(
+                            "Bạn cần được admin duyệt (APPROVED) trước khi cập nhật ngân hàng."
+                          );
+                          return;
+                        }
+                        setOpenBankModal(true);
+                      }}
+                      disabled={bankDisabled}
+                    >
+                      Cập nhật ngân hàng
+                    </Button>
+                  </Tooltip>
 
                   <Popconfirm
                     title="Xác nhận gửi duyệt?"
@@ -286,14 +318,34 @@ export default function TeacherProfilePage() {
               </div>
             </Card>
 
-            <Card title="Tài khoản ngân hàng" className={styles.sectionCard}>
+            {/* ✅ Bank section: chỉ hiển thị + nút mở modal, không edit inline */}
+            <Card
+              title="Tài khoản ngân hàng"
+              className={styles.sectionCard}
+              extra={
+                <Tooltip
+                  title={
+                    bankDisabled
+                      ? "Chỉ giáo viên đã được APPROVED mới có thể cập nhật ngân hàng."
+                      : ""
+                  }
+                >
+                  <Button
+                    icon={<BankOutlined />}
+                    onClick={() => setOpenBankModal(true)}
+                    disabled={bankDisabled}
+                  >
+                    {isApproved ? "Sửa ngân hàng" : "Chưa thể cập nhật"}
+                  </Button>
+                </Tooltip>
+              }
+            >
               {!isApproved && (
                 <Alert
                   type="info"
                   showIcon
                   style={{ marginBottom: 12 }}
                   message="Ngân hàng chỉ cập nhật sau khi APPROVED"
-                  description="Theo BE, chỉ giáo viên đã được APPROVED mới có thể cập nhật thông tin ngân hàng."
                 />
               )}
 
@@ -339,26 +391,110 @@ export default function TeacherProfilePage() {
               <List
                 dataSource={certificates || []}
                 locale={{ emptyText: "Chưa có chứng chỉ" }}
-                renderItem={(item) => (
-                  <List.Item>
-                    <List.Item.Meta
-                      title={item.title || "Certificate"}
-                      description={
-                        item.fileUrl ? (
+                renderItem={(item) => {
+                  const url = item.fileUrl ? buildFileUrl(item.fileUrl) : null;
+                  const isImage =
+                    !!item.mimeType && item.mimeType.startsWith("image/");
+                  const isPdf =
+                    item.mimeType === "application/pdf" ||
+                    String(item.fileName || "")
+                      .toLowerCase()
+                      .endsWith(".pdf");
+
+                  return (
+                    <List.Item
+                      actions={[
+                        url ? (
                           <a
-                            href={buildFileUrl(item.fileUrl)}
+                            key="download"
+                            href={url}
+                            download
                             target="_blank"
                             rel="noreferrer"
                           >
-                            Xem file
+                            Tải về
                           </a>
-                        ) : (
-                          "—"
-                        )
-                      }
-                    />
-                  </List.Item>
-                )}
+                        ) : null,
+                        url ? (
+                          <a
+                            key="open"
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Mở
+                          </a>
+                        ) : null,
+                      ].filter(Boolean)}
+                    >
+                      <List.Item.Meta
+                        avatar={
+                          url ? (
+                            isImage ? (
+                              <Image
+                                src={url}
+                                width={64}
+                                height={64}
+                                style={{ objectFit: "cover", borderRadius: 8 }}
+                                // antd Image: click sẽ preview fullscreen
+                              />
+                            ) : (
+                              <div
+                                style={{
+                                  width: 64,
+                                  height: 64,
+                                  borderRadius: 8,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  background: "#f5f5f5",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {isPdf ? "PDF" : "FILE"}
+                              </div>
+                            )
+                          ) : null
+                        }
+                        title={item.title || "Certificate"}
+                        description={
+                          <>
+                            {item.credentialId ? (
+                              <div>Mã: {item.credentialId}</div>
+                            ) : null}
+                            {item.issueDate ? (
+                              <div>Ngày cấp: {item.issueDate}</div>
+                            ) : null}
+                            {item.expiryDate ? (
+                              <div>Hết hạn: {item.expiryDate}</div>
+                            ) : null}
+
+                            {/* Preview link riêng (đặc biệt hữu ích cho PDF) */}
+                            {url ? (
+                              <div style={{ marginTop: 6 }}>
+                                {isImage ? (
+                                  <span style={{ color: "#1677ff" }}></span>
+                                ) : (
+                                  <a
+                                    href={url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    Xem file
+                                  </a>
+                                )}
+                              </div>
+                            ) : (
+                              <div style={{ marginTop: 6, color: "#999" }}>
+                                Chưa có file
+                              </div>
+                            )}
+                          </>
+                        }
+                      />
+                    </List.Item>
+                  );
+                }}
               />
             </Card>
 
@@ -366,13 +502,19 @@ export default function TeacherProfilePage() {
               open={openEditModal}
               onClose={() => setOpenEditModal(false)}
             />
+
             <ModalCertificates
               open={openCertModal}
               onClose={() => {
                 setOpenCertModal(false);
-                dispatch(fetchTeacherCertificates()); // ✅ refresh list cho page
+                dispatch(fetchTeacherCertificates());
               }}
               locked={isPendingApproval}
+            />
+
+            <BankAccountModal
+              open={openBankModal}
+              onClose={() => setOpenBankModal(false)}
             />
           </>
         )}

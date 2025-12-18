@@ -10,6 +10,13 @@ import { buildFileUrl } from "../../../../utils/fileUrl";
 import api from "../../../../configs/axios";
 
 const FALLBACK_THUMB = "https://placehold.co/600x400?text=Course+Image";
+const slugify = (str = "") =>
+  str
+    ?.normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "") || "khoa-hoc";
 
 export default function CourseCard({ course }) {
   const navigate = useNavigate();
@@ -74,14 +81,17 @@ export default function CourseCard({ course }) {
     try {
       // Nếu đã enroll → vào học luôn
       if (isEnrolled) {
-        navigate(`/my-courses/${id}/learn`);
+        const slug = slugify(course.title);
+        navigate(`/learn/${id}/${slug}/home/chapter/1`);
         return;
       }
 
       // FREE + logged in → tự động enroll
       if (isFree && isLoggedIn) {
         await api.post(`/learner/courses/${id}/enroll`);
-        navigate(`/my-courses/${id}/learn`);
+        const slug = slugify(course.title);
+        navigate(`/learn/${id}/${slug}/home/chapter/1`);
+
         return;
       }
 

@@ -10,9 +10,12 @@ import {
   createJlptOptionThunk,
   updateJlptQuestionThunk,
   updateJlptTestThunk,
+  updateJlptOptionThunk,
   deleteJlptQuestionThunk,
   deleteJlptTestThunk,
+  deleteJlptOptionThunk,
 } from "../../../../redux/features/jlptModeratorSlice.js";
+import { selectTeacherApproved } from "../../../../redux/features/teacherprofileSlice.js";
 import {
   Button,
   Card,
@@ -28,7 +31,6 @@ import {
   Tabs,
   Tag,
   Typography,
-  message,
   Popconfirm,
   Modal,
   Radio,
@@ -40,6 +42,7 @@ import { buildFileUrl } from "../../../../utils/fileUrl.js";
 import BulkImportModal from "../../../Teacher/ManageDocument/Quiz/BulkImportModal/BulkImportModal.jsx";
 import api from "../../../../configs/axios.js";
 import styles from "./JlptTestBuilderPage.module.scss";
+import { toast } from "react-toastify";
 
 const { Text, Title } = Typography;
 
@@ -108,11 +111,10 @@ export default function JlptTestBuilderPage() {
   const [editingTest, setEditingTest] = useState(null);
   const [currentAudio, setCurrentAudio] = useState(null);
   const [uploadingAudio, setUploadingAudio] = useState(false);
-
-  const [teacherApprovalStatus, setTeacherApprovalStatus] = useState(null);
-  const [checkingTeacher, setCheckingTeacher] = useState(isTeacherRoute);
   const [editQuestionForm] = Form.useForm();
   const [createQuestionForm] = Form.useForm();
+  const [editingOption, setEditingOption] = useState(null); // { questionId, option }
+  const [editOptionForm] = Form.useForm();
 
   const tests = testsByEvent[eventId] || [];
 
@@ -121,48 +123,42 @@ export default function JlptTestBuilderPage() {
   const currentTest =
     tests.find((t) => t.id === selectedTestId) || tests[0] || null;
   const displayLevel = currentTest?.level || eventLevel;
+
+  const teacherApproved = useSelector(selectTeacherApproved);
+  const teacherProfileLoading = useSelector(
+    (state) => state.teacherProfile.loading
+  );
   const isTeacherNotApproved =
-    isTeacherRoute &&
-    teacherApprovalStatus &&
-    teacherApprovalStatus !== "APPROVED";
+    isTeacherRoute && !teacherProfileLoading && !teacherApproved;
 
   // ===== EFFECTS =====
   useEffect(() => {
     if (!eventId) return;
 
-    // Moderator: fetch thẳng
+    // Moderator fetch thẳng
     if (!isTeacherRoute) {
       dispatch(fetchTestsByEventThunk(eventId));
       return;
     }
 
-    // Teacher: check approval trước
-    const checkAndFetch = async () => {
-      try {
-        setCheckingTeacher(true);
-        const res = await api.get("/auth/me");
-        const user = res.data?.data || res.data;
-        const approval = user?.teacher?.approvalStatus || null;
+    // Teacher: chờ profile load xong
+    if (teacherProfileLoading) return;
 
-        setTeacherApprovalStatus(approval);
+    if (!teacherApproved) {
+      toast.warning(
+        "Hồ sơ giáo viên của bạn chưa được phê duyệt nên không thể tạo / chỉnh sửa đề JLPT."
+      );
+      return;
+    }
 
-        if (approval === "APPROVED") {
-          dispatch(fetchTestsByEventThunk(eventId));
-        } else {
-          message.warning(
-            "Hồ sơ giáo viên của bạn chưa được phê duyệt nên không thể tạo / chỉnh sửa đề JLPT."
-          );
-        }
-      } catch (err) {
-        console.error("Check teacher approval failed", err);
-        message.error("Không kiểm tra được trạng thái giáo viên hiện tại");
-      } finally {
-        setCheckingTeacher(false);
-      }
-    };
-
-    checkAndFetch();
-  }, [dispatch, eventId, isTeacherRoute]);
+    dispatch(fetchTestsByEventThunk(eventId));
+  }, [
+    dispatch,
+    eventId,
+    isTeacherRoute,
+    teacherProfileLoading,
+    teacherApproved,
+  ]);
 
   useEffect(() => {
     if (tests.length > 0 && !selectedTestId) {
@@ -194,11 +190,26 @@ export default function JlptTestBuilderPage() {
     }
   }, [editingQuestion, editQuestionForm]);
 
+  useEffect(() => {
+    if (editingOption?.option) {
+      const op = editingOption.option;
+      editOptionForm.setFieldsValue({
+        content: op.content,
+        correct: !!op.correct,
+        orderIndex: typeof op.orderIndex === "number" ? op.orderIndex : 0,
+        imagePath: op.imagePath || "",
+        imageAltText: op.imageAltText || "",
+      });
+    } else {
+      editOptionForm.resetFields();
+    }
+  }, [editingOption, editOptionForm]);
+
   // ===== HANDLERS TEST =====
 
   const handleCreateTest = (values) => {
     if (isTeacherNotApproved) {
-      message.error(
+      toast.error(
         "Hồ sơ giáo viên của bạn chưa được phê duyệt nên không thể tạo JLPT Test."
       );
       return;
@@ -237,7 +248,7 @@ export default function JlptTestBuilderPage() {
       })
     ).then((res) => {
       if (res.meta.requestStatus === "fulfilled") {
-        message.success("Cập nhật JLPT Test thành công");
+        toast.success("Cập nhật JLPT Test thành công");
         setEditingTest(null);
         dispatch(fetchTestsByEventThunk(eventId));
       }
@@ -247,7 +258,7 @@ export default function JlptTestBuilderPage() {
   const handleDeleteTest = (testId) => {
     dispatch(deleteJlptTestThunk(testId)).then((res) => {
       if (res.meta.requestStatus === "fulfilled") {
-        message.success("Đã xoá JLPT Test");
+        toast.success("Đã xoá JLPT Test");
         setEditingTest(null);
         if (selectedTestId === testId) {
           setSelectedTestId(null);
@@ -279,6 +290,13 @@ export default function JlptTestBuilderPage() {
       audioByTest?.[selectedTestId]?.filePath ||
       "";
 
+    if (questionType === "LISTENING" && !uploadedFilePath) {
+      toast.warning(
+        "Hãy đưa file nghe trước khi nhập câu hỏi cho phần Listening."
+      );
+      return;
+    }
+
     const payloadQuestion = {
       questionType,
       content: values.content,
@@ -309,7 +327,7 @@ export default function JlptTestBuilderPage() {
         res.payload?.question?.id || res.payload?.id || res.payload?.questionId;
 
       if (!createdQuestionId) {
-        message.warning(
+        toast.warning(
           "Tạo câu hỏi thành công nhưng không xác định được ID để tạo đáp án"
         );
         dispatch(fetchJlptTestQuestionsThunk(selectedTestId));
@@ -334,7 +352,7 @@ export default function JlptTestBuilderPage() {
         );
       }
 
-      message.success("Đã tạo câu hỏi và đáp án");
+      toast.success("Đã tạo câu hỏi và đáp án");
       dispatch(fetchJlptTestQuestionsThunk(selectedTestId));
       createQuestionForm.resetFields();
       createQuestionForm.setFieldsValue({
@@ -369,7 +387,7 @@ export default function JlptTestBuilderPage() {
       })
     ).then((res) => {
       if (res.meta.requestStatus === "fulfilled") {
-        message.success("Cập nhật câu hỏi thành công");
+        toast.success("Cập nhật câu hỏi thành công");
         setEditingQuestion(null);
         dispatch(fetchJlptTestQuestionsThunk(selectedTestId));
       }
@@ -385,11 +403,13 @@ export default function JlptTestBuilderPage() {
       })
     ).then((res) => {
       if (res.meta.requestStatus === "fulfilled") {
-        message.success("Đã xóa câu hỏi");
+        toast.success("Đã xóa câu hỏi");
         dispatch(fetchJlptTestQuestionsThunk(selectedTestId));
       }
     });
   };
+
+  // ===== HANDLERS option =====
 
   const handleCreateOption = (questionId, values, currentOptions = []) => {
     if (!questionId) return;
@@ -408,9 +428,47 @@ export default function JlptTestBuilderPage() {
       })
     ).then((res) => {
       if (res.meta.requestStatus === "fulfilled" && selectedTestId) {
-        message.success("Đã thêm đáp án");
+        toast.success("Đã thêm đáp án");
         setAddingOptionFor(null);
         dispatch(fetchJlptTestQuestionsThunk(selectedTestId));
+      }
+    });
+  };
+  const handleUpdateOption = (questionId, option, values) => {
+    dispatch(
+      updateJlptOptionThunk({
+        questionId,
+        optionId: option.id,
+        data: {
+          content: String(values.content || "").trim(),
+          correct: !!values.correct,
+          orderIndex: Number.isFinite(values.orderIndex)
+            ? values.orderIndex
+            : 0,
+          imagePath: values.imagePath || "",
+          imageAltText: values.imageAltText || "",
+        },
+      })
+    ).then((res) => {
+      if (res.meta.requestStatus === "fulfilled") {
+        toast.success("Cập nhật đáp án thành công");
+        setEditingOption(null);
+        if (selectedTestId)
+          dispatch(fetchJlptTestQuestionsThunk(selectedTestId));
+      } else {
+        toast.error("Cập nhật đáp án thất bại");
+      }
+    });
+  };
+  const handleDeleteOption = (questionId, optionId) => {
+    dispatch(deleteJlptOptionThunk({ questionId, optionId })).then((res) => {
+      if (res.meta.requestStatus === "fulfilled") {
+        toast.success("Xóa đáp án thành công");
+        // Optional: refetch để chắc chắn đồng bộ
+        if (selectedTestId)
+          dispatch(fetchJlptTestQuestionsThunk(selectedTestId));
+      } else {
+        toast.error("Xóa đáp án thất bại");
       }
     });
   };
@@ -422,11 +480,11 @@ export default function JlptTestBuilderPage() {
     testAudioForBulk
   ) => {
     if (!selectedTestId) {
-      message.error("Hãy chọn test trước khi bulk import");
+      toast.error("Hãy chọn test trước khi bulk import");
       return;
     }
     if (!bulkQuestions.length) {
-      message.warning("Không có câu hỏi nào được import");
+      toast.warning("Không có câu hỏi nào được import");
       return;
     }
 
@@ -447,7 +505,7 @@ export default function JlptTestBuilderPage() {
       "";
 
     if (isListeningGroup && !uploadedFilePath) {
-      message.error(
+      toast.error(
         "Hãy upload audio Listening cho JLPT Test này trước khi bulk import Nghe hiểu."
       );
       return;
@@ -520,7 +578,7 @@ export default function JlptTestBuilderPage() {
         }
       }
 
-      message.success(
+      toast.success(
         `Đã import ${bulkQuestions.length} câu hỏi vào nhóm ${
           QUESTION_TYPE_LABEL[isListeningGroup ? "LISTENING" : defaultType]
         }`
@@ -529,14 +587,14 @@ export default function JlptTestBuilderPage() {
       dispatch(fetchJlptTestQuestionsThunk(selectedTestId));
     } catch (e) {
       console.error(e);
-      message.error("Bulk import JLPT test thất bại");
+      toast.error("Bulk import JLPT test thất bại");
     }
   };
 
   // ===== UPLOAD AUDIO (dùng axios trực tiếp) =====
   const handleUploadAudio = async (file) => {
     if (!selectedTestId) {
-      message.error("Hãy chọn JLPT Test trước khi upload audio");
+      toast.error("Hãy chọn JLPT Test trước khi upload audio");
       return false;
     }
 
@@ -575,10 +633,10 @@ export default function JlptTestBuilderPage() {
       dispatch(fetchJlptTestQuestionsThunk(selectedTestId));
       dispatch(fetchTestsByEventThunk(eventId));
 
-      message.success("Upload audio Listening thành công");
+      toast.success("Upload audio Listening thành công");
     } catch (err) {
       console.error("Upload listening audio FAILED >>>", err);
-      message.error("Upload audio Listening thất bại");
+      toast.error("Upload audio Listening thất bại");
     } finally {
       setUploadingAudio(false);
     }
@@ -625,7 +683,7 @@ export default function JlptTestBuilderPage() {
   // NEW: Validate đủ câu hỏi cho các tab & hoàn tất
   const handleFinishBuildTest = () => {
     if (!selectedTestId) {
-      message.warning("Hãy chọn một JLPT Test trước khi hoàn tất.");
+      toast.warning("Hãy chọn một JLPT Test trước khi hoàn tất.");
       return;
     }
 
@@ -635,13 +693,13 @@ export default function JlptTestBuilderPage() {
 
     if (missingTypes.length > 0) {
       const labels = missingTypes.map((t) => QUESTION_TYPE_LABEL[t]).join(", ");
-      message.error(
+      toast.error(
         `Đề JLPT hiện còn thiếu câu hỏi cho các phần: ${labels}. Vui lòng bổ sung trước khi hoàn tất.`
       );
       return;
     }
 
-    message.success("Đề JLPT đã đầy đủ câu hỏi cho 4 kỹ năng.");
+    toast.success("Đề JLPT đã đầy đủ câu hỏi cho 4 kỹ năng.");
     navigate(`${basePath}/jlptevents`);
   };
 
@@ -738,10 +796,40 @@ export default function JlptTestBuilderPage() {
                               color={op.correct ? "green" : "default"}
                               style={{ minWidth: 32, textAlign: "center" }}
                             >
-                              {op.orderIndex + 1}
+                              {(op.orderIndex ?? 0) + 1}
                               {op.correct ? " ✔" : ""}
                             </Tag>
-                            <span>{op.content}</span>
+
+                            <span style={{ flex: 1 }}>{op.content}</span>
+
+                            <Space size={6}>
+                              <Button
+                                size="small"
+                                type="link"
+                                onClick={() =>
+                                  setEditingOption({
+                                    questionId: q.id,
+                                    option: op,
+                                  })
+                                }
+                              >
+                                Sửa
+                              </Button>
+
+                              <Popconfirm
+                                title="Xóa đáp án này?"
+                                description="Hành động này không thể hoàn tác."
+                                okText="Xóa"
+                                cancelText="Hủy"
+                                onConfirm={() =>
+                                  handleDeleteOption(q.id, op.id)
+                                }
+                              >
+                                <Button size="small" type="link" danger>
+                                  Xóa
+                                </Button>
+                              </Popconfirm>
+                            </Space>
                           </div>
                         ))}
                       </div>
@@ -899,10 +987,38 @@ export default function JlptTestBuilderPage() {
                             color={op.correct ? "green" : "default"}
                             style={{ minWidth: 32, textAlign: "center" }}
                           >
-                            {op.orderIndex + 1}
+                            {(op.orderIndex ?? 0) + 1}
                             {op.correct ? " ✔" : ""}
                           </Tag>
-                          <span>{op.content}</span>
+
+                          <span style={{ flex: 1 }}>{op.content}</span>
+
+                          <Space size={6}>
+                            <Button
+                              size="small"
+                              type="link"
+                              onClick={() =>
+                                setEditingOption({
+                                  questionId: q.id,
+                                  option: op,
+                                })
+                              }
+                            >
+                              Sửa
+                            </Button>
+
+                            <Popconfirm
+                              title="Xóa đáp án này?"
+                              description="Hành động này không thể hoàn tác."
+                              okText="Xóa"
+                              cancelText="Hủy"
+                              onConfirm={() => handleDeleteOption(q.id, op.id)}
+                            >
+                              <Button size="small" type="link" danger>
+                                Xóa
+                              </Button>
+                            </Popconfirm>
+                          </Space>
                         </div>
                       ))}
                     </div>
@@ -975,7 +1091,7 @@ export default function JlptTestBuilderPage() {
   });
 
   // ===== RENDER =====
-  if (isTeacherRoute && checkingTeacher) {
+  if (isTeacherRoute && teacherProfileLoading) {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
@@ -1539,6 +1655,58 @@ export default function JlptTestBuilderPage() {
           <Form.Item name="imagePath" label="Image path">
             <Input />
           </Form.Item>
+          <Form.Item name="imageAltText" label="Image alt text">
+            <Input />
+          </Form.Item>
+        </Form>
+      </Modal>
+      <Modal
+        open={!!editingOption}
+        title={
+          editingOption
+            ? `Chỉnh sửa đáp án #${editingOption.option?.id}`
+            : "Chỉnh sửa đáp án"
+        }
+        onCancel={() => setEditingOption(null)}
+        onOk={() => editOptionForm.submit()}
+        okText="Lưu"
+        cancelText="Hủy"
+        destroyOnClose
+      >
+        <Form
+          form={editOptionForm}
+          layout="vertical"
+          onFinish={(values) => {
+            if (!editingOption) return;
+            handleUpdateOption(
+              editingOption.questionId,
+              editingOption.option,
+              values
+            );
+          }}
+        >
+          <Form.Item
+            name="content"
+            label="Nội dung đáp án"
+            rules={[{ required: true, message: "Nhập nội dung đáp án" }]}
+          >
+            <Input />
+          </Form.Item>
+
+          <Form.Item name="correct" valuePropName="checked">
+            <label>
+              <input type="checkbox" /> Đáp án đúng
+            </label>
+          </Form.Item>
+
+          <Form.Item name="orderIndex" label="Thứ tự (orderIndex)">
+            <InputNumber min={0} style={{ width: "100%" }} />
+          </Form.Item>
+
+          <Form.Item name="imagePath" label="Image path (optional)">
+            <Input />
+          </Form.Item>
+
           <Form.Item name="imageAltText" label="Image alt text">
             <Input />
           </Form.Item>

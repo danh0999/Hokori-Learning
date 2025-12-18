@@ -1,26 +1,15 @@
-// components/ProfileEditModal.jsx
+// src/pages/Teacher/TeacherProfile/components/ProfileEditModal.jsx
 import React, { useEffect, useMemo } from "react";
-import {
-  Modal,
-  Form,
-  Input,
-  InputNumber,
-  Row,
-  Col,
-  Divider,
-  Alert,
-} from "antd";
+import { Modal, Form, Input, InputNumber, Row, Col } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import {
   updateUserProfile,
   updateTeacherSection,
-  updateTeacherBankAccount,
   fetchTeacherProfile,
   selectTeacherProfile,
   selectUpdatingUser,
   selectUpdatingTeacher,
-  selectUpdatingBank,
 } from "../../../../redux/features/teacherprofileSlice.js";
 
 export default function ProfileEditModal({ open, onClose }) {
@@ -30,13 +19,9 @@ export default function ProfileEditModal({ open, onClose }) {
   const profile = useSelector(selectTeacherProfile);
   const updatingUser = useSelector(selectUpdatingUser);
   const updatingTeacher = useSelector(selectUpdatingTeacher);
-  const updatingBank = useSelector(selectUpdatingBank);
 
   const user = useMemo(() => profile?.user || {}, [profile]);
   const teacher = useMemo(() => profile?.teacher || {}, [profile]);
-
-  const approvalStatus = teacher?.approvalStatus || "DRAFT";
-  const isApproved = approvalStatus === "APPROVED";
 
   useEffect(() => {
     if (!open) return;
@@ -56,12 +41,6 @@ export default function ProfileEditModal({ open, onClose }) {
           : Number(teacher.yearsOfExperience),
       websiteUrl: teacher.websiteUrl || "",
       linkedin: teacher.linkedin || "",
-
-      // bank
-      bankAccountNumber: teacher.bankAccountNumber || "",
-      bankAccountName: teacher.bankAccountName || "",
-      bankName: teacher.bankName || "",
-      bankBranchName: teacher.bankBranchName || "",
     });
   }, [open, form, user, teacher]);
 
@@ -97,27 +76,11 @@ export default function ProfileEditModal({ open, onClose }) {
         linkedin: pickIfFilled(values.linkedin),
       });
 
-      const bankPayload = clean({
-        bankAccountNumber: pickIfFilled(values.bankAccountNumber),
-        bankAccountName: pickIfFilled(values.bankAccountName),
-        bankName: pickIfFilled(values.bankName),
-        bankBranchName: pickIfFilled(values.bankBranchName),
-      });
-
       const tasks = [];
-
-      if (Object.keys(userPayload).length) {
+      if (Object.keys(userPayload).length)
         tasks.push(dispatch(updateUserProfile(userPayload)));
-      }
-
-      if (Object.keys(teacherPayload).length) {
+      if (Object.keys(teacherPayload).length)
         tasks.push(dispatch(updateTeacherSection(teacherPayload)));
-      }
-
-      // ✅ bank chỉ gọi khi APPROVED (đúng theo BE)
-      if (isApproved && Object.keys(bankPayload).length) {
-        tasks.push(dispatch(updateTeacherBankAccount(bankPayload)));
-      }
 
       if (tasks.length === 0) {
         toast.info("Bạn chưa nhập gì để cập nhật.");
@@ -140,7 +103,7 @@ export default function ProfileEditModal({ open, onClose }) {
     }
   };
 
-  const loading = updatingUser || updatingTeacher || updatingBank;
+  const loading = updatingUser || updatingTeacher;
 
   return (
     <Modal
@@ -157,16 +120,6 @@ export default function ProfileEditModal({ open, onClose }) {
       width={900}
       destroyOnClose
     >
-      {!isApproved && (
-        <Alert
-          type="info"
-          showIcon
-          style={{ marginBottom: 12 }}
-          message="Tài khoản ngân hàng"
-          description="Hiện tại chỉ giáo viên đã được APPROVED mới có thể cập nhật thông tin ngân hàng."
-        />
-      )}
-
       <Form layout="vertical" form={form}>
         <Row gutter={16}>
           <Col span={12}>
@@ -202,32 +155,6 @@ export default function ProfileEditModal({ open, onClose }) {
 
             <Form.Item label="LinkedIn" name="linkedin">
               <Input placeholder="https://linkedin.com/in/..." />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Divider />
-
-        <h3 style={{ marginBottom: 8 }}>Tài khoản ngân hàng</h3>
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item label="Số tài khoản" name="bankAccountNumber">
-              <Input placeholder="VD: 0123456789" disabled={!isApproved} />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item label="Tên chủ tài khoản" name="bankAccountName">
-              <Input placeholder="VD: NGUYEN VAN A" disabled={!isApproved} />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item label="Ngân hàng" name="bankName">
-              <Input placeholder="VD: ACB" disabled={!isApproved} />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item label="Chi nhánh" name="bankBranchName">
-              <Input placeholder="VD: TP.HCM" disabled={!isApproved} />
             </Form.Item>
           </Col>
         </Row>

@@ -78,6 +78,41 @@ export const createJlptOptionThunk = createAsyncThunk(
 );
 
 // -----------------------------
+// UPDATE Option
+// PUT /api/jlpt/questions/{questionId}/options/{optionId}
+// -----------------------------
+export const updateJlptOptionThunk = createAsyncThunk(
+  "jlptModerator/updateOption",
+  async ({ questionId, optionId, data }, { rejectWithValue }) => {
+    try {
+      const res = await api.put(
+        `/jlpt/questions/${questionId}/options/${optionId}`,
+        data
+      );
+      return { questionId, option: res.data };
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
+// -----------------------------
+// DELETE Option
+// DELETE /api/jlpt/questions/{questionId}/options/{optionId}
+// -----------------------------
+export const deleteJlptOptionThunk = createAsyncThunk(
+  "jlptModerator/deleteOption",
+  async ({ questionId, optionId }, { rejectWithValue }) => {
+    try {
+      await api.delete(`/jlpt/questions/${questionId}/options/${optionId}`);
+      return { questionId, optionId };
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
+// -----------------------------
 // UPDATE TEST
 // -----------------------------
 export const updateJlptTestThunk = createAsyncThunk(
@@ -209,7 +244,6 @@ const jlptModeratorSlice = createSlice({
       })
 
       // delete test
-      // delete test
       .addCase(deleteJlptTestThunk.fulfilled, (state, action) => {
         const deletedTestId = action.payload;
 
@@ -269,6 +303,41 @@ const jlptModeratorSlice = createSlice({
         state.questionsByTest[testId] = state.questionsByTest[testId].map((q) =>
           q.id === updated.id ? updated : q
         );
+      })
+
+      // update option
+      .addCase(updateJlptOptionThunk.fulfilled, (state, action) => {
+        const { questionId, option } = action.payload;
+
+        for (let testId in state.questionsByTest) {
+          const list = state.questionsByTest[testId] || [];
+          const qIndex = list.findIndex(
+            (q) => String(q.id) === String(questionId)
+          );
+          if (qIndex === -1) continue;
+
+          const opts = list[qIndex].options || [];
+          list[qIndex].options = opts.map((op) =>
+            String(op.id) === String(option.id) ? option : op
+          );
+        }
+      })
+
+      .addCase(deleteJlptOptionThunk.fulfilled, (state, action) => {
+        const { questionId, optionId } = action.payload;
+
+        for (const testId in state.questionsByTest) {
+          const list = state.questionsByTest[testId] || [];
+          const qIndex = list.findIndex(
+            (q) => String(q.id) === String(questionId)
+          );
+          if (qIndex === -1) continue;
+
+          const opts = list[qIndex].options || [];
+          list[qIndex].options = opts.filter(
+            (op) => String(op.id) !== String(optionId)
+          );
+        }
       })
 
       // delete question

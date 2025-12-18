@@ -1,5 +1,5 @@
 // src/pages/LessonPlayer/LessonQuizAttemptPage.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import api from "../../../configs/axios.js";
 import styles from "./LessonQuizAttemptPage.module.scss";
@@ -22,8 +22,15 @@ export default function LessonQuizAttemptPage() {
   const [detail, setDetail] = useState(null);
   const [noMoreQuestions, setNoMoreQuestions] = useState(false);
 
+  // timer
+  const [timeLimitSec, setTimeLimitSec] = useState(null);
+  const [startedAt, setStartedAt] = useState(null);
+  const [submittedAt, setSubmittedAt] = useState(null);
+  const [nowTick, setNowTick] = useState(Date.now());
+  const autoSubmitOnceRef = useRef(false);
+
   const quizIdFromState = location.state?.quizId;
-  const returnContentId = location.state?.returnContentId; // ✅ quan trọng
+  const returnContentId = location.state?.returnContentId;
   const chapterOrderIndex = location.state?.chapterOrderIndex ?? 1;
 
   const unwrap = (res) => {
@@ -33,6 +40,31 @@ export default function LessonQuizAttemptPage() {
       return payload.data;
     return payload;
   };
+
+  const formatClock = (totalSec) => {
+    const s = Math.max(0, Math.floor(Number(totalSec) || 0));
+    const mm = String(Math.floor(s / 60)).padStart(2, "0");
+    const ss = String(s % 60).padStart(2, "0");
+    return `${mm}:${ss}`;
+  };
+
+  const remainingSec = useMemo(() => {
+    if (!timeLimitSec || !startedAt) return null;
+    const startMs = new Date(startedAt).getTime();
+    if (!Number.isFinite(startMs)) return null;
+    const endMs = startMs + Number(timeLimitSec) * 1000;
+    const remain = Math.ceil((endMs - nowTick) / 1000);
+    return Math.max(0, remain);
+  }, [timeLimitSec, startedAt, nowTick]);
+
+  const durationSec = useMemo(() => {
+    if (!startedAt) return null;
+    const s = new Date(startedAt).getTime();
+    if (!Number.isFinite(s)) return null;
+    const e = submittedAt ? new Date(submittedAt).getTime() : Date.now();
+    if (!Number.isFinite(e)) return null;
+    return Math.max(0, Math.floor((e - s) / 1000));
+  }, [startedAt, submittedAt]);
 
   const fetchNextQuestion = async () => {
     try {
@@ -70,18 +102,26 @@ export default function LessonQuizAttemptPage() {
         setLoadingQuestion(true);
         setError(null);
 
-        const res = await api.get(
-          `/learner/sections/${sectionId}/quiz/attempts/${attemptId}`
-        );
+        const [attemptRes, quizInfoRes] = await Promise.all([
+          api.get(`/learner/sections/${sectionId}/quiz/attempts/${attemptId}`),
+          api.get(`/learner/sections/${sectionId}/quiz/info`).catch(() => null),
+        ]);
 
-        const data = unwrap(res);
+        const data = unwrap(attemptRes);
         const attempt = data?.attempt ?? data;
+
+        const quizInfo = quizInfoRes ? unwrap(quizInfoRes) : null;
+        setTimeLimitSec(quizInfo?.timeLimitSec ?? null);
+
+        setStartedAt(attempt?.startedAt ?? null);
+        setSubmittedAt(attempt?.submittedAt ?? null);
 
         const status = String(attempt?.status || "").toUpperCase();
         if (status === "IN_PROGRESS") {
           setIsFinished(false);
           setSummary(null);
           setDetail(null);
+          autoSubmitOnceRef.current = false;
           await fetchNextQuestion();
         } else {
           setIsFinished(true);
@@ -90,8 +130,9 @@ export default function LessonQuizAttemptPage() {
             passScorePercent: attempt?.passScorePercent ?? null,
             totalQuestions: attempt?.totalQuestions ?? null,
             correctCount: attempt?.correctCount ?? null,
+            passed: attempt?.passed ?? null,
           });
-          setDetail({ questions: attempt?.items || [] });
+          setDetail({ questions: data?.items || attempt?.items || [] });
         }
       } catch (err) {
         console.error(err);
@@ -104,6 +145,24 @@ export default function LessonQuizAttemptPage() {
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sectionId, attemptId]);
+
+  // tick mỗi 1s để update timer
+  useEffect(() => {
+    if (isFinished) return;
+    const t = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [isFinished]);
+
+  // auto submit khi hết giờ (UI level)
+  useEffect(() => {
+    if (isFinished) return;
+    if (remainingSec == null) return;
+    if (remainingSec > 0) return;
+    if (autoSubmitOnceRef.current) return;
+    autoSubmitOnceRef.current = true;
+    handleSubmitQuiz();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [remainingSec, isFinished]);
 
   const handleSubmitAnswer = async () => {
     if (!question || !selectedOptionId) return;
@@ -140,11 +199,14 @@ export default function LessonQuizAttemptPage() {
       const submitData = unwrap(submitRes);
       const submitAttempt = submitData?.attempt ?? submitData;
 
+      setSubmittedAt(submitAttempt?.submittedAt ?? new Date().toISOString());
+
       setSummary({
         scorePercent: submitAttempt?.scorePercent ?? null,
         passScorePercent: submitAttempt?.passScorePercent ?? null,
         totalQuestions: submitAttempt?.totalQuestions ?? null,
         correctCount: submitAttempt?.correctCount ?? null,
+        passed: submitAttempt?.passed ?? null,
       });
 
       const detailRes = await api.get(
@@ -153,7 +215,7 @@ export default function LessonQuizAttemptPage() {
       const detailData = unwrap(detailRes);
       const detailAttempt = detailData?.attempt ?? detailData;
 
-      setDetail({ questions: detailAttempt?.items || [] });
+      setDetail({ questions: detailData?.items || detailAttempt?.items || [] });
       setIsFinished(true);
     } catch (err) {
       console.error(err);
@@ -164,15 +226,13 @@ export default function LessonQuizAttemptPage() {
   };
 
   const handleBack = () => {
-    // ✅ quay về đúng content quiz (để LessonPlayer tự refetch progress)
     if (returnContentId) {
       navigate(
         `/learn/${courseId}/${slug}/lesson/${lessonId}/content/${returnContentId}`,
-        { state: { chapterOrderIndex } }
+        { state: { chapterOrderIndex, justFinishedQuiz: true } }
       );
       return;
     }
-    // fallback
     navigate(`/learn/${courseId}/${slug}/home/chapter/${chapterOrderIndex}`);
   };
 
@@ -189,50 +249,170 @@ export default function LessonQuizAttemptPage() {
               >
                 ← Quay lại
               </button>
-              <h2>Làm quiz{quizIdFromState ? ` (#${quizIdFromState})` : ""}</h2>
+
+              <div className={styles.quizPlayHeaderMain}>
+                <h2>
+                  Làm quiz{quizIdFromState ? ` (#${quizIdFromState})` : ""}
+                </h2>
+
+                <div className={styles.quizPlaySubRow}>
+                  {timeLimitSec != null && (
+                    <span className={styles.timeChip}>
+                      Thời gian: {formatClock(timeLimitSec)}
+                    </span>
+                  )}
+
+                  {!isFinished && remainingSec != null && (
+                    <span
+                      className={`${styles.timeChip} ${
+                        remainingSec <= 30 ? styles.timeChipDanger : ""
+                      }`}
+                    >
+                      Còn lại: {formatClock(remainingSec)}
+                    </span>
+                  )}
+
+                  {isFinished && durationSec != null && (
+                    <span className={styles.timeChip}>
+                      Thời gian làm: {formatClock(durationSec)}
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
 
             {error && <p className={styles.error}>{error}</p>}
 
             {isFinished ? (
-              <div className={styles.quizResult}>
-                <h3>Kết quả bài làm</h3>
+              <div className={styles.resultCard}>
+                <div className={styles.resultHeader}>
+                  <h3>Kết quả bài làm</h3>
+                  {summary?.passed != null && (
+                    <span
+                      className={`${styles.badge} ${
+                        summary.passed
+                          ? styles.badgeSuccess
+                          : styles.badgeDanger
+                      }`}
+                    >
+                      {summary.passed ? "PASSED" : "FAILED"}
+                    </span>
+                  )}
+                </div>
 
                 {summary && (
-                  <div className={styles.quizMeta}>
-                    {summary.scorePercent != null && (
-                      <p>
-                        Điểm: {summary.scorePercent}%
-                        {summary.passScorePercent != null &&
-                          ` (điểm đạt: ${summary.passScorePercent}%)`}
-                      </p>
-                    )}
-                    {summary.correctCount != null &&
-                      summary.totalQuestions != null && (
-                        <p>
-                          Số câu đúng: {summary.correctCount}/
-                          {summary.totalQuestions}
-                        </p>
-                      )}
-                    {summary.scorePercent != null && (
-                      <p>
-                        Trạng thái:{" "}
-                        {summary.passScorePercent == null ||
-                        summary.scorePercent >= summary.passScorePercent
+                  <div className={styles.resultGrid}>
+                    <div className={styles.metaBox}>
+                      <div className={styles.metaLabel}>Điểm</div>
+                      <div className={styles.metaValue}>
+                        {summary.scorePercent != null
+                          ? `${summary.scorePercent}%`
+                          : "—"}
+                      </div>
+                    </div>
+
+                    <div className={styles.metaBox}>
+                      <div className={styles.metaLabel}>Điểm đạt</div>
+                      <div className={styles.metaValue}>
+                        {summary.passScorePercent != null
+                          ? `${summary.passScorePercent}%`
+                          : "—"}
+                      </div>
+                    </div>
+
+                    <div className={styles.metaBox}>
+                      <div className={styles.metaLabel}>Số câu đúng</div>
+                      <div className={styles.metaValue}>
+                        {summary.correctCount != null &&
+                        summary.totalQuestions != null
+                          ? `${summary.correctCount}/${summary.totalQuestions}`
+                          : "—"}
+                      </div>
+                    </div>
+
+                    <div className={styles.metaBox}>
+                      <div className={styles.metaLabel}>Trạng thái</div>
+                      <div className={styles.metaValue}>
+                        {summary.passed == null
+                          ? "—"
+                          : summary.passed
                           ? "Đạt yêu cầu"
-                          : "Chưa đạt yêu cầu"}
-                      </p>
-                    )}
+                          : "Chưa đạt"}
+                      </div>
+                    </div>
                   </div>
                 )}
 
-                <button
-                  type="button"
-                  className={styles.primaryBtn}
-                  onClick={handleBack}
-                >
-                  Quay lại
-                </button>
+                {/* {!!detail?.questions?.length && (
+                  <div className={styles.quizDetail}>
+                    <h4 className={styles.quizDetailTitle}>
+                      Chi tiết câu trả lời
+                    </h4>
+
+                    <ul className={styles.quizQuestionList}>
+                      {detail.questions.map((it, idx) => {
+                        const isCorrect = it?.isCorrect === true;
+                        const chosen = it?.chosenOptionId ?? it?.chosenOption;
+                        const correct =
+                          it?.correctOptionId ?? it?.correctOption;
+
+                        return (
+                          <li
+                            key={it?.questionId ?? idx}
+                            className={styles.quizQuestionRow}
+                          >
+                            <div className={styles.quizQuestionHeader}>
+                              <span className={styles.quizQuestionIndex}>
+                                Câu {idx + 1}
+                              </span>
+                              <span
+                                className={`${styles.quizQuestionResultTag} ${
+                                  isCorrect
+                                    ? styles.quizQuestionResultCorrect
+                                    : styles.quizQuestionResultWrong
+                                }`}
+                              >
+                                {isCorrect ? "Đúng" : "Sai"}
+                              </span>
+                            </div>
+
+                            <p className={styles.quizQuestionText}>
+                              {it?.content || "—"}
+                            </p>
+
+                            <div className={styles.quizAnswerRow}>
+                              <div className={styles.quizAnswerBlock}>
+                                <div className={styles.quizAnswerLabel}>
+                                  Bạn chọn
+                                </div>
+                                <div
+                                  className={`${styles.quizAnswerValue} ${
+                                    isCorrect
+                                      ? styles.quizAnswerCorrect
+                                      : styles.quizAnswerWrong
+                                  }`}
+                                >
+                                  {chosen != null ? `#${chosen}` : "—"}
+                                </div>
+                              </div>
+
+                              <div className={styles.quizAnswerBlock}>
+                                <div className={styles.quizAnswerLabel}>
+                                  Đáp án đúng
+                                </div>
+                                <div
+                                  className={`${styles.quizAnswerValue} ${styles.quizAnswerCorrect}`}
+                                >
+                                  {correct != null ? `#${correct}` : "—"}
+                                </div>
+                              </div>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )} */}
               </div>
             ) : (
               <>

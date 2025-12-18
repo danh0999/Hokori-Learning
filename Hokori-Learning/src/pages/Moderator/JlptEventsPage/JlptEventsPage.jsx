@@ -1,19 +1,13 @@
 // src/pages/Moderator/JlptEventsPage/JlptEventsPage.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import {
-  Button,
-  Card,
-  Table,
-  Tag,
-  message,
-  Typography,
-  Space,
-  Alert,
-} from "antd";
+import { Button, Card, Table, Tag, Typography, Space, Alert } from "antd";
+import { useSelector } from "react-redux";
+import { selectTeacherApproved } from "../../../redux/features/teacherprofileSlice";
 
 import api from "../../../configs/axios";
 import styles from "./JlptEventsPage.module.scss";
+import { toast } from "react-toastify";
 
 const { Title } = Typography;
 
@@ -27,20 +21,28 @@ export default function JlptEventsPage() {
 
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
-  // lưu số lượng test cho từng eventId
   const [testCountMap, setTestCountMap] = useState({});
 
-  const [teacherApprovalStatus, setTeacherApprovalStatus] = useState(null);
-  const [checkingTeacher, setCheckingTeacher] = useState(false);
+  // ✅ Redux source of truth
+  const teacherApproved = useSelector(selectTeacherApproved);
+  const teacherProfileLoading = useSelector(
+    (state) => state.teacherProfile.loading
+  );
 
-  // Fetch events & test count
+  const isTeacherNotApproved =
+    isTeacherRoute && !teacherProfileLoading && !teacherApproved;
+
+  const canView =
+    !isTeacherRoute || (!teacherProfileLoading && teacherApproved);
+
   const fetchEvents = async () => {
+    if (!canView) return;
+
     setLoading(true);
     try {
       const res = await api.get("jlpt/events");
       let list = res.data || [];
       list = [...list].sort((a, b) => Number(b.id) - Number(a.id));
-
       setEvents(list);
 
       // Lấy số lượng test cho từng event
@@ -48,129 +50,128 @@ export default function JlptEventsPage() {
         list.map((ev) =>
           api
             .get(`jlpt/events/${ev.id}/tests`)
-            .then((r) => ({
-              id: ev.id,
-              count: r.data?.length || 0,
-            }))
+            .then((r) => ({ id: ev.id, count: r.data?.length || 0 }))
             .catch(() => ({ id: ev.id, count: 0 }))
         )
       );
 
       const map = {};
       results.forEach((item) => {
-        map[item.id] = item.count; // lưu thẳng số lượng
+        map[item.id] = item.count;
       });
       setTestCountMap(map);
     } catch (err) {
       console.error(err);
-      message.error("Không tải được danh sách sự kiện JLPT");
+      toast.error("Không tải được danh sách sự kiện JLPT");
     } finally {
       setLoading(false);
     }
   };
 
-  // Chỉ cho teacher đã APPROVED mới được load event JLPT
-  const validateTeacherAndFetch = async () => {
+  // ✅ Auto load
+  useEffect(() => {
     if (!isTeacherRoute) {
-      // Moderator thì bỏ qua check
       fetchEvents();
       return;
     }
 
-    setCheckingTeacher(true);
-    try {
-      const res = await api.get("/profile/me");
-      const user = res.data?.data || res.data;
+    if (teacherProfileLoading) return;
 
-      const approval = user?.teacher?.approvalStatus || null;
-      setTeacherApprovalStatus(approval);
-
-      if (approval !== "APPROVED") {
-        setEvents([]);
-        setTestCountMap({});
-        message.warning(
-          "Hồ sơ giáo viên của bạn chưa được phê duyệt nên chưa thể xem / tạo đề JLPT."
-        );
-        return;
-      }
-
-      // Đã approve thì load event
-      fetchEvents();
-    } catch (err) {
-      console.error(err);
-      message.error("Không kiểm tra được trạng thái giáo viên hiện tại");
-    } finally {
-      setCheckingTeacher(false);
+    if (!teacherApproved) {
+      setEvents([]);
+      setTestCountMap({});
+      toast.warning(
+        "Hồ sơ giáo viên của bạn chưa được phê duyệt nên chưa thể xem / tạo đề JLPT."
+      );
+      return;
     }
-  };
-  useEffect(() => {
-    validateTeacherAndFetch();
+
+    fetchEvents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isTeacherRoute]);
+  }, [isTeacherRoute, teacherProfileLoading, teacherApproved]);
 
-  const columns = [
-    {
-      title: "#",
-      dataIndex: "id",
-      width: 80,
-      render: (id) => <b>{id}</b>,
-    },
-    {
-      title: "Tiêu đề",
-      dataIndex: "title",
-      ellipsis: true,
-    },
-    {
-      title: "Cấp độ",
-      dataIndex: "level",
-      width: 100,
-      render: (level) => <Tag color="blue">{level}</Tag>,
-    },
-    {
-      title: "Trạng thái",
-      dataIndex: "status",
-      width: 120,
-      render: (st) => {
-        const color =
-          st === "OPEN" ? "green" : st === "DRAFT" ? "default" : "red";
-        return <Tag color={color}>{st}</Tag>;
+  const columns = useMemo(
+    () => [
+      {
+        title: "#",
+        dataIndex: "id",
+        width: 80,
+        render: (id) => <b>{id}</b>,
       },
-    },
-    {
-      title: "Đề thi",
-      width: 140,
-      render: (_, record) => {
-        const count = testCountMap[record.id] ?? 0;
-        return count > 0 ? (
-          <Tag color="green">{count} đề</Tag>
-        ) : (
-          <Tag>Chưa có đề</Tag>
-        );
+      {
+        title: "Tiêu đề",
+        dataIndex: "title",
+        ellipsis: true,
       },
-    },
-    {
-      title: "Thao tác",
-      width: 180,
-      render: (_, record) => {
-        const count = testCountMap[record.id] ?? 0;
-        const hasTest = count > 0;
+      {
+        title: "Cấp độ",
+        dataIndex: "level",
+        width: 100,
+        render: (level) => <Tag color="blue">{level}</Tag>,
+      },
+      {
+        title: "Trạng thái",
+        dataIndex: "status",
+        width: 120,
+        render: (st) => {
+          const color =
+            st === "OPEN" ? "green" : st === "DRAFT" ? "default" : "red";
+          return <Tag color={color}>{st}</Tag>;
+        },
+      },
+      {
+        title: "Đề thi",
+        width: 140,
+        render: (_, record) => {
+          const count = testCountMap[record.id] ?? 0;
+          return count > 0 ? (
+            <Tag color="green">{count} đề</Tag>
+          ) : (
+            <Tag>Chưa có đề</Tag>
+          );
+        },
+      },
+      {
+        title: "Thao tác",
+        width: 180,
+        render: (_, record) => {
+          const count = testCountMap[record.id] ?? 0;
+          const hasTest = count > 0;
 
-        return (
-          <Button
-            type={hasTest ? "default" : "primary"}
-            className={styles.actionBtn}
-            onClick={() =>
-              navigate(`${basePath}/jlptevents/${record.id}/tests`, {
-                state: { event: record },
-              })
-            }
-          >
-            Xem sự kiện
-          </Button>
-        );
+          const isClosed = record.status === "CLOSED";
+          const disabled = isTeacherNotApproved || isClosed;
+
+          return (
+            <Button
+              type={hasTest ? "default" : "primary"}
+              className={styles.actionBtn}
+              disabled={disabled}
+              onClick={() => {
+                if (isClosed) {
+                  toast.info("Sự kiện này đã đóng, không thể truy cập.");
+                  return;
+                }
+
+                if (isTeacherNotApproved) {
+                  toast.warning(
+                    "Hồ sơ giáo viên của bạn chưa được phê duyệt nên chưa thể xem / tạo đề JLPT."
+                  );
+                  return;
+                }
+
+                navigate(`${basePath}/jlptevents/${record.id}/tests`, {
+                  state: { event: record },
+                });
+              }}
+            >
+              {isClosed ? "Đã đóng" : "Xem sự kiện"}
+            </Button>
+          );
+        },
       },
-    },
-  ];
+    ],
+    [basePath, isTeacherNotApproved, navigate, testCountMap]
+  );
 
   return (
     <div className={styles.wrapper}>
@@ -180,25 +181,41 @@ export default function JlptEventsPage() {
         </Title>
 
         <Button
-          onClick={validateTeacherAndFetch}
-          loading={loading || checkingTeacher}
+          onClick={() => {
+            if (isTeacherNotApproved) {
+              toast.warning(
+                "Hồ sơ giáo viên của bạn chưa được phê duyệt nên chưa thể xem / tạo đề JLPT."
+              );
+              return;
+            }
+            fetchEvents();
+          }}
+          loading={loading || teacherProfileLoading}
         >
           Refresh
         </Button>
       </Space>
 
       <Card className={styles.card}>
-        {isTeacherRoute &&
-          teacherApprovalStatus &&
-          teacherApprovalStatus !== "APPROVED" && (
-            <Alert
-              type="warning"
-              showIcon
-              style={{ marginBottom: 16 }}
-              message="Hồ sơ giáo viên chưa được phê duyệt"
-              description="Vui lòng hoàn thiện hồ sơ và chờ được duyệt trước khi tạo / chỉnh sửa đề JLPT. Bạn có thể xem trạng thái duyệt trong trang Hồ sơ giáo viên."
-            />
-          )}
+        {isTeacherRoute && teacherProfileLoading && (
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+            message="Đang kiểm tra trạng thái hồ sơ giáo viên..."
+          />
+        )}
+
+        {isTeacherNotApproved && (
+          <Alert
+            type="warning"
+            showIcon
+            style={{ marginBottom: 16 }}
+            message="Hồ sơ giáo viên chưa được phê duyệt"
+            description="Vui lòng hoàn thiện hồ sơ và chờ được duyệt trước khi tạo / chỉnh sửa đề JLPT. Bạn có thể xem trạng thái duyệt trong trang Hồ sơ giáo viên."
+          />
+        )}
+
         <Table
           rowKey="id"
           loading={loading}

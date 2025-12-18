@@ -113,49 +113,48 @@ export default function LessonPlayerPage() {
   /* ===========================
      FETCH COURSE TREE (SIDEBAR)
   ============================ */
-  useEffect(() => {
-    const fetchTree = async () => {
-      try {
-        setLoadingTree(true);
-        const res = await api.get(`/learner/courses/${courseId}/learning-tree`);
-        const tree = res.data;
+  const fetchTree = async () => {
+    try {
+      setLoadingTree(true);
+      const res = await api.get(`/learner/courses/${courseId}/learning-tree`);
+      const tree = res.data;
 
-        setCourseTree(tree);
-        setErrorTree(null);
+      setCourseTree(tree);
+      setErrorTree(null);
 
-        const rawChapters = tree.chapters || [];
-        const visibleChapters = rawChapters.filter((ch) => ch.orderIndex !== 0);
+      const rawChapters = tree.chapters || [];
+      const visibleChapters = rawChapters.filter((ch) => ch.orderIndex !== 0);
 
-        const currentChapter = visibleChapters.find((ch) =>
-          ch.lessons?.some((ls) => ls.lessonId === numericLessonId)
-        );
+      const currentChapter = visibleChapters.find((ch) =>
+        ch.lessons?.some((ls) => ls.lessonId === numericLessonId)
+      );
 
-        if (currentChapter) {
-          setOpenChapterIds(new Set([currentChapter.chapterId]));
+      if (currentChapter) {
+        setOpenChapterIds(new Set([currentChapter.chapterId]));
 
-          const currentLesson =
-            currentChapter.lessons?.find(
-              (ls) => ls.lessonId === numericLessonId
-            ) || currentChapter.lessons?.[0];
+        const currentLesson =
+          currentChapter.lessons?.find(
+            (ls) => ls.lessonId === numericLessonId
+          ) || currentChapter.lessons?.[0];
 
-          const lessonSet = new Set();
-          if (currentLesson?.lessonId) lessonSet.add(currentLesson.lessonId);
-          setOpenLessonIds(lessonSet);
-        } else if (visibleChapters[0]) {
-          const firstChapter = visibleChapters[0];
-          setOpenChapterIds(new Set([firstChapter.chapterId]));
-          if (firstChapter.lessons?.[0]?.lessonId) {
-            setOpenLessonIds(new Set([firstChapter.lessons[0].lessonId]));
-          }
+        const lessonSet = new Set();
+        if (currentLesson?.lessonId) lessonSet.add(currentLesson.lessonId);
+        setOpenLessonIds(lessonSet);
+      } else if (visibleChapters[0]) {
+        const firstChapter = visibleChapters[0];
+        setOpenChapterIds(new Set([firstChapter.chapterId]));
+        if (firstChapter.lessons?.[0]?.lessonId) {
+          setOpenLessonIds(new Set([firstChapter.lessons[0].lessonId]));
         }
-      } catch (err) {
-        console.error(err);
-        setErrorTree("Không thể tải nội dung khóa học");
-      } finally {
-        setLoadingTree(false);
       }
-    };
-
+    } catch (err) {
+      console.error(err);
+      setErrorTree("Không thể tải nội dung khóa học");
+    } finally {
+      setLoadingTree(false);
+    }
+  };
+  useEffect(() => {
     fetchTree();
   }, [courseId, numericLessonId]);
 
@@ -208,6 +207,13 @@ export default function LessonPlayerPage() {
     fetchLesson();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonId]);
+  useEffect(() => {
+    if (location.state?.justFinishedQuiz) {
+      fetchLesson(); // cập nhật activeContent.isCompleted từ /lessons/:id/contents
+      fetchTree(); // cập nhật sidebar/progressPercent nếu BE có
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.justFinishedQuiz]);
 
   /* ===========================
      FLATTEN CONTENTS TRONG 1 LESSON
@@ -345,6 +351,7 @@ export default function LessonPlayerPage() {
           })),
         };
       });
+      await fetchTree();
     } catch (err) {
       console.error("Không thể cập nhật tiến độ content:", err);
     }
@@ -815,128 +822,271 @@ export default function LessonPlayerPage() {
                 <div className={styles.playerBody}>
                   {/* ✅ QUIZ OVERVIEW (nằm trong content view) */}
                   {isQuizContent && (
-                    <div className={styles.quizOverview}>
-                      {quizLoading && <p>Đang tải thông tin quiz...</p>}
-                      {quizError && <p className={styles.error}>{quizError}</p>}
+                    <div className={styles.quizOverviewCard}>
+                      <div className={styles.quizHeader}>
+                        <div className={styles.quizHeaderLeft}>
+                          <div className={styles.quizEyebrow}>
+                            <span className={styles.quizChip}>QUIZ</span>
+                            <span className={styles.quizSectionName}>
+                              {activeContent?.sectionTitle || "Quiz"}
+                            </span>
+                          </div>
 
-                      {!quizLoading && !quizError && !quizInfo && (
-                        <p>Không tìm thấy thông tin quiz.</p>
-                      )}
-
-                      {!quizLoading && !quizError && quizInfo && (
-                        <>
                           <h2 className={styles.quizTitle}>
-                            {quizInfo.title || "Bài quiz"}
+                            {quizInfo?.title || "Bài quiz"}
                           </h2>
 
-                          {!!quizInfo.description && (
+                          {!!quizInfo?.description && (
                             <p className={styles.quizDescription}>
                               {quizInfo.description}
                             </p>
                           )}
+                        </div>
 
-                          <div className={styles.quizMeta}>
-                            {quizInfo.totalQuestions != null && (
-                              <span>Số câu hỏi: {quizInfo.totalQuestions}</span>
-                            )}
-                            {quizInfo.timeLimitSec != null && (
-                              <span>
-                                Thời gian:{" "}
-                                {Math.ceil(quizInfo.timeLimitSec / 60)} phút
-                              </span>
-                            )}
-                            {quizInfo.passScorePercent != null && (
-                              <span>
-                                Điểm đạt: {quizInfo.passScorePercent}%
-                              </span>
-                            )}
-                            {quizInfo.attemptCount != null && (
-                              <span>Đã làm: {quizInfo.attemptCount} lần</span>
-                            )}
+                        <div className={styles.quizHeaderRight}>
+                          {isCurrentCompleted ? (
+                            <span
+                              className={`${styles.badge} ${styles.badgeSuccess}`}
+                            >
+                              ✓ Đã đạt yêu cầu
+                            </span>
+                          ) : (
+                            <span
+                              className={`${styles.badge} ${styles.badgeWarn}`}
+                            >
+                              Chưa hoàn thành
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {quizLoading && (
+                        <p className={styles.muted}>
+                          Đang tải thông tin quiz...
+                        </p>
+                      )}
+                      {quizError && <p className={styles.error}>{quizError}</p>}
+
+                      {!quizLoading && !quizError && !quizInfo && (
+                        <p className={styles.muted}>
+                          Không tìm thấy thông tin quiz.
+                        </p>
+                      )}
+
+                      {!quizLoading && !quizError && quizInfo && (
+                        <>
+                          {/* META GRID */}
+                          <div className={styles.quizMetaGrid}>
+                            <div className={styles.metaBox}>
+                              <div className={styles.metaLabel}>Số câu hỏi</div>
+                              <div className={styles.metaValue}>
+                                {quizInfo.totalQuestions ?? "—"}
+                              </div>
+                            </div>
+
+                            <div className={styles.metaBox}>
+                              <div className={styles.metaLabel}>Thời gian</div>
+                              <div className={styles.metaValue}>
+                                {quizInfo.timeLimitSec != null
+                                  ? `${Math.ceil(
+                                      quizInfo.timeLimitSec / 60
+                                    )} phút`
+                                  : "—"}
+                              </div>
+                            </div>
+
+                            <div className={styles.metaBox}>
+                              <div className={styles.metaLabel}>Điểm đạt</div>
+                              <div className={styles.metaValue}>
+                                {quizInfo.passScorePercent != null
+                                  ? `${quizInfo.passScorePercent}%`
+                                  : "—"}
+                              </div>
+                            </div>
+
+                            <div className={styles.metaBox}>
+                              <div className={styles.metaLabel}>Số lần làm</div>
+                              <div className={styles.metaValue}>
+                                {quizInfo.attemptCount ??
+                                  quizAttempts?.length ??
+                                  0}
+                              </div>
+                            </div>
                           </div>
 
-                          <hr className={styles.quizDivider} />
+                          {/* QUICK STATS */}
+                          <div className={styles.quizQuickStats}>
+                            <div className={styles.quickStat}>
+                              <div className={styles.quickLabel}>
+                                Điểm cao nhất
+                              </div>
+                              <div className={styles.quickValue}>
+                                {(() => {
+                                  const best = (quizAttempts || [])
+                                    .map((a) =>
+                                      a?.scorePercent != null
+                                        ? Number(a.scorePercent)
+                                        : null
+                                    )
+                                    .filter((x) => Number.isFinite(x));
+                                  if (!best.length) return "—";
+                                  return `${Math.max(...best)}%`;
+                                })()}
+                              </div>
+                            </div>
 
-                          <h3 className={styles.quizHistoryTitle}>
-                            Lịch sử làm bài
-                          </h3>
+                            <div className={styles.quickStat}>
+                              <div className={styles.quickLabel}>Đã đạt</div>
+                              <div className={styles.quickValue}>
+                                {(quizAttempts || []).some(
+                                  (a) => a?.passed === true
+                                )
+                                  ? "Có"
+                                  : "Chưa"}
+                              </div>
+                            </div>
+                          </div>
 
-                          {(!quizAttempts || quizAttempts.length === 0) && (
-                            <p>Chưa có lần làm nào.</p>
-                          )}
+                          <div className={styles.quizActionsRow}>
+                            <button
+                              type="button"
+                              className={styles.primaryBtn}
+                              onClick={handleStartQuiz}
+                              disabled={quizLoading || !quizSectionId}
+                            >
+                              {(() => {
+                                const hasInProgress = (quizAttempts || []).some(
+                                  (a) =>
+                                    String(a?.status || "").toUpperCase() ===
+                                    "IN_PROGRESS"
+                                );
+                                if (hasInProgress) return "Tiếp tục làm";
+                                return (quizAttempts?.length ?? 0) > 0
+                                  ? "Làm lại"
+                                  : "Bắt đầu làm";
+                              })()}
+                            </button>
 
-                          {quizAttempts && quizAttempts.length > 0 && (
-                            <ul className={styles.quizAttemptList}>
-                              {quizAttempts.map((attempt) => {
-                                const status = (
+                            <div className={styles.quizHint}>
+                              {isCurrentCompleted
+                                ? "Bạn đã đạt điểm yêu cầu. Có thể qua nội dung tiếp theo."
+                                : "Cần đạt điểm yêu cầu để mở khóa nội dung tiếp theo."}
+                            </div>
+                          </div>
+
+                          <hr className={styles.divider} />
+
+                          {/* HISTORY */}
+                          <div className={styles.quizHistoryHeader}>
+                            <h3 className={styles.quizHistoryTitle}>
+                              Lịch sử làm bài
+                            </h3>
+                            <span className={styles.muted}>
+                              {quizAttempts?.length
+                                ? `${quizAttempts.length} lần`
+                                : "Chưa có"}
+                            </span>
+                          </div>
+
+                          {!quizAttempts || quizAttempts.length === 0 ? (
+                            <p className={styles.muted}>Chưa có lần làm nào.</p>
+                          ) : (
+                            <div className={styles.quizAttemptTable}>
+                              <div className={styles.quizAttemptHead}>
+                                <div>Lần</div>
+                                <div>Điểm</div>
+                                <div>Trạng thái</div>
+                                <div>Thời gian</div>
+                                <div></div>
+                              </div>
+
+                              {(quizAttempts || []).map((attempt, idx) => {
+                                const status = String(
                                   attempt.status || ""
                                 ).toUpperCase();
                                 const isInProgress = status === "IN_PROGRESS";
+                                const passed = attempt?.passed === true;
+
+                                const attemptKey =
+                                  attempt.attemptId || attempt.id;
+
+                                const created =
+                                  attempt.createdAt ||
+                                  attempt.startedAt ||
+                                  attempt.submittedAt;
 
                                 return (
-                                  <li
-                                    key={attempt.attemptId || attempt.id}
-                                    className={styles.quizAttemptItem}
+                                  <div
+                                    key={attemptKey}
+                                    className={styles.quizAttemptRow}
                                   >
-                                    <div className={styles.quizAttemptMain}>
-                                      <span>
-                                        Lần làm{" "}
-                                        {attempt.attemptNumber ??
-                                          attempt.attemptIndex ??
-                                          ""}
-                                      </span>
-
-                                      {attempt.scorePercent != null && (
-                                        <span>
-                                          Điểm: {attempt.scorePercent}%
-                                        </span>
-                                      )}
-
-                                      {attempt.createdAt && (
-                                        <span>
-                                          Thời gian:{" "}
-                                          {new Date(
-                                            attempt.createdAt
-                                          ).toLocaleString("vi-VN")}
-                                        </span>
-                                      )}
-
-                                      {attempt.status && (
-                                        <span>
-                                          Trạng thái: {attempt.status}
-                                        </span>
-                                      )}
+                                    <div className={styles.cellStrong}>
+                                      {attempt.attemptNumber ??
+                                        attempt.attemptIndex ??
+                                        quizAttempts.length - idx}
                                     </div>
 
-                                    <button
-                                      type="button"
-                                      className={styles.secondaryBtn}
-                                      onClick={() => {
-                                        const attemptId =
-                                          attempt.attemptId || attempt.id;
-                                        if (!attemptId) return;
-                                        navigate(
-                                          `/learn/${courseId}/${slug}/lesson/${numericLessonId}/section/${quizSectionId}/quiz/attempt/${attemptId}`,
-                                          {
-                                            state: {
-                                              quizId,
-                                              returnContentId:
-                                                activeContent?.contentId,
-                                              chapterOrderIndex:
-                                                chapterOrderIndexFromState,
-                                            },
-                                          }
-                                        );
-                                      }}
-                                    >
-                                      {isInProgress
-                                        ? "Tiếp tục làm"
-                                        : "Xem chi tiết"}
-                                    </button>
-                                  </li>
+                                    <div>
+                                      {attempt.scorePercent != null
+                                        ? `${attempt.scorePercent}%`
+                                        : "—"}
+                                    </div>
+
+                                    <div>
+                                      <span
+                                        className={`${styles.badge} ${
+                                          isInProgress
+                                            ? styles.badgeInfo
+                                            : passed
+                                            ? styles.badgeSuccess
+                                            : styles.badgeDanger
+                                        }`}
+                                      >
+                                        {isInProgress
+                                          ? "IN PROGRESS"
+                                          : passed
+                                          ? "PASSED"
+                                          : "FAILED"}
+                                      </span>
+                                    </div>
+
+                                    <div className={styles.muted}>
+                                      {created
+                                        ? new Date(created).toLocaleString(
+                                            "vi-VN"
+                                          )
+                                        : "—"}
+                                    </div>
+
+                                    <div className={styles.rowActions}>
+                                      <button
+                                        type="button"
+                                        className={styles.secondaryBtn}
+                                        onClick={() => {
+                                          const id =
+                                            attempt.attemptId || attempt.id;
+                                          if (!id) return;
+                                          navigate(
+                                            `/learn/${courseId}/${slug}/lesson/${numericLessonId}/section/${quizSectionId}/quiz/attempt/${id}`,
+                                            {
+                                              state: {
+                                                quizId,
+                                                returnContentId:
+                                                  activeContent?.contentId,
+                                                chapterOrderIndex:
+                                                  chapterOrderIndexFromState,
+                                              },
+                                            }
+                                          );
+                                        }}
+                                      >
+                                        {isInProgress ? "Tiếp tục" : "Xem"}
+                                      </button>
+                                    </div>
+                                  </div>
                                 );
                               })}
-                            </ul>
+                            </div>
                           )}
                         </>
                       )}

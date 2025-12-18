@@ -145,20 +145,7 @@ const routes = [
           { path: "jlpt/test/:testId/listening", element: <Listening /> },
           { path: "jlpt/test/:testId/result", element: <Result /> },
           { path: "jlpt/test/:testId/review", element: <Review /> },
-
-          // {
-          //   path: "course/:courseId/lesson/:lessonId",
-          //   element: <LessonPlayer />,
-          // },
           { path: "jlpt/history", element: <JLPTHistory /> },
-          {
-            path: "course/:courseId/lesson/:lessonId",
-            element: <LessonPlayer />,
-          },
-          {
-            path: "course/:courseId/lesson/:lessonId/quiz/:quizId",
-            element: <QuizPage />,
-          },
 
           //====flow-learn===
           {
