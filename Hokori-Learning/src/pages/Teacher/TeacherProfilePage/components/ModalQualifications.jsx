@@ -31,7 +31,7 @@ const buildFileUrl = (fileUrl) => {
   if (fileUrl.startsWith("http")) return fileUrl;
 
   const apiBase = api.defaults.baseURL || "";
-  const rootBase = apiBase.replace(/\/?$/, ""); // bỏ đuôi /api nếu có
+  const rootBase = apiBase.replace(/\/api\/?$/, ""); // bỏ đuôi /api nếu có
 
   return rootBase + fileUrl;
 };
@@ -189,7 +189,7 @@ export default function ModalCertificates({ open, onClose, locked = false }) {
         fileSizeBytes: item.fileSizeBytes,
         storageProvider: item.storageProvider,
       });
-      setPreviewUrl(item.fileUrl);
+      setPreviewUrl(buildFileUrl(item.fileUrl));
     } else {
       setUploadedMeta(null);
       setPreviewUrl(null);
@@ -271,9 +271,9 @@ export default function ModalCertificates({ open, onClose, locked = false }) {
               />
             </div>
           )}
-          {uploadedMeta?.filename && (
+          {uploadedMeta?.fileName && (
             <p style={{ marginTop: 8, color: "#1677ff" }}>
-              File đã upload: <strong>{uploadedMeta.filename}</strong>
+              File đã upload: <strong>{uploadedMeta.fileName}</strong>
             </p>
           )}
         </Form.Item>

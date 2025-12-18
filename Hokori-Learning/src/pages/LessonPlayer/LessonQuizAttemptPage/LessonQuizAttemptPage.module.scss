@@ -1,21 +1,89 @@
+/* ====== PAGE LAYOUT ====== */
+
+.page {
+  width: 100%;
+  min-height: calc(100vh - 64px);
+  background: #f3f4f6;
+  display: flex;
+  justify-content: center;
+}
+
+.container {
+  width: 100%;
+  max-width: 1180px;
+  margin: 32px 0 40px;
+  padding: 0 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.mainLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.playerPanel {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #e5e7eb;
+  padding: 18px 20px 18px;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+}
+
+.error {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: #b91c1c;
+}
+
 /* ====== QUIZ COMMON ====== */
 
 .quizPlayHeader {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   margin-bottom: 16px;
+}
+
+.quizPlayHeaderMain {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
 
   h2 {
     margin: 0;
-    font-size: 22px;
+    font-size: 18px;
     font-weight: 700;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
+    color: #111827;
   }
 }
 
-.quizResult,
+.quizPlaySubRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.timeChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.timeChipDanger {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.resultCard,
 .quizNoMoreQuestion,
 .quizQuestionBlock {
   margin-top: 16px;
@@ -26,14 +94,84 @@
   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
 }
 
-/* summary điểm */
-.quizMeta {
+.resultHeader {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin: 8px 0 12px;
-  font-size: 14px;
-  color: #4b5563;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #111827;
+  }
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 12px;
+  border: 1px solid transparent;
+}
+
+.badgeSuccess {
+  background: #ecfdf5;
+  color: #065f46;
+  border-color: #a7f3d0;
+}
+
+.badgeDanger {
+  background: #fef2f2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.resultGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+@media (max-width: 900px) {
+  .resultGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .resultGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.metaBox {
+  background: #f9fafb;
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.metaLabel {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.metaValue {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.resultActions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 /* ====== KẾT QUẢ CHI TIẾT ====== */
@@ -164,16 +302,43 @@
 .quizOptionItem {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
   font-size: 14px;
   color: #111827;
+  transition: background 0.15s ease, border-color 0.15s ease;
 
   input {
     margin-top: 3px;
+    accent-color: #2563eb;
+  }
+
+  &:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
   }
 }
 
-/* ====== BUTTON CƠ BẢN (nếu file đã có rồi thì bỏ đoạn này) ====== */
+@media (max-width: 640px) {
+  .quizPlayHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .secondaryBtn {
+    align-self: flex-start;
+  }
+  .resultActions {
+    justify-content: stretch;
+  }
+  .primaryBtn {
+    width: 100%;
+  }
+}
+
+/* ====== BUTTON ====== */
 
 .primaryBtn {
   padding: 8px 18px;
