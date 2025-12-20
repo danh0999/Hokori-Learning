@@ -1,0 +1,107 @@
+/* =======================
+   CARD
+======================= */
+.card {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 22px;
+  padding: 1.8rem 1.8rem 2rem;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+
+  position: relative;
+}
+
+/* =======================
+   BEST / PRO
+======================= */
+.pro {
+  border: 2px solid #2563eb;
+  background: #f8fbff;
+}
+
+.best {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  background: #2563eb;
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* =======================
+   TEXT
+======================= */
+.name {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.duration {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 0.35rem;
+}
+
+.description {
+  font-size: 0.9rem;
+  color: #4b5563;
+  line-height: 1.45;
+  margin-bottom: 1.4rem;
+  max-width: 260px; /* tránh chữ quá dài */
+}
+
+/* =======================
+   FEATURES / QUOTA
+======================= */
+.features {
+  width: 100%;
+  list-style: none;
+  padding: 1.2rem 1.4rem;
+  margin: 0 0 1.6rem 0;
+
+  border-top: 1px dashed #e5e7eb;
+  border-bottom: 1px dashed #e5e7eb;
+
+  display: flex;
+  justify-content: center;
+}
+
+.features li {
+  font-size: 0.95rem;
+  color: #374151;
+}
+
+.features strong {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+/* =======================
+   PRICE
+======================= */
+.price {
+  margin-top: auto;       
+  margin-bottom: 1.2rem;
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+/* =======================
+   BUTTON
+======================= */
+.card button {
+  width: 70%;
+}

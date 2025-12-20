@@ -11,36 +11,37 @@ import {
   deleteAdminAiPackage,
 } from "../../../redux/features/adminAiPackageSlice";
 
-// ================= FORMAT PRICE (KHÔNG ĐỤNG TOÁN HỌC) ==================
+/* ================= FORMAT PRICE ================= */
 const formatPrice = (value) => {
   if (!value && value !== 0) return "0";
   return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 };
 
-// ================= SERVICE OPTIONS ==================
-const SERVICE_OPTIONS = [
-  { key: "kaiwa", label: "AI Kaiwa" },
-  { key: "grammar", label: "Grammar Fix" },
-  { key: "pronunciation", label: "Pronunciation Analysis" },
-];
+/* ================= RULE HELPERS ================= */
+const getPurchaseCount = (pkg) => Number(pkg.purchaseCount || 0);
+const getUsageCount = (pkg) => Number(pkg.usageCount || 0);
 
-// ================= PACKAGE MODAL ==================
+const canEditPackage = (pkg) =>
+  !pkg.isActive &&
+  getPurchaseCount(pkg) === 0 &&
+  getUsageCount(pkg) === 0;
+
+const canDeletePackage = (pkg) =>
+  !pkg.isActive &&
+  getPurchaseCount(pkg) === 0 &&
+  getUsageCount(pkg) === 0;
+
+/* ================= PACKAGE MODAL ================= */
 const PackageModal = ({ open, mode, initial, onClose, onSubmit }) => {
-  const [form, setForm] = useState(
-    initial || {
-      name: "",
-      durationDays: "",
-      priceCents: "",
-      description: "",
-      grammarQuota: 0,
-      kaiwaQuota: 0,
-      pronunQuota: 0,
-      conversationQuota: 0,
-
-      isActive: true,
-      displayOrder: 1,
-    }
-  );
+  const [form, setForm] = useState({
+    name: "",
+    durationDays: "",
+    priceCents: "",
+    description: "",
+    totalRequests: "",
+    isActive: true,
+    displayOrder: 1,
+  });
 
   const [errors, setErrors] = useState({});
 
@@ -49,12 +50,9 @@ const PackageModal = ({ open, mode, initial, onClose, onSubmit }) => {
       setForm({
         name: initial.name,
         durationDays: initial.durationDays,
-        priceCents: initial.priceCents / 100, // hiển thị dạng VND bình thường
+        priceCents: initial.priceCents,
         description: initial.description,
-        grammarQuota: initial.grammarQuota,
-        kaiwaQuota: initial.kaiwaQuota,
-        pronunQuota: initial.pronunQuota,
-        conversationQuota: initial.conversationQuota,
+        totalRequests: initial.totalRequests,
         isActive: initial.isActive,
         displayOrder: initial.displayOrder || 1,
       });
@@ -63,42 +61,42 @@ const PackageModal = ({ open, mode, initial, onClose, onSubmit }) => {
 
   if (!open) return null;
 
-  const validate = (field, value) => {
-    let msg = "";
-    if (field === "name" && !value.trim()) msg = "Tên gói là bắt buộc";
-    if (field === "durationDays" && (+value <= 0 || !value))
-      msg = "Thời hạn phải > 0";
-    if (field === "priceCents" && (+value <= 0 || !value))
-      msg = "Giá tiền phải > 0";
-    if (field === "description" && value.trim().length < 10)
-      msg = "Mô tả tối thiểu 10 ký tự";
-
-    setErrors((prev) => ({ ...prev, [field]: msg }));
-  };
-
   const change = (field) => (e) => {
     const v = e.target.value;
-    setForm((p) => ({ ...p, [field]: v }));
-    validate(field, v);
-  };
-
-  const changeQuota = (field) => (e) => {
-    const v = Number(e.target.value);
     setForm((p) => ({ ...p, [field]: v }));
   };
 
   const submit = (e) => {
     e.preventDefault();
 
-    Object.keys(form).forEach((key) => validate(key, form[key]));
-    if (Object.values(errors).some((m) => m)) return;
+    const nextErrors = {};
+    const setMsg = (f, m) => (nextErrors[f] = m);
 
-    const processedForm = {
-      ...form,
-      priceCents: Number(form.priceCents), // KHÔNG nhân 100
+    if (!form.name.trim()) setMsg("name", "Tên gói là bắt buộc");
+    if (!form.durationDays || Number(form.durationDays) <= 0)
+      setMsg("durationDays", "Thời hạn phải > 0");
+    if (!form.priceCents || Number(form.priceCents) <= 0)
+      setMsg("priceCents", "Giá tiền phải > 0");
+    if (!form.totalRequests || Number(form.totalRequests) <= 0)
+      setMsg("totalRequests", "Tổng lượt AI phải > 0");
+    if (form.description.trim().length < 10)
+      setMsg("description", "Mô tả tối thiểu 10 ký tự");
+
+    setErrors(nextErrors);
+    if (Object.values(nextErrors).some(Boolean)) return;
+
+    const payload = {
+      name: form.name.trim(),
+      description: form.description.trim(),
+      durationDays: Number(form.durationDays),
+      priceCents: Number(form.priceCents),
+      currency: "VND",
+      totalRequests: Number(form.totalRequests),
+      isActive: form.isActive,
+      displayOrder: form.displayOrder,
     };
 
-    onSubmit(processedForm);
+    onSubmit(payload);
   };
 
   return (
@@ -109,7 +107,6 @@ const PackageModal = ({ open, mode, initial, onClose, onSubmit }) => {
         </h2>
 
         <form className={s.form} onSubmit={submit}>
-          {/* LEFT */}
           <div className={s.col}>
             <label className={s.label}>
               Tên gói
@@ -152,6 +149,22 @@ const PackageModal = ({ open, mode, initial, onClose, onSubmit }) => {
             </label>
 
             <label className={s.label}>
+              Tổng lượt AI (dùng chung)
+              <input
+                type="number"
+                min={1}
+                className={`${s.input} ${
+                  errors.totalRequests ? s.errorInput : ""
+                }`}
+                value={form.totalRequests}
+                onChange={change("totalRequests")}
+              />
+              {errors.totalRequests && (
+                <p className={s.errorText}>{errors.totalRequests}</p>
+              )}
+            </label>
+
+            <label className={s.label}>
               Mô tả gói
               <textarea
                 className={`${s.textarea} ${
@@ -163,54 +176,6 @@ const PackageModal = ({ open, mode, initial, onClose, onSubmit }) => {
               {errors.description && (
                 <p className={s.errorText}>{errors.description}</p>
               )}
-            </label>
-          </div>
-
-          {/* RIGHT */}
-          <div className={s.col}>
-            <h4 className={s.serviceTitle}>Quota dịch vụ AI</h4>
-
-            <label className={s.label}>
-              Grammar Fix
-              <input
-                type="number"
-                min={0}
-                className={s.input}
-                value={form.grammarQuota}
-                onChange={changeQuota("grammarQuota")}
-              />
-            </label>
-
-            <label className={s.label}>
-              AI Kaiwa
-              <input
-                type="number"
-                min={0}
-                className={s.input}
-                value={form.kaiwaQuota}
-                onChange={changeQuota("kaiwaQuota")}
-              />
-            </label>
-
-            <label className={s.label}>
-              Pronunciation Analysis
-              <input
-                type="number"
-                min={0}
-                className={s.input}
-                value={form.pronunQuota}
-                onChange={changeQuota("pronunQuota")}
-              />
-            </label>
-            <label className={s.label}>
-              AI Conversation
-              <input
-                type="number"
-                min={0}
-                className={s.input}
-                value={form.conversationQuota}
-                onChange={changeQuota("conversationQuota")}
-              />
             </label>
           </div>
 
@@ -228,10 +193,7 @@ const PackageModal = ({ open, mode, initial, onClose, onSubmit }) => {
   );
 };
 
-// ======================================================
-// MAIN PAGE
-// ======================================================
-
+/* ================= MAIN PAGE ================= */
 export default function AiPackages() {
   const dispatch = useDispatch();
   const { list, loading } = useSelector((state) => state.adminAiPackages);
@@ -251,41 +213,72 @@ export default function AiPackages() {
   };
 
   const openEdit = (pkg) => {
+    if (!canEditPackage(pkg)) {
+      toast.warning(
+        "Không thể chỉnh sửa: gói đang bán hoặc đã có người mua / sử dụng"
+      );
+      return;
+    }
     setMode("edit");
     setEditing(pkg);
     setModalOpen(true);
   };
 
   const submit = (form) => {
-    if (mode === "create") {
-      dispatch(createAdminAiPackage(form))
-        .unwrap()
-        .then(() => toast.success("Tạo gói AI thành công!"))
-        .catch(() => toast.error("Không thể tạo gói AI"));
-    } else {
-      dispatch(updateAdminAiPackage({ id: editing.id, data: form }))
-        .unwrap()
-        .then(() => toast.success("Cập nhật thành công!"))
-        .catch(() => toast.error("Không thể cập nhật!"));
-    }
+    const action =
+      mode === "create"
+        ? createAdminAiPackage(form)
+        : updateAdminAiPackage({ id: editing.id, data: form });
+
+    dispatch(action)
+      .unwrap()
+      .then(() =>
+        toast.success(
+          mode === "create"
+            ? "Tạo gói AI thành công!"
+            : "Cập nhật gói AI thành công!"
+        )
+      )
+      .catch(() => toast.error("Thao tác thất bại!"));
+
     setModalOpen(false);
   };
 
   const toggleStatus = (pkg) => {
-    const newData = { ...pkg, isActive: !pkg.isActive };
-    dispatch(updateAdminAiPackage({ id: pkg.id, data: newData }))
+    dispatch(
+      updateAdminAiPackage({
+        id: pkg.id,
+        data: {
+          name: pkg.name,
+          description: pkg.description,
+          priceCents: pkg.priceCents,
+          currency: pkg.currency || "VND",
+          durationDays: pkg.durationDays,
+          totalRequests: pkg.totalRequests,
+          isActive: !pkg.isActive,
+          displayOrder: pkg.displayOrder || 1,
+        },
+      })
+    )
       .unwrap()
-      .then(() => toast.success("Đã thay đổi trạng thái!"))
-      .catch(() => toast.error("Không thể thay đổi trạng thái!"));
+      .then(() => toast.success("Đã thay đổi trạng thái gói AI"))
+      .catch(() =>
+        toast.error("Không thể thay đổi trạng thái (vi phạm điều kiện)")
+      );
   };
 
-  const handleDelete = (id) => {
-    dispatch(deleteAdminAiPackage(id))
-      .unwrap()
-      .then(() => toast.success("Đã xoá gói AI!"))
-      .catch(() =>
-        toast.error("Không thể xoá gói AI (có người đang sử dụng)!")
+  const handleDelete = (pkg) => {
+    if (!canDeletePackage(pkg)) {
+      toast.warning(
+        "Không thể xoá: gói đang bán hoặc đã có người mua / sử dụng"
       );
+      return;
+    }
+
+    dispatch(deleteAdminAiPackage(pkg.id))
+      .unwrap()
+      .then(() => toast.success("Đã xoá gói AI"))
+      .catch(() => toast.error("Không thể xoá gói AI"));
   };
 
   return (
@@ -306,7 +299,7 @@ export default function AiPackages() {
               <th>Tên gói</th>
               <th>Thời hạn</th>
               <th>Giá</th>
-              <th>Dịch vụ</th>
+              <th>Quota AI</th>
               <th>Trạng thái</th>
               <th>Thao tác</th>
             </tr>
@@ -317,21 +310,8 @@ export default function AiPackages() {
               <tr key={pkg.id}>
                 <td>{pkg.name}</td>
                 <td>{pkg.durationDays} ngày</td>
-
-                {/* FIXED: FORMAT PRICE */}
                 <td>{formatPrice(pkg.priceCents)} đ</td>
-
-                <td>
-                  {[
-                    pkg.grammarQuota > 0 && `grammar (${pkg.grammarQuota})`,
-                    pkg.kaiwaQuota > 0 && `kaiwa (${pkg.kaiwaQuota})`,
-                    pkg.pronunQuota > 0 && `pronun (${pkg.pronunQuota})`,
-                    pkg.conversationQuota > 0 &&
-                      `conversation (${pkg.conversationQuota})`,
-                  ]
-                    .filter(Boolean)
-                    .join(", ")}
-                </td>
+                <td>{pkg.totalRequests} lượt</td>
 
                 <td>
                   <span
@@ -344,7 +324,11 @@ export default function AiPackages() {
                 </td>
 
                 <td className={s.actions}>
-                  <button className={s.btnSmall} onClick={() => openEdit(pkg)}>
+                  <button
+                    className={s.btnSmall}
+                    disabled={!canEditPackage(pkg)}
+                    onClick={() => openEdit(pkg)}
+                  >
                     Sửa
                   </button>
 
@@ -357,7 +341,8 @@ export default function AiPackages() {
 
                   <button
                     className={s.btnSmallDanger}
-                    onClick={() => handleDelete(pkg.id)}
+                    disabled={!canDeletePackage(pkg)}
+                    onClick={() => handleDelete(pkg)}
                   >
                     Xoá
                   </button>

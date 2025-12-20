@@ -172,3 +172,11 @@
 ul li span:first-child {
     color: #000000 !important;
 }
+.dropdownToggle {
+  cursor: pointer;
+}
+
+.dropdownItem {
+  cursor: pointer;
+  user-select: none;
+}

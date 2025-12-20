@@ -1,5 +1,6 @@
 // src/pages/AiKaiwaPage/AiKaiwaPage.jsx
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
+import { useSelector } from "react-redux";
 import styles from "./AiKaiwaPage.module.scss";
 import useAiService from "../../hooks/useAiService";
 
@@ -14,18 +15,66 @@ import {
   KAIWA_ERROR_MESSAGES,
 } from "../../configs/aiKaiwaConfig";
 
+const STORAGE_PREFIX = "ai_kaiwa_result_";
+
 const AiKaiwaPage = () => {
+  /* =========================
+     AUTH / STORAGE KEY
+  ========================= */
+  const userId = useSelector((state) => state.user?.id);
+  const STORAGE_KEY = userId ? `${STORAGE_PREFIX}${userId}` : null;
+
+  /* =========================
+     STATE
+  ========================= */
   const [audioBlob, setAudioBlob] = useState(null);
-
   const [targetText, setTargetText] = useState("");
-
   const [level, setLevel] = useState(KAIWA_DEFAULTS.LEVEL);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
+
   const { runService } = useAiService("KAIWA");
-  // Khi recorder trả blob mới
+
+  /* =========================
+     LOAD SAVED DATA (F5 / BACK)
+  ========================= */
+  useEffect(() => {
+    if (!STORAGE_KEY) return;
+
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+
+    try {
+      const saved = JSON.parse(raw);
+      setTargetText(saved.targetText || "");
+      setLevel(saved.level || KAIWA_DEFAULTS.LEVEL);
+      setResult(saved.result || null);
+    } catch {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, [STORAGE_KEY]);
+
+  /* =========================
+     SAVE RESULT TO LOCAL
+  ========================= */
+  useEffect(() => {
+    if (!STORAGE_KEY || !result) return;
+
+    const dataToSave = {
+      targetText,
+      level,
+      result,
+      savedAt: Date.now(),
+    };
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+  }, [result, targetText, level, STORAGE_KEY]);
+
+  /* =========================
+     HANDLERS
+  ========================= */
   const handleAudioReady = useCallback((blob) => {
     setAudioBlob(blob);
   }, []);
@@ -47,6 +96,7 @@ const AiKaiwaPage = () => {
 
       const base64 = await convertBlobToBase64(audioBlob);
       const audioFormat = getAudioFormat(audioBlob);
+
       const response = await runService("KAIWA", () =>
         kaiwaService.practiceKaiwa({
           targetText,
@@ -83,6 +133,9 @@ const AiKaiwaPage = () => {
     }
   };
 
+  /* =========================
+     RENDER
+  ========================= */
   return (
     <div className={styles.page}>
       <HeroSection />

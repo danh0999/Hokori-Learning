@@ -1,5 +1,11 @@
 // src/pages/AiConversationPage/AiConversationPage.jsx
-import React, { useCallback, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useMemo,
+  useState,
+  useEffect,
+} from "react";
+import { useSelector } from "react-redux";
 import styles from "./AiConversationPage.module.scss";
 
 import HeroSection from "./components/HeroSection";
@@ -14,6 +20,8 @@ import { conversationService } from "../../services/conversationService";
 
 const LEVELS = ["N5", "N4", "N3", "N2", "N1"];
 const safeText = (v) => (typeof v === "string" ? v : "");
+
+const STORAGE_PREFIX = "ai_conversation_session_";
 
 /* ===============================
    Helper: bỏ romaji trong ngoặc ()
@@ -42,30 +50,105 @@ const speakJapanese = (jpText) => {
 export default function AiConversationPage() {
   const { runService } = useAiService();
 
-  // input
+  /* ===============================
+     USER / STORAGE KEY
+  ================================ */
+  const userId = useSelector((state) => state.user?.id);
+  const STORAGE_KEY = userId ? `${STORAGE_PREFIX}${userId}` : null;
+
+  /* ===============================
+     INPUT
+  ================================ */
   const [level, setLevel] = useState("N5");
   const [scenario, setScenario] = useState("");
 
-  // session
+  /* ===============================
+     SESSION
+  ================================ */
   const [conversationId, setConversationId] = useState(null);
   const [history, setHistory] = useState([]);
   const [turnNumber, setTurnNumber] = useState(0);
   const [maxTurns, setMaxTurns] = useState(7);
   const [originalScenario, setOriginalScenario] = useState("");
 
-  // audio
+  /* ===============================
+     AUDIO
+  ================================ */
   const [audioBlob, setAudioBlob] = useState(null);
 
-  // UI
+  /* ===============================
+     UI
+  ================================ */
   const [loading, setLoading] = useState(false);
   const [ending, setEnding] = useState(false);
   const [error, setError] = useState(null);
 
-  // result
+  /* ===============================
+     RESULT
+  ================================ */
   const [endResult, setEndResult] = useState(null);
 
   const started = !!conversationId && !endResult;
 
+  /* ===============================
+     LOAD LOCAL STORAGE (RESUME MODE)
+  ================================ */
+  useEffect(() => {
+    if (!STORAGE_KEY) return;
+
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+
+    try {
+      const saved = JSON.parse(raw);
+
+      setLevel(saved.level || "N5");
+      setScenario(saved.scenario || "");
+      setOriginalScenario(saved.originalScenario || "");
+      setConversationId(saved.conversationId || null);
+      setHistory(saved.history || []);
+      setTurnNumber(saved.turnNumber || 0);
+      setMaxTurns(saved.maxTurns || 7);
+      setEndResult(saved.endResult || null);
+    } catch {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, [STORAGE_KEY]);
+
+  /* ===============================
+     SAVE LOCAL STORAGE
+  ================================ */
+  useEffect(() => {
+    if (!STORAGE_KEY || !conversationId) return;
+
+    const dataToSave = {
+      level,
+      scenario,
+      originalScenario,
+      conversationId,
+      history,
+      turnNumber,
+      maxTurns,
+      endResult,
+      savedAt: Date.now(),
+    };
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+  }, [
+    STORAGE_KEY,
+    level,
+    scenario,
+    originalScenario,
+    conversationId,
+    history,
+    turnNumber,
+    maxTurns,
+    endResult,
+  ]);
+
+  /* ===============================
+     HANDLERS
+  ================================ */
   const handleAudioReady = useCallback((blob) => {
     setAudioBlob(blob);
   }, []);
@@ -76,11 +159,13 @@ export default function AiConversationPage() {
   }, [started, turnNumber, maxTurns]);
 
   /* ===============================
-     START
+     START (NEW CONVERSATION)
   ================================ */
   const handleStart = async () => {
     if (!scenario.trim()) {
-      setError("Vui lòng nhập tình huống trước (ví dụ: nhà hàng, mua sắm, xin việc…).");
+      setError(
+        "Vui lòng nhập tình huống trước (ví dụ: nhà hàng, mua sắm, xin việc…)."
+      );
       return;
     }
 
@@ -204,7 +289,14 @@ export default function AiConversationPage() {
     setEndResult(data);
   };
 
+  /* ===============================
+     RESET (START NEW MODE)
+  ================================ */
   const handleReset = () => {
+    if (STORAGE_KEY) {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+
     setConversationId(null);
     setHistory([]);
     setTurnNumber(0);
@@ -330,12 +422,10 @@ export default function AiConversationPage() {
               ) : (
                 <div className={styles.empty}>
                   <div className={styles.emptyIcon}>💬</div>
-
                   <div className={styles.guide}>
                     <p className={styles.guideTitle}>
                       Cách bắt đầu trò chuyện cùng AI
                     </p>
-
                     <ol className={styles.guideList}>
                       <li>Chọn trình độ JLPT phù hợp.</li>
                       <li>Nhập tình huống hội thoại bạn muốn luyện tập.</li>

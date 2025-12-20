@@ -104,15 +104,24 @@ export const Header = () => {
   // =====================================
   const handleLogout = async () => {
     try {
+      const userId = user?.id;
+
       await logoutFirebase();
 
-      dispatch(logout());
-      dispatch(resetProfile());
-      dispatch(resetAiPackageState());
+      // ===== CLEAR AI KAIWA LOCAL STORAGE =====
+      if (userId) {
+        localStorage.removeItem(`ai_kaiwa_result_${userId}`);
+      }
 
+      // ===== CLEAR OLD KEYS (BACKWARD COMPAT) =====
       localStorage.removeItem("ai_sentence");
       localStorage.removeItem("ai_level");
       localStorage.removeItem("ai_result");
+
+      // ===== RESET REDUX =====
+      dispatch(logout());
+      dispatch(resetProfile());
+      dispatch(resetAiPackageState());
 
       navigate("/");
     } catch (err) {
@@ -265,7 +274,7 @@ export const Header = () => {
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleOpenAiTool("/ai-kaiwa")}
                 >
-                  Luyện nói 
+                  Luyện nói
                 </div>
                 <div
                   className={dropdownItem}

@@ -1,52 +1,71 @@
+// src/pages/.../AiQuotaOverview.jsx
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import styles from "./AiQuotaOverview.module.scss";
 import { fetchAiQuota } from "../../../redux/features/aiPackageSlice";
 
-const SERVICE_LABEL = {
-  GRAMMAR: "Phân tích câu",
-  KAIWA: "Luyện nói (Kaiwa)",
-  CONVERSATION: "Trò chuyện cùng AI",
-};
-
-const SERVICE_ORDER = ["GRAMMAR", "KAIWA", "CONVERSATION"];
-
 const AiQuotaOverview = () => {
   const dispatch = useDispatch();
-  const quotas = useSelector((state) => state.aiPackage.quota || {});
+  const quota = useSelector((state) => state.aiPackage.quota);
+  const myPackage = useSelector((state) => state.aiPackage.myPackage);
 
   useEffect(() => {
     dispatch(fetchAiQuota());
   }, [dispatch]);
 
-  if (!quotas) return null;
+  const hasPackage =
+    myPackage && myPackage.hasPackage && !myPackage.isExpired;
+
+  /* =======================
+     CASE: CHƯA MUA GÓI
+  ======================= */
+  if (!hasPackage) {
+    return (
+      <section className={`${styles.card} card`}>
+        <h3 className={styles.title}>Lượt AI còn lại</h3>
+
+        <p className={styles.emptyText}>
+          Bạn chưa mua gói AI
+        </p>
+
+        <p className={styles.note}>
+          Mua gói AI để sử dụng Phân tích câu, Luyện nói và Trò chuyện AI
+        </p>
+      </section>
+    );
+  }
+
+  /* =======================
+     CASE: ĐÃ MUA GÓI
+  ======================= */
+  if (!quota || quota.totalQuota === 0) return null;
+
+  const percent = Math.round(
+    (quota.remainingQuota / quota.totalQuota) * 100
+  );
 
   return (
     <section className={`${styles.card} card`}>
       <h3 className={styles.title}>Lượt AI còn lại</h3>
 
-      <div className={styles.list}>
-        {SERVICE_ORDER.map((code) => {
-          const q = quotas[code];
-          if (!q || q.totalQuota === 0) return null;
+      <div className={styles.item}>
+        <div className={styles.row}>
+          <span className={styles.label}>Tất cả tính năng AI</span>
+          <span className={styles.value}>
+            {quota.remainingQuota}/{quota.totalQuota} lượt
+          </span>
+        </div>
 
-          const percent = Math.round((q.remainingQuota / q.totalQuota) * 100);
+        <div className={styles.bar}>
+          <div
+            className={styles.fill}
+            style={{ width: `${percent}%` }}
+          />
+        </div>
 
-          return (
-            <div key={code} className={styles.item}>
-              <div className={styles.row}>
-                <span className={styles.label}>{SERVICE_LABEL[code]}</span>
-                <span className={styles.value}>
-                  {q.remainingQuota}/{q.totalQuota}
-                </span>
-              </div>
-
-              <div className={styles.bar}>
-                <div className={styles.fill} style={{ width: `${percent}%` }} />
-              </div>
-            </div>
-          );
-        })}
+        <p className={styles.note}>
+          Áp dụng cho Phân tích câu, Luyện nói và Trò chuyện AI
+        </p>
       </div>
     </section>
   );
