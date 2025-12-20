@@ -6,7 +6,7 @@ import api from "../../configs/axios";
    API CALLS
 ============================================================ */
 
-// 1) Get list packages
+// 1) Get list AI packages (public)
 export const fetchAiPackages = createAsyncThunk(
   "ai/packages/fetchAll",
   async (_, { rejectWithValue }) => {
@@ -19,7 +19,7 @@ export const fetchAiPackages = createAsyncThunk(
   }
 );
 
-// 2) Get my current package
+// 2) Get my current AI package
 export const fetchMyAiPackage = createAsyncThunk(
   "ai/packages/fetchMyPackage",
   async (_, { rejectWithValue }) => {
@@ -32,7 +32,7 @@ export const fetchMyAiPackage = createAsyncThunk(
   }
 );
 
-// 3) Fetch quota
+// 3) Fetch quota (remaining AI requests)
 export const fetchAiQuota = createAsyncThunk(
   "ai/packages/fetchQuota",
   async (_, { rejectWithValue }) => {
@@ -46,6 +46,7 @@ export const fetchAiQuota = createAsyncThunk(
 );
 
 // 4) Check permission before using AI service
+// ❗ CHỈ CHECK – KHÔNG MỞ MODAL
 export const checkAIPermission = createAsyncThunk(
   "ai/packages/checkPermission",
   async (serviceCode, { getState, rejectWithValue }) => {
@@ -65,7 +66,7 @@ export const checkAIPermission = createAsyncThunk(
 
       return {
         serviceCode,
-        hasQuota: !!q.hasQuota,
+        hasQuota: Boolean(q.hasQuota),
         remainingQuota: q.remainingQuota ?? 0,
       };
     } catch (err) {
@@ -89,7 +90,7 @@ export const purchaseAiPackage = createAsyncThunk(
   }
 );
 
-// 6) Consume service quota
+// 6) Consume AI service quota
 export const consumeAiServiceQuota = createAsyncThunk(
   "ai/packages/consumeService",
   async ({ serviceType, amount = 1 }, { rejectWithValue }) => {
@@ -110,21 +111,26 @@ export const consumeAiServiceQuota = createAsyncThunk(
 ============================================================ */
 
 const initialState = {
+  // UI modal
   showModal: false,
   serviceNeed: null,
 
+  // Packages
   packages: [],
   packagesStatus: "idle",
   packagesError: null,
 
+  // My package
   myPackage: null,
   myPackageStatus: "idle",
   myPackageError: null,
 
+  // Quota
   quota: {},
   quotaStatus: "idle",
   quotaError: null,
 
+  // Checkout
   checkoutStatus: "idle",
   checkoutError: null,
   lastCheckout: null,
@@ -133,11 +139,12 @@ const initialState = {
 const aiPackageSlice = createSlice({
   name: "aiPackage",
   initialState,
+
   reducers: {
-    // <-- IMPORTANT for Home → open modal
+    // FE chủ động mở modal giới thiệu gói
     openModal(state, action) {
       state.showModal = true;
-      state.serviceNeed = action.payload || null; // GRAMMAR | KAIWA | CONVERSATION
+      state.serviceNeed = action.payload || null;
     },
 
     closeModal(state) {
@@ -148,17 +155,12 @@ const aiPackageSlice = createSlice({
     resetAiPackageState() {
       return {
         ...initialState,
-        packages: [],
-        quota: {},
-        myPackage: null,
       };
     },
   },
 
   extraReducers: (builder) => {
-    /* ============================================================
-       FETCH AI PACKAGES
-    ============================================================ */
+    /* ================= FETCH PACKAGES ================= */
     builder
       .addCase(fetchAiPackages.pending, (state) => {
         state.packagesStatus = "loading";
@@ -172,9 +174,7 @@ const aiPackageSlice = createSlice({
         state.packagesError = action.payload;
       });
 
-    /* ============================================================
-       FETCH MY PACKAGE
-    ============================================================ */
+    /* ================= FETCH MY PACKAGE ================= */
     builder
       .addCase(fetchMyAiPackage.pending, (state) => {
         state.myPackageStatus = "loading";
@@ -188,9 +188,7 @@ const aiPackageSlice = createSlice({
         state.myPackageError = action.payload;
       });
 
-    /* ============================================================
-       FETCH QUOTA
-    ============================================================ */
+    /* ================= FETCH QUOTA ================= */
     builder
       .addCase(fetchAiQuota.pending, (state) => {
         state.quotaStatus = "loading";
@@ -204,20 +202,13 @@ const aiPackageSlice = createSlice({
         state.quotaError = action.payload;
       });
 
-    /* ============================================================
-       CHECK PERMISSION
-    ============================================================ */
-    builder.addCase(checkAIPermission.fulfilled, (state, action) => {
-      const { hasQuota, serviceCode } = action.payload;
-      if (!hasQuota) {
-        state.showModal = true;
-        state.serviceNeed = serviceCode;
-      }
+    /* ================= CHECK PERMISSION ================= */
+    // ❗ KHÔNG mở modal ở đây nữa
+    builder.addCase(checkAIPermission.fulfilled, () => {
+      // intentionally empty
     });
 
-    /* ============================================================
-       CHECKOUT PACKAGE
-    ============================================================ */
+    /* ================= CHECKOUT ================= */
     builder
       .addCase(purchaseAiPackage.pending, (state) => {
         state.checkoutStatus = "loading";
@@ -231,13 +222,12 @@ const aiPackageSlice = createSlice({
         state.checkoutError = action.payload;
       });
 
-    /* ============================================================
-       CONSUME QUOTA
-    ============================================================ */
-    // Có thể update quota ở đây nếu BE trả quota mới
+    /* ================= CONSUME QUOTA ================= */
+    // (optional) update quota if BE returns new value
   },
 });
 
 export const { openModal, closeModal, resetAiPackageState } =
   aiPackageSlice.actions;
+
 export default aiPackageSlice.reducer;

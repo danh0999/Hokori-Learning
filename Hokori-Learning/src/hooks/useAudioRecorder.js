@@ -49,7 +49,7 @@ export const useAudioRecorder = () => {
       };
 
       // timeslice 100ms để flush dữ liệu đều hơn
-      recorder.start(100);
+    recorder.start(100);
       setIsRecording(true);
     } catch (err) {
       console.error("Failed to start recording:", err);

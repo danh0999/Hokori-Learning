@@ -4,8 +4,8 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -17,23 +17,23 @@
 ======================= */
 .modal {
   background: #fff;
-  padding: 2.2rem;
-  width: 750px;
+  padding: 2.4rem 2.6rem;
+  width: 820px;
   max-width: 95%;
-  border-radius: 22px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
-  animation: fadeUp 0.3s ease;
+  border-radius: 26px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.18);
+  animation: fadeUp 0.32s ease;
   font-family: "Inter";
 }
 
 @keyframes fadeUp {
   from {
     opacity: 0;
-    transform: translateY(25px);
+    transform: translateY(30px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -41,9 +41,10 @@
    PACKAGE LIST
 ======================= */
 .packageList {
-  margin-top: 1.5rem;
+  margin-top: 1.8rem;
   display: flex;
-  gap: 1.2rem;
+  justify-content: center;
+  gap: 1.6rem;
 
   @media (max-width: 650px) {
     flex-direction: column;
@@ -51,168 +52,152 @@
 }
 
 /* =======================
-   CARD DEFAULT
+   CARD
 ======================= */
 .card {
-  flex: 1;
+  width: 100%;
+  max-width: 420px;
   border: 1px solid #e5e7eb;
-  padding: 1.4rem 1rem;
-  border-radius: 18px;
-  background: #fafafa;
+  padding: 1.8rem 1.6rem 2rem;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #fafafa, #ffffff);
   text-align: center;
-  transition: all 0.25s ease;
+  transition: all 0.28s ease;
   cursor: default;
+  position: relative;
 
   h3 {
-    font-size: 1.25rem;
-    margin-bottom: 6px;
+    font-size: 1.45rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: #111827;
   }
 
   ul {
-    margin: 0.8rem 0;
+    margin: 1.2rem 0;
     padding: 0;
     list-style: none;
-    font-size: 0.9rem;
-    color: #555;
+    font-size: 0.92rem;
+    color: #4b5563;
 
     li {
-      margin: 4px 0;
+      margin: 6px 0;
     }
   }
 
   &:hover {
-    transform: scale(1.03);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    transform: translateY(-4px);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
     background: #ffffff;
   }
 }
 
 /* =======================
-   CARD ACTIVE – Gói đang sử dụng
-======================= */
-.activeCard {
-  border: 2px solid #10b981; /* xanh lá */
-  background: #ecfdf5 !important;
-
-  &:hover {
-    transform: scale(1.03);
-    background: #daf9e8 !important;
-  }
-}
-
-/* =======================
-   CARD DISABLED – Không thể mua
-======================= */
-.disabledCard {
-  opacity: 0.45;
-  cursor: not-allowed;
-  pointer-events: none;
-
-  &:hover {
-    transform: none;
-    box-shadow: none;
-    background: #fafafa;
-  }
-}
-
-/* =======================
-   PRO PACKAGE STYLE
+   PRO PACKAGE
 ======================= */
 .pro {
   border: 2px solid #2563eb;
-  background: #f0f7ff;
-  position: relative;
+  background: linear-gradient(180deg, #f0f7ff, #ffffff);
 
   &:hover {
-    background: #e8f2ff;
     border-color: #1e50d4;
-    transform: scale(1.05);
+    transform: translateY(-6px) scale(1.02);
   }
 }
 
-/* BEST badge */
 .best {
   position: absolute;
-  top: -10px;
-  right: -10px;
+  top: -12px;
+  right: -12px;
   background: #2563eb;
   color: #fff;
-  padding: 5px 12px;
-  border-radius: 12px;
+  padding: 6px 14px;
+  border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 600;
-  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.35);
+}
+
+/* =======================
+   TEXT DETAILS
+======================= */
+.duration {
+  font-size: 0.92rem;
+  color: #6b7280;
+  margin-bottom: 0.2rem;
+}
+
+.description {
+  font-size: 0.92rem;
+  color: #4b5563;
+  margin-bottom: 0.9rem;
+  line-height: 1.45;
 }
 
 /* =======================
    PRICE
 ======================= */
 .price {
-  margin: 1rem 0;
-  font-size: 1.4rem;
-  font-weight: 700;
+  margin: 1.6rem 0 1.2rem;
+  font-size: 1.7rem;
+  font-weight: 800;
   color: #111827;
 }
 
 /* =======================
-   CLOSE BUTTON
-======================= */
-.close {
-  margin-top: 1.5rem;
-  background: none;
-  border: none;
-  font-size: 1rem;
-  color: #444;
-  cursor: pointer;
-  padding: 6px 10px;
-  border-radius: 6px;
-  transition: 0.2s;
-
-  &:hover {
-    background: #f3f4f6;
-    color: #000;
-  }
-}
-
-/* =======================
-   ACTIVE NOTICE (User đang dùng gói)
+   ACTIVE NOTICE
 ======================= */
 .activeNotice {
-  padding: 12px 14px;
+  padding: 14px 16px;
   background: #fefce8;
   border: 1px solid #fcd34d;
-  border-radius: 12px;
+  border-radius: 14px;
   color: #854d0e;
-  margin-bottom: 1rem;
+  margin-bottom: 1.4rem;
   font-size: 0.95rem;
 
   strong {
     font-weight: 600;
   }
 }
-/* =======================
-   LOGIN REQUIRED (User chưa đăng nhập)
-======================= */
 
+/* =======================
+   CLOSE BUTTON
+======================= */
+.close {
+  margin-top: 1.8rem;
+  background: none;
+  border: none;
+  font-size: 0.95rem;
+  color: #475569;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: 0.2s;
+
+  &:hover {
+    background: #f3f4f6;
+    color: #111827;
+  }
+}
+
+/* =======================
+   LOGIN REQUIRED
+======================= */
 .loginRequiredWrapper {
   text-align: center;
-  padding: 1.2rem 0 0 0;
-  animation: fadeUp 0.25s ease-out;
-
-  /* 2 dòng quan trọng để gọn lại */
+  padding-top: 1.2rem;
   max-width: 420px;
   margin: 0 auto;
 }
 
-/* Title */
 .loginRequiredTitle {
-  font-size: 1.3rem; /* giảm nhẹ để hài hòa */
+  font-size: 1.35rem;
   font-weight: 700;
   color: #111827;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
 }
 
-/* Subtitle */
 .loginRequiredSub {
   font-size: 0.92rem;
   color: #6b7280;
@@ -220,21 +205,18 @@
   margin-bottom: 1.6rem;
 }
 
-/* Wrapper for buttons */
 .loginRequiredActions {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 10px;
 }
 
-/* Main CTA button: Đăng nhập ngay */
 .loginRequiredBtn {
   width: 100%;
   background: #2563eb;
   color: #fff;
-  padding: 11px 0;
-  border-radius: 10px;
+  padding: 12px 0;
+  border-radius: 12px;
   font-size: 0.95rem;
   font-weight: 600;
   border: none;
@@ -247,29 +229,10 @@
   }
 }
 
-/* Secondary button: Đóng */
 .loginRequiredClose {
   background: transparent;
   border: none;
   font-size: 0.9rem;
   color: #475569;
   cursor: pointer;
-  padding: 5px;
-  transition: 0.15s ease;
-
-  &:hover {
-    color: #1e293b;
-  }
-}
-.duration {
-  font-size: 0.9rem;
-  color: #6b7280;
-  margin-bottom: 0.25rem;
-}
-
-.description {
-  font-size: 0.9rem;
-  color: #4b5563;
-  margin-bottom: 0.75rem;
-  line-height: 1.4;
 }
