@@ -232,6 +232,22 @@ const LoginForm = () => {
       setForgotLoading(false);
     }
   };
+  const resendOtp = async () => {
+    const emailOrPhone = (forgotEmailOrPhone || "").trim();
+    if (!emailOrPhone) return;
+
+    // đang lock thì không cho resend
+    if (otpLockedUntil && otpLockedUntil > Date.now()) {
+      toast.error(
+        `Bạn đang bị khóa tạm thời. Vui lòng thử lại sau ${formatMMSS(
+          lockRemainSec
+        )}.`
+      );
+      return;
+    }
+
+    await requestOtp({ emailOrPhone }); // gọi lại đúng handler
+  };
 
   const verifyOtp = async (values) => {
     const otpCode = (values.otpCode || "").trim();
@@ -526,7 +542,7 @@ const LoginForm = () => {
 
               <Flex gap={8}>
                 <Button
-                  onClick={() => forgotForm.submit()}
+                  onClick={resendOtp}
                   loading={forgotLoading}
                   disabled={!forgotEmailOrPhone || isOtpLocked}
                 >
