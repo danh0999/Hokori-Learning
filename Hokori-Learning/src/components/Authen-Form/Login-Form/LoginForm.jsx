@@ -292,15 +292,34 @@ const LoginForm = () => {
 
       // ✅ OTP hết hạn (tuỳ BE trả 400/410 + message)
       if (
-        status === 410 || // nếu BE dùng 410 Gone cho expired
-        (typeof msg === "string" && msg.toLowerCase().includes("hết hạn"))
+        status === 410 ||
+        (typeof msg === "string" &&
+          (msg.toLowerCase().includes("hết hạn") ||
+            msg.toLowerCase().includes("expired")))
       ) {
         setOtpExpired(true);
         toast.error(msg || "Mã OTP đã hết hạn. Vui lòng gửi lại mã.");
         return;
       }
+      // ✅ Invalid OTP (sai OTP) + show remaining attempts nếu BE có trả
+      const detail = err?.response?.data?.data;
+      const remaining = detail?.remainingAttempts;
+      const failed = detail?.failedAttempts;
+      const max = detail?.maxAttempts;
 
-      // ✅ Invalid OTP (sai OTP)
+      if (Number.isFinite(remaining) && Number.isFinite(max)) {
+        const failedText = Number.isFinite(failed)
+          ? ` (đã sai ${failed}/${max})`
+          : "";
+        toast.error(
+          `${
+            msg || "Mã OTP không chính xác"
+          }. Còn ${remaining}/${max} lần thử${failedText}.`
+        );
+        return;
+      }
+
+      // fallback
       toast.error(msg || "Mã OTP không chính xác");
     } finally {
       setForgotLoading(false);
