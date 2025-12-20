@@ -85,6 +85,15 @@ const CertificateDetail = () => {
 
   return (
     <main className={styles.page}>
+      <div className={styles.topBar}>
+        <button
+          type="button"
+          className={styles.backBtn}
+          onClick={() => navigate(-1)}
+        >
+          ← Quay lại
+        </button>
+      </div>
       <section className={styles.certificate} style={bgStyle}>
         <div className={styles.overlay}>
           <h1 className={styles.title}>Certificate of Completion</h1>

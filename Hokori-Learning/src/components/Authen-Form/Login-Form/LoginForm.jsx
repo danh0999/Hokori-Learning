@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   LockOutlined,
   UserOutlined,
@@ -14,6 +14,7 @@ import {
   Divider,
   Modal,
   Steps,
+  Alert,
 } from "antd";
 import Title from "antd/es/typography/Title";
 import styles from "./styles.module.scss";
@@ -29,6 +30,11 @@ import { getAuth } from "firebase/auth";
 import { toast } from "react-toastify";
 
 const OTP_LEN = 6;
+const formatMMSS = (sec) => {
+  const m = String(Math.floor(sec / 60)).padStart(2, "0");
+  const s = String(sec % 60).padStart(2, "0");
+  return `${m}:${s}`;
+};
 
 const LoginForm = () => {
   const [loadingGoogle, setLoadingGoogle] = useState(false);
@@ -40,6 +46,10 @@ const LoginForm = () => {
 
   const [forgotEmailOrPhone, setForgotEmailOrPhone] = useState("");
   const [forgotOtp, setForgotOtp] = useState("");
+  const [otpLockedUntil, setOtpLockedUntil] = useState(null); // timestamp ms
+  const [lockRemainSec, setLockRemainSec] = useState(0);
+  const [otpExpired, setOtpExpired] = useState(false);
+  const isOtpLocked = otpLockedUntil && otpLockedUntil > Date.now();
 
   const [forgotForm] = Form.useForm();
   const [verifyForm] = Form.useForm();
@@ -146,11 +156,33 @@ const LoginForm = () => {
   // =========================
   // Forgot password handlers
   // =========================
+  useEffect(() => {
+    if (!otpLockedUntil) return;
+
+    const tick = () => {
+      const remain = Math.max(
+        0,
+        Math.ceil((otpLockedUntil - Date.now()) / 1000)
+      );
+      setLockRemainSec(remain);
+      if (remain <= 0) setOtpLockedUntil(null);
+    };
+
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, [otpLockedUntil]);
+
   const openForgot = () => {
     setForgotOpen(true);
     setForgotStep(0);
     setForgotEmailOrPhone("");
     setForgotOtp("");
+
+    setOtpExpired(false);
+    setOtpLockedUntil(null);
+    setLockRemainSec(0);
+
     forgotForm.resetFields();
     verifyForm.resetFields();
     resetForm.resetFields();
@@ -160,17 +192,36 @@ const LoginForm = () => {
     setForgotOpen(false);
     setForgotStep(0);
     setForgotLoading(false);
+
+    setOtpExpired(false);
+    setOtpLockedUntil(null);
+    setLockRemainSec(0);
   };
 
   const requestOtp = async (values) => {
     const emailOrPhone = (values.emailOrPhone || "").trim();
     if (!emailOrPhone) return;
 
+    // 🚫 Đang bị lock 30'
+    if (otpLockedUntil && otpLockedUntil > Date.now()) {
+      toast.error(
+        `Bạn đang bị khóa tạm thời. Vui lòng thử lại sau ${formatMMSS(
+          lockRemainSec
+        )}.`
+      );
+      return;
+    }
+
     try {
       setForgotLoading(true);
 
-      // API: POST /api/auth/forgot-password/request-otp
       await api.post("/auth/forgot-password/request-otp", { emailOrPhone });
+
+      // ✅ Reset trạng thái cũ
+      setOtpExpired(false);
+      setOtpLockedUntil(null);
+      setLockRemainSec(0);
+      verifyForm.resetFields();
 
       setForgotEmailOrPhone(emailOrPhone);
       toast.success("Đã gửi OTP. Vui lòng kiểm tra email!");
@@ -186,10 +237,18 @@ const LoginForm = () => {
     const otpCode = (values.otpCode || "").trim();
     if (!otpCode) return;
 
+    // Nếu đang bị khóa thì không gọi API nữa
+    if (otpLockedUntil && otpLockedUntil > Date.now()) {
+      toast.error(
+        `Bạn đang bị khóa tạm thời. Thử lại sau ${formatMMSS(lockRemainSec)}.`
+      );
+      return;
+    }
+
     try {
       setForgotLoading(true);
+      setOtpExpired(false);
 
-      // API: POST /api/auth/forgot-password/verify-otp
       await api.post("/auth/forgot-password/verify-otp", {
         emailOrPhone: forgotEmailOrPhone,
         otpCode,
@@ -199,7 +258,50 @@ const LoginForm = () => {
       toast.success("OTP hợp lệ!");
       setForgotStep(2);
     } catch (err) {
-      toast.error(err?.response?.data?.message || "OTP không hợp lệ");
+      const status = err?.response?.status;
+      const msg =
+        err?.response?.data?.message || err?.message || "OTP không hợp lệ";
+
+      // ✅ 429 = lock brute-force
+      if (status === 429) {
+        // Ưu tiên lấy thời gian từ BE nếu có:
+        // - retryAfterSeconds (data.retryAfterSeconds)
+        // - hoặc header Retry-After
+        const retryAfterFromBody = err?.response?.data?.retryAfterSeconds;
+        const retryAfterFromHeader = Number(
+          err?.response?.headers?.["retry-after"]
+        );
+        const retryAfterSec = Number.isFinite(retryAfterFromBody)
+          ? retryAfterFromBody
+          : Number.isFinite(retryAfterFromHeader)
+          ? retryAfterFromHeader
+          : 30 * 60; // fallback 30'
+
+        const until = Date.now() + retryAfterSec * 1000;
+        setOtpLockedUntil(until);
+        setOtpExpired(false);
+
+        toast.error(
+          msg ||
+            `Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau ${Math.ceil(
+              retryAfterSec / 60
+            )} phút.`
+        );
+        return;
+      }
+
+      // ✅ OTP hết hạn (tuỳ BE trả 400/410 + message)
+      if (
+        status === 410 || // nếu BE dùng 410 Gone cho expired
+        (typeof msg === "string" && msg.toLowerCase().includes("hết hạn"))
+      ) {
+        setOtpExpired(true);
+        toast.error(msg || "Mã OTP đã hết hạn. Vui lòng gửi lại mã.");
+        return;
+      }
+
+      // ✅ Invalid OTP (sai OTP)
+      toast.error(msg || "Mã OTP không chính xác");
     } finally {
       setForgotLoading(false);
     }
@@ -347,6 +449,27 @@ const LoginForm = () => {
             <div style={{ marginBottom: 8, fontSize: 13, opacity: 0.8 }}>
               OTP đã được gửi tới: <b>{forgotEmailOrPhone}</b>
             </div>
+            {isOtpLocked && (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginBottom: 12 }}
+                message="Xác thực OTP tạm thời bị khóa"
+                description={`Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau ${formatMMSS(
+                  lockRemainSec
+                )}.`}
+              />
+            )}
+
+            {otpExpired && !isOtpLocked && (
+              <Alert
+                type="error"
+                showIcon
+                style={{ marginBottom: 12 }}
+                message="Mã OTP đã hết hạn"
+                description="Vui lòng nhấn “Gửi lại OTP” để nhận mã mới."
+              />
+            )}
 
             <Form.Item
               label="Nhập OTP"
@@ -363,6 +486,8 @@ const LoginForm = () => {
                 inputMode="numeric"
                 placeholder="123456"
                 maxLength={OTP_LEN}
+                disabled={isOtpLocked}
+                onChange={() => setOtpExpired(false)}
               />
             </Form.Item>
 
@@ -371,6 +496,9 @@ const LoginForm = () => {
                 onClick={() => {
                   setForgotStep(0);
                   setForgotOtp("");
+                  setOtpExpired(false);
+                  setOtpLockedUntil(null);
+                  setLockRemainSec(0);
                   verifyForm.resetFields();
                 }}
               >
@@ -381,7 +509,7 @@ const LoginForm = () => {
                 <Button
                   onClick={() => forgotForm.submit()}
                   loading={forgotLoading}
-                  disabled={!forgotEmailOrPhone}
+                  disabled={!forgotEmailOrPhone || isOtpLocked}
                 >
                   Gửi lại OTP
                 </Button>
@@ -389,6 +517,7 @@ const LoginForm = () => {
                   type="primary"
                   htmlType="submit"
                   loading={forgotLoading}
+                  disabled={isOtpLocked}
                 >
                   Xác thực
                 </Button>

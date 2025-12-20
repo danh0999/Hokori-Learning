@@ -64,6 +64,28 @@ export default function LearningTreePage() {
 
   // Chapter trial orderIndex = 0 → bỏ khi chọn default
   const nonTrialChapters = chapters.filter((ch) => ch.orderIndex > 0);
+  // ===== TRIAL CHAPTER GUARD =====
+  const trialChapter = useMemo(
+    () => chapters.find((ch) => Number(ch.orderIndex) === 0),
+    [chapters]
+  );
+
+  // Nếu course chỉ có trial chapter => đá thẳng sang trial page
+  useEffect(() => {
+    if (!data) return;
+
+    if (nonTrialChapters.length === 0 && trialChapter?.chapterId) {
+      navigate(`/course/${courseId}/trial-lesson/${trialChapter.chapterId}`, {
+        replace: true,
+      });
+    }
+  }, [
+    data,
+    nonTrialChapters.length,
+    trialChapter?.chapterId,
+    navigate,
+    courseId,
+  ]);
 
   const activeChapter = useMemo(() => {
     if (!chapters.length) return null;
@@ -106,8 +128,9 @@ export default function LearningTreePage() {
 
   const handleModuleClick = (chapter) => {
     if (!data || !courseSlug) return;
+    if (!chapter || Number(chapter.orderIndex) <= 0) return; // chặn trial
     navigate(
-      `/learn/${courseId}/${courseSlug}/home/chapter/${chapter.orderIndex || 0}`
+      `/learn/${courseId}/${courseSlug}/home/chapter/${chapter.orderIndex}`
     );
   };
 

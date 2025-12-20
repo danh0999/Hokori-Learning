@@ -1,4 +1,5 @@
-// Revenue.jsx (Admin)
+// Revenue.jsx (Admin) - FIX fields (pending payouts)
+// Source: :contentReference[oaicite:0]{index=0}
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Card,
@@ -18,6 +19,18 @@ import api from "../../../configs/axios.js";
 import s from "./Revenue.module.scss";
 
 const fmtVnd = (n) => Number(n || 0).toLocaleString("vi-VN");
+
+const renderPayoutStatus = (status) => {
+  // API sample: "PENDING" (có thể null)
+  if (!status) return <Tag>—</Tag>;
+
+  const v = String(status).toUpperCase();
+  if (v === "PENDING") return <Tag color="gold">PENDING</Tag>;
+  if (v === "PAID") return <Tag color="green">PAID</Tag>;
+  if (v === "FAILED") return <Tag color="red">FAILED</Tag>;
+
+  return <Tag>{v}</Tag>;
+};
 
 export default function Revenue() {
   const [yearMonth, setYearMonth] = useState(dayjs().format("YYYY-MM"));
@@ -125,6 +138,7 @@ export default function Revenue() {
     }
   };
 
+  // ======= TABLE OUTER (FIX FIELD NAMES) =======
   const columns = [
     {
       title: "Teacher",
@@ -142,29 +156,25 @@ export default function Revenue() {
     },
     {
       title: "Cần chuyển",
-      dataIndex: "totalUnpaidRevenueCents",
-      key: "totalUnpaidRevenueCents",
+      dataIndex: "totalPendingRevenueCents",
+      key: "totalPendingRevenueCents",
       render: (v) => `${fmtVnd((v || 0) / 100)} VNĐ`,
       align: "right",
     },
     {
+      // theo yêu cầu của bạn: totalPendingSales
       title: "Số khóa",
-      dataIndex: "courseCount",
-      key: "courseCount",
+      dataIndex: "totalPendingSales",
+      key: "totalPendingSales",
       align: "right",
       width: 90,
     },
     {
-      title: "Ngân hàng",
-      key: "bank",
-      render: (_, r) =>
-        r.bankName ? (
-          <span>
-            {r.bankName} - {r.bankAccountNumber}
-          </span>
-        ) : (
-          <Tag color="warning">Chưa có</Tag>
-        ),
+      title: "Trạng thái",
+      dataIndex: "payoutStatus",
+      key: "payoutStatus",
+      width: 140,
+      render: (v) => renderPayoutStatus(v),
     },
     {
       title: "Hành động",
@@ -183,6 +193,7 @@ export default function Revenue() {
 
   const detailCourses = useMemo(() => detail?.courses || [], [detail]);
 
+  // ======= TABLE IN MODAL (FIX FIELD NAMES) =======
   const detailCourseColumns = [
     {
       title: "Khóa học",
@@ -192,38 +203,18 @@ export default function Revenue() {
     },
     {
       title: "Số GD",
-      dataIndex: "transactionCount",
-      key: "transactionCount",
+      dataIndex: "salesCount",
+      key: "salesCount",
       align: "right",
       width: 90,
     },
     {
-      title: "Teacher nhận",
-      dataIndex: "teacherRevenueCents",
-      key: "teacherRevenueCents",
+      title: "Tổng tiền",
+      dataIndex: "revenueCents",
+      key: "revenueCents",
       render: (v) => `${fmtVnd((v || 0) / 100)} VNĐ`,
       align: "right",
       width: 160,
-    },
-    {
-      title: "Commission admin",
-      dataIndex: "adminCommissionCents",
-      key: "adminCommissionCents",
-      render: (v) => `${fmtVnd((v || 0) / 100)} VNĐ`,
-      align: "right",
-      width: 170,
-    },
-    {
-      title: "Trạng thái",
-      dataIndex: "isPaid",
-      key: "isPaid",
-      width: 120,
-      render: (v) =>
-        v ? (
-          <Tag color="success">Đã trả</Tag>
-        ) : (
-          <Tag color="warning">Chưa trả</Tag>
-        ),
     },
   ];
 
@@ -307,9 +298,9 @@ export default function Revenue() {
                 <Descriptions.Item label="Tháng">
                   {detail.yearMonth}
                 </Descriptions.Item>
-                <Descriptions.Item label="Tổng chưa trả">
-                  {fmtVnd((detail.totalUnpaidRevenueCents || 0) / 100)} VNĐ
-                </Descriptions.Item>
+                {/* <Descriptions.Item label="Tổng chưa trả">
+                  {fmtVnd((detail.totalPendingRevenueCents || 0) / 100)} VNĐ
+                </Descriptions.Item> */}
                 <Descriptions.Item label="Ngân hàng">
                   {detail.bankName || "—"}
                 </Descriptions.Item>

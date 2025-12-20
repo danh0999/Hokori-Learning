@@ -41,8 +41,6 @@ const CourseCard = ({ course, onContinue, onViewCertificate }) => {
           </div>
         </div>
 
-        <p className={styles.teacher}>{course.teacher}</p>
-
         {course.status === "FLAGGED" && course.statusMessage && (
           <div className={styles.statusBanner}>{course.statusMessage}</div>
         )}

@@ -76,22 +76,52 @@ export default function CourseCard({ course }) {
   const canLearn = isEnrolled || (isFree && isLoggedIn);
 
   const handleNavigateCourse = () => navigate(`/course/${id}`);
+  const openLearnEntry = async (courseId, courseTitle) => {
+    const slug = slugify(courseTitle);
+
+    const treeRes = await api.get(`/learner/courses/${courseId}/learning-tree`);
+    const tree = treeRes.data;
+
+    const chapters = tree?.chapters ?? [];
+    if (!chapters.length) {
+      alert("Khóa học chưa có nội dung.");
+      return;
+    }
+
+    const trialChapter = chapters.find((c) => Number(c.orderIndex) === 0);
+    const nonTrial = chapters
+      .filter((c) => Number(c.orderIndex) > 0)
+      .sort((a, b) => Number(a.orderIndex) - Number(b.orderIndex));
+
+    // ✅ chỉ có trial -> qua TrialPage, KHÔNG vào LearningTree
+    if (nonTrial.length === 0) {
+      if (trialChapter?.chapterId) {
+        navigate(`/course/${courseId}/trial-lesson/${trialChapter.chapterId}`);
+        return;
+      }
+      alert("Khóa học chưa có chương để học.");
+      return;
+    }
+
+    // ✅ có chapter học thật -> vào LearningTreePage đúng chapterIndex (không hardcode 1)
+    const firstNonTrial = nonTrial[0];
+    navigate(
+      `/learn/${courseId}/${slug}/home/chapter/${firstNonTrial.orderIndex}`
+    );
+  };
 
   const handleLearn = async () => {
     try {
-      // Nếu đã enroll → vào học luôn
+      // Nếu đã enroll → vào học luôn (đi đúng entry)
       if (isEnrolled) {
-        const slug = slugify(course.title);
-        navigate(`/learn/${id}/${slug}/home/chapter/1`);
+        await openLearnEntry(id, course.title);
         return;
       }
 
-      // FREE + logged in → tự động enroll
+      // FREE + logged in → enroll rồi vào học
       if (isFree && isLoggedIn) {
         await api.post(`/learner/courses/${id}/enroll`);
-        const slug = slugify(course.title);
-        navigate(`/learn/${id}/${slug}/home/chapter/1`);
-
+        await openLearnEntry(id, course.title);
         return;
       }
 
@@ -101,8 +131,8 @@ export default function CourseCard({ course }) {
         return;
       }
     } catch (error) {
-      console.error("Enroll failed:", error);
-      alert("Không thể enroll vào khóa học miễn phí. Vui lòng thử lại.");
+      console.error("Enroll/learn failed:", error);
+      alert("Không thể vào học. Vui lòng thử lại.");
     }
   };
 
