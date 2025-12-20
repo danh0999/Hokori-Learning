@@ -65,7 +65,6 @@ const MyCourses = () => {
                 courseId: enroll.courseId,
                 title: tree.courseTitle || "Khóa học",
                 level: enroll.level || tree.level || "N5",
-                teacher: enroll.teacherName || tree.teacherName || "Giảng viên",
                 coverUrl: tree.coverImagePath
                   ? buildFileUrl(tree.coverImagePath)
                   : null,
@@ -116,12 +115,47 @@ const MyCourses = () => {
   /* =======================
      Handlers
   ======================= */
-  const handleContinue = (course) => {
+
+  const handleContinue = async (course) => {
     try {
       const slug = slugify(course.title);
-      navigate(`/learn/${course.courseId}/${slug}/home/chapter/1`);
-    } catch (err) {
-      console.error(err);
+
+      // Lấy learning tree để biết course có chapter học thật hay chỉ trial
+      const res = await api.get(
+        `/learner/courses/${course.courseId}/learning-tree`
+      );
+      const tree = res.data;
+      const chapters = tree?.chapters ?? [];
+
+      if (!chapters.length) {
+        toast.info("Khóa học chưa có nội dung.");
+        return;
+      }
+
+      const trialChapter = chapters.find((c) => Number(c.orderIndex) === 0);
+      const nonTrialChapters = chapters
+        .filter((c) => Number(c.orderIndex) > 0)
+        .sort((a, b) => Number(a.orderIndex) - Number(b.orderIndex));
+
+      // ✅ Case: chỉ có trial -> đi trang trial, KHÔNG vào LearningTree
+      if (nonTrialChapters.length === 0) {
+        if (trialChapter?.chapterId) {
+          navigate(
+            `/course/${course.courseId}/trial-lesson/${trialChapter.chapterId}`
+          );
+        } else {
+          toast.info("Khóa học chưa có chương để học.");
+        }
+        return;
+      }
+
+      // ✅ Case: có chapter học thật -> vào LearningTree đúng chapterIndex
+      const firstNonTrial = nonTrialChapters[0];
+      navigate(
+        `/learn/${course.courseId}/${slug}/home/chapter/${firstNonTrial.orderIndex}`
+      );
+    } catch (e) {
+      console.error(e);
       toast.error("Không thể mở khóa học. Vui lòng thử lại.");
     }
   };
