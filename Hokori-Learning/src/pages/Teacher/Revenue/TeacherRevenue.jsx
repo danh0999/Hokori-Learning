@@ -1,4 +1,5 @@
 // TeacherRevenue.jsx
+// Source: :contentReference[oaicite:1]{index=1}
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Card,
@@ -21,6 +22,35 @@ import styles from "./TeacherRevenue.module.scss";
 const { Option } = Select;
 
 const fmtVnd = (n) => Number(n || 0).toLocaleString("vi-VN");
+const money = (v) => `${fmtVnd(v || 0)} VNĐ`; // ✅ KHÔNG chia 100
+
+function renderPayoutStatusTag(payoutStatus) {
+  const s = String(payoutStatus || "").toUpperCase();
+  if (s === "FULLY_PAID") return <Tag color="success">Đã thanh toán hết</Tag>;
+  if (s === "PARTIALLY_PAID")
+    return <Tag color="warning">Đã thanh toán một nửa</Tag>;
+  // PENDING / null / ...
+  return <Tag color="default">Chưa thanh toán</Tag>;
+}
+
+/**
+ * API summary hiện chưa trả "coursePriceCents".
+ * Mình ước tính "giá gốc" trung bình:
+ * - revenueCents là "tiền đã chia hoa hồng" (teacher share 80%)
+ * - grossTotal ≈ revenueCents / 0.8
+ * - avgPrice ≈ grossTotal / salesCount
+ */
+function estimateCoursePriceVnd(course) {
+  const sales = Number(course?.salesCount || 0);
+  const teacherShareTotal = Number(course?.revenueCents || 0);
+  if (!sales || !teacherShareTotal) return null;
+
+  const grossTotal = teacherShareTotal / 0.8; // tổng tiền khách trả cho khóa (ước tính)
+  const avgPrice = grossTotal / sales;
+
+  // làm tròn vì tiền VNĐ
+  return Math.round(avgPrice);
+}
 
 export default function TeacherRevenue() {
   const [yearMonth, setYearMonth] = useState(dayjs().format("YYYY-MM"));
@@ -28,9 +58,12 @@ export default function TeacherRevenue() {
 
   const [payout, setPayout] = useState(null); // /payout-status
   const [summary, setSummary] = useState(null); // /summary
-  const [paidFilter, setPaidFilter] = useState(null); // null | true | false
+
+  // filter UI
+  const [payoutStatusFilter, setPayoutStatusFilter] = useState(null); // null | "UNPAID" | "PARTIALLY_PAID" | "FULLY_PAID"
   const [courseFilter, setCourseFilter] = useState(null);
 
+  // detail modal
   const [openDetails, setOpenDetails] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailRows, setDetailRows] = useState([]);
@@ -43,23 +76,18 @@ export default function TeacherRevenue() {
     setPayout(res?.data?.data || null);
   };
 
-  const fetchSummary = async (ym, isPaid, courseId) => {
+  const fetchSummary = async (ym, courseId) => {
     const params = { yearMonth: ym };
-    if (isPaid !== null) params.isPaid = isPaid;
     if (courseId) params.courseId = courseId;
 
     const res = await api.get("teacher/revenue/summary", { params });
     setSummary(res?.data?.data || null);
   };
 
-  const reload = async (
-    ym = yearMonth,
-    isPaid = paidFilter,
-    courseId = courseFilter
-  ) => {
+  const reload = async (ym = yearMonth, courseId = courseFilter) => {
     try {
       setLoading(true);
-      await Promise.all([fetchPayout(ym), fetchSummary(ym, isPaid, courseId)]);
+      await Promise.all([fetchPayout(ym), fetchSummary(ym, courseId)]);
     } catch (e) {
       console.error(e);
       message.error(
@@ -75,32 +103,40 @@ export default function TeacherRevenue() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const courses = useMemo(() => summary?.courses || [], [summary]);
-
   const courseOptions = useMemo(() => {
-    // lấy từ summary (đã đủ để filter)
     return (summary?.courses || []).map((c) => ({
       courseId: c.courseId,
       courseTitle: c.courseTitle,
     }));
   }, [summary]);
 
+  // courses sau filter client-side theo payoutStatus
+  const courses = useMemo(() => {
+    const list = summary?.courses || [];
+    if (!payoutStatusFilter) return list;
+
+    if (payoutStatusFilter === "UNPAID") {
+      return list.filter(
+        (c) =>
+          !c?.payoutStatus || String(c.payoutStatus).toUpperCase() === "PENDING"
+      );
+    }
+
+    return list.filter(
+      (c) => String(c?.payoutStatus || "").toUpperCase() === payoutStatusFilter
+    );
+  }, [summary, payoutStatusFilter]);
+
   const onChangeMonth = (val) => {
     const ym = (val || dayjs()).format("YYYY-MM");
     setYearMonth(ym);
-    // reset course filter vì course list theo tháng
     setCourseFilter(null);
-    reload(ym, paidFilter, null);
-  };
-
-  const onChangePaid = (v) => {
-    setPaidFilter(v);
-    reload(yearMonth, v, courseFilter);
+    reload(ym, null);
   };
 
   const onChangeCourse = (v) => {
     setCourseFilter(v);
-    reload(yearMonth, paidFilter, v);
+    reload(yearMonth, v);
   };
 
   const openCourseDetails = async (course) => {
@@ -126,91 +162,124 @@ export default function TeacherRevenue() {
     }
   };
 
+  // ====== MAIN TABLE (theo yêu cầu mới) ======
   const columns = [
     {
       title: "Khóa học",
       dataIndex: "courseTitle",
       key: "courseTitle",
+      fixed: "left", // 👈 cố định
+      width: 220,
       render: (t) => <b>{t}</b>,
     },
     {
-      title: "Giá khóa học",
-      dataIndex: "coursePriceCents",
-      key: "coursePriceCents",
-      render: (v) => `${fmtVnd((v || 0) / 100)} VNĐ`,
-    },
-    {
-      title: "Số giao dịch",
-      dataIndex: "transactionCount",
-      key: "transactionCount",
+      title: "Giá gốc",
+      key: "coursePrice",
       align: "right",
+      width: 140,
+      render: (_, r) => {
+        const v = estimateCoursePriceVnd(r);
+        return v == null ? "—" : money(v);
+      },
     },
     {
-      title: "Teacher nhận (80%)",
-      dataIndex: "teacherRevenueCents",
-      key: "teacherRevenueCents",
-      render: (v) => `${fmtVnd((v || 0) / 100)} VNĐ`,
+      title: "Số lượng mua",
+      dataIndex: "salesCount",
+      width: 130,
+      align: "center",
+    },
+    {
+      title: "Đã được admin chuyển",
+      dataIndex: "paidSalesCount",
+      width: 170,
+      align: "center",
+    },
+    {
+      title: "Tổng tiền đã chia hoa hồng",
+      dataIndex: "revenueCents",
+      width: 220,
+      align: "right",
+      render: money,
+    },
+    {
+      title: "Đã thanh toán cho teacher",
+      dataIndex: "paidRevenueCents",
+      width: 230,
+      align: "right",
+      render: money,
+    },
+    {
+      title: "Chưa thanh toán",
+      dataIndex: "unpaidRevenueCents",
+      width: 210,
+      align: "right",
+      render: money,
     },
     {
       title: "Trạng thái",
-      dataIndex: "isPaid",
-      key: "isPaid",
-      render: (v) =>
-        v ? (
-          <Tag color="success">Đã trả</Tag>
-        ) : (
-          <Tag color="warning">Chưa trả</Tag>
-        ),
+      dataIndex: "payoutStatus",
+      width: 170,
+      align: "center",
+      render: renderPayoutStatusTag,
     },
     {
       title: "Chi tiết",
       key: "action",
-      render: (_, r) => (
-        <a onClick={() => openCourseDetails(r)}>Xem giao dịch</a>
-      ),
+      fixed: "right", // 👈 cố định
+      width: 120,
+      align: "center",
+      render: (_, r) => <a onClick={() => openCourseDetails(r)}>Xem</a>,
     },
   ];
 
+  // ====== DETAIL MODAL TABLE (đổi tên cột) ======
   const detailColumns = [
     {
-      title: "Payment ID",
+      title: "Mã thanh toán",
       dataIndex: "paymentId",
       key: "paymentId",
-      width: 110,
+      width: 130,
     },
     {
-      title: "Enrollment ID",
+      title: "Mã đăng ký",
       dataIndex: "enrollmentId",
       key: "enrollmentId",
       width: 120,
     },
     {
-      title: "Tổng tiền",
+      title: "Tổng tiền (khách trả)",
       dataIndex: "totalAmountCents",
       key: "totalAmountCents",
-      render: (v) => `${fmtVnd((v || 0) / 100)} VNĐ`,
+      align: "right",
+      render: (v) => money(v),
+      width: 180,
     },
     {
-      title: "Teacher nhận",
+      title: "Số tiền đã chia hoa hồng",
       dataIndex: "teacherRevenueCents",
       key: "teacherRevenueCents",
-      render: (v) => `${fmtVnd((v || 0) / 100)} VNĐ`,
+      align: "right",
+      render: (v) => money(v),
+      width: 220,
     },
     {
-      title: "Commission (admin)",
+      title: "Tiền hoa hồng",
       dataIndex: "adminCommissionCents",
       key: "adminCommissionCents",
-      render: (v) => `${fmtVnd((v || 0) / 100)} VNĐ`,
+      align: "right",
+      render: (v) => money(v),
+      width: 160,
     },
     {
       title: "Trạng thái",
       dataIndex: "isPaid",
       key: "isPaid",
+      width: 130,
       render: (v) =>
         v ? (
-          <Tag color="success">Đã trả</Tag>
+          <Tag color="success">Đã chuyển</Tag>
         ) : (
-          <Tag color="warning">Chưa trả</Tag>
+          <Tag color="warning">Chưa chuyển</Tag>
         ),
     },
     {
@@ -227,12 +296,12 @@ export default function TeacherRevenue() {
         <div>
           <h2 className={styles.title}>Doanh thu giáo viên</h2>
           <p className={styles.subtitle}>
-            Theo dõi doanh thu theo tháng, trạng thái đã trả/chưa trả và chi
-            tiết giao dịch.
+            Theo dõi doanh thu theo tháng, trạng thái đã chuyển/chưa chuyển và
+            chi tiết giao dịch.
           </p>
         </div>
 
-        <Space>
+        <Space wrap>
           <span className={styles.monthLabel}>Chọn tháng</span>
           <DatePicker
             picker="month"
@@ -244,20 +313,21 @@ export default function TeacherRevenue() {
           />
 
           <Select
-            value={paidFilter}
-            onChange={onChangePaid}
-            style={{ width: 160 }}
-            placeholder="Trạng thái"
+            value={payoutStatusFilter}
+            onChange={(v) => setPayoutStatusFilter(v)}
+            style={{ width: 220 }}
+            placeholder="Trạng thái payout"
             allowClear
           >
-            <Option value={true}>Đã trả</Option>
-            <Option value={false}>Chưa trả</Option>
+            <Option value="UNPAID">Chưa thanh toán</Option>
+            <Option value="PARTIALLY_PAID">Đã thanh toán một nửa</Option>
+            <Option value="FULLY_PAID">Đã thanh toán hết</Option>
           </Select>
 
           <Select
             value={courseFilter}
             onChange={onChangeCourse}
-            style={{ width: 260 }}
+            style={{ width: 300 }}
             placeholder="Lọc theo khóa học"
             allowClear
           >
@@ -275,7 +345,7 @@ export default function TeacherRevenue() {
           <Card loading={loading} className={styles.summaryCard}>
             <Statistic
               title={`Tổng doanh thu tháng ${yearMonth}`}
-              value={fmtVnd((payout?.totalRevenueCents || 0) / 100)}
+              value={fmtVnd(payout?.totalRevenueCents || 0)}
               prefix={<DollarOutlined />}
               suffix="VNĐ"
             />
@@ -289,7 +359,7 @@ export default function TeacherRevenue() {
           <Card loading={loading} className={styles.summaryCard}>
             <Statistic
               title="Đã trả"
-              value={fmtVnd((payout?.paidRevenueCents || 0) / 100)}
+              value={fmtVnd(payout?.paidRevenueCents || 0)}
               prefix={<DollarOutlined />}
               suffix="VNĐ"
             />
@@ -303,7 +373,7 @@ export default function TeacherRevenue() {
           <Card loading={loading} className={styles.summaryCard}>
             <Statistic
               title="Chưa trả"
-              value={fmtVnd((payout?.unpaidRevenueCents || 0) / 100)}
+              value={fmtVnd(payout?.unpaidRevenueCents || 0)}
               prefix={<DollarOutlined />}
               suffix="VNĐ"
             />
@@ -322,8 +392,8 @@ export default function TeacherRevenue() {
             <div>
               <h3 className={styles.tableTitle}>Tổng hợp theo khóa học</h3>
               <p className={styles.tableSubtitle}>
-                Danh sách các khóa học và tổng teacher nhận (80%) / trạng thái
-                payout.
+                Hiển thị số lượng mua, số lượt đã được admin chuyển, và số tiền
+                đã/ chưa thanh toán.
               </p>
             </div>
           </div>
@@ -334,6 +404,8 @@ export default function TeacherRevenue() {
           dataSource={courses}
           rowKey={(r) => r.courseId}
           pagination={false}
+          size="middle"
+          scroll={{ x: 1600 }}
         />
       </Card>
 
@@ -350,7 +422,7 @@ export default function TeacherRevenue() {
           setDetailCourse(null);
         }}
         footer={null}
-        width={980}
+        width={1050}
         destroyOnClose
       >
         <Table

@@ -4,6 +4,8 @@ import {
   UserOutlined,
   GoogleOutlined,
   MailOutlined,
+  EyeInvisibleOutlined,
+  EyeTwoTone,
 } from "@ant-design/icons";
 import {
   Button,
@@ -227,7 +229,26 @@ const LoginForm = () => {
       toast.success("Đã gửi OTP. Vui lòng kiểm tra email!");
       setForgotStep(1);
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Gửi OTP thất bại");
+      const status = err?.response?.status;
+      const msg = err?.response?.data?.message || "Gửi OTP thất bại";
+
+      if (status === 429) {
+        const retryAfterFromBody = err?.response?.data?.retryAfterSeconds;
+        const retryAfterFromHeader = Number(
+          err?.response?.headers?.["retry-after"]
+        );
+        const retryAfterSec = Number.isFinite(retryAfterFromBody)
+          ? retryAfterFromBody
+          : Number.isFinite(retryAfterFromHeader)
+          ? retryAfterFromHeader
+          : 30 * 60;
+
+        setOtpLockedUntil(Date.now() + retryAfterSec * 1000);
+        toast.error(msg);
+        return;
+      }
+
+      toast.error(msg);
     } finally {
       setForgotLoading(false);
     }
@@ -319,24 +340,13 @@ const LoginForm = () => {
       }
       // ✅ Invalid OTP (sai OTP) + show remaining attempts nếu BE có trả
       const detail = err?.response?.data?.data;
-      const remaining = detail?.remainingAttempts;
-      const failed = detail?.failedAttempts;
-      const max = detail?.maxAttempts;
+      const msgFromBE =
+        detail?.message ||
+        err?.response?.data?.message ||
+        "Mã OTP không chính xác";
 
-      if (Number.isFinite(remaining) && Number.isFinite(max)) {
-        const failedText = Number.isFinite(failed)
-          ? ` (đã sai ${failed}/${max})`
-          : "";
-        toast.error(
-          `${
-            msg || "Mã OTP không chính xác"
-          }. Còn ${remaining}/${max} lần thử${failedText}.`
-        );
-        return;
-      }
-
-      // fallback
-      toast.error(msg || "Mã OTP không chính xác");
+      toast.error(msgFromBE);
+      return;
     } finally {
       setForgotLoading(false);
     }
@@ -385,48 +395,65 @@ const LoginForm = () => {
 
       <Divider plain>hoặc</Divider>
 
-      <Form name="login" initialValues={{ remember: true }} onFinish={onFinish}>
+      <Form
+        name="login"
+        className={styles.form}
+        initialValues={{ remember: true }}
+        onFinish={onFinish}
+      >
         <Form.Item
+          className={styles.formItem}
           name="username"
           rules={[{ required: true, message: "Please input your Username!" }]}
         >
-          <Input prefix={<UserOutlined />} placeholder="Username" />
-        </Form.Item>
-
-        <Form.Item
-          name="password"
-          rules={[{ required: true, message: "Please input your Password!" }]}
-        >
           <Input
-            prefix={<LockOutlined />}
-            type="password"
-            placeholder="Password"
+            className={styles.input}
+            prefix={<UserOutlined />}
+            placeholder="Username"
           />
         </Form.Item>
 
-        <Form.Item>
+        <Form.Item
+          className={styles.formItem}
+          name="password"
+          rules={[{ required: true, message: "Please input your Password!" }]}
+        >
+          <Input.Password
+            className={styles.input}
+            prefix={<LockOutlined />}
+            placeholder="Password"
+            iconRender={(visible) =>
+              visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
+            }
+          />
+        </Form.Item>
+
+        <Form.Item className={styles.formItem}>
           <Flex justify="space-between" align="center">
             <Form.Item name="remember" valuePropName="checked" noStyle>
-              <Checkbox>Remember me</Checkbox>
+              <Checkbox className={styles.checkbox}>Remember me</Checkbox>
             </Form.Item>
 
-            {/* ✅ Forgot password */}
-            <Button type="link" style={{ padding: 0 }} onClick={openForgot}>
+            <Button
+              type="link"
+              className={styles.forgotLink}
+              onClick={openForgot}
+            >
               Quên mật khẩu?
             </Button>
           </Flex>
         </Form.Item>
 
-        <Form.Item>
-          <Button block type="primary" htmlType="submit">
-            Log in
+        <Form.Item className={styles.formItem}>
+          <Button block className={styles.btnOutline} htmlType="submit">
+            Đăng nhập
           </Button>
 
           <div className={styles.extraLinks}>
             or{" "}
             <a
               href="/register"
-              className={registerBtn}
+              className={styles.registerBtn}
               onClick={(e) => {
                 e.preventDefault();
                 navigate("/register");
@@ -456,6 +483,18 @@ const LoginForm = () => {
 
         {forgotStep === 0 && (
           <Form form={forgotForm} layout="vertical" onFinish={requestOtp}>
+            {isOtpLocked && (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginBottom: 12 }}
+                message="Gửi OTP tạm thời bị khóa"
+                description={`Vui lòng thử lại sau ${formatMMSS(
+                  lockRemainSec
+                )}.`}
+              />
+            )}
+
             <Form.Item
               label="Email (hoặc SĐT nếu BE hỗ trợ)"
               name="emailOrPhone"
@@ -472,7 +511,12 @@ const LoginForm = () => {
 
             <Flex justify="end" gap={8}>
               <Button onClick={closeForgot}>Hủy</Button>
-              <Button type="primary" htmlType="submit" loading={forgotLoading}>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={forgotLoading}
+                disabled={isOtpLocked}
+              >
                 Gửi OTP
               </Button>
             </Flex>
@@ -532,8 +576,6 @@ const LoginForm = () => {
                   setForgotStep(0);
                   setForgotOtp("");
                   setOtpExpired(false);
-                  setOtpLockedUntil(null);
-                  setLockRemainSec(0);
                   verifyForm.resetFields();
                 }}
               >
