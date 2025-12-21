@@ -433,3 +433,93 @@
     background: #cbcdd1;
   }
 }
+/* ============================================================
+   CONFIRM MODAL – LAST CARD (HOKORI STYLE)
+============================================================ */
+.confirmOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.confirmBox {
+  background: #ffffff;
+  padding: 24px 28px;
+  border-radius: 18px;
+  width: 360px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+  animation: popIn 0.22s ease;
+}
+
+.confirmBox h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 6px;
+}
+
+.confirmBox p {
+  font-size: 0.95rem;
+  color: #6b7280;
+  margin-bottom: 20px;
+}
+
+/* ACTIONS */
+.confirmActions {
+  display: flex;
+  gap: 12px;
+}
+
+/* HỌC LẠI – neutral */
+.reviewBtn {
+  flex: 1;
+  background: #f3f4f6;
+  color: #374151;
+  padding: 10px 0;
+  border-radius: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s;
+
+  &:hover {
+    background: #e5e7eb;
+  }
+}
+
+/* HOÀN THÀNH – HOKORI GREEN */
+.finishBtn {
+  flex: 1;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #ffffff;
+  padding: 10px 0;
+  border-radius: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s;
+  box-shadow: 0 6px 18px rgba(34, 197, 94, 0.35);
+
+  &:hover {
+    filter: brightness(1.05);
+    box-shadow: 0 8px 22px rgba(34, 197, 94, 0.45);
+  }
+}
+
+/* ANIMATION */
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}

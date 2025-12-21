@@ -7,35 +7,26 @@ const DeckCard = ({ deck, onStudy, onEdit, onAddCard, onDelete }) => {
     <div className={`${styles.card} ${styles[deck.colorClass] || ""}`}>
       <div className={styles.header}>
         <h3>{deck.title}</h3>
-
         <span>{deck.level}</span>
       </div>
+
       <p>{deck.description}</p>
+
       <p className={styles.count}>{deck.totalCards || 0} thẻ</p>
 
-      <div className={styles.progress}>
-        <div className={styles.bar}>
-          <div style={{ width: `${deck.progressPercent || 0}%` }}></div>
-        </div>
-        <small>Tiến độ: {deck.progressPercent || 0}%</small>
-      </div>
+      {/* ❌ ĐÃ BỎ PROGRESS BAR */}
 
       <p className={styles.last}>Lần cập nhật: {deck.lastReviewText}</p>
 
       <div className={styles.actions}>
-        {/* HOC NGAY */}
+        {/* HỌC NGAY */}
         <button className={styles.studyBtn} onClick={onStudy}>
           <i className="fa-solid fa-play" />
           <span>Học ngay</span>
         </button>
 
-        {/* SỬA BỘ THẺ */}
-        <button
-          className={styles.editBtn}
-          onClick={() => {
-            onEdit(); //
-          }}
-        >
+        {/* CHỈNH SỬA */}
+        <button className={styles.editBtn} onClick={onEdit}>
           <i className="fa-solid fa-pen" />
           <span>Chỉnh sửa</span>
         </button>

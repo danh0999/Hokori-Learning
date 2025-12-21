@@ -13,15 +13,17 @@ const StudyModal = ({ deck, onClose }) => {
   const dispatch = useDispatch();
   const { cardsBySet, loadingCards } = useSelector((s) => s.flashcards);
 
+  const [learningQueue, setLearningQueue] = useState([]);
   const [current, setCurrent] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [finished, setFinished] = useState(false);
-  const [mastered, setMastered] = useState(0);
+
+  // modal xác nhận thẻ cuối
+  const [showLastCardModal, setShowLastCardModal] = useState(false);
 
   const rawCards = cardsBySet[deck.id] || [];
   const loading = loadingCards[deck.id];
 
-  // Chuẩn hóa dữ liệu thẻ
   const cards = useMemo(() => {
     return rawCards.map((c) => ({
       id: c.id,
@@ -32,73 +34,89 @@ const StudyModal = ({ deck, onClose }) => {
     }));
   }, [rawCards]);
 
-  /* ===========================================================
-     FETCH CARDS
-  ============================================================ */
+  /* FETCH */
   useEffect(() => {
     if (!deck.id) return;
     if (!rawCards.length) dispatch(fetchCardsBySet(deck.id));
   }, [deck.id]);
 
-  /* ===========================================================
-     RESET STATE KHI MỞ MODAL
-  ============================================================ */
+  /* INIT – ❗ KHÔNG set finished ở đây */
   useEffect(() => {
+    setLearningQueue(cards);
     setCurrent(0);
     setIsFlipped(false);
-    setFinished(cards.length === 0);
-    setMastered(0);
+    setFinished(false);              // ✅ luôn false khi mở modal
+    setShowLastCardModal(false);
   }, [deck.id, cards.length]);
 
-  /* ===========================================================
-     HANDLERS
-  ============================================================ */
+  const card = learningQueue[current] || null;
+
   const handleFlip = () => {
-    if (!cards.length) return;
+    if (!card) return;
     setIsFlipped((v) => !v);
   };
 
-  const next = () => {
-    if (current < cards.length - 1) {
-      setCurrent((i) => i + 1);
-      setIsFlipped(false);
+  /* ======================
+     CHƯA NHỚ
+  ====================== */
+  const handleUnlearned = () => {
+    if (learningQueue.length === 1) {
+      setShowLastCardModal(true);
+      return;
     }
+
+    const card = learningQueue[current];
+    const newQueue = [...learningQueue];
+    newQueue.splice(current, 1);
+    newQueue.push(card);
+
+    setLearningQueue(newQueue);
+    setCurrent(0);
+    setIsFlipped(false);
   };
 
-  const prev = () => {
-    if (current > 0) {
-      setCurrent((i) => i - 1);
-      setIsFlipped(false);
+  /* ======================
+     NHỚ TỐT
+  ====================== */
+  const handleMastered = () => {
+    if (learningQueue.length === 1) {
+      setShowLastCardModal(true);
+      return;
     }
+
+    const card = learningQueue[current];
+
+    dispatch(
+      updateFlashcardProgress({
+        cardId: card.id,
+        status: "MASTERED",
+      })
+    );
+
+    const newQueue = [...learningQueue];
+    newQueue.splice(current, 1);
+
+    setLearningQueue(newQueue);
+    setCurrent(0);
+    setIsFlipped(false);
   };
 
-  const handleResult = async (rating) => {
-    const card = cards[current];
-    if (!card) return;
-
-    const status = rating === "easy" ? "MASTERED" : "LEARNING";
-
-    dispatch(updateFlashcardProgress({ cardId: card.id, status }));
-
-    if (rating === "easy") setMastered((m) => m + 1);
-
-    // Chuyển thẻ tiếp theo
-    if (current < cards.length - 1) {
-      next();
-    } else {
-      // HOÀN THÀNH
-      const percent = cards.length
-        ? Math.round(((mastered + 1) / cards.length) * 100)
-        : 0;
-
-      dispatch(setDeckProgress({ setId: deck.id, percent }));
-      setFinished(true);
-
-      toast.success(`Hoàn thành! Tiến độ hiện tại: ${percent}%`);
-    }
+  /* ======================
+     MODAL ACTIONS
+  ====================== */
+  const handleRestart = () => {
+    setLearningQueue(cards);
+    setCurrent(0);
+    setIsFlipped(false);
+    setShowLastCardModal(false);
   };
 
-  const card = cards[current];
+  const handleFinish = () => {
+    dispatch(setDeckProgress({ setId: deck.id, percent: 100 }));
+    setFinished(true);
+    setShowLastCardModal(false);
+    toast.success("Hoàn thành bộ thẻ 🎉");
+  };
 
   return (
     <div className={styles.overlay}>
@@ -107,51 +125,39 @@ const StudyModal = ({ deck, onClose }) => {
         <div className={styles.header}>
           <h2>{deck.title}</h2>
           <button onClick={onClose}>
-            <i className="fa-solid fa-xmark"></i>
+            <i className="fa-solid fa-xmark" />
           </button>
         </div>
 
-        {/* LOADING */}
         {loading ? (
           <p className={styles.loading}>Đang tải thẻ...</p>
-        ) : !cards.length ? (
+
+        ) : cards.length === 0 ? (
+          /* ✅ CHƯA CÓ THẺ */
           <div className={styles.doneBox}>
-            <h3>Chưa có thẻ</h3>
+            <h3>Bạn chưa có thẻ nào</h3>
+            <p>Hãy tạo thẻ để bắt đầu học nhé.</p>
             <button className={styles.closeBtn} onClick={onClose}>
               Đóng
             </button>
           </div>
+
         ) : finished ? (
-          /* ====================================================
-             FINISHED STATE
-          ==================================================== */
+          /* ✅ HOÀN THÀNH THẬT */
           <div className={styles.doneBox}>
             <h3>Hoàn thành buổi học!</h3>
-            <p>Bạn đã học xong {cards.length} thẻ.</p>
-
-            <div className={styles.doneActions}>
-              <button
-                className={styles.restartBtn}
-                onClick={() => {
-                  setCurrent(0);
-                  setIsFlipped(false);
-                  setFinished(false);
-                  setMastered(0);
-                }}
-              >
-                Học lại
-              </button>
-
-              <button className={styles.closeBtn} onClick={onClose}>
-                Đóng
-              </button>
-            </div>
+            <p>Bạn đã học xong bộ thẻ.</p>
+            <button className={styles.closeBtn} onClick={onClose}>
+              Đóng
+            </button>
           </div>
+
+        ) : !card ? (
+          <p className={styles.loading}>Đang chuẩn bị thẻ...</p>
+
         ) : (
           <>
-            {/* ====================================================
-               FLASHCARD
-            ==================================================== */}
+            {/* CARD */}
             <div
               className={`${styles.cardWrapper} ${
                 isFlipped ? styles.flipped : ""
@@ -159,20 +165,16 @@ const StudyModal = ({ deck, onClose }) => {
               onClick={handleFlip}
             >
               <div className={styles.cardInner}>
-                {/* FRONT */}
                 <div className={styles.cardFront}>
                   <div className={styles.frontContent}>{card.front}</div>
                 </div>
 
-                {/* BACK */}
                 <div className={styles.cardBack}>
                   <div className={styles.backContent}>
                     <div className={styles.meaning}>{card.meaning}</div>
-
                     {card.reading && (
                       <div className={styles.reading}>({card.reading})</div>
                     )}
-
                     {card.example && (
                       <div className={styles.exampleBox}>
                         <p className={styles.exampleLabel}>Ví dụ:</p>
@@ -184,65 +186,44 @@ const StudyModal = ({ deck, onClose }) => {
               </div>
             </div>
 
-            {/* ====================================================
-               NAVIGATION BAR
-            ==================================================== */}
+            {/* COUNTER */}
             <div className={styles.navBar}>
-              <button
-                className={styles.navBtn}
-                disabled={current === 0}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  prev();
-                }}
-              >
-                <i className="fa-solid fa-arrow-left"></i>
-              </button>
-
               <span className={styles.counter}>
-                {current + 1} / {cards.length}
+                {current + 1} / {learningQueue.length}
               </span>
-
-              <button
-                className={styles.navBtn}
-                disabled={current === cards.length - 1}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  next();
-                }}
-              >
-                <i className="fa-solid fa-arrow-right"></i>
-              </button>
             </div>
 
-            {/* ====================================================
-               ACTION BUTTONS
-            ==================================================== */}
+            {/* ACTIONS */}
             <div className={styles.actions}>
-              <button
-                className={styles.again}
-                onClick={() => handleResult("again")}
-              >
+              <button className={styles.again} onClick={handleUnlearned}>
                 Chưa nhớ
               </button>
-
-              <button
-                className={styles.medium}
-                onClick={() => handleResult("medium")}
-              >
-                Tạm ổn
-              </button>
-
-              <button
-                className={styles.easy}
-                onClick={() => handleResult("easy")}
-              >
+              <button className={styles.easy} onClick={handleMastered}>
                 Nhớ tốt
               </button>
             </div>
           </>
         )}
       </div>
+
+      {/* MODAL THẺ CUỐI */}
+      {showLastCardModal && (
+        <div className={styles.confirmOverlay}>
+          <div className={styles.confirmBox}>
+            <h3>Bạn đã học hết bộ thẻ</h3>
+            <p>Bạn muốn học lại hay hoàn thành?</p>
+
+            <div className={styles.confirmActions}>
+              <button className={styles.reviewBtn} onClick={handleRestart}>
+                Học lại
+              </button>
+              <button className={styles.finishBtn} onClick={handleFinish}>
+                Hoàn thành
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
