@@ -4,6 +4,8 @@ import {
   UserOutlined,
   GoogleOutlined,
   MailOutlined,
+  EyeInvisibleOutlined,
+  EyeTwoTone,
 } from "@ant-design/icons";
 import {
   Button,
@@ -338,24 +340,13 @@ const LoginForm = () => {
       }
       // Invalid OTP (sai OTP) + show remaining attempts nếu BE có trả
       const detail = err?.response?.data?.data;
-      const remaining = detail?.remainingAttempts;
-      const failed = detail?.failedAttempts;
-      const max = detail?.maxAttempts;
+      const msgFromBE =
+        detail?.message ||
+        err?.response?.data?.message ||
+        "Mã OTP không chính xác";
 
-      if (Number.isFinite(remaining) && Number.isFinite(max)) {
-        const failedText = Number.isFinite(failed)
-          ? ` (đã sai ${failed}/${max})`
-          : "";
-        toast.error(
-          `${
-            msg || "Mã OTP không chính xác"
-          }. Còn ${remaining}/${max} lần thử${failedText}.`
-        );
-        return;
-      }
-
-      // fallback
-      toast.error(msg || "Mã OTP không chính xác");
+      toast.error(msgFromBE);
+      return;
     } finally {
       setForgotLoading(false);
     }
@@ -404,48 +395,65 @@ const LoginForm = () => {
 
       <Divider plain>hoặc</Divider>
 
-      <Form name="login" initialValues={{ remember: true }} onFinish={onFinish}>
+      <Form
+        name="login"
+        className={styles.form}
+        initialValues={{ remember: true }}
+        onFinish={onFinish}
+      >
         <Form.Item
+          className={styles.formItem}
           name="username"
           rules={[{ required: true, message: "Vui lòng nhập username!" }]}
         >
-          <Input prefix={<UserOutlined />} placeholder="Username" />
-        </Form.Item>
-
-        <Form.Item
-          name="password"
-          rules={[{ required: true, message: "Vui lòng nhập mật khẩu!" }]}
-        >
           <Input
-            prefix={<LockOutlined />}
-            type="password"
-            placeholder="Password"
+            className={styles.input}
+            prefix={<UserOutlined />}
+            placeholder="Username"
           />
         </Form.Item>
 
-        <Form.Item>
+        <Form.Item
+          className={styles.formItem}
+          name="password"
+          rules={[{ required: true, message: "Vui lòng nhập mật khẩu!" }]}
+        >
+          <Input.Password
+            className={styles.input}
+            prefix={<LockOutlined />}
+            placeholder="Password"
+            iconRender={(visible) =>
+              visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
+            }
+          />
+        </Form.Item>
+
+        <Form.Item className={styles.formItem}>
           <Flex justify="space-between" align="center">
             <Form.Item name="remember" valuePropName="checked" noStyle>
-              <Checkbox>Remember me</Checkbox>
+              <Checkbox className={styles.checkbox}>Remember me</Checkbox>
             </Form.Item>
 
-            {/* ✅ Forgot password */}
-            <Button type="link" style={{ padding: 0 }} onClick={openForgot}>
+            <Button
+              type="link"
+              className={styles.forgotLink}
+              onClick={openForgot}
+            >
               Quên mật khẩu?
             </Button>
           </Flex>
         </Form.Item>
 
-        <Form.Item>
-          <Button block type="primary" htmlType="submit">
-            Log in
+        <Form.Item className={styles.formItem}>
+          <Button block className={styles.btnOutline} htmlType="submit">
+            Đăng nhập
           </Button>
 
           <div className={styles.extraLinks}>
             or{" "}
             <a
               href="/register"
-              className={registerBtn}
+              className={styles.registerBtn}
               onClick={(e) => {
                 e.preventDefault();
                 navigate("/register");

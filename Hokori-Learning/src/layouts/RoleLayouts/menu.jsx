@@ -80,6 +80,7 @@ export const sidebarMenusByRole = {
   ],
   admin: [
     mk("dashboard", "Tổng quan", <DashboardOutlined />, "/admin"),
+    mk("revenue", "Tài chính", <DollarOutlined />, "/admin/revenue"),
     mk("users", "Người dùng", <UserOutlined />, "/admin/users"),
 
     mk(
@@ -90,7 +91,7 @@ export const sidebarMenusByRole = {
     ),
     mk("events", "Sự kiện JLPT", <ReadOutlined />, "/admin/events"),
     mk("ai-packages", "Gói AI", <ExperimentOutlined />, "/admin/ai-packages"),
-    mk("revenue", "Tài chính", <DollarOutlined />, "/admin/revenue"),
+
     // mk(
     //   "withdrawals",
     //   "Rút tiền GV",

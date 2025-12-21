@@ -52,6 +52,12 @@ function formatDateTime(isoString) {
     return isoString;
   }
 }
+function getLatestFlagReason(flagInfo) {
+  if (!flagInfo?.flags || flagInfo.flags.length === 0) return null;
+
+  // Giả định BE đã sort newest → oldest
+  return flagInfo.flags[0]?.reason || null;
+}
 
 export default function CourseInformation() {
   const { id } = useParams();
@@ -400,7 +406,7 @@ export default function CourseInformation() {
             <div className={styles.flaggedReasonText}>
               {loadingFlagInfo
                 ? "Loading flag details..."
-                : flagInfo?.flaggedReason || "No detailed reason."}
+                : getLatestFlagReason(flagInfo) || "No detailed reason."}
             </div>
 
             <div className={styles.flaggedMeta}>
