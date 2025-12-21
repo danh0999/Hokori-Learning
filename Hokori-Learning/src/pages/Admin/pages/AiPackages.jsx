@@ -7,7 +7,8 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   fetchAdminAiPackages,
   createAdminAiPackage,
-  updateAdminAiPackage,
+  updateAdminAiPackageInfo,
+  toggleAdminAiPackageStatus,
   deleteAdminAiPackage,
 } from "../../../redux/features/adminAiPackageSlice";
 
@@ -21,15 +22,31 @@ const formatPrice = (value) => {
 const getPurchaseCount = (pkg) => Number(pkg.purchaseCount || 0);
 const getUsageCount = (pkg) => Number(pkg.usageCount || 0);
 
-const canEditPackage = (pkg) =>
-  !pkg.isActive &&
-  getPurchaseCount(pkg) === 0 &&
-  getUsageCount(pkg) === 0;
+/**
+ * ❗ CORE FIELDS chỉ được sửa khi:
+ * - gói đang TẠM DỪNG
+ * - chưa có ai mua
+ * - chưa có ai sử dụng
+ */
+const canEditCoreFields = (pkg) =>
+  !pkg.isActive && getPurchaseCount(pkg) === 0 && getUsageCount(pkg) === 0;
+
+/**
+ * Toggle status / Delete cũng theo rule nghiêm ngặt như core fields
+ */
+const canToggleStatus = (pkg) => {
+  // Nếu đang bán → chỉ cho tạm dừng khi chưa có ai mua / sử dụng
+  if (pkg.isActive) {
+    return getPurchaseCount(pkg) === 0 && getUsageCount(pkg) === 0;
+  }
+
+  // Nếu đang tạm dừng → LUÔN cho kích hoạt
+  return true;
+};
+
 
 const canDeletePackage = (pkg) =>
-  !pkg.isActive &&
-  getPurchaseCount(pkg) === 0 &&
-  getUsageCount(pkg) === 0;
+  !pkg.isActive && getPurchaseCount(pkg) === 0 && getUsageCount(pkg) === 0;
 
 /* ================= PACKAGE MODAL ================= */
 const PackageModal = ({ open, mode, initial, onClose, onSubmit }) => {
@@ -39,11 +56,14 @@ const PackageModal = ({ open, mode, initial, onClose, onSubmit }) => {
     priceCents: "",
     description: "",
     totalRequests: "",
-    isActive: true,
     displayOrder: 1,
   });
 
   const [errors, setErrors] = useState({});
+
+  // 🔒 core fields chỉ sửa được khi thỏa rule
+  // còn lại chỉ cho sửa name + description
+  const canEditCore = mode === "create" ? true : canEditCoreFields(initial);
 
   useEffect(() => {
     if (initial) {
@@ -53,9 +73,18 @@ const PackageModal = ({ open, mode, initial, onClose, onSubmit }) => {
         priceCents: initial.priceCents,
         description: initial.description,
         totalRequests: initial.totalRequests,
-        isActive: initial.isActive,
         displayOrder: initial.displayOrder || 1,
       });
+    } else {
+      setForm({
+        name: "",
+        durationDays: "",
+        priceCents: "",
+        description: "",
+        totalRequests: "",
+        displayOrder: 1,
+      });
+      setErrors({});
     }
   }, [initial]);
 
@@ -72,29 +101,43 @@ const PackageModal = ({ open, mode, initial, onClose, onSubmit }) => {
     const nextErrors = {};
     const setMsg = (f, m) => (nextErrors[f] = m);
 
+    // luôn validate name + description
     if (!form.name.trim()) setMsg("name", "Tên gói là bắt buộc");
-    if (!form.durationDays || Number(form.durationDays) <= 0)
-      setMsg("durationDays", "Thời hạn phải > 0");
-    if (!form.priceCents || Number(form.priceCents) <= 0)
-      setMsg("priceCents", "Giá tiền phải > 0");
-    if (!form.totalRequests || Number(form.totalRequests) <= 0)
-      setMsg("totalRequests", "Tổng lượt AI phải > 0");
     if (form.description.trim().length < 10)
       setMsg("description", "Mô tả tối thiểu 10 ký tự");
+
+    // chỉ validate core fields khi được phép sửa core
+    if (canEditCore) {
+      if (!form.durationDays || Number(form.durationDays) <= 0)
+        setMsg("durationDays", "Thời hạn phải > 0");
+      if (!form.priceCents || Number(form.priceCents) <= 0)
+        setMsg("priceCents", "Giá tiền phải > 0");
+      if (!form.totalRequests || Number(form.totalRequests) <= 0)
+        setMsg("totalRequests", "Tổng lượt AI phải > 0");
+    }
 
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) return;
 
-    const payload = {
-      name: form.name.trim(),
-      description: form.description.trim(),
-      durationDays: Number(form.durationDays),
-      priceCents: Number(form.priceCents),
-      currency: "VND",
-      totalRequests: Number(form.totalRequests),
-      isActive: form.isActive,
-      displayOrder: form.displayOrder,
-    };
+    let payload;
+
+    if (!canEditCore) {
+      // ✅ chỉ cho sửa name + description
+      payload = {
+        name: form.name.trim(),
+        description: form.description.trim(),
+      };
+    } else {
+      payload = {
+        name: form.name.trim(),
+        description: form.description.trim(),
+        durationDays: Number(form.durationDays),
+        priceCents: Number(form.priceCents),
+        currency: "VND",
+        totalRequests: Number(form.totalRequests),
+        displayOrder: form.displayOrder,
+      };
+    }
 
     onSubmit(payload);
   };
@@ -105,6 +148,14 @@ const PackageModal = ({ open, mode, initial, onClose, onSubmit }) => {
         <h2 className={s.modalTitle}>
           {mode === "create" ? "Tạo gói AI" : "Chỉnh sửa gói AI"}
         </h2>
+
+        {mode === "edit" && !canEditCore && (
+          <p className={s.lockedHint}>
+            Gói này <strong>đang bán</strong> hoặc đã có người{" "}
+            <strong>mua / sử dụng</strong>. Bạn chỉ có thể chỉnh sửa{" "}
+            <strong>tên gói</strong> và <strong>mô tả</strong>.
+          </p>
+        )}
 
         <form className={s.form} onSubmit={submit}>
           <div className={s.col}>
@@ -127,6 +178,7 @@ const PackageModal = ({ open, mode, initial, onClose, onSubmit }) => {
                 }`}
                 value={form.durationDays}
                 onChange={change("durationDays")}
+                disabled={!canEditCore}
               />
               {errors.durationDays && (
                 <p className={s.errorText}>{errors.durationDays}</p>
@@ -142,6 +194,7 @@ const PackageModal = ({ open, mode, initial, onClose, onSubmit }) => {
                 }`}
                 value={form.priceCents}
                 onChange={change("priceCents")}
+                disabled={!canEditCore}
               />
               {errors.priceCents && (
                 <p className={s.errorText}>{errors.priceCents}</p>
@@ -158,6 +211,7 @@ const PackageModal = ({ open, mode, initial, onClose, onSubmit }) => {
                 }`}
                 value={form.totalRequests}
                 onChange={change("totalRequests")}
+                disabled={!canEditCore}
               />
               {errors.totalRequests && (
                 <p className={s.errorText}>{errors.totalRequests}</p>
@@ -212,13 +266,8 @@ export default function AiPackages() {
     setModalOpen(true);
   };
 
+  // ✅ LUÔN cho mở modal (nhưng field sẽ bị khóa đúng nghiệp vụ)
   const openEdit = (pkg) => {
-    if (!canEditPackage(pkg)) {
-      toast.warning(
-        "Không thể chỉnh sửa: gói đang bán hoặc đã có người mua / sử dụng"
-      );
-      return;
-    }
     setMode("edit");
     setEditing(pkg);
     setModalOpen(true);
@@ -228,7 +277,7 @@ export default function AiPackages() {
     const action =
       mode === "create"
         ? createAdminAiPackage(form)
-        : updateAdminAiPackage({ id: editing.id, data: form });
+        : updateAdminAiPackageInfo({ id: editing.id, data: form });
 
     dispatch(action)
       .unwrap()
@@ -245,40 +294,48 @@ export default function AiPackages() {
   };
 
   const toggleStatus = (pkg) => {
-    dispatch(
-      updateAdminAiPackage({
-        id: pkg.id,
-        data: {
-          name: pkg.name,
-          description: pkg.description,
-          priceCents: pkg.priceCents,
-          currency: pkg.currency || "VND",
-          durationDays: pkg.durationDays,
-          totalRequests: pkg.totalRequests,
-          isActive: !pkg.isActive,
-          displayOrder: pkg.displayOrder || 1,
-        },
-      })
-    )
-      .unwrap()
-      .then(() => toast.success("Đã thay đổi trạng thái gói AI"))
-      .catch(() =>
-        toast.error("Không thể thay đổi trạng thái (vi phạm điều kiện)")
-      );
-  };
-
-  const handleDelete = (pkg) => {
-    if (!canDeletePackage(pkg)) {
+    // không được tạm dừng/kích hoạt nếu đã có người mua hoặc sử dụng
+    if (!canToggleStatus(pkg)) {
       toast.warning(
-        "Không thể xoá: gói đang bán hoặc đã có người mua / sử dụng"
+        "Không thể thay đổi trạng thái: gói đã có người mua / sử dụng"
       );
       return;
     }
 
+    dispatch(
+      toggleAdminAiPackageStatus({
+        id: pkg.id,
+        isActive: !pkg.isActive,
+      })
+    )
+      .unwrap()
+      .then(() => toast.success("Đã thay đổi trạng thái gói AI"))
+      .catch((err) => {
+        // ✅ báo đúng lỗi thật thay vì luôn “vi phạm điều kiện”
+        const msg =
+          err?.message ||
+          err?.error ||
+          (typeof err === "string" ? err : null) ||
+          "Không thể thay đổi trạng thái gói AI";
+        toast.error(msg);
+      });
+  };
+
+  const handleDelete = (pkg) => {
+    if (!canDeletePackage(pkg)) {
+      toast.warning("Không thể xóa gói đã bán hoặc đã được sử dụng");
+      return;
+    }
+
+    const ok = window.confirm(
+      `Xóa vĩnh viễn gói AI "${pkg.name}"?\nHành động này không thể hoàn tác.`
+    );
+    if (!ok) return;
+
     dispatch(deleteAdminAiPackage(pkg.id))
       .unwrap()
-      .then(() => toast.success("Đã xoá gói AI"))
-      .catch(() => toast.error("Không thể xoá gói AI"));
+      .then(() => toast.success("Đã xóa gói AI"))
+      .catch(() => toast.error("Xóa gói AI thất bại"));
   };
 
   return (
@@ -324,11 +381,7 @@ export default function AiPackages() {
                 </td>
 
                 <td className={s.actions}>
-                  <button
-                    className={s.btnSmall}
-                    disabled={!canEditPackage(pkg)}
-                    onClick={() => openEdit(pkg)}
-                  >
+                  <button className={s.btnSmall} onClick={() => openEdit(pkg)}>
                     Sửa
                   </button>
 
@@ -340,11 +393,11 @@ export default function AiPackages() {
                   </button>
 
                   <button
-                    className={s.btnSmallDanger}
+                    className={`${s.btnSmall} ${s.btnDanger}`}
                     disabled={!canDeletePackage(pkg)}
                     onClick={() => handleDelete(pkg)}
                   >
-                    Xoá
+                    Xóa
                   </button>
                 </td>
               </tr>

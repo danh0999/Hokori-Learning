@@ -134,6 +134,10 @@ const initialState = {
   checkoutStatus: "idle",
   checkoutError: null,
   lastCheckout: null,
+
+  // Useful flag: UI có thể dựa vào để biết cần sync lại hay không
+  // (ví dụ PaymentSuccess / Modal gọi fetch xong có thể reset flag)
+  needsSync: false,
 };
 
 const aiPackageSlice = createSlice({
@@ -145,11 +149,38 @@ const aiPackageSlice = createSlice({
     openModal(state, action) {
       state.showModal = true;
       state.serviceNeed = action.payload || null;
+
+      // Mở modal là một interaction mới → reset checkout để tránh kẹt "loading/failed"
+      state.checkoutStatus = "idle";
+      state.checkoutError = null;
+      state.lastCheckout = null;
     },
 
     closeModal(state) {
       state.showModal = false;
       state.serviceNeed = null;
+
+      // Đóng modal → reset checkout để UI không bị disable ở lần mở sau
+      state.checkoutStatus = "idle";
+      state.checkoutError = null;
+      state.lastCheckout = null;
+    },
+
+    resetCheckout(state) {
+      state.checkoutStatus = "idle";
+      state.checkoutError = null;
+      state.lastCheckout = null;
+    },
+
+    clearAiPackageErrors(state) {
+      state.packagesError = null;
+      state.myPackageError = null;
+      state.quotaError = null;
+      state.checkoutError = null;
+    },
+
+    setNeedsSync(state, action) {
+      state.needsSync = Boolean(action.payload);
     },
 
     resetAiPackageState() {
@@ -164,10 +195,11 @@ const aiPackageSlice = createSlice({
     builder
       .addCase(fetchAiPackages.pending, (state) => {
         state.packagesStatus = "loading";
+        state.packagesError = null;
       })
       .addCase(fetchAiPackages.fulfilled, (state, action) => {
         state.packagesStatus = "succeeded";
-        state.packages = action.payload;
+        state.packages = action.payload || [];
       })
       .addCase(fetchAiPackages.rejected, (state, action) => {
         state.packagesStatus = "failed";
@@ -178,6 +210,7 @@ const aiPackageSlice = createSlice({
     builder
       .addCase(fetchMyAiPackage.pending, (state) => {
         state.myPackageStatus = "loading";
+        state.myPackageError = null;
       })
       .addCase(fetchMyAiPackage.fulfilled, (state, action) => {
         state.myPackageStatus = "succeeded";
@@ -192,10 +225,11 @@ const aiPackageSlice = createSlice({
     builder
       .addCase(fetchAiQuota.pending, (state) => {
         state.quotaStatus = "loading";
+        state.quotaError = null;
       })
       .addCase(fetchAiQuota.fulfilled, (state, action) => {
         state.quotaStatus = "succeeded";
-        state.quota = action.payload;
+        state.quota = action.payload || {};
       })
       .addCase(fetchAiQuota.rejected, (state, action) => {
         state.quotaStatus = "failed";
@@ -212,10 +246,16 @@ const aiPackageSlice = createSlice({
     builder
       .addCase(purchaseAiPackage.pending, (state) => {
         state.checkoutStatus = "loading";
+        state.checkoutError = null;
+        state.lastCheckout = null;
       })
       .addCase(purchaseAiPackage.fulfilled, (state, action) => {
         state.checkoutStatus = "succeeded";
-        state.lastCheckout = action.payload;
+        state.lastCheckout = action.payload || null;
+
+        // Sau checkout: có thể là paid (paymentLink) hoặc free (activate ngay)
+        // UI nên sync lại để tránh state cũ
+        state.needsSync = true;
       })
       .addCase(purchaseAiPackage.rejected, (state, action) => {
         state.checkoutStatus = "failed";
@@ -223,11 +263,17 @@ const aiPackageSlice = createSlice({
       });
 
     /* ================= CONSUME QUOTA ================= */
-    // (optional) update quota if BE returns new value
+    // Nếu BE trả quota mới thì có thể update tại đây.
   },
 });
 
-export const { openModal, closeModal, resetAiPackageState } =
-  aiPackageSlice.actions;
+export const {
+  openModal,
+  closeModal,
+  resetCheckout,
+  clearAiPackageErrors,
+  setNeedsSync,
+  resetAiPackageState,
+} = aiPackageSlice.actions;
 
 export default aiPackageSlice.reducer;
