@@ -338,7 +338,7 @@ const LoginForm = () => {
         toast.error(msg || "Mã OTP đã hết hạn. Vui lòng gửi lại mã.");
         return;
       }
-      // ✅ Invalid OTP (sai OTP) + show remaining attempts nếu BE có trả
+      // Invalid OTP (sai OTP) + show remaining attempts nếu BE có trả
       const detail = err?.response?.data?.data;
       const msgFromBE =
         detail?.message ||
@@ -404,7 +404,7 @@ const LoginForm = () => {
         <Form.Item
           className={styles.formItem}
           name="username"
-          rules={[{ required: true, message: "Please input your Username!" }]}
+          rules={[{ required: true, message: "Vui lòng nhập username!" }]}
         >
           <Input
             className={styles.input}
@@ -416,7 +416,7 @@ const LoginForm = () => {
         <Form.Item
           className={styles.formItem}
           name="password"
-          rules={[{ required: true, message: "Please input your Password!" }]}
+          rules={[{ required: true, message: "Vui lòng nhập mật khẩu!" }]}
         >
           <Input.Password
             className={styles.input}
