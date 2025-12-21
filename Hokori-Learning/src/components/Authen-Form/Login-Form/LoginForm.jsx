@@ -227,7 +227,26 @@ const LoginForm = () => {
       toast.success("Đã gửi OTP. Vui lòng kiểm tra email!");
       setForgotStep(1);
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Gửi OTP thất bại");
+      const status = err?.response?.status;
+      const msg = err?.response?.data?.message || "Gửi OTP thất bại";
+
+      if (status === 429) {
+        const retryAfterFromBody = err?.response?.data?.retryAfterSeconds;
+        const retryAfterFromHeader = Number(
+          err?.response?.headers?.["retry-after"]
+        );
+        const retryAfterSec = Number.isFinite(retryAfterFromBody)
+          ? retryAfterFromBody
+          : Number.isFinite(retryAfterFromHeader)
+          ? retryAfterFromHeader
+          : 30 * 60;
+
+        setOtpLockedUntil(Date.now() + retryAfterSec * 1000);
+        toast.error(msg);
+        return;
+      }
+
+      toast.error(msg);
     } finally {
       setForgotLoading(false);
     }
@@ -456,6 +475,18 @@ const LoginForm = () => {
 
         {forgotStep === 0 && (
           <Form form={forgotForm} layout="vertical" onFinish={requestOtp}>
+            {isOtpLocked && (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginBottom: 12 }}
+                message="Gửi OTP tạm thời bị khóa"
+                description={`Vui lòng thử lại sau ${formatMMSS(
+                  lockRemainSec
+                )}.`}
+              />
+            )}
+
             <Form.Item
               label="Email (hoặc SĐT nếu BE hỗ trợ)"
               name="emailOrPhone"
@@ -472,7 +503,12 @@ const LoginForm = () => {
 
             <Flex justify="end" gap={8}>
               <Button onClick={closeForgot}>Hủy</Button>
-              <Button type="primary" htmlType="submit" loading={forgotLoading}>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={forgotLoading}
+                disabled={isOtpLocked}
+              >
                 Gửi OTP
               </Button>
             </Flex>
@@ -532,8 +568,6 @@ const LoginForm = () => {
                   setForgotStep(0);
                   setForgotOtp("");
                   setOtpExpired(false);
-                  setOtpLockedUntil(null);
-                  setLockRemainSec(0);
                   verifyForm.resetFields();
                 }}
               >
