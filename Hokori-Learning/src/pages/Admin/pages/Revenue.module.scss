@@ -1,226 +1,104 @@
 .page {
-  padding: 1.25rem 1.5rem;
-  background: #f8fafc;
-  font-family: "Inter", sans-serif;
+  padding: 24px;
+  background: #f7f9fc;
+  min-height: 100%;
 }
 
-/* =====================
-   TITLES
-===================== */
-.title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  color: #0f172a;
+.titleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+
+  .title {
+    font-size: 22px;
+    font-weight: 600;
+    color: #1f2937;
+  }
 }
 
-.sectionTitle {
-  margin: 1.2rem 0 0.7rem;
-  font-size: 1.15rem;
-  font-weight: 600;
-}
-
-/* =====================
-   SUMMARY CARDS
-===================== */
-
+/* ===== SUMMARY CARDS ===== */
 .summaryGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
 .summaryCard {
-  background: white;
-  padding: 0.9rem 1rem;
-  border-radius: 0.65rem;
-  border: 1px solid #e2e8f0;
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-}
-
-.summaryCard .icon {
-  font-size: 1.7rem;
-  color: #2563eb;
-}
-
-.summaryCard .label {
-  color: #64748b;
-  font-size: 0.85rem;
-}
-
-.summaryCard .value {
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-/* =====================
-   CHART
-===================== */
-.chartCard {
-  background: #fff;
-  padding: 0.75rem;
-  border-radius: 0.55rem;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  margin-bottom: 1rem;
-}
-
-.chartCard h3 {
-  font-size: 0.85rem;
-  margin-bottom: 0.4rem;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.chartCard canvas {
-  height: 350px !important; /* GIẢM TỪ 350 → 230 */
-}
-
-/* =====================
-   TABLE
-===================== */
-
-.tableWrap {
-  background: white;
-  padding: 1rem;
-  border-radius: 0.65rem;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-}
-
-/* =====================
-   STATUS BADGES
-===================== */
-
-.status {
-  padding: 0.25rem 0.55rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  border-radius: 0.4rem;
-}
-
-.success {
-  background: #ecfdf5;
-  color: #059669;
-  border: 1px solid #a7f3d0;
-}
-
-.failed {
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-}
-
-/* =====================
-   BUTTON SMALL
-===================== */
-
-.btnSmall {
-  padding: 0.35rem 0.7rem;
-  background: #2563eb;
-  color: #fff;
-  border-radius: 0.35rem;
+  border-radius: 12px;
   border: none;
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: 0.15s;
-
-  &:hover {
-    background: #1e40af;
-  }
-}
-
-/* =====================
-   MODAL
-===================== */
-
-.modalOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal {
-  width: 450px;
-  background: white;
-  padding: 1.4rem;
-  border-radius: 0.7rem;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-}
-
-.modalTitle {
-  font-size: 1.15rem;
-  font-weight: 600;
-  margin-bottom: 0.7rem;
-}
-
-.modalBlock {
-  line-height: 1.6rem;
-  color: #374151;
-  margin-bottom: 1rem;
-}
-
-.modalActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.6rem;
-}
-
-.btnGhost {
-  padding: 0.4rem 0.75rem;
-  background: #f3f4f6;
-  border-radius: 0.4rem;
-  border: 1px solid #e5e7eb;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+  transition: all 0.25s ease;
   cursor: pointer;
 
   &:hover {
-    background: #e2e8f0;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+  }
+
+  :global(.ant-statistic-title) {
+    font-size: 13px;
+    color: #64748b;
+  }
+
+  :global(.ant-statistic-content-value) {
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f172a;
   }
 }
-/* ===========================================
-   ⭐ HOVER EFFECTS – Like Dashboard
-   =========================================== */
 
-.summaryCard,
-.chartCard,
+.summaryHint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* ===== TABLE ===== */
 .tableWrap {
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-  will-change: transform, box-shadow;
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+
+  :global(.ant-card-head-title) {
+    font-weight: 600;
+  }
+
+  :global(.ant-table) {
+    font-size: 13px;
+  }
+
+  :global(.ant-table-thead > tr > th) {
+    background: #f1f5f9;
+    font-weight: 600;
+    color: #334155;
+  }
+
+  :global(.ant-table-tbody > tr:hover > td) {
+    background: #f8fafc;
+  }
 }
 
-/* Khi hover → card nâng nhẹ, bóng đổ đẹp */
-.summaryCard:hover,
-.chartCard:hover,
-.tableWrap:hover {
-  transform: translateY(-4px) scale(1.01);
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
-  border-color: #dbe3ee;
+/* ===== MODAL ===== */
+:global(.ant-modal-content) {
+  border-radius: 14px;
 }
 
-/* Icon nhẹ phóng khi hover */
-.summaryCard:hover .icon {
-  transform: scale(1.12);
-  transition: transform 0.18s ease;
+:global(.ant-descriptions-item-label) {
+  font-weight: 500;
+  color: #475569;
+  background: #f8fafc !important;
 }
 
-/* Chart sáng nhẹ khi hover */
-.chartCard:hover canvas {
-  transition: filter 0.18s ease;
-  filter: brightness(1.05);
+:global(.ant-descriptions-item-content) {
+  font-weight: 500;
+  color: #0f172a;
 }
 
-/* Dòng bảng (table rows) hover sáng nhẹ */
-.tableWrap table tr {
-  transition: background 0.16s ease;
-}
-
-.tableWrap table tr:hover {
-  background: #f8fafc;
+/* ===== TAG ===== */
+:global(.ant-tag) {
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-weight: 500;
 }
