@@ -1,20 +1,36 @@
 /* =======================
-   CARD
+   AI PACKAGE CARD (Polished)
 ======================= */
+
 .card {
   width: 100%;
   max-width: 420px;
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 22px;
-  padding: 1.8rem 1.8rem 2rem;
 
+  /* spacing */
+  padding: 1.6rem 1.6rem 1.4rem;
+
+  /* layout */
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
+  align-items: stretch;
+  text-align: left;
+  gap: 0.65rem;
 
   position: relative;
+
+  /* subtle depth */
+  box-shadow: 0 10px 30px rgba(17, 24, 39, 0.06);
+  transition: transform 180ms ease, box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 40px rgba(17, 24, 39, 0.1);
+  border-color: #dbe3f3;
 }
 
 /* =======================
@@ -22,86 +38,156 @@
 ======================= */
 .pro {
   border: 2px solid #2563eb;
-  background: #f8fbff;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 65%);
 }
 
 .best {
   position: absolute;
-  top: -12px;
-  right: -12px;
+  top: 14px;
+  right: 14px;
+
   background: #2563eb;
   color: #fff;
-  padding: 6px 14px;
+  padding: 6px 12px;
   border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
+
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
 }
 
 /* =======================
-   TEXT
+   HEADER TEXT
 ======================= */
 .name {
-  font-size: 1.45rem;
-  font-weight: 700;
+  font-size: 1.35rem;
+  font-weight: 800;
   color: #111827;
-  margin-bottom: 0.25rem;
+  margin: 0;
+  padding-right: 86px; /* chừa chỗ cho badge BEST */
+  line-height: 1.15;
 }
 
 .duration {
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   color: #6b7280;
-  margin-bottom: 0.35rem;
+  margin: 0;
 }
 
 .description {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: #4b5563;
-  line-height: 1.45;
-  margin-bottom: 1.4rem;
-  max-width: 260px; /* tránh chữ quá dài */
+  line-height: 1.55;
+  margin: 0.15rem 0 0.45rem;
+
+  /* đọc dễ hơn */
+  max-width: 100%;
 }
 
 /* =======================
    FEATURES / QUOTA
 ======================= */
 .features {
-  width: 100%;
   list-style: none;
-  padding: 1.2rem 1.4rem;
-  margin: 0 0 1.6rem 0;
-
-  border-top: 1px dashed #e5e7eb;
-  border-bottom: 1px dashed #e5e7eb;
-
+  padding: 0;
+  margin: 16px 0;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  gap: 6px; // 👈 sát lại
+}
+
+.quota {
+  font-size: 14px;
+  color: #1f2937;
+  line-height: 1.2;
+
+  strong {
+    font-weight: 600;
+    margin-right: 4px; // 👈 đảm bảo "50 lượt" dính nhau
+  }
+}
+
+.subText {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.2;
 }
 
 .features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+
   font-size: 0.95rem;
   color: #374151;
+  line-height: 1.35;
+}
+
+/* bullet dạng “tick” nhẹ, không cần icon JSX */
+.features li::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  margin-top: 0.35rem;
+
+  border-radius: 999px;
+  background: #2563eb;
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.2);
+  flex: 0 0 10px;
 }
 
 .features strong {
   font-size: 1.05rem;
-  font-weight: 700;
-  margin-right: 4px;
+  font-weight: 800;
+  color: #111827;
 }
 
 /* =======================
    PRICE
 ======================= */
 .price {
-  margin-top: auto;       
-  margin-bottom: 1.2rem;
-  font-size: 1.7rem;
-  font-weight: 800;
+  margin-top: 0.6rem;
+  font-size: 1.75rem;
+  font-weight: 900;
   color: #111827;
+  letter-spacing: -0.3px;
+
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
 }
 
 /* =======================
    BUTTON
 ======================= */
+/* Button component render ra <button> => mình target trực tiếp */
 .card button {
-  width: 70%;
+  width: 100%;
+  margin-top: 0.35rem;
+  border-radius: 14px;
+}
+
+/* =======================
+   RESPONSIVE
+======================= */
+@media (max-width: 480px) {
+  .card {
+    padding: 1.25rem 1.25rem 1.15rem;
+    border-radius: 18px;
+  }
+
+  .name {
+    font-size: 1.25rem;
+  }
+
+  .price {
+    font-size: 1.6rem;
+  }
+
+  .best {
+    top: 12px;
+    right: 12px;
+  }
 }
