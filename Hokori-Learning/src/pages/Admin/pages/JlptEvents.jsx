@@ -486,7 +486,7 @@ export default function JlptEvents() {
                         className={s.btnSmall}
                         onClick={() => askToggle(ev)}
                       >
-                        {ev.status === "OPEN" ? "Đóng (CLOSED)" : "Mở (OPEN)"}
+                        {ev.status === "OPEN" ? "Đóng" : "Mở"}
                       </button>
                     </td>
                   </tr>

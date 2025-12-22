@@ -1,8 +1,10 @@
 // src/pages/Admin/pages/Users.jsx
-import React, { useMemo, useRef, useState, useEffect } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { toast } from "react-toastify";
+
 import s from "./Users.module.scss";
 import DataTable from "../components/DataTable";
-import { toast } from "react-toastify";
 import api from "../../../configs/axios";
 
 const ROLE_LABEL = {
@@ -13,6 +15,8 @@ const ROLE_LABEL = {
 };
 
 const PAGE_SIZE = 10;
+const MENU_WIDTH = 200;
+const MENU_ESTIMATED_HEIGHT = 140;
 
 const safeUnwrap = (res) => res?.data?.data ?? res?.data ?? null;
 const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
@@ -26,10 +30,10 @@ const ConfirmModal = ({ open, title, desc, onConfirm, onCancel }) => {
         <h2 className={s.modalTitle}>{title}</h2>
         {desc && <p className={s.modalDesc}>{desc}</p>}
         <div className={s.modalActions}>
-          <button className={s.btnGhost} onClick={onCancel}>
+          <button className={s.btnGhost} onClick={onCancel} type="button">
             Hủy
           </button>
-          <button className={s.btnPrimary} onClick={onConfirm}>
+          <button className={s.btnPrimary} onClick={onConfirm} type="button">
             Xác nhận
           </button>
         </div>
@@ -38,49 +42,242 @@ const ConfirmModal = ({ open, title, desc, onConfirm, onCancel }) => {
   );
 };
 
-// User Form Modal (giữ lại như file bạn đang có – chưa gắn BE create/edit)
-const UserFormModal = ({ open, mode, initial, onSubmit, onClose }) => {
-  const [form, setForm] = useState(
-    initial || {
-      displayName: "",
-      email: "",
-      role: "LEARNER",
-      password: "",
-      confirmPassword: "",
-    }
+const UserDetailModal = ({ open, loading, user, onClose }) => {
+  if (!open) return null;
+
+  return (
+    <div className={s.modalOverlay}>
+      <div className={s.modal}>
+        <h2 className={s.modalTitle}>Chi tiết người dùng</h2>
+
+        {loading ? (
+          <p className={s.modalDesc}>Đang tải…</p>
+        ) : user ? (
+          <div className={s.detailGrid}>
+            <div className={s.detailRow}>
+              <span className={s.detailLabel}>User ID</span>
+              <span className={s.detailValue}>{user.id}</span>
+            </div>
+            <div className={s.detailRow}>
+              <span className={s.detailLabel}>Username</span>
+              <span className={s.detailValue}>{user.username || "—"}</span>
+            </div>
+            <div className={s.detailRow}>
+              <span className={s.detailLabel}>Email</span>
+              <span className={s.detailValue}>{user.email || "—"}</span>
+            </div>
+            <div className={s.detailRow}>
+              <span className={s.detailLabel}>Display name</span>
+              <span className={s.detailValue}>{user.displayName || "—"}</span>
+            </div>
+            <div className={s.detailRow}>
+              <span className={s.detailLabel}>Role</span>
+              <span className={s.detailValue}>{user.roleName || "—"}</span>
+            </div>
+            <div className={s.detailRow}>
+              <span className={s.detailLabel}>isActive</span>
+              <span className={s.detailValue}>
+                {typeof user.isActive === "boolean"
+                  ? String(user.isActive)
+                  : "—"}
+              </span>
+            </div>
+            <div className={s.detailRow}>
+              <span className={s.detailLabel}>isVerified</span>
+              <span className={s.detailValue}>
+                {typeof user.isVerified === "boolean"
+                  ? String(user.isVerified)
+                  : "—"}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <p className={s.modalDesc}>Không có dữ liệu.</p>
+        )}
+
+        <div className={s.modalActions}>
+          <button className={s.btnGhost} type="button" onClick={onClose}>
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
   );
+};
+
+function MenuPortal({
+  open,
+  anchorRect,
+  onClose,
+  onView,
+  onBanToggle,
+  banLabel,
+  onDelete,
+}) {
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const onDoc = (e) => {
+      if (menuRef.current?.contains(e.target)) return;
+      onClose();
+    };
+    const onEsc = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    const onScroll = () => onClose();
+    const onResize = () => onClose();
+
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onEsc);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onResize);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onEsc);
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [open, onClose]);
+
+  if (!open || !anchorRect) return null;
+
+  const padding = 8;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  let left = Math.min(anchorRect.right - MENU_WIDTH, vw - MENU_WIDTH - padding);
+  left = Math.max(padding, left);
+
+  let top = anchorRect.bottom + 8;
+  if (top + MENU_ESTIMATED_HEIGHT > vh - padding) {
+    top = anchorRect.top - MENU_ESTIMATED_HEIGHT - 8;
+  }
+  top = Math.max(padding, top);
+
+  return createPortal(
+    <div
+      ref={menuRef}
+      className={s.menu}
+      style={{ position: "fixed", top, left, width: MENU_WIDTH }}
+      role="menu"
+    >
+      <button type="button" className={s.menuItem} onClick={onView}>
+        Xem chi tiết
+      </button>
+
+      <button type="button" className={s.menuItem} onClick={onBanToggle}>
+        {banLabel}
+      </button>
+
+      <button
+        type="button"
+        className={`${s.menuItem} ${s.menuDanger}`}
+        onClick={onDelete}
+      >
+        Xóa
+      </button>
+    </div>,
+    document.body
+  );
+}
+
+const CreateUserModal = ({ open, onClose, onCreated }) => {
+  const [form, setForm] = useState({
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    displayName: "",
+    roleName: "LEARNER",
+    isActive: true,
+    isVerified: true,
+    // optional fields from swagger (để trống cũng ok nếu BE cho)
+    currentJlptLevel: "",
+    firstName: "",
+    lastName: "",
+  });
+
+  const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const validate = (field, value) => {
-    let msg = "";
+  useEffect(() => {
+    if (!open) return;
+    // reset khi mở
+    setForm({
+      username: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      displayName: "",
+      roleName: "LEARNER",
+      isActive: true,
+      isVerified: true,
+      currentJlptLevel: "",
+      firstName: "",
+      lastName: "",
+    });
+    setErrors({});
+    setSubmitting(false);
+  }, [open]);
 
-    if (field === "displayName" && !value.trim())
-      msg = "Tên hiển thị là bắt buộc";
-    if (field === "email" && (!value.trim() || !/\S+@\S+\.\S+/.test(value)))
-      msg = "Email không hợp lệ";
-    if (field === "password" && mode === "create" && value.length < 6)
-      msg = "Mật khẩu phải ≥ 6 ký tự";
-    if (
-      field === "confirmPassword" &&
-      mode === "create" &&
-      value !== form.password
-    )
-      msg = "Mật khẩu xác nhận không khớp";
-
-    setErrors((prev) => ({ ...prev, [field]: msg }));
+  const validateAll = (f) => {
+    const e = {};
+    if (!f.username.trim()) e.username = "Username là bắt buộc";
+    if (!f.displayName.trim()) e.displayName = "Tên hiển thị là bắt buộc";
+    if (!f.email.trim() || !/\S+@\S+\.\S+/.test(f.email))
+      e.email = "Email không hợp lệ";
+    if (!f.password || f.password.length < 6)
+      e.password = "Mật khẩu phải ≥ 6 ký tự";
+    if (f.confirmPassword !== f.password)
+      e.confirmPassword = "Mật khẩu xác nhận không khớp";
+    if (!f.roleName) e.roleName = "Role là bắt buộc";
+    return e;
   };
 
-  const change = (field) => (e) => {
-    const v = e.target.value;
-    setForm((prev) => ({ ...prev, [field]: v }));
-    validate(field, v);
+  const change = (key) => (e) => {
+    const v =
+      e?.target?.type === "checkbox" ? e.target.checked : e.target.value;
+    setForm((prev) => ({ ...prev, [key]: v }));
   };
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    Object.keys(form).forEach((key) => validate(key, form[key]));
-    if (Object.values(errors).some((m) => m)) return;
-    onSubmit(form);
+    const eAll = validateAll(form);
+    setErrors(eAll);
+    if (Object.keys(eAll).length > 0) return;
+
+    const payload = {
+      username: form.username.trim(),
+      email: form.email.trim(),
+      password: form.password,
+      roleName: form.roleName,
+      displayName: form.displayName.trim(),
+      isActive: !!form.isActive,
+      isVerified: !!form.isVerified,
+    };
+
+    // optional fields: chỉ gửi nếu có nhập
+    if (form.currentJlptLevel.trim())
+      payload.currentJlptLevel = form.currentJlptLevel.trim();
+    if (form.firstName.trim()) payload.firstName = form.firstName.trim();
+    if (form.lastName.trim()) payload.lastName = form.lastName.trim();
+
+    try {
+      setSubmitting(true);
+      const res = await api.post("/admin/users", payload); // POST /api/admin/users
+      const created = safeUnwrap(res) || null;
+
+      toast.success("Tạo user mới thành công!");
+      onCreated?.(created, payload);
+      onClose();
+    } catch (err) {
+      console.error(err);
+      toast.error("Tạo user thất bại!");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (!open) return null;
@@ -88,11 +285,40 @@ const UserFormModal = ({ open, mode, initial, onSubmit, onClose }) => {
   return (
     <div className={s.modalOverlay}>
       <div className={s.modal}>
-        <h2 className={s.modalTitle}>
-          {mode === "create" ? "Thêm người dùng mới" : "Chỉnh sửa người dùng"}
-        </h2>
+        <h2 className={s.modalTitle}>Thêm người dùng mới</h2>
 
         <form onSubmit={submit} className={s.form}>
+          <div className={s.formRow}>
+            <label className={s.label}>
+              Tên đăng nhập
+              <input
+                className={`${s.input} ${errors.username ? s.errorInput : ""}`}
+                value={form.username}
+                onChange={change("username")}
+              />
+              {errors.username && (
+                <p className={s.errorText}>{errors.username}</p>
+              )}
+            </label>
+
+            <label className={s.label}>
+              Vai trò
+              <select
+                className={`${s.select} ${errors.roleName ? s.errorInput : ""}`}
+                value={form.roleName}
+                onChange={change("roleName")}
+              >
+                <option value="LEARNER">Học viên</option>
+                <option value="TEACHER">Giáo viên</option>
+                <option value="MODERATOR">Moderator</option>
+                <option value="ADMIN">Admin</option>
+              </select>
+              {errors.roleName && (
+                <p className={s.errorText}>{errors.roleName}</p>
+              )}
+            </label>
+          </div>
+
           <label className={s.label}>
             Tên hiển thị
             <input
@@ -115,60 +341,107 @@ const UserFormModal = ({ open, mode, initial, onSubmit, onClose }) => {
             {errors.email && <p className={s.errorText}>{errors.email}</p>}
           </label>
 
-          {mode === "create" && (
-            <>
-              <label className={s.label}>
-                Mật khẩu
-                <input
-                  type="password"
-                  className={`${s.input} ${
-                    errors.password ? s.errorInput : ""
-                  }`}
-                  value={form.password}
-                  onChange={change("password")}
-                />
-                {errors.password && (
-                  <p className={s.errorText}>{errors.password}</p>
-                )}
-              </label>
+          <div className={s.formRow}>
+            <label className={s.label}>
+              Mật khẩu
+              <input
+                type="password"
+                className={`${s.input} ${errors.password ? s.errorInput : ""}`}
+                value={form.password}
+                onChange={change("password")}
+              />
+              {errors.password && (
+                <p className={s.errorText}>{errors.password}</p>
+              )}
+            </label>
 
-              <label className={s.label}>
-                Xác nhận mật khẩu
-                <input
-                  type="password"
-                  className={`${s.input} ${
-                    errors.confirmPassword ? s.errorInput : ""
-                  }`}
-                  value={form.confirmPassword}
-                  onChange={change("confirmPassword")}
-                />
-                {errors.confirmPassword && (
-                  <p className={s.errorText}>{errors.confirmPassword}</p>
-                )}
-              </label>
-            </>
-          )}
+            <label className={s.label}>
+              Xác nhận mật khẩu
+              <input
+                type="password"
+                className={`${s.input} ${
+                  errors.confirmPassword ? s.errorInput : ""
+                }`}
+                value={form.confirmPassword}
+                onChange={change("confirmPassword")}
+              />
+              {errors.confirmPassword && (
+                <p className={s.errorText}>{errors.confirmPassword}</p>
+              )}
+            </label>
+          </div>
+
+          <div className={s.formRow}>
+            <label className={s.label}>
+              Tên
+              <input
+                className={s.input}
+                value={form.firstName}
+                onChange={change("firstName")}
+              />
+            </label>
+
+            <label className={s.label}>
+              Họ
+              <input
+                className={s.input}
+                value={form.lastName}
+                onChange={change("lastName")}
+              />
+            </label>
+          </div>
 
           <label className={s.label}>
-            Vai trò
+            Trình độ JLPT hiện tại
             <select
               className={s.select}
-              value={form.role}
-              onChange={change("role")}
+              value={form.currentJlptLevel}
+              onChange={change("currentJlptLevel")}
             >
-              <option value="LEARNER">Học viên</option>
-              <option value="TEACHER">Giáo viên</option>
-              <option value="MODERATOR">Moderator</option>
-              <option value="ADMIN">Admin</option>
+              <option value="">Trình độ</option>
+              <option value="N5">N5</option>
+              <option value="N4">N4</option>
+              <option value="N3">N3</option>
+              <option value="N2">N2</option>
+              <option value="N1">N1</option>
             </select>
           </label>
 
+          <div className={s.switchRow}>
+            <label className={s.switch}>
+              <input
+                type="checkbox"
+                checked={form.isActive}
+                onChange={change("isActive")}
+              />
+              <span className={s.switchLabel}>Bị khóa</span>
+            </label>
+
+            <label className={s.switch}>
+              <input
+                type="checkbox"
+                checked={form.isVerified}
+                onChange={change("isVerified")}
+              />
+              <span className={s.switchLabel}>Đã xác minh</span>
+            </label>
+          </div>
+
           <div className={s.modalActions}>
-            <button type="button" className={s.btnGhost} onClick={onClose}>
+            <button
+              type="button"
+              className={s.btnGhost}
+              onClick={onClose}
+              disabled={submitting}
+            >
               Hủy
             </button>
-            <button type="submit" className={s.btnPrimary}>
-              {mode === "create" ? "Tạo" : "Lưu"}
+            <button
+              type="submit"
+              className={s.btnPrimary}
+              disabled={submitting}
+            >
+              {submitting ? "Đang tạo..." : "Tạo user"}
             </button>
           </div>
         </form>
@@ -179,27 +452,26 @@ const UserFormModal = ({ open, mode, initial, onSubmit, onClose }) => {
 
 export default function Users() {
   const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const [filterRole, setFilterRole] = useState("ALL");
   const [search, setSearch] = useState("");
-
   const [page, setPage] = useState(1);
 
-  // dropdown (3 dots)
+  // dropdown state
   const [openMenuId, setOpenMenuId] = useState(null);
-  const menuWrapRef = useRef(null);
+  const [menuAnchorRect, setMenuAnchorRect] = useState(null);
+  const openMenuRowRef = useRef(null);
 
   // detail modal
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailUser, setDetailUser] = useState(null);
 
-  // create/edit modal (chưa gắn BE)
-  const [modalOpen, setModalOpen] = useState(false);
-  const [mode, setMode] = useState("create");
-  const [editingUser, setEditingUser] = useState(null);
+  // create modal
+  const [createOpen, setCreateOpen] = useState(false);
 
-  // confirm delete modal
+  // confirm delete
   const [confirm, setConfirm] = useState({
     open: false,
     title: "",
@@ -211,6 +483,7 @@ export default function Users() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
+        setLoading(true);
         const res = await api.get("/admin/users");
         const list = safeUnwrap(res) || [];
 
@@ -219,73 +492,71 @@ export default function Users() {
           displayName: u.displayName,
           email: u.email,
           role: u.roleName,
-          // giữ lại để sau này gắn ban/unban
           status: u.isVerified
             ? u.isActive
               ? "ACTIVE"
               : "BLOCKED"
             : "PENDING",
-          createdAt: u.createdAt,
         }));
-
         setUsers(mapped);
       } catch (err) {
         console.error(err);
         toast.error("Không thể tải danh sách người dùng!");
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchUsers();
   }, []);
 
-  // đóng dropdown khi click ra ngoài
-  useEffect(() => {
-    const onDocClick = (e) => {
-      if (!openMenuId) return;
-      if (!menuWrapRef.current) return;
-      if (menuWrapRef.current.contains(e.target)) return;
-      setOpenMenuId(null);
-    };
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, [openMenuId]);
+  // reset page when filter/search changes
+  useEffect(() => setPage(1), [filterRole, search]);
 
-  const openCreate = () => {
-    setMode("create");
-    setEditingUser(null);
-    setModalOpen(true);
-  };
-
-  const submitUser = () => {
-    toast.info("API create/edit user chưa gắn, mới cập nhật UI thôi.");
-    setModalOpen(false);
-  };
-
-  // Ban/Unban placeholder
-  const askLock = () => {
-    toast.info("Chưa có API ban/unban. Bạn gắn sau nhé.");
-  };
-
-  const askDelete = (user) => {
-    setConfirm({
-      open: true,
-      title: "Xóa người dùng",
-      desc: `Bạn có chắc muốn xóa "${user.displayName}"?`,
-      onConfirm: () => remove(user),
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return users.filter((u) => {
+      const roleOk = filterRole === "ALL" || u.role === filterRole;
+      const textOk =
+        !q ||
+        (u.displayName || "").toLowerCase().includes(q) ||
+        (u.email || "").toLowerCase().includes(q);
+      return roleOk && textOk;
     });
+  }, [users, filterRole, search]);
+
+  // sort by userId ASC
+  const sorted = useMemo(
+    () => [...filtered].sort((a, b) => (a.id ?? 0) - (b.id ?? 0)),
+    [filtered]
+  );
+
+  // pagination
+  const total = sorted.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const safePage = clamp(page, 1, totalPages);
+  useEffect(() => {
+    if (page !== safePage) setPage(safePage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [safePage]);
+
+  const paged = useMemo(() => {
+    const start = (safePage - 1) * PAGE_SIZE;
+    return sorted.slice(start, start + PAGE_SIZE);
+  }, [sorted, safePage]);
+
+  const closeMenu = () => {
+    setOpenMenuId(null);
+    setMenuAnchorRect(null);
+    openMenuRowRef.current = null;
   };
 
-  const remove = async (user) => {
-    try {
-      await api.delete(`/admin/users/${user.id}`); // DELETE /api/admin/users/{userId}
-      setUsers((prev) => prev.filter((u) => u.id !== user.id));
-      toast.success("Đã xóa người dùng!");
-    } catch (err) {
-      console.error(err);
-      toast.error("Xóa thất bại!");
-    } finally {
-      setConfirm((c) => ({ ...c, open: false }));
-    }
+  const openMenu = (row, btnEl) => {
+    if (!btnEl) return;
+    const rect = btnEl.getBoundingClientRect();
+    setMenuAnchorRect(rect);
+    setOpenMenuId((cur) => (cur === row.id ? null : row.id));
+    openMenuRowRef.current = row;
   };
 
   const openDetail = async (userId) => {
@@ -305,112 +576,101 @@ export default function Users() {
     }
   };
 
-  // Filter
-  const filtered = users.filter((u) => {
-    const r = filterRole === "ALL" || u.role === filterRole;
-    const q =
-      !search.trim() ||
-      (u.displayName || "").toLowerCase().includes(search.toLowerCase()) ||
-      (u.email || "").toLowerCase().includes(search.toLowerCase());
-    return r && q;
-  });
+  const askDelete = (user) => {
+    setConfirm({
+      open: true,
+      title: "Xóa người dùng",
+      desc: `Bạn có chắc muốn xóa "${
+        user.displayName || user.email || user.id
+      }"?`,
+      onConfirm: () => remove(user),
+    });
+  };
 
-  // đổi filter/search -> reset page
-  useEffect(() => setPage(1), [filterRole, search]);
+  const remove = async (user) => {
+    try {
+      await api.delete(`/admin/users/${user.id}`); // DELETE /api/admin/users/{userId}
+      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+      toast.success("Đã xóa người dùng!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Xóa thất bại!");
+    } finally {
+      setConfirm((c) => ({ ...c, open: false }));
+    }
+  };
 
-  // sort userId ASC
-  const sorted = useMemo(() => {
-    return [...filtered].sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
-  }, [filtered]);
+  // ✅ BAN / UNBAN
+  const toggleBan = async (row) => {
+    if (!row?.id) return;
 
-  // pagination
-  const total = sorted.length;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const safePage = clamp(page, 1, totalPages);
+    const willUnban = row.status === "BLOCKED";
+    const endpoint = willUnban
+      ? `/admin/users/${row.id}/unban`
+      : `/admin/users/${row.id}/ban`;
 
-  useEffect(() => {
-    if (page !== safePage) setPage(safePage);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [safePage]);
+    try {
+      // POST /api/admin/users/{userId}/ban OR /unban
+      await api.post(endpoint);
 
-  const paged = useMemo(() => {
-    const start = (safePage - 1) * PAGE_SIZE;
-    return sorted.slice(start, start + PAGE_SIZE);
-  }, [sorted, safePage]);
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === row.id
+            ? {
+                ...u,
+                status: willUnban ? "ACTIVE" : "BLOCKED",
+              }
+            : u
+        )
+      );
 
-  // columns (đã bỏ Trạng thái + Ngày tạo)
-  const columns = [
-    { header: "User ID", accessor: "id" },
-    { header: "Tên hiển thị", accessor: "displayName" },
-    { header: "Email", accessor: "email" },
-    {
-      header: "Vai trò",
-      render: (row) => ROLE_LABEL[row.role] || row.role,
-    },
-    {
-      header: "Thao tác",
-      render: (row) => (
-        <div
-          className={s.menuWrap}
-          ref={openMenuId === row.id ? menuWrapRef : null}
-        >
-          <button
-            className={s.menuBtn}
-            onClick={() =>
-              setOpenMenuId((cur) => (cur === row.id ? null : row.id))
-            }
-            aria-label="Hành động"
-            type="button"
-          >
-            ⋯
-          </button>
+      toast.success(willUnban ? "Đã unban user!" : "Đã ban user!");
+    } catch (err) {
+      console.error(err);
+      toast.error(willUnban ? "Unban thất bại!" : "Ban thất bại!");
+    }
+  };
 
-          {openMenuId === row.id && (
-            <div className={s.menu}>
-              <button
-                type="button"
-                className={s.menuItem}
-                onClick={() => {
-                  setOpenMenuId(null);
-                  openDetail(row.id);
-                }}
-              >
-                Xem chi tiết
-              </button>
+  // columns
+  const columns = useMemo(
+    () => [
+      { header: "User ID", accessor: "id" },
+      { header: "Tên hiển thị", accessor: "displayName" },
+      { header: "Email", accessor: "email" },
+      {
+        header: "Vai trò",
+        render: (row) => ROLE_LABEL[row.role] || row.role,
+      },
+      {
+        header: "Thao tác",
+        render: (row) => (
+          <div className={s.menuWrap}>
+            <button
+              type="button"
+              className={s.menuBtn}
+              aria-label="Hành động"
+              onClick={(e) => openMenu(row, e.currentTarget)}
+            >
+              ⋯
+            </button>
+          </div>
+        ),
+      },
+    ],
+    []
+  );
 
-              <button
-                type="button"
-                className={s.menuItem}
-                onClick={() => {
-                  setOpenMenuId(null);
-                  askLock(row);
-                }}
-              >
-                {row.status === "BLOCKED" ? "Unban" : "Ban"}
-              </button>
-
-              <button
-                type="button"
-                className={`${s.menuItem} ${s.menuDanger}`}
-                onClick={() => {
-                  setOpenMenuId(null);
-                  askDelete(row);
-                }}
-              >
-                Xóa
-              </button>
-            </div>
-          )}
-        </div>
-      ),
-    },
-  ];
+  const currentRow = openMenuRowRef.current;
 
   return (
     <div className={s.page}>
       <div className={s.header}>
         <h1 className={s.title}>Quản lý người dùng</h1>
-        <button className={s.btnPrimary} onClick={openCreate}>
+        <button
+          className={s.btnPrimary}
+          type="button"
+          onClick={() => setCreateOpen(true)}
+        >
           + Thêm mới
         </button>
       </div>
@@ -436,61 +696,119 @@ export default function Users() {
         />
       </div>
 
-      <DataTable data={paged} columns={columns} />
+      <div className={s.tableWrap}>
+        {loading ? (
+          <div className={s.tableLoading}>Đang tải danh sách…</div>
+        ) : (
+          <DataTable data={paged} columns={columns} />
+        )}
 
-      {/* Pagination custom */}
-      <div className={s.pagination}>
-        <div className={s.pageInfo}>
-          Hiển thị {(safePage - 1) * PAGE_SIZE + (total === 0 ? 0 : 1)}–
-          {Math.min(safePage * PAGE_SIZE, total)} / {total}
-        </div>
+        {/* Pagination custom */}
+        <div className={s.pagination}>
+          <div className={s.pageInfo}>
+            Hiển thị {(safePage - 1) * PAGE_SIZE + (total === 0 ? 0 : 1)}–
+            {Math.min(safePage * PAGE_SIZE, total)} / {total}
+          </div>
 
-        <div className={s.pageControls}>
-          <button
-            className={s.pageBtn}
-            type="button"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={safePage === 1}
-          >
-            Trước
-          </button>
+          <div className={s.pageControls}>
+            <button
+              className={s.pageBtn}
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={safePage === 1}
+            >
+              Trước
+            </button>
 
-          {Array.from({ length: totalPages }, (_, i) => i + 1)
-            .slice(
-              Math.max(0, safePage - 3),
-              Math.min(totalPages, Math.max(0, safePage - 3) + 5)
-            )
-            .map((p) => (
-              <button
-                key={p}
-                type="button"
-                className={`${s.pageBtn} ${p === safePage ? s.pageActive : ""}`}
-                onClick={() => setPage(p)}
-              >
-                {p}
-              </button>
-            ))}
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .slice(
+                Math.max(0, safePage - 3),
+                Math.min(totalPages, Math.max(0, safePage - 3) + 5)
+              )
+              .map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  className={`${s.pageBtn} ${
+                    p === safePage ? s.pageActive : ""
+                  }`}
+                  onClick={() => setPage(p)}
+                >
+                  {p}
+                </button>
+              ))}
 
-          <button
-            className={s.pageBtn}
-            type="button"
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={safePage === totalPages}
-          >
-            Sau
-          </button>
+            <button
+              className={s.pageBtn}
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safePage === totalPages}
+            >
+              Sau
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Modals */}
-      <UserFormModal
-        open={modalOpen}
-        mode={mode}
-        initial={editingUser}
-        onSubmit={submitUser}
-        onClose={() => setModalOpen(false)}
+      {/* Dropdown menu (portal) */}
+      <MenuPortal
+        open={!!openMenuId}
+        anchorRect={menuAnchorRect}
+        onClose={closeMenu}
+        banLabel={currentRow?.status === "BLOCKED" ? "Unban" : "Ban"}
+        onView={() => {
+          const id = currentRow?.id;
+          closeMenu();
+          if (id) openDetail(id);
+        }}
+        onBanToggle={() => {
+          const row = currentRow;
+          closeMenu();
+          if (row) toggleBan(row);
+        }}
+        onDelete={() => {
+          const row = currentRow;
+          closeMenu();
+          if (row) askDelete(row);
+        }}
       />
 
+      {/* Create user modal */}
+      <CreateUserModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={(created, payload) => {
+          // nếu BE trả created object có id thì dùng luôn; nếu không thì fallback bằng payload
+          const item = created?.id
+            ? {
+                id: created.id,
+                displayName: created.displayName ?? payload.displayName,
+                email: created.email ?? payload.email,
+                role: created.roleName ?? payload.roleName,
+                status:
+                  created.isVerified ?? payload.isVerified
+                    ? created.isActive ?? payload.isActive
+                      ? "ACTIVE"
+                      : "BLOCKED"
+                    : "PENDING",
+              }
+            : {
+                id: Date.now(), // fallback tạm nếu BE không trả id (hiếm)
+                displayName: payload.displayName,
+                email: payload.email,
+                role: payload.roleName,
+                status: payload.isVerified
+                  ? payload.isActive
+                    ? "ACTIVE"
+                    : "BLOCKED"
+                  : "PENDING",
+              };
+
+          setUsers((prev) => [...prev, item]);
+        }}
+      />
+
+      {/* Confirm delete */}
       <ConfirmModal
         open={confirm.open}
         title={confirm.title}
@@ -500,63 +818,15 @@ export default function Users() {
       />
 
       {/* Detail modal */}
-      {detailOpen && (
-        <div className={s.modalOverlay}>
-          <div className={s.modal}>
-            <h2 className={s.modalTitle}>Chi tiết người dùng</h2>
-
-            {detailLoading ? (
-              <p className={s.modalDesc}>Đang tải…</p>
-            ) : detailUser ? (
-              <div className={s.detailGrid}>
-                <div className={s.detailRow}>
-                  <span className={s.detailLabel}>User ID</span>
-                  <span className={s.detailValue}>{detailUser.id}</span>
-                </div>
-                <div className={s.detailRow}>
-                  <span className={s.detailLabel}>Username</span>
-                  <span className={s.detailValue}>
-                    {detailUser.username || "—"}
-                  </span>
-                </div>
-                <div className={s.detailRow}>
-                  <span className={s.detailLabel}>Email</span>
-                  <span className={s.detailValue}>
-                    {detailUser.email || "—"}
-                  </span>
-                </div>
-                <div className={s.detailRow}>
-                  <span className={s.detailLabel}>Display name</span>
-                  <span className={s.detailValue}>
-                    {detailUser.displayName || "—"}
-                  </span>
-                </div>
-                <div className={s.detailRow}>
-                  <span className={s.detailLabel}>Role</span>
-                  <span className={s.detailValue}>
-                    {detailUser.roleName || "—"}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <p className={s.modalDesc}>Không có dữ liệu.</p>
-            )}
-
-            <div className={s.modalActions}>
-              <button
-                className={s.btnGhost}
-                type="button"
-                onClick={() => {
-                  setDetailOpen(false);
-                  setDetailUser(null);
-                }}
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <UserDetailModal
+        open={detailOpen}
+        loading={detailLoading}
+        user={detailUser}
+        onClose={() => {
+          setDetailOpen(false);
+          setDetailUser(null);
+        }}
+      />
     </div>
   );
 }

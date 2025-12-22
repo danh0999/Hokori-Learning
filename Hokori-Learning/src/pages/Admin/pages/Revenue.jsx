@@ -1,6 +1,4 @@
-// Revenue.jsx (Admin) - 2 Tabs: (1) Doanh thu (2) Payout GV
-// Source: :contentReference[oaicite:1]{index=1}
-
+// Revenue.jsx (Admin) - 2 tabs: Doanh thu + Payout giáo viên
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Card,
@@ -13,95 +11,78 @@ import {
   Button,
   Space,
   Statistic,
-  message,
   Tabs,
-  Divider,
+  message,
+  Tooltip,
 } from "antd";
 import dayjs from "dayjs";
 import api from "../../../configs/axios.js";
 import s from "./Revenue.module.scss";
 
 const fmtVnd = (n) => Number(n || 0).toLocaleString("vi-VN");
-// ✅ mới – coi tất cả là VNĐ
-const moneyFromCents = (v) => `${fmtVnd(v || 0)} VNĐ`;
-
-const renderPayStatus = (status) => {
-  if (!status) return <Tag>—</Tag>;
-  const v = String(status).toUpperCase();
-  if (v === "PAID") return <Tag color="green">PAID</Tag>;
-  if (v === "PENDING") return <Tag color="gold">PENDING</Tag>;
-  if (v === "CANCELLED") return <Tag color="red">CANCELLED</Tag>;
-  if (v === "FAILED") return <Tag color="red">FAILED</Tag>;
-  if (v === "EXPIRED") return <Tag color="orange">EXPIRED</Tag>;
-  return <Tag>{v}</Tag>;
-};
+const money = (v) => `${fmtVnd(v || 0)} VNĐ`; // ✅ KHÔNG chia 100
 
 const renderPayoutStatus = (status) => {
-  if (!status) return <Tag>—</Tag>;
-  const v = String(status).toUpperCase();
-  if (v === "PENDING") return <Tag color="gold">PENDING</Tag>;
-  if (v === "PAID") return <Tag color="green">PAID</Tag>;
-  if (v === "FAILED") return <Tag color="red">FAILED</Tag>;
+  const v = String(status || "").toUpperCase();
+  if (!v) return <Tag>—</Tag>;
+  if (v === "PENDING") return <Tag color="gold">Chưa chuyển</Tag>;
+  if (v === "PAID") return <Tag color="green">Đã chuyển</Tag>;
+  if (v === "FAILED") return <Tag color="red">Lỗi</Tag>;
   return <Tag>{v}</Tag>;
-};
-
-const isInMonth = (iso, yearMonth) => {
-  if (!iso) return false;
-  const m = dayjs(iso);
-  return m.isValid() && m.format("YYYY-MM") === yearMonth;
 };
 
 export default function Revenue() {
-  // shared month filter for both tabs
+  const [activeTab, setActiveTab] = useState("revenue");
   const [yearMonth, setYearMonth] = useState(dayjs().format("YYYY-MM"));
-  const [activeTab, setActiveTab] = useState("revenue"); // "revenue" | "payout"
 
-  // ===================== TAB 1: REVENUE =====================
+  // ===================== TAB 1: DOANH THU (GIỮ CƠ BẢN, BẠN TINH CHỈNH SAU) =====================
   const [revLoading, setRevLoading] = useState(false);
+  const [activeRevenueView, setActiveRevenueView] = useState("PAYMENTS"); // PAYMENTS | COURSE_TOTAL
 
-  // payments list (history) from /api/admin/payments
-  const [paymentPage, setPaymentPage] = useState(0);
-  const [paymentPageSize, setPaymentPageSize] = useState(20);
-  const [paymentTotal, setPaymentTotal] = useState(0);
-  const [paymentRows, setPaymentRows] = useState([]);
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState("ALL"); // ALL/PAID/PENDING...
-  const [activeRevenueView, setActiveRevenueView] = useState("PAY_ALL"); // PAY_ALL | PAY_AI | PAY_COURSE | COURSE_GROSS
+  const [paymentsRes, setPaymentsRes] = useState({
+    totalPaidCents: 0,
+    payments: [],
+    totalPages: 0,
+    pageSize: 20,
+    currentPage: 0,
+    totalElements: 0,
+    filterStatus: "ALL",
+  });
 
-  // revenue total from /api/admin/revenue/total?period=YYYY-MM
-  const [courseGross, setCourseGross] = useState(null); // { revenueCents, transactionCount, ... , transactions[] }
+  const [courseTotal, setCourseTotal] = useState({
+    period: "",
+    revenueCents: 0,
+    transactionCount: 0,
+    teacherCount: 0,
+    courseCount: 0,
+    transactions: [],
+  });
 
-  const fetchPayments = async (ym, page = 0, pageSize = 20, status = "ALL") => {
+  const fetchPayments = async ({
+    page = 0,
+    pageSize = 20,
+    filterStatus = "ALL",
+  } = {}) => {
+    // Tab 1 bạn muốn giữ nguyên thì sau bạn chỉnh params theo BE.
     const res = await api.get("admin/payments", {
-      params: {
-        currentPage: page,
-        pageSize,
-        filterStatus: status, // theo response bạn: filterStatus
-        // Nếu BE có yearMonth/period thì bạn có thể thêm ở đây.
-        // yearMonth: ym,
-      },
+      params: { page, pageSize, filterStatus },
     });
-    const data = res?.data?.data;
-    setPaymentRows(Array.isArray(data?.payments) ? data.payments : []);
-    setPaymentTotal(Number(data?.totalElements || 0));
-    setPaymentPage(Number(data?.currentPage || 0));
-    setPaymentPageSize(Number(data?.pageSize || pageSize));
+    setPaymentsRes(res?.data?.data || {});
   };
 
-  const fetchCourseGross = async (ym) => {
-    // theo response bạn: data.period = "2025-12"
-    // mình dùng param period, nếu BE dùng yearMonth thì đổi lại: { yearMonth: ym }
+  const fetchCourseTotal = async (ym) => {
     const res = await api.get("admin/revenue/total", {
-      params: { period: ym },
+      params: { yearMonth: ym },
     });
-    setCourseGross(res?.data?.data || null);
+    setCourseTotal(res?.data?.data || {});
   };
 
   const reloadRevenueTab = async (ym = yearMonth) => {
     try {
       setRevLoading(true);
       await Promise.all([
-        fetchPayments(ym, 0, paymentPageSize, paymentStatusFilter),
-        fetchCourseGross(ym),
+        fetchPayments({ page: 0, pageSize: 20, filterStatus: "ALL" }),
+        fetchCourseTotal(ym),
       ]);
     } catch (e) {
       console.error(e);
@@ -113,92 +94,61 @@ export default function Revenue() {
     }
   };
 
-  // compute summary from currently loaded paymentRows (client-side filter by month)
-  const paymentRowsInMonth = useMemo(() => {
-    return (paymentRows || []).filter((p) =>
-      isInMonth(p?.createdAt, yearMonth)
-    );
-  }, [paymentRows, yearMonth]);
-
-  const paidPaymentsInMonth = useMemo(() => {
-    return paymentRowsInMonth.filter(
-      (p) => String(p?.status).toUpperCase() === "PAID"
-    );
-  }, [paymentRowsInMonth]);
-
-  const paidAiCents = useMemo(() => {
-    return paidPaymentsInMonth
-      .filter((p) => p?.aiPackageId != null)
-      .reduce((sum, p) => sum + Number(p?.amountCents || 0), 0);
-  }, [paidPaymentsInMonth]);
-
-  const paidCourseCentsViaPayments = useMemo(() => {
-    return paidPaymentsInMonth
-      .filter((p) => Array.isArray(p?.courseIds) && p.courseIds.length > 0)
-      .reduce((sum, p) => sum + Number(p?.amountCents || 0), 0);
-  }, [paidPaymentsInMonth]);
-
-  const courseGrossCents = courseGross?.revenueCents ?? 0;
-
-  const paymentCols = [
-    { title: "ID", dataIndex: "id", key: "id", width: 70 },
+  // Payments table (tab 1)
+  const paymentColumns = [
+    { title: "Mã", dataIndex: "id", key: "id", width: 90, fixed: "left" },
     {
-      title: "Thời gian",
-      dataIndex: "createdAt",
-      key: "createdAt",
-      width: 190,
-      render: (v) => (v ? dayjs(v).format("YYYY-MM-DD HH:mm:ss") : "—"),
-    },
-    {
-      title: "Loại",
-      key: "type",
-      width: 120,
-      render: (_, r) => {
-        const isAI = r?.aiPackageId != null;
-        const isCourse = Array.isArray(r?.courseIds) && r.courseIds.length > 0;
-        if (isAI) return <Tag color="blue">AI Package</Tag>;
-        if (isCourse) return <Tag color="purple">Course</Tag>;
-        return <Tag>Other</Tag>;
-      },
+      title: "OrderCode",
+      dataIndex: "orderCode",
+      key: "orderCode",
+      width: 160,
+      render: (v) => <Tag>{v}</Tag>,
     },
     {
       title: "Mô tả",
       dataIndex: "description",
       key: "description",
       ellipsis: true,
+      render: (t) => (
+        <Tooltip title={t}>
+          <span>{t}</span>
+        </Tooltip>
+      ),
     },
     {
       title: "Số tiền",
       dataIndex: "amountCents",
       key: "amountCents",
+      width: 160,
       align: "right",
-      width: 140,
-      render: (v) => moneyFromCents(v),
+      render: (v) => money(v),
     },
     {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
-      width: 120,
-      render: (v) => renderPayStatus(v),
+      width: 130,
+      render: (v) => {
+        const s = String(v || "").toUpperCase();
+        if (s === "PAID") return <Tag color="green">PAID</Tag>;
+        if (s === "PENDING") return <Tag color="gold">PENDING</Tag>;
+        if (s === "CANCELLED") return <Tag>Cancelled</Tag>;
+        if (s === "FAILED") return <Tag color="red">Failed</Tag>;
+        return <Tag>{s}</Tag>;
+      },
     },
     {
-      title: "OrderCode",
-      dataIndex: "orderCode",
-      key: "orderCode",
-      width: 160,
-    },
-  ];
-
-  const courseGrossCols = [
-    { title: "ID", dataIndex: "id", key: "id", width: 70 },
-    {
-      title: "Thời gian",
+      title: "Tạo lúc",
       dataIndex: "createdAt",
       key: "createdAt",
       width: 190,
-      render: (v) => (v ? dayjs(v).format("YYYY-MM-DD HH:mm:ss") : "—"),
+      render: (v) => (v ? dayjs(v).format("DD/MM/YYYY HH:mm") : "—"),
     },
+  ];
+
+  // Course total table (tab 1)
+  const courseTxColumns = [
+    { title: "ID", dataIndex: "id", key: "id", width: 80, fixed: "left" },
     {
       title: "Teacher",
       dataIndex: "teacherName",
@@ -210,46 +160,41 @@ export default function Revenue() {
       dataIndex: "courseTitle",
       key: "courseTitle",
       ellipsis: true,
+      render: (t) => (
+        <Tooltip title={t}>
+          <b>{t}</b>
+        </Tooltip>
+      ),
     },
     {
       title: "Số tiền",
       dataIndex: "amountCents",
       key: "amountCents",
+      width: 150,
       align: "right",
-      width: 140,
-      render: (v) => moneyFromCents(v),
+      render: (v) => money(v),
+    },
+    {
+      title: "Thời gian",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      width: 190,
+      render: (v) => (v ? dayjs(v).format("DD/MM/YYYY HH:mm") : "—"),
     },
   ];
 
-  const revenueTableTitle = useMemo(() => {
-    if (activeRevenueView === "PAY_AI") return "Lịch sử giao dịch - Gói AI";
-    if (activeRevenueView === "PAY_COURSE")
-      return "Lịch sử giao dịch - Khóa học";
-    if (activeRevenueView === "COURSE_GROSS")
-      return "Doanh thu khóa học (gross) - Transactions";
-    return "Lịch sử giao dịch - Tất cả";
-  }, [activeRevenueView]);
-
-  const revenueTableData = useMemo(() => {
-    if (activeRevenueView === "COURSE_GROSS")
-      return courseGross?.transactions || [];
-    if (activeRevenueView === "PAY_AI")
-      return paymentRowsInMonth.filter((p) => p?.aiPackageId != null);
-    if (activeRevenueView === "PAY_COURSE")
-      return paymentRowsInMonth.filter(
-        (p) => Array.isArray(p?.courseIds) && p.courseIds.length > 0
-      );
-    return paymentRowsInMonth;
-  }, [activeRevenueView, courseGross, paymentRowsInMonth]);
-
-  const revenueTableCols = useMemo(() => {
-    return activeRevenueView === "COURSE_GROSS" ? courseGrossCols : paymentCols;
-  }, [activeRevenueView]);
-
-  // ===================== TAB 2: PAYOUT =====================
+  // ===================== TAB 2: PAYOUT GIÁO VIÊN (THEO BE GUIDE) =====================
   const [payoutLoading, setPayoutLoading] = useState(false);
 
-  const [commissionCents, setCommissionCents] = useState(0);
+  // commission details (đúng guide)
+  const [commission, setCommission] = useState({
+    yearMonth: "",
+    expectedRevenueCents: 0,
+    paidRevenueCents: 0,
+    totalRevenueCents: 0,
+  });
+
+  // pending teachers
   const [rows, setRows] = useState([]);
 
   // detail modal
@@ -261,13 +206,13 @@ export default function Revenue() {
   const [openPaid, setOpenPaid] = useState(false);
   const [paying, setPaying] = useState(false);
   const [note, setNote] = useState("");
-  const [target, setTarget] = useState(null); // { teacherId, teacherName, yearMonth }
+  const [target, setTarget] = useState(null);
 
-  const fetchCommission = async (ym) => {
-    const res = await api.get("admin/payments/admin-commission", {
+  const fetchCommissionDetails = async (ym) => {
+    const res = await api.get("admin/payments/admin-commission-details", {
       params: { yearMonth: ym },
     });
-    setCommissionCents(res?.data?.data ?? 0);
+    setCommission(res?.data?.data || {});
   };
 
   const fetchPending = async (ym) => {
@@ -280,7 +225,7 @@ export default function Revenue() {
   const reloadPayoutTab = async (ym = yearMonth) => {
     try {
       setPayoutLoading(true);
-      await Promise.all([fetchCommission(ym), fetchPending(ym)]);
+      await Promise.all([fetchCommissionDetails(ym), fetchPending(ym)]);
     } catch (e) {
       console.error(e);
       message.error(
@@ -346,34 +291,64 @@ export default function Revenue() {
     }
   };
 
+  const pendingTeachers = rows.length;
+
+  const pendingAmount = useMemo(
+    () =>
+      rows.reduce(
+        (sum, r) => sum + Number(r?.totalPendingRevenueCents || 0),
+        0
+      ),
+    [rows]
+  );
+  const pendingCourses = useMemo(
+    () => rows.reduce((sum, r) => sum + Number(r?.courseCount || 0), 0),
+    [rows]
+  );
+  const pendingSales = useMemo(
+    () => rows.reduce((sum, r) => sum + Number(r?.totalPendingSales || 0), 0),
+    [rows]
+  );
+
+  // Outer table (tab2) đúng field guide
   const payoutColumns = [
     {
-      title: "Teacher",
+      title: "Giáo viên",
       dataIndex: "teacherName",
       key: "teacherName",
       render: (t) => <b>{t}</b>,
+      width: 180,
+      fixed: "left",
     },
-    { title: "Email", dataIndex: "teacherEmail", key: "teacherEmail" },
+
     {
       title: "Tháng",
       dataIndex: "yearMonth",
       key: "yearMonth",
-      render: (v) => <Tag>{v}</Tag>,
       width: 110,
+      render: (v) => <Tag>{v}</Tag>,
     },
     {
       title: "Cần chuyển",
       dataIndex: "totalPendingRevenueCents",
       key: "totalPendingRevenueCents",
-      render: (v) => moneyFromCents(v),
+      width: 160,
       align: "right",
+      render: (v) => money(v),
     },
     {
       title: "Số khóa",
+      dataIndex: "courseCount",
+      key: "courseCount",
+      width: 95,
+      align: "center",
+    },
+    {
+      title: "Số GD",
       dataIndex: "totalPendingSales",
       key: "totalPendingSales",
-      align: "right",
-      width: 90,
+      width: 95,
+      align: "center",
     },
     {
       title: "Trạng thái",
@@ -385,7 +360,8 @@ export default function Revenue() {
     {
       title: "Hành động",
       key: "action",
-      width: 240,
+      width: 260,
+      fixed: "right",
       render: (_, r) => (
         <Space>
           <Button onClick={() => openTeacherDetail(r)}>Xem chi tiết</Button>
@@ -399,66 +375,72 @@ export default function Revenue() {
 
   const detailCourses = useMemo(() => detail?.courses || [], [detail]);
 
-  // ✅ Modal table theo yêu cầu mới:
-  // tên khóa học, số giao dịch, tiền admin(20%), tiền teacher (80%), tiền gốc khóa học (coursePrice)
-  // NOTE: coursePrice cần BE trả về (vd: coursePriceCents / coursePrice). Nếu chưa có -> "—"
+  // Modal course table (tab2) theo guide: courseTitle, salesCount, adminCommissionCents, revenueCents, originalCoursePriceCents
   const payoutDetailCourseCols = [
     {
       title: "Khóa học",
       dataIndex: "courseTitle",
       key: "courseTitle",
       render: (t) => <b>{t}</b>,
+      ellipsis: true,
     },
+
+    // ✅ NEW: Giá gốc 1 khóa (courseBasePriceCents)
+    {
+      title: "Giá gốc",
+      dataIndex: "courseBasePriceCents",
+      key: "courseBasePriceCents",
+      width: 160,
+      align: "right",
+      render: (v) => (v == null ? "—" : money(v)),
+    },
+
     {
       title: "Số giao dịch",
       dataIndex: "salesCount",
       key: "salesCount",
-      align: "right",
       width: 120,
+      align: "center",
     },
-    {
-      title: "Tiền admin (20%)",
-      key: "admin20",
-      align: "right",
-      width: 160,
-      render: (_, r) => {
-        const rev = Number(r?.revenueCents || 0);
-        return moneyFromCents(Math.round(rev * 0.2));
-      },
-    },
-    {
-      title: "Tiền teacher (80%)",
-      key: "teacher80",
-      align: "right",
-      width: 170,
-      render: (_, r) => {
-        const rev = Number(r?.revenueCents || 0);
-        return moneyFromCents(Math.round(rev * 0.8));
-      },
-    },
-    {
-      title: "Tiền gốc khóa học",
-      key: "coursePrice",
-      align: "right",
-      width: 170,
-      render: (_, r) => {
-        // Bạn đổi field này theo BE nếu khác:
-        // coursePriceCents hoặc coursePrice (đã là cents)
-        const priceCents =
-          r?.coursePriceCents ??
-          r?.coursePriceCentsAmount ??
-          r?.coursePrice ??
-          null;
 
-        if (priceCents == null) return "—";
-        return moneyFromCents(Number(priceCents));
+    // ✅ NEW: Tổng tiền gốc (giá gốc * số GD) (totalPaidAmountCents)
+    {
+      title: "Tổng tiền gốc",
+      dataIndex: "totalPaidAmountCents",
+      key: "totalPaidAmountCents",
+      width: 160,
+      align: "right",
+      render: (v, row) => {
+        // nếu BE không trả field này thì fallback tự tính
+        const base = Number(row?.courseBasePriceCents || 0);
+        const cnt = Number(row?.salesCount || 0);
+        const computed = base * cnt;
+        const val = v == null ? computed : v;
+        return money(val);
       },
+    },
+
+    {
+      title: "Tiền hoa hồng (20%)",
+      dataIndex: "adminCommissionCents",
+      key: "adminCommissionCents",
+      width: 190,
+      align: "right",
+      render: (v) => money(v),
+    },
+
+    {
+      title: "Số tiền đã chia hoa hồng (80%)",
+      dataIndex: "revenueCents",
+      key: "revenueCents",
+      width: 230,
+      align: "right",
+      render: (v) => money(v),
     },
   ];
 
-  // ===================== SHARED EFFECTS =====================
+  // ===================== INIT =====================
   useEffect(() => {
-    // initial load for both tabs
     reloadRevenueTab(yearMonth);
     reloadPayoutTab(yearMonth);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -467,8 +449,6 @@ export default function Revenue() {
   const onChangeMonth = (v) => {
     const ym = (v || dayjs()).format("YYYY-MM");
     setYearMonth(ym);
-
-    // reload both
     reloadRevenueTab(ym);
     reloadPayoutTab(ym);
   };
@@ -477,9 +457,14 @@ export default function Revenue() {
   return (
     <div className={s.page}>
       <div className={s.titleRow}>
-        <h1 className={s.title}>Tài chính</h1>
+        <div>
+          <div className={s.title}>Tài chính</div>
+          <div className={s.subtitle}>
+            Theo dõi doanh thu hệ thống và payout giáo viên theo tháng.
+          </div>
+        </div>
 
-        <Space>
+        <Space className={s.monthPicker}>
           <span>Chọn tháng</span>
           <DatePicker
             picker="month"
@@ -492,6 +477,7 @@ export default function Revenue() {
       </div>
 
       <Tabs
+        className={s.tabs}
         activeKey={activeTab}
         onChange={setActiveTab}
         items={[
@@ -502,98 +488,86 @@ export default function Revenue() {
               <>
                 <div className={s.summaryGrid}>
                   <Card
-                    className={s.summaryCard}
+                    className={`${s.summaryCard} ${
+                      activeRevenueView === "PAYMENTS" ? s.activeCard : ""
+                    }`}
                     loading={revLoading}
                     hoverable
-                    onClick={() => setActiveRevenueView("PAY_AI")}
+                    onClick={() => setActiveRevenueView("PAYMENTS")}
                   >
                     <Statistic
-                      title={`Doanh thu gói AI (PAID) - ${yearMonth}`}
-                      value={fmtVnd(paidAiCents)}
+                      title={`Tổng tiền đã thanh toán (PAID)`}
+                      value={fmtVnd(paymentsRes?.totalPaidCents || 0)}
                       suffix="VNĐ"
                     />
                     <div className={s.summaryHint}>
-                      Bấm để xem lịch sử giao dịch gói AI.
+                      Bấm để xem danh sách payments.
                     </div>
                   </Card>
 
                   <Card
-                    className={s.summaryCard}
+                    className={`${s.summaryCard} ${
+                      activeRevenueView === "COURSE_TOTAL" ? s.activeCard : ""
+                    }`}
                     loading={revLoading}
                     hoverable
-                    onClick={() => setActiveRevenueView("PAY_COURSE")}
+                    onClick={() => setActiveRevenueView("COURSE_TOTAL")}
                   >
                     <Statistic
-                      title={`Doanh thu khóa học (PAID) - ${yearMonth} (từ Payments)`}
-                      value={fmtVnd(paidCourseCentsViaPayments)}
+                      title={`Tổng doanh thu khóa học (gross) - ${yearMonth}`}
+                      value={fmtVnd(courseTotal?.revenueCents || 0)}
                       suffix="VNĐ"
                     />
                     <div className={s.summaryHint}>
-                      Bấm để xem lịch sử giao dịch khóa học (Payments).
-                    </div>
-                  </Card>
-
-                  <Card
-                    className={s.summaryCard}
-                    loading={revLoading}
-                    hoverable
-                    onClick={() => setActiveRevenueView("COURSE_GROSS")}
-                  >
-                    <Statistic
-                      title={`Doanh thu khóa học (gross) - ${yearMonth}`}
-                      value={fmtVnd(courseGrossCents)}
-                      suffix="VNĐ"
-                    />
-                    <div className={s.summaryHint}>
-                      Lấy từ /admin/revenue/total (chưa tính hoa hồng). Bấm để
-                      xem transactions.
+                      Bấm để xem giao dịch doanh thu khóa học.
                     </div>
                   </Card>
                 </div>
 
-                <Divider style={{ margin: "12px 0" }} />
-
-                <Card className={s.tableWrap} title={revenueTableTitle}>
-                  <Table
-                    loading={revLoading}
-                    columns={revenueTableCols}
-                    dataSource={revenueTableData}
-                    rowKey={(r) =>
-                      activeRevenueView === "COURSE_GROSS"
-                        ? `rev-${r.id}`
-                        : `pay-${r.id}`
-                    }
-                    pagination={
-                      activeRevenueView === "COURSE_GROSS"
-                        ? { pageSize: 10 }
-                        : {
-                            current: paymentPage + 1,
-                            pageSize: paymentPageSize,
-                            total: paymentTotal,
-                            showSizeChanger: true,
-                            onChange: async (page, pageSize) => {
-                              try {
-                                setRevLoading(true);
-                                await fetchPayments(
-                                  yearMonth,
-                                  page - 1,
-                                  pageSize,
-                                  paymentStatusFilter
-                                );
-                              } catch (e) {
-                                console.error(e);
-                                message.error("Không đổi trang payments được.");
-                              } finally {
-                                setRevLoading(false);
-                              }
-                            },
-                          }
-                    }
-                  />
+                <Card
+                  className={s.tableWrap}
+                  title={
+                    activeRevenueView === "PAYMENTS"
+                      ? "Lịch sử payments"
+                      : "Giao dịch doanh thu khóa học"
+                  }
+                  loading={revLoading}
+                >
+                  <div className={s.tableScroll}>
+                    {activeRevenueView === "PAYMENTS" ? (
+                      <Table
+                        rowKey={(r) => r.id}
+                        columns={paymentColumns}
+                        dataSource={paymentsRes?.payments || []}
+                        pagination={{
+                          current: (paymentsRes?.currentPage || 0) + 1,
+                          pageSize: paymentsRes?.pageSize || 20,
+                          total: paymentsRes?.totalElements || 0,
+                          showSizeChanger: false,
+                          onChange: (page) =>
+                            fetchPayments({
+                              page: page - 1,
+                              pageSize: paymentsRes?.pageSize || 20,
+                              filterStatus: "ALL",
+                            }),
+                        }}
+                        scroll={{ x: 1100 }}
+                      />
+                    ) : (
+                      <Table
+                        rowKey={(r) => r.id}
+                        columns={courseTxColumns}
+                        dataSource={courseTotal?.transactions || []}
+                        pagination={false}
+                        scroll={{ x: 1000 }}
+                      />
+                    )}
+                  </div>
                 </Card>
               </>
             ),
           },
+
           {
             key: "payout",
             label: "Payout giáo viên",
@@ -602,124 +576,138 @@ export default function Revenue() {
                 <div className={s.summaryGrid}>
                   <Card className={s.summaryCard} loading={payoutLoading}>
                     <Statistic
-                      title={`Admin commission (${yearMonth})`}
-                      value={fmtVnd(commissionCents || 0)}
+                      title={`Hoa hồng Admin (${yearMonth})`}
+                      value={fmtVnd(commission?.totalRevenueCents || 0)}
                       suffix="VNĐ"
                     />
                     <div className={s.summaryHint}>
-                      Commission = 20% doanh thu hệ thống.
+                      Expected: {fmtVnd(commission?.expectedRevenueCents || 0)}{" "}
+                      • Paid: {fmtVnd(commission?.paidRevenueCents || 0)}
                     </div>
                   </Card>
 
                   <Card className={s.summaryCard} loading={payoutLoading}>
                     <Statistic
-                      title={`Teacher cần payout (${yearMonth})`}
-                      value={rows.length}
+                      title={`Số giáo viên chờ thanh toán (${yearMonth})`}
+                      value={pendingTeachers}
                     />
                     <div className={s.summaryHint}>
-                      Danh sách teachers có revenue chưa trả.
+                      Danh sách giáo viên có doanh thu chưa trả.
+                    </div>
+                  </Card>
+
+                  <Card className={s.summaryCard} loading={payoutLoading}>
+                    <Statistic
+                      title={`Tổng tiền cần chuyển`}
+                      value={fmtVnd(pendingAmount)}
+                      suffix="VNĐ"
+                    />
+                    <div className={s.summaryHint}>
+                      Số khóa: {pendingCourses} • Số GD: {pendingSales}
                     </div>
                   </Card>
                 </div>
 
-                <Card className={s.tableWrap}>
-                  <Table
-                    loading={payoutLoading}
-                    columns={payoutColumns}
-                    dataSource={rows}
-                    rowKey={(r) => `${r.teacherId}-${r.yearMonth}`}
-                    pagination={{ pageSize: 10 }}
-                  />
+                <Card
+                  className={s.tableWrap}
+                  title="Danh sách teacher chưa được chuyển tiền"
+                  loading={payoutLoading}
+                >
+                  <div className={s.tableScroll}>
+                    <Table
+                      rowKey={(r) => `${r.teacherId}-${r.yearMonth}`}
+                      columns={payoutColumns}
+                      dataSource={rows}
+                      pagination={false}
+                      scroll={{ x: 1250 }}
+                    />
+                  </div>
                 </Card>
 
+                {/* DETAIL MODAL */}
                 <Modal
                   open={openDetail}
-                  onCancel={() => {
-                    setOpenDetail(false);
-                    setDetail(null);
-                  }}
+                  onCancel={() => setOpenDetail(false)}
                   footer={null}
-                  width={1050}
-                  destroyOnClose
+                  width={1040}
                   title={
-                    detail
+                    detail?.teacherName
                       ? `Chi tiết payout - ${detail.teacherName}`
                       : "Chi tiết payout"
                   }
+                  destroyOnClose
                 >
-                  <Card loading={detailLoading}>
-                    {detail && (
-                      <>
-                        <Descriptions bordered size="small" column={2}>
-                          <Descriptions.Item label="Teacher">
-                            {detail.teacherName}
-                          </Descriptions.Item>
-                          <Descriptions.Item label="Email">
-                            {detail.teacherEmail}
-                          </Descriptions.Item>
-                          <Descriptions.Item label="Tháng">
-                            {detail.yearMonth}
-                          </Descriptions.Item>
-                          <Descriptions.Item label="Tổng chưa trả">
-                            {moneyFromCents(
-                              detail.totalPendingRevenueCents || 0
-                            )}
-                          </Descriptions.Item>
-                          <Descriptions.Item label="Ngân hàng">
-                            {detail.bankName || "—"}
-                          </Descriptions.Item>
-                          <Descriptions.Item label="Số TK">
-                            {detail.bankAccountNumber || "—"}
-                          </Descriptions.Item>
-                          <Descriptions.Item label="Chủ TK">
-                            {detail.bankAccountName || "—"}
-                          </Descriptions.Item>
-                          <Descriptions.Item label="Chi nhánh">
-                            {detail.bankBranchName || "—"}
-                          </Descriptions.Item>
-                        </Descriptions>
+                  <div className={s.modalBody}>
+                    <Descriptions bordered column={2} size="middle">
+                      <Descriptions.Item label="Teacher">
+                        {detail?.teacherName || "—"}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Email">
+                        {detail?.teacherEmail || "—"}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Tháng">
+                        {detail?.yearMonth || yearMonth}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Tổng chưa trả">
+                        {money(detail?.totalPendingRevenueCents || 0)}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Ngân hàng">
+                        {detail?.bankName || "—"}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Số TK">
+                        {detail?.bankAccountNumber || "—"}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Chủ TK">
+                        {detail?.bankAccountName || "—"}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Chi nhánh">
+                        {detail?.bankBranchName || "—"}
+                      </Descriptions.Item>
+                    </Descriptions>
 
-                        <div style={{ marginTop: 16 }}>
-                          <h3 style={{ marginBottom: 8 }}>Theo khóa học</h3>
-                          <Table
-                            columns={payoutDetailCourseCols}
-                            dataSource={detailCourses}
-                            rowKey={(r) => r.courseId}
-                            pagination={false}
-                          />
-                        </div>
-                      </>
-                    )}
-                  </Card>
+                    <div className={s.modalSectionTitle}>Theo khóa học</div>
+
+                    <div className={s.tableScrollModal}>
+                      <Table
+                        rowKey={(r) => r.courseId}
+                        columns={payoutDetailCourseCols}
+                        dataSource={detailCourses}
+                        loading={detailLoading}
+                        pagination={false}
+                        scroll={{ x: 980 }}
+                      />
+                    </div>
+                  </div>
                 </Modal>
 
+                {/* MARK PAID MODAL */}
                 <Modal
                   open={openPaid}
-                  onCancel={() => {
-                    setOpenPaid(false);
-                    setTarget(null);
-                    setNote("");
-                  }}
-                  title={
-                    target
-                      ? `Đánh dấu đã chuyển tiền - ${target.teacherName}`
-                      : "Đánh dấu đã chuyển tiền"
-                  }
+                  onCancel={() => setOpenPaid(false)}
+                  onOk={submitMarkPaid}
                   okText="Xác nhận"
                   cancelText="Hủy"
                   confirmLoading={paying}
-                  onOk={submitMarkPaid}
+                  title={
+                    target?.teacherName
+                      ? `Đánh dấu đã chuyển - ${target.teacherName}`
+                      : "Đánh dấu đã chuyển"
+                  }
                   destroyOnClose
                 >
-                  <p>
-                    Tháng: <b>{target?.yearMonth}</b>
-                  </p>
-                  <Input.TextArea
-                    rows={3}
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder="Ghi chú (vd: Đã chuyển khoản ngày ...)"
-                  />
+                  <div className={s.formNote}>
+                    <div className={s.formLabel}>Ghi chú (tuỳ chọn)</div>
+                    <Input.TextArea
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      placeholder="VD: Đã chuyển tiền ngày 22/12/2025"
+                      rows={4}
+                    />
+                    <div className={s.formHint}>
+                      Sau khi xác nhận, teacher sẽ không còn nằm trong danh sách
+                      pending của tháng này.
+                    </div>
+                  </div>
                 </Modal>
               </>
             ),
