@@ -32,18 +32,31 @@ export default function AiPackageModal() {
   const user = useSelector((state) => state.user);
   const isLoggedIn = isLoggedInUser(user);
 
-  const { showModal, packages, packagesStatus, myPackage, checkoutStatus } =
-    useSelector((state) => state.aiPackage);
+  const {
+    showModal,
+    packages,
+    packagesStatus,
+    myPackage,
+    checkoutStatus,
+    quota,
+  } = useSelector((state) => state.aiPackage);
 
   const loadingCheckout = checkoutStatus === "loading";
 
   const hasPackage = myPackage && myPackage.hasPackage;
   const hasActivePackage = hasPackage && !myPackage.isExpired;
 
+  //  Nguồn sự thật để quyết định "được dùng AI hay không"
+  const totalRequests = Number(quota?.totalRequests ?? 0);
+  const remainingRequests = Number(quota?.remainingRequests ?? 0);
+
+  // Nếu còn hạn nhưng hết lượt => vẫn phải cho mua
+  const isOutOfQuota = totalRequests > 0 && remainingRequests === 0;
+
   useEffect(() => {
     if (!showModal) return;
 
-    // Public list luôn fetch (modal mở ra phải thấy gói)
+    // Public list luôn fetch
     dispatch(fetchAiPackages());
 
     // MyPackage/quota chỉ fetch khi login
@@ -103,7 +116,6 @@ export default function AiPackageModal() {
               flexWrap: "wrap",
             }}
           >
-            {/* LOGIN BUTTON */}
             <button
               onClick={() => (window.location.href = "/login")}
               onMouseEnter={(e) => {
@@ -132,7 +144,6 @@ export default function AiPackageModal() {
               Đăng nhập
             </button>
 
-            {/* CLOSE BUTTON */}
             <button
               onClick={() => dispatch(closeModal())}
               onMouseEnter={(e) => {
@@ -179,7 +190,10 @@ export default function AiPackageModal() {
   };
 
   const handleCheckout = async (pkgId) => {
-    if (hasActivePackage) {
+    // FIX NGHIỆP VỤ:
+    // - Nếu còn gói & còn lượt => có thể chặn mua (policy cũ)
+    // - Nếu còn gói nhưng HẾT LƯỢT => PHẢI CHO MUA
+    if (hasActivePackage && !isOutOfQuota) {
       toast.info(
         `Bạn đang sử dụng gói ${myPackage.packageName}. Vui lòng đợi hết hạn.`
       );
@@ -192,13 +206,11 @@ export default function AiPackageModal() {
       const checkout = await dispatch(purchaseAiPackage(pkgId)).unwrap();
       dispatch(setNeedsSync(true));
 
-      // PAID: redirect sang payment gateway
       if (checkout?.paymentLink) {
         window.location.href = checkout.paymentLink;
         return;
       }
 
-      // FREE: kích hoạt ngay → sync store rồi đóng modal
       toast.success(checkout?.description || "Kích hoạt gói AI thành công!");
       await syncAfterSuccess();
       dispatch(closeModal());
@@ -214,7 +226,6 @@ export default function AiPackageModal() {
 
   /* ================= RENDER PACKAGE CARD ================= */
   const renderPackageCard = (pkg, highlight = false) => {
-    // nếu BE trả isActive, chỉ hiển thị gói đang bán trong modal
     if (pkg?.isActive === false) return null;
 
     return (
@@ -255,7 +266,8 @@ export default function AiPackageModal() {
       <div className={styles.modal}>
         <h2>Gói AI Hokori</h2>
 
-        {hasActivePackage && (
+        {/* ✅ THÔNG BÁO TRẠNG THÁI ĐÚNG NGHIỆP VỤ */}
+        {hasActivePackage && !isOutOfQuota && (
           <div className={styles.activeNotice}>
             <p>
               Bạn đang sử dụng gói <strong>{myPackage.packageName}</strong>.
@@ -264,7 +276,18 @@ export default function AiPackageModal() {
           </div>
         )}
 
-        {!hasActivePackage && (
+        {hasActivePackage && isOutOfQuota && (
+          <div className={styles.activeNotice}>
+            <p>
+              Bạn đang dùng gói <strong>{myPackage.packageName}</strong> nhưng
+              đã <strong>hết lượt AI</strong>.
+            </p>
+            <p>Hãy mua thêm gói để tiếp tục sử dụng công cụ AI.</p>
+          </div>
+        )}
+
+        {/*  Khi hết quota: vẫn show list gói để mua */}
+        {(!hasActivePackage || isOutOfQuota) && (
           <div className={styles.packageList}>
             {packagesStatus === "loading" && (
               <p className={styles.loading}>Đang tải gói AI...</p>

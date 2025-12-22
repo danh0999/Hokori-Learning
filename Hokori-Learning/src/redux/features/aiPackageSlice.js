@@ -38,6 +38,7 @@ export const fetchAiQuota = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await api.get("/ai/packages/quota");
+      // BE: { success, message, data: { totalRequests, usedRequests, remainingRequests, hasQuota } }
       return res?.data?.data || {};
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
@@ -46,12 +47,17 @@ export const fetchAiQuota = createAsyncThunk(
 );
 
 // 4) Check permission before using AI service
-// CHỈ CHECK – KHÔNG MỞ MODAL
+// ✅ CHỈ CHECK – KHÔNG MỞ MODAL (nhưng tự đảm bảo quota đã có)
 export const checkAIPermission = createAsyncThunk(
   "ai/packages/checkPermission",
-  async (_, { getState, rejectWithValue }) => {
+  async (_, { getState, dispatch, rejectWithValue }) => {
     try {
-      const quota = getState().aiPackage.quota;
+      let quota = getState().aiPackage.quota;
+
+      // Nếu chưa có quota trong store → fetch realtime
+      if (!quota || Object.keys(quota).length === 0) {
+        quota = await dispatch(fetchAiQuota()).unwrap();
+      }
 
       const remaining = quota?.remainingRequests ?? 0;
 
@@ -89,7 +95,7 @@ export const consumeAiServiceQuota = createAsyncThunk(
         serviceType,
         amount,
       });
-      return res?.data?.data || null;
+      return res?.data?.data || { used: amount };
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }
@@ -125,8 +131,6 @@ const initialState = {
   checkoutError: null,
   lastCheckout: null,
 
-  // Useful flag: UI có thể dựa vào để biết cần sync lại hay không
-  // (ví dụ PaymentSuccess / Modal gọi fetch xong có thể reset flag)
   needsSync: false,
 };
 
@@ -135,12 +139,10 @@ const aiPackageSlice = createSlice({
   initialState,
 
   reducers: {
-    // FE chủ động mở modal giới thiệu gói
     openModal(state, action) {
       state.showModal = true;
       state.serviceNeed = action.payload || null;
 
-      // Mở modal là một interaction mới → reset checkout để tránh kẹt "loading/failed"
       state.checkoutStatus = "idle";
       state.checkoutError = null;
       state.lastCheckout = null;
@@ -150,7 +152,6 @@ const aiPackageSlice = createSlice({
       state.showModal = false;
       state.serviceNeed = null;
 
-      // Đóng modal → reset checkout để UI không bị disable ở lần mở sau
       state.checkoutStatus = "idle";
       state.checkoutError = null;
       state.lastCheckout = null;
@@ -227,7 +228,6 @@ const aiPackageSlice = createSlice({
       });
 
     /* ================= CHECK PERMISSION ================= */
-    // ❗ KHÔNG mở modal ở đây nữa
     builder.addCase(checkAIPermission.fulfilled, () => {
       // intentionally empty
     });
@@ -242,9 +242,6 @@ const aiPackageSlice = createSlice({
       .addCase(purchaseAiPackage.fulfilled, (state, action) => {
         state.checkoutStatus = "succeeded";
         state.lastCheckout = action.payload || null;
-
-        // Sau checkout: có thể là paid (paymentLink) hoặc free (activate ngay)
-        // UI nên sync lại để tránh state cũ
         state.needsSync = true;
       })
       .addCase(purchaseAiPackage.rejected, (state, action) => {
@@ -253,7 +250,22 @@ const aiPackageSlice = createSlice({
       });
 
     /* ================= CONSUME QUOTA ================= */
-    // Nếu BE trả quota mới thì có thể update tại đây.
+    builder.addCase(consumeAiServiceQuota.fulfilled, (state, action) => {
+      // Nếu BE không trả quota mới, FE tự trừ nhẹ để UI sync nhanh.
+      const used = Number(action.payload?.used ?? 1);
+      if (!state.quota || Object.keys(state.quota).length === 0) return;
+
+      const total = Number(state.quota.totalRequests ?? 0);
+      const remaining = Number(state.quota.remainingRequests ?? 0);
+      const usedRequests = Number(state.quota.usedRequests ?? 0);
+
+      const nextRemaining = Math.max(0, remaining - used);
+      const nextUsed = usedRequests + used;
+
+      state.quota.remainingRequests = nextRemaining;
+      state.quota.usedRequests = nextUsed;
+      state.quota.hasQuota = nextRemaining > 0 && total > 0;
+    });
   },
 });
 

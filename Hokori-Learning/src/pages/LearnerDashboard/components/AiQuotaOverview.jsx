@@ -105,7 +105,7 @@ const AiQuotaOverview = () => {
 
         <p className={styles.note}>
           Mỗi lần sử dụng AI sẽ trừ <b>1 lượt</b> cho Phân tích câu, Luyện nói
-          và Trò chuyện AI.
+          và <b>2 lượt</b> Trò chuyện AI.
         </p>
       </div>
     </section>
