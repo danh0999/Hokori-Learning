@@ -7,6 +7,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   openModal,
   fetchMyAiPackage,
+  fetchAiQuota,
 } from "../../../redux/features/aiPackageSlice";
 
 import { useNavigate } from "react-router-dom";
@@ -15,9 +16,6 @@ const AISidebar = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // Lấy package nhưng KHÔNG dùng trực tiếp để check
-  const { myPackage } = useSelector((state) => state.aiPackage);
-
   const goToServicePage = (serviceCode) => {
     if (serviceCode === "GRAMMAR") navigate("/ai-analyse");
     if (serviceCode === "KAIWA") navigate("/ai-kaiwa");
@@ -25,14 +23,17 @@ const AISidebar = () => {
   };
 
   const handleClick = async (serviceCode) => {
-    // Fetch real-time gói AI khi user click
-    const data = await dispatch(fetchMyAiPackage())
-      .unwrap()
-      .catch(() => null);
+    // ✅ Fetch realtime cả gói + quota để chặn đúng nghiệp vụ
+    const [pkg, q] = await Promise.all([
+      dispatch(fetchMyAiPackage()).unwrap().catch(() => null),
+      dispatch(fetchAiQuota()).unwrap().catch(() => ({})),
+    ]);
 
-    const hasAI = data?.hasPackage && !data?.isExpired;
+    const hasAI = pkg?.hasPackage && !pkg?.isExpired;
+    const remaining = Number(q?.remainingRequests ?? 0);
 
-    if (!hasAI) {
+    // ❗ Rule chuẩn: còn lượt mới cho vào
+    if (!hasAI || remaining <= 0) {
       dispatch(openModal(serviceCode));
       return;
     }
@@ -61,6 +62,7 @@ const AISidebar = () => {
             className={styles.aiButton}
             containerClassName={styles.aiButtonContainer}
           />
+
           <Button
             content="Trò chuyện cùng AI"
             onClick={() => handleClick("CONVERSATION")}

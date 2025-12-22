@@ -266,7 +266,7 @@ export default function AiPackages() {
     setModalOpen(true);
   };
 
-  // ✅ LUÔN cho mở modal (nhưng field sẽ bị khóa đúng nghiệp vụ)
+  //  LUÔN cho mở modal (nhưng field sẽ bị khóa đúng nghiệp vụ)
   const openEdit = (pkg) => {
     setMode("edit");
     setEditing(pkg);

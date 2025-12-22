@@ -13,6 +13,7 @@ import {
   resetAiPackageState,
   openModal,
   fetchMyAiPackage,
+  fetchAiQuota,
 } from "../../../redux/features/aiPackageSlice";
 
 import { fetchCart } from "../../../redux/features/cartSlice";
@@ -45,38 +46,40 @@ export const Header = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  // =====================================
-  // USER, PROFILE, CART
-  // =====================================
+  /* ===============================
+     REDUX STATE
+  =============================== */
   const user = useSelector((state) => state.user);
   const profile = useSelector((state) => state.profile.data);
-  const aiPackage = useSelector((state) => state.aiPackage.myPackage);
+
+  const myPackage = useSelector((state) => state.aiPackage.myPackage);
+  const quota = useSelector((state) => state.aiPackage.quota);
+
   const cartItems = useSelector((state) => state.cart.items);
   const cartCount = cartItems?.length || 0;
 
-  // =====================================
-  // FETCH PROFILE + AI PACKAGE KHI LOGIN
-  // =====================================
+  /* ===============================
+     FETCH DATA SAU LOGIN
+  =============================== */
   useEffect(() => {
     if (user?.accessToken) {
       dispatch(fetchMe());
-      dispatch(fetchMyAiPackage()); // tải gói AI 1 lần khi login
+      dispatch(fetchMyAiPackage());
+      dispatch(fetchAiQuota());
     }
   }, [user, dispatch]);
 
-  // =====================================
-  // FETCH CART sau khi có profile
-  // =====================================
   useEffect(() => {
-    if (user && user.accessToken && profile) {
+    if (user?.accessToken && profile) {
       dispatch(fetchCart());
     }
   }, [user, profile, dispatch]);
 
-  // =====================================
-  // DROPDOWN
-  // =====================================
+  /* ===============================
+     DROPDOWN HANDLING
+  =============================== */
   const [openDropdown, setOpenDropdown] = useState(null);
+
   const courseDropdownRef = useRef(null);
   const aboutDropdownRef = useRef(null);
   const aiDropdownRef = useRef(null);
@@ -84,11 +87,9 @@ export const Header = () => {
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
-        (courseDropdownRef.current &&
-          courseDropdownRef.current.contains(e.target)) ||
-        (aboutDropdownRef.current &&
-          aboutDropdownRef.current.contains(e.target)) ||
-        (aiDropdownRef.current && aiDropdownRef.current.contains(e.target))
+        courseDropdownRef.current?.contains(e.target) ||
+        aboutDropdownRef.current?.contains(e.target) ||
+        aiDropdownRef.current?.contains(e.target)
       ) {
         return;
       }
@@ -99,26 +100,23 @@ export const Header = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // =====================================
-  // LOGOUT
-  // =====================================
+  /* ===============================
+     LOGOUT
+  =============================== */
   const handleLogout = async () => {
     try {
       const userId = user?.id;
 
       await logoutFirebase();
 
-      // ===== CLEAR AI KAIWA LOCAL STORAGE =====
       if (userId) {
         localStorage.removeItem(`ai_kaiwa_result_${userId}`);
       }
 
-      // ===== CLEAR OLD KEYS (BACKWARD COMPAT) =====
       localStorage.removeItem("ai_sentence");
       localStorage.removeItem("ai_level");
       localStorage.removeItem("ai_result");
 
-      // ===== RESET REDUX =====
       dispatch(logout());
       dispatch(resetProfile());
       dispatch(resetAiPackageState());
@@ -129,18 +127,28 @@ export const Header = () => {
     }
   };
 
-  // =====================================
-  // HANDLE OPEN AI TOOL (FIX FLASH + FIX KHÔNG HIỆN MODAL)
-  // =====================================
+  /* ===============================
+     AI PERMISSION – NGUỒN SỰ THẬT DUY NHẤT
+  =============================== */
+  const remainingRequests = Number(quota?.remainingRequests ?? 0);
+
+  const hasActivePackage =
+    myPackage?.hasPackage === true && !myPackage?.isExpired;
+
+  const canUseAI = hasActivePackage && remainingRequests > 0;
+
+  /* ===============================
+     HANDLE OPEN AI TOOL (HEADER + DROPDOWN)
+  =============================== */
   const handleOpenAiTool = (path) => {
-    if (!user) return navigate(`/login?redirect=${path}`);
+    if (!user) {
+      navigate(`/login?redirect=${path}`);
+      return;
+    }
 
-    //  KHÔNG fetch lại API → tránh flash modal
-    const data = aiPackage;
-
-    const hasAi = data?.hasPackage && !data?.isExpired;
-
-    if (!hasAi) {
+    // ❗ NGHIỆP VỤ CHUẨN:
+    // Không có gói HOẶC hết lượt → mở modal
+    if (!canUseAI) {
       dispatch(openModal());
       return;
     }
@@ -148,9 +156,9 @@ export const Header = () => {
     navigate(path);
   };
 
-  // =====================================
-  // USER MENU
-  // =====================================
+  /* ===============================
+     USER MENU
+  =============================== */
   const userMenu = {
     items: [
       {
@@ -182,12 +190,9 @@ export const Header = () => {
           <span className={brand}>Hokori</span>
         </div>
 
-        {/* ====================== NAVIGATION ====================== */}
+        {/* ====================== NAV ====================== */}
         <nav className={nav}>
-          <NavLink
-            to="/"
-            className={({ isActive }) => (isActive ? active : "")}
-          >
+          <NavLink to="/" className={({ isActive }) => (isActive ? active : "")}>
             Trang chủ
           </NavLink>
 
@@ -199,7 +204,7 @@ export const Header = () => {
                 setOpenDropdown(openDropdown === "course" ? null : "course")
               }
             >
-              Khóa học{" "}
+              Khóa học
               <span
                 className={`${arrow} ${
                   openDropdown === "course" ? rotate : ""
@@ -250,7 +255,7 @@ export const Header = () => {
                 setOpenDropdown(openDropdown === "ai" ? null : "ai")
               }
             >
-              Công cụ AI{" "}
+              Công cụ AI
               <span
                 className={`${arrow} ${openDropdown === "ai" ? rotate : ""}`}
               >
@@ -260,7 +265,6 @@ export const Header = () => {
 
             {openDropdown === "ai" && (
               <div className={dropdownMenu}>
-                {/* FIX: prevent dropdown from closing before click */}
                 <div
                   className={dropdownItem}
                   onMouseDown={(e) => e.preventDefault()}
@@ -276,6 +280,7 @@ export const Header = () => {
                 >
                   Luyện nói
                 </div>
+
                 <div
                   className={dropdownItem}
                   onMouseDown={(e) => e.preventDefault()}
@@ -295,7 +300,7 @@ export const Header = () => {
                 setOpenDropdown(openDropdown === "about" ? null : "about")
               }
             >
-              Về Hokori{" "}
+              Về Hokori
               <span
                 className={`${arrow} ${openDropdown === "about" ? rotate : ""}`}
               >
@@ -311,10 +316,7 @@ export const Header = () => {
                 <NavLink to="/policies" className={dropdownItem}>
                   Chính sách & Điều khoản
                 </NavLink>
-                <NavLink
-                  to="/contact"
-                  className={({ isActive }) => (isActive ? active : "")}
-                >
+                <NavLink to="/contact" className={dropdownItem}>
                   Liên hệ
                 </NavLink>
               </div>
@@ -341,17 +343,7 @@ export const Header = () => {
               {/* Cart */}
               <div
                 onClick={() => navigate("/cart")}
-                style={{
-                  position: "relative",
-                  cursor: "pointer",
-                  transition: "transform 0.2s ease",
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.transform = "scale(1.1)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.transform = "scale(1.0)")
-                }
+                style={{ position: "relative", cursor: "pointer" }}
               >
                 <FiShoppingCart size={21} color="#444" />
                 {cartCount > 0 && (
@@ -369,7 +361,6 @@ export const Header = () => {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontWeight: 500,
                     }}
                   >
                     {cartCount}
@@ -377,10 +368,8 @@ export const Header = () => {
                 )}
               </div>
 
-              {/* Notification */}
               <NotificationBell />
 
-              {/* Avatar */}
               <Dropdown
                 menu={userMenu}
                 placement="bottomRight"
