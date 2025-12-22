@@ -1,44 +1,127 @@
+/* =======================
+   CARD
+======================= */
 .card {
-  margin-top: 16px;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 20px 22px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.06);
 }
 
+/* =======================
+   TITLE
+======================= */
 .title {
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 14px;
 }
 
-.list {
+/* =======================
+   EMPTY STATE (CHƯA MUA AI)
+======================= */
+.emptyState {
+  border: 1.5px dashed #c7d2fe;
+  border-radius: 14px;
+  padding: 18px 16px 16px;
+  background: linear-gradient(180deg, #f8fafc, #ffffff);
+
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  align-items: center;
+  text-align: center;
 }
 
+.icon {
+  font-size: 38px;
+  margin-bottom: 8px;
+  opacity: 0.95;
+}
+
+.emptyTitle {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+/* =======================
+   TEXT
+======================= */
+.note {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #64748b;
+}
+
+/* =======================
+   CTA BUTTON
+======================= */
+.ctaBtn {
+  margin-top: 14px;
+  padding: 8px 18px;
+  border-radius: 999px;
+
+  font-size: 13px;
+  font-weight: 600;
+  color: #2563eb;
+
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ctaBtn:hover {
+  background: #e0e7ff;
+  border-color: #a5b4fc;
+  transform: translateY(-1px);
+}
+
+/* =======================
+   WARNING (HẾT LƯỢT)
+======================= */
+.warningText {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #b45309;
+  margin-bottom: 10px;
+}
+
+/* =======================
+   QUOTA STATE
+======================= */
 .item {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
 }
 
+/* ROW */
 .row {
   display: flex;
   justify-content: space-between;
-  font-size: 0.9rem;
+  align-items: center;
 }
 
 .label {
-  color: #111827;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
 }
 
 .value {
+  font-size: 14px;
+  font-weight: 700;
   color: #2563eb;
-  font-weight: 600;
 }
 
+/* PROGRESS BAR */
 .bar {
   width: 100%;
-  height: 6px;
+  height: 8px;
   background: #e5e7eb;
   border-radius: 999px;
   overflow: hidden;
@@ -48,16 +131,5 @@
   height: 100%;
   background: linear-gradient(90deg, #2563eb, #4f46e5);
   border-radius: 999px;
-  transition: width 0.3s ease;
-}
-.emptyText {
-  margin-top: 8px;
-  font-size: 0.95rem;
-  color: #64748b;
-}
-
-.note {
-  margin-top: 6px;
-  font-size: 0.85rem;
-  color: #94a3b8;
+  transition: width 0.35s ease;
 }

@@ -2,47 +2,90 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import styles from "./AiQuotaOverview.module.scss";
-import { fetchAiQuota } from "../../../redux/features/aiPackageSlice";
+import {
+  fetchAiQuota,
+  openModal,
+} from "../../../redux/features/aiPackageSlice";
 
 const AiQuotaOverview = () => {
   const dispatch = useDispatch();
+
   const quota = useSelector((state) => state.aiPackage.quota);
-  const myPackage = useSelector((state) => state.aiPackage.myPackage);
+  const quotaStatus = useSelector((state) => state.aiPackage.quotaStatus);
+
+  // NGUỒN SỰ THẬT DUY NHẤT
+  const hasActivePackage = quota?.hasQuota === true && quota?.totalRequests > 0;
 
   useEffect(() => {
     dispatch(fetchAiQuota());
   }, [dispatch]);
 
-  const hasPackage =
-    myPackage && myPackage.hasPackage && !myPackage.isExpired;
-
   /* =======================
-     CASE: CHƯA MUA GÓI
+     LOADING
   ======================= */
-  if (!hasPackage) {
+  if (quotaStatus === "loading") {
     return (
       <section className={`${styles.card} card`}>
-        <h3 className={styles.title}>Lượt AI còn lại</h3>
-
-        <p className={styles.emptyText}>
-          Bạn chưa mua gói AI
-        </p>
-
-        <p className={styles.note}>
-          Mua gói AI để sử dụng Phân tích câu, Luyện nói và Trò chuyện AI
-        </p>
+        <h3 className={styles.title}>Công cụ AI</h3>
+        <p className={styles.note}>Đang tải thông tin AI...</p>
       </section>
     );
   }
 
   /* =======================
-     CASE: ĐÃ MUA GÓI
+     CHƯA MUA GÓI AI
+     → EMPTY STATE (RÕ NGHĨA)
   ======================= */
-  if (!quota || quota.totalQuota === 0) return null;
+  if (!hasActivePackage) {
+    return (
+      <section className={`${styles.card} card`}>
+        <h3 className={styles.title}>Công cụ AI</h3>
 
-  const percent = Math.round(
-    (quota.remainingQuota / quota.totalQuota) * 100
-  );
+        <div className={styles.emptyState}>
+          <p className={styles.emptyTitle}>Bạn chưa sử dụng dịch vụ AI</p>
+
+          <p className={styles.note}>
+            Mua gói AI để phân tích câu, luyện phát âm và trò chuyện cùng AI
+            trong quá trình học.
+          </p>
+
+          <button
+            className={styles.ctaBtn}
+            onClick={() => dispatch(openModal())}
+          >
+            Kích hoạt AI
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  /* =======================
+     ĐÃ MUA GÓI AI
+  ======================= */
+  const { totalRequests = 0, remainingRequests = 0 } = quota;
+
+  // Hết lượt
+  if (remainingRequests === 0) {
+    return (
+      <section className={`${styles.card} card`}>
+        <h3 className={styles.title}>Lượt AI còn lại</h3>
+
+        <p className={styles.warningText}>
+          Bạn đã dùng hết lượt AI trong gói hiện tại.
+        </p>
+
+        <button className={styles.ctaBtn} onClick={() => dispatch(openModal())}>
+          Mua thêm lượt AI
+        </button>
+      </section>
+    );
+  }
+
+  /* =======================
+     CÒN LƯỢT → QUOTA STATE
+  ======================= */
+  const percent = Math.round((remainingRequests / totalRequests) * 100);
 
   return (
     <section className={`${styles.card} card`}>
@@ -52,19 +95,17 @@ const AiQuotaOverview = () => {
         <div className={styles.row}>
           <span className={styles.label}>Tất cả tính năng AI</span>
           <span className={styles.value}>
-            {quota.remainingQuota}/{quota.totalQuota} lượt
+            {remainingRequests}/{totalRequests} lượt
           </span>
         </div>
 
         <div className={styles.bar}>
-          <div
-            className={styles.fill}
-            style={{ width: `${percent}%` }}
-          />
+          <div className={styles.fill} style={{ width: `${percent}%` }} />
         </div>
 
         <p className={styles.note}>
-          Áp dụng cho Phân tích câu, Luyện nói và Trò chuyện AI
+          Mỗi lần sử dụng AI sẽ trừ <b>1 lượt</b> cho Phân tích câu, Luyện nói
+          và Trò chuyện AI.
         </p>
       </div>
     </section>
