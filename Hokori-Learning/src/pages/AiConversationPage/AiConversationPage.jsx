@@ -1,10 +1,5 @@
 // src/pages/AiConversationPage/AiConversationPage.jsx
-import React, {
-  useCallback,
-  useMemo,
-  useState,
-  useEffect,
-} from "react";
+import React, { useCallback, useMemo, useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import styles from "./AiConversationPage.module.scss";
 
@@ -29,6 +24,16 @@ const STORAGE_PREFIX = "ai_conversation_session_";
 const stripRomaji = (text = "") => {
   if (!text) return "";
   return text.split("(")[0].trim();
+};
+
+/* ===============================
+   Parse suggestion: "JP (VI)"
+================================ */
+const parseSuggestion = (s = "") => {
+  const raw = String(s || "").trim();
+  const match = raw.match(/^(.+?)\s*\((.+?)\)\s*$/);
+  if (!match) return { jp: raw, vi: "" };
+  return { jp: match[1].trim(), vi: match[2].trim() };
 };
 
 /* ===============================
@@ -71,6 +76,11 @@ export default function AiConversationPage() {
   const [maxTurns, setMaxTurns] = useState(7);
   const [originalScenario, setOriginalScenario] = useState("");
 
+  // ✨ NEW: user speaks first mode
+  const [userSpeaksFirst, setUserSpeaksFirst] = useState(false);
+  const [startingSuggestions, setStartingSuggestions] = useState([]);
+  const [selectedSuggestion, setSelectedSuggestion] = useState(null); // jp text only (for UX)
+
   /* ===============================
      AUDIO
   ================================ */
@@ -89,6 +99,9 @@ export default function AiConversationPage() {
   const [endResult, setEndResult] = useState(null);
 
   const started = !!conversationId && !endResult;
+
+  // In user-first mode, before user sends first audio, "history" may be empty.
+  const waitingFirstUserAudio = started && userSpeaksFirst && (history?.length || 0) === 0;
 
   /* ===============================
      LOAD LOCAL STORAGE (RESUME MODE)
@@ -110,6 +123,11 @@ export default function AiConversationPage() {
       setTurnNumber(saved.turnNumber || 0);
       setMaxTurns(saved.maxTurns || 7);
       setEndResult(saved.endResult || null);
+
+      // ✨ restore new fields safely
+      setUserSpeaksFirst(!!saved.userSpeaksFirst);
+      setStartingSuggestions(Array.isArray(saved.startingSuggestions) ? saved.startingSuggestions : []);
+      setSelectedSuggestion(saved.selectedSuggestion || null);
     } catch {
       localStorage.removeItem(STORAGE_KEY);
     }
@@ -131,6 +149,11 @@ export default function AiConversationPage() {
       maxTurns,
       endResult,
       savedAt: Date.now(),
+
+      // ✨ new fields
+      userSpeaksFirst,
+      startingSuggestions,
+      selectedSuggestion,
     };
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
@@ -144,6 +167,9 @@ export default function AiConversationPage() {
     turnNumber,
     maxTurns,
     endResult,
+    userSpeaksFirst,
+    startingSuggestions,
+    selectedSuggestion,
   ]);
 
   /* ===============================
@@ -163,9 +189,7 @@ export default function AiConversationPage() {
   ================================ */
   const handleStart = async () => {
     if (!scenario.trim()) {
-      setError(
-        "Vui lòng nhập tình huống trước (ví dụ: nhà hàng, mua sắm, xin việc…)."
-      );
+      setError("Vui lòng nhập tình huống trước (ví dụ: nhà hàng, mua sắm, xin việc…).");
       return;
     }
 
@@ -173,6 +197,12 @@ export default function AiConversationPage() {
     setError(null);
     setEndResult(null);
     setAudioBlob(null);
+
+    // reset new-mode ui
+    setUserSpeaksFirst(false);
+    setStartingSuggestions([]);
+    setSelectedSuggestion(null);
+    setHistory([]);
 
     const res = await runService("CONVERSATION", () =>
       conversationService.startConversation({
@@ -191,10 +221,24 @@ export default function AiConversationPage() {
     }
 
     setConversationId(data.conversationId);
-    setHistory(data.conversationHistory || []);
     setTurnNumber(data.turnNumber || 1);
     setMaxTurns(data.maxTurns || 7);
     setOriginalScenario(data.originalScenario || scenario.trim());
+
+    // ✨ NEW: detect mode
+    const isUserFirst = !!data.userSpeaksFirst;
+    setUserSpeaksFirst(isUserFirst);
+
+    if (isUserFirst) {
+      // user-first: show suggestions, history is usually empty
+      setStartingSuggestions(Array.isArray(data.startingSuggestions) ? data.startingSuggestions : []);
+      setHistory([]); // ensure empty at start
+      return;
+    }
+
+    // ai-first: keep old behavior
+    setStartingSuggestions([]);
+    setHistory(data.conversationHistory || []);
 
     const firstAI = data.conversationHistory?.[0];
     speakJapanese(stripRomaji(firstAI?.text));
@@ -218,12 +262,16 @@ export default function AiConversationPage() {
       const base64 = await convertBlobToBase64(audioBlob);
       const audioFormat = getAudioFormat(audioBlob) || "wav";
 
+      // ✨ IMPORTANT:
+      // - If userSpeaksFirst AND this is first user message, conversationHistory must be []
+      const isFirstTurnUserFirst = userSpeaksFirst && (history?.length || 0) === 0;
+
       const res = await runService("CONVERSATION", () =>
         conversationService.respondToConversation({
           conversationId,
           audioData: base64,
           audioFormat,
-          conversationHistory: history,
+          conversationHistory: isFirstTurnUserFirst ? [] : history,
           level,
           scenario: originalScenario || scenario.trim(),
         })
@@ -242,16 +290,10 @@ export default function AiConversationPage() {
       setTurnNumber(data.turnNumber || turnNumber + 1);
       setAudioBlob(null);
 
-      const lastAI = [...(data.conversationHistory || [])]
-        .reverse()
-        .find((m) => m.role === "AI");
-
+      const lastAI = [...(data.conversationHistory || [])].reverse().find((m) => m.role === "AI");
       speakJapanese(stripRomaji(lastAI?.text));
 
-      if (
-        data.isEnding ||
-        (data.turnNumber || 0) >= (data.maxTurns || maxTurns)
-      ) {
+      if (data.isEnding || (data.turnNumber || 0) >= (data.maxTurns || maxTurns)) {
         await handleEnd(true);
       }
     } catch (e) {
@@ -293,9 +335,7 @@ export default function AiConversationPage() {
      RESET (START NEW MODE)
   ================================ */
   const handleReset = () => {
-    if (STORAGE_KEY) {
-      localStorage.removeItem(STORAGE_KEY);
-    }
+    if (STORAGE_KEY) localStorage.removeItem(STORAGE_KEY);
 
     setConversationId(null);
     setHistory([]);
@@ -307,6 +347,21 @@ export default function AiConversationPage() {
     setEnding(false);
     setError(null);
     setEndResult(null);
+
+    // ✨ reset new fields
+    setUserSpeaksFirst(false);
+    setStartingSuggestions([]);
+    setSelectedSuggestion(null);
+  };
+
+  /* ===============================
+     SUGGESTION ACTIONS
+  ================================ */
+  const handlePickSuggestion = (raw) => {
+    const { jp } = parseSuggestion(raw);
+    setSelectedSuggestion(jp);
+    // Optional: let user listen to the Japanese suggestion
+    speakJapanese(stripRomaji(jp));
   };
 
   /* ===============================
@@ -352,20 +407,14 @@ export default function AiConversationPage() {
             {started && (
               <div className={styles.note}>
                 <span className={styles.noteKey}>Scenario:</span>{" "}
-                <span className={styles.noteVal}>
-                  {safeText(originalScenario)}
-                </span>
+                <span className={styles.noteVal}>{safeText(originalScenario)}</span>
               </div>
             )}
           </div>
 
           <div className={styles.actions}>
             {!started ? (
-              <button
-                className={styles.primaryBtn}
-                onClick={handleStart}
-                disabled={loading || ending}
-              >
+              <button className={styles.primaryBtn} onClick={handleStart} disabled={loading || ending}>
                 {loading ? "Đang bắt đầu..." : "Bắt đầu trò chuyện"}
               </button>
             ) : (
@@ -377,28 +426,61 @@ export default function AiConversationPage() {
                 >
                   {ending ? "Đang kết thúc..." : "Kết thúc sớm"}
                 </button>
-                <button
-                  className={styles.ghostBtn}
-                  onClick={handleReset}
-                  disabled={loading || ending}
-                >
+                <button className={styles.ghostBtn} onClick={handleReset} disabled={loading || ending}>
                   Làm lại
                 </button>
               </>
             )}
           </div>
 
+          {/* ✨ NEW: Starting suggestions when user speaks first */}
+          {started && userSpeaksFirst && !endResult && (
+            <div className={styles.suggestionBlock}>
+              <div className={styles.suggestionTitle}>Gợi ý mở đầu (bạn nói trước)</div>
+
+              {startingSuggestions?.length ? (
+                <div className={styles.suggestionGrid}>
+                  {startingSuggestions.slice(0, 3).map((s, idx) => {
+                    const { jp, vi } = parseSuggestion(s);
+                    const active = selectedSuggestion === jp;
+                    return (
+                      <button
+                        key={`sg-${idx}`}
+                        type="button"
+                        className={`${styles.suggestionItem} ${active ? styles.activeSuggestion : ""}`}
+                        onClick={() => handlePickSuggestion(s)}
+                        disabled={loading || ending}
+                      >
+                        <div className={styles.sgJp}>{jp}</div>
+                        <div className={styles.sgVi}>{vi}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className={styles.suggestionEmpty}>
+                  (Không có gợi ý. Bạn có thể tự ghi âm câu mở đầu.)
+                </div>
+              )}
+
+              <div className={styles.suggestionHint}>
+                Tip: Bạn có thể bấm gợi ý để nghe TTS tiếng Nhật, rồi ghi âm lại câu đó.
+              </div>
+            </div>
+          )}
+
           <div className={styles.divider} />
 
           <div className={styles.recorderBlock}>
             <AudioRecorder onAudioReady={handleAudioReady} />
+
             <button
               className={styles.primaryBtn}
               onClick={handleRespond}
               disabled={!started || loading || ending}
               style={{ marginTop: 12 }}
             >
-              {loading ? "Đang gửi..." : "Gửi câu trả lời"}
+              {loading ? "Đang gửi..." : waitingFirstUserAudio ? "Gửi câu mở đầu" : "Gửi câu trả lời"}
             </button>
           </div>
 
@@ -411,21 +493,25 @@ export default function AiConversationPage() {
             <div className={styles.chatBox}>
               {history?.length ? (
                 history.map((m, idx) => (
-                  <ChatBubble
-                    key={`${m.role}-${idx}`}
-                    role={m.role}
-                    jp={m.text}
-                    vi={m.textVi}
-                    ts={m.timestamp}
-                  />
+                  <ChatBubble key={`${m.role}-${idx}`} role={m.role} jp={m.text} vi={m.textVi} ts={m.timestamp} />
                 ))
+              ) : started && userSpeaksFirst ? (
+                <div className={styles.empty}>
+                  <div className={styles.emptyIcon}>🎤</div>
+                  <div className={styles.guide}>
+                    <p className={styles.guideTitle}>Bạn sẽ là người nói trước</p>
+                    <ol className={styles.guideList}>
+                      <li>Chọn 1 gợi ý mở đầu (hoặc tự nói theo ý bạn).</li>
+                      <li>Ghi âm câu tiếng Nhật bạn muốn nói.</li>
+                      <li>Bấm <b>Gửi câu mở đầu</b> để AI phản hồi.</li>
+                    </ol>
+                  </div>
+                </div>
               ) : (
                 <div className={styles.empty}>
                   <div className={styles.emptyIcon}>💬</div>
                   <div className={styles.guide}>
-                    <p className={styles.guideTitle}>
-                      Cách bắt đầu trò chuyện cùng AI
-                    </p>
+                    <p className={styles.guideTitle}>Cách bắt đầu trò chuyện cùng AI</p>
                     <ol className={styles.guideList}>
                       <li>Chọn trình độ JLPT phù hợp.</li>
                       <li>Nhập tình huống hội thoại bạn muốn luyện tập.</li>

@@ -38,7 +38,7 @@ export const fetchAiQuota = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await api.get("/ai/packages/quota");
-      return res?.data?.data?.quotas || {};
+      return res?.data?.data || {};
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }
@@ -46,28 +46,18 @@ export const fetchAiQuota = createAsyncThunk(
 );
 
 // 4) Check permission before using AI service
-// ❗ CHỈ CHECK – KHÔNG MỞ MODAL
+// CHỈ CHECK – KHÔNG MỞ MODAL
 export const checkAIPermission = createAsyncThunk(
   "ai/packages/checkPermission",
-  async (serviceCode, { getState, rejectWithValue }) => {
+  async (_, { getState, rejectWithValue }) => {
     try {
-      const state = getState().aiPackage;
-      let quotas = state.quota;
+      const quota = getState().aiPackage.quota;
 
-      if (!quotas || Object.keys(quotas).length === 0) {
-        const res = await api.get("/ai/packages/quota");
-        quotas = res?.data?.data?.quotas || {};
-      }
-
-      const q = quotas[serviceCode] || {
-        remainingQuota: 0,
-        hasQuota: false,
-      };
+      const remaining = quota?.remainingRequests ?? 0;
 
       return {
-        serviceCode,
-        hasQuota: Boolean(q.hasQuota),
-        remainingQuota: q.remainingQuota ?? 0,
+        hasQuota: remaining > 0,
+        remainingQuota: remaining,
       };
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
