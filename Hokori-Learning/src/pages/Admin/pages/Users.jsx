@@ -74,22 +74,6 @@ const UserDetailModal = ({ open, loading, user, onClose }) => {
               <span className={s.detailLabel}>Role</span>
               <span className={s.detailValue}>{user.roleName || "—"}</span>
             </div>
-            <div className={s.detailRow}>
-              <span className={s.detailLabel}>isActive</span>
-              <span className={s.detailValue}>
-                {typeof user.isActive === "boolean"
-                  ? String(user.isActive)
-                  : "—"}
-              </span>
-            </div>
-            <div className={s.detailRow}>
-              <span className={s.detailLabel}>isVerified</span>
-              <span className={s.detailValue}>
-                {typeof user.isVerified === "boolean"
-                  ? String(user.isVerified)
-                  : "—"}
-              </span>
-            </div>
           </div>
         ) : (
           <p className={s.modalDesc}>Không có dữ liệu.</p>
@@ -414,7 +398,7 @@ const CreateUserModal = ({ open, onClose, onCreated }) => {
                 checked={form.isActive}
                 onChange={change("isActive")}
               />
-              <span className={s.switchLabel}>Bị khóa</span>
+              <span className={s.switchLabel}>Kích hoạt tài khoản</span>
             </label>
 
             <label className={s.switch}>
