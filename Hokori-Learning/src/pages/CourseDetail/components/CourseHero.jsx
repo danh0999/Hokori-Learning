@@ -36,7 +36,8 @@ const CourseHero = ({ course }) => {
     priceCents,
     currency,
     isEnrolled,
-    canFlag, // BE trả về để biết có được flag hay không
+    canFlag,
+    status, // BE trả về để biết có được flag hay không
     rating: ratingFromApi,
     studentCount,
     tags: tagsFromApi,
@@ -51,7 +52,8 @@ const CourseHero = ({ course }) => {
   const [flagSubmitting, setFlagSubmitting] = useState(false);
   const [alreadyFlagged, setAlreadyFlagged] = useState(false);
   const [flagType, setFlagType] = useState("INAPPROPRIATE_CONTENT");
-  const canShowFlagButton = !!canFlag && !alreadyFlagged;
+  const isCourseFlagged = status === "FLAGGED";
+  const canShowFlagButton = !!canFlag && !alreadyFlagged && !isCourseFlagged;
 
   /* ================= RATING SUMMARY TỪ FEEDBACK API ================ */
   const [ratingSummary, setRatingSummary] = useState({
@@ -379,6 +381,28 @@ const CourseHero = ({ course }) => {
                 <i className="fa-solid fa-cart-shopping"></i>{" "}
                 {isInCart ? "Đã có trong giỏ" : "Thêm vào giỏ hàng"}
               </button>
+            )}
+            {isCourseFlagged && (
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  background: "#fff7e6",
+                  border: "1px solid #ffd591",
+                  color: "#ad6800",
+                  fontSize: 14,
+                }}
+              >
+                <b>Khóa học đang được rà soát và cập nhật nội dung</b>.
+                <br />
+                Cảm ơn bạn đã thông cảm trong thời gian này.
+              </div>
+            )}
+            {alreadyFlagged && !isCourseFlagged && (
+              <div className="info-note">
+                ✔️ Bạn đã gửi báo cáo cho khóa học này.
+              </div>
             )}
 
             {canShowFlagButton && (

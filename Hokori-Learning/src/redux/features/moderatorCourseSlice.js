@@ -51,12 +51,11 @@ const slice = createSlice({
         state.loadingFlagged = false;
         state.error = action.payload;
       })
-      .addCase(moderatorFlagCourseThunk.fulfilled, (state, action) => {
-        const id = action.meta.arg; // chính là courseId mình truyền vào
-        state.flaggedList = state.flaggedList.filter((c) => {
-          const courseId = c.courseId ?? c.id;
-          return String(courseId) !== String(id);
-        });
+      .addCase(moderatorFlagCourseThunk.fulfilled, (state) => {
+        // Không làm gì ở đây cũng được vì FE sẽ refetch list sau khi flag thành công
+      })
+      .addCase(moderatorFlagCourseThunk.rejected, (state, action) => {
+        state.error = action.payload;
       });
   },
 });
