@@ -81,6 +81,8 @@ import QuizTrialPage from "../pages/CourseDetail/QuizTrialPage/QuizTrialPage";
 import LessonPlayerPage from "../pages/LessonPlayer/LessonPlayerPage";
 import LessonQuizAttemptPage from "../pages/LessonPlayer/LessonQuizAttemptPage/LessonQuizAttemptPage";
 import CourseCompletionPage from "../pages/CourseCompletionPage/CourseCompletionPage";
+import MyPaymentsPage from "../pages/MyPayments/MyPaymentsPage";
+import PaymentDetailPage from "../pages/MyPayments/components/PaymentDetailPage";
 
 const routes = [
   // ============================
@@ -104,11 +106,6 @@ const routes = [
       { path: "about", element: <AboutPage /> },
       { path: "contact", element: <Contact /> },
       { path: "information", element: <Information /> },
-      // {
-      //   path: "learner/flashcards/:sectionContentId",
-      //   element: <FlashcardPage />,
-      // },
-      // { path: "my-courses/:courseId/learn", element: <LearningTreePage /> },
 
       { path: "payment/result", element: <PaymentResultPage /> },
       { path: "payment/success", element: <PaymentResultPage /> },
@@ -130,6 +127,8 @@ const routes = [
           { path: "policies", element: <LearnerPolicies /> },
           { path: "payment/ai-package/success", element: <AiSucceedPage /> },
           { path: "jlpt/events/:eventId", element: <JLPTEventTests /> },
+          { path: "my-payments", element: <MyPaymentsPage /> },
+          { path: "my-payments/:paymentId", element: <PaymentDetailPage /> },
           {
             path: "certificates/:certificateId",
             element: <CertificateDetail />,

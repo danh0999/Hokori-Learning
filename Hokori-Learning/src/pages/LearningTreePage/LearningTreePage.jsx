@@ -20,6 +20,78 @@ const slugify = (str = "") =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)+/g, "");
 
+const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+
+const formatDateTime = (iso) => {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    return new Intl.DateTimeFormat("vi-VN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(d);
+  } catch {
+    return iso;
+  }
+};
+// helper build file url (giống bạn dùng)
+const getFileUrl = (path) => {
+  if (!path) return "";
+  if (/^https?:\/\//i.test(path)) return path;
+
+  // axios baseURL: http://localhost:8080/api  => fileBase: http://localhost:8080
+  const base = (api?.defaults?.baseURL || "").replace(/\/api\/?$/, "");
+  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+};
+
+const Avatar = ({ url, name }) => {
+  const letter = (name || "?").trim().charAt(0).toUpperCase();
+  const src = getFileUrl(url);
+
+  return src ? (
+    <img className={styles.avatarImg} src={src} alt={name || "avatar"} />
+  ) : (
+    <div className={styles.avatarFallback}>{letter}</div>
+  );
+};
+
+function StarRating({ value = 0, onChange, readOnly = false, size = "md" }) {
+  const [hover, setHover] = useState(null);
+  const display = hover ?? value;
+
+  return (
+    <div
+      className={`${styles.starRow} ${size === "sm" ? styles.starRowSm : ""}`}
+      onMouseLeave={() => setHover(null)}
+      aria-label="Star rating"
+    >
+      {Array.from({ length: 5 }).map((_, i) => {
+        const starValue = i + 1;
+        const active = starValue <= display;
+        return (
+          <button
+            key={starValue}
+            type="button"
+            className={`${styles.starBtn} ${active ? styles.starActive : ""} ${
+              readOnly ? styles.starReadOnly : ""
+            }`}
+            onMouseEnter={() => !readOnly && setHover(starValue)}
+            onClick={() => !readOnly && onChange?.(starValue)}
+            disabled={readOnly}
+            aria-label={`${starValue} sao`}
+            title={`${starValue} sao`}
+          >
+            ★
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function LearningTreePage() {
   // /learn/:courseId/:slug/home/chapter/:chapterIndex
   const { courseId, chapterIndex } = useParams();
@@ -31,6 +103,44 @@ export default function LearningTreePage() {
 
   // collapse lesson trong panel bên phải
   const [openLessons, setOpenLessons] = useState(new Set());
+
+  // ===== FEEDBACK STATE =====
+  const [fbLoading, setFbLoading] = useState(false);
+  const [fbError, setFbError] = useState("");
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [summary, setSummary] = useState({ ratingAvg: 0, ratingCount: 0 });
+
+  const [myRating, setMyRating] = useState(0);
+  const [myComment, setMyComment] = useState("");
+  const [posting, setPosting] = useState(false);
+  const [postMsg, setPostMsg] = useState("");
+
+  const fetchFeedbacks = async () => {
+    try {
+      setFbLoading(true);
+      setFbError("");
+      setPostMsg("");
+
+      const [sumRes, listRes] = await Promise.all([
+        api.get(`/courses/${courseId}/feedbacks/summary`),
+        api.get(`/courses/${courseId}/feedbacks`),
+      ]);
+
+      const sum = sumRes?.data?.data ?? sumRes?.data ?? {};
+      const list = listRes?.data?.data ?? listRes?.data ?? [];
+
+      setSummary({
+        ratingAvg: Number(sum.ratingAvg ?? 0),
+        ratingCount: Number(sum.ratingCount ?? 0),
+      });
+      setFeedbacks(Array.isArray(list) ? list : []);
+    } catch (err) {
+      console.error(err);
+      setFbError("Không thể tải đánh giá khóa học.");
+    } finally {
+      setFbLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchTree = async () => {
@@ -48,6 +158,13 @@ export default function LearningTreePage() {
     };
 
     fetchTree();
+  }, [courseId]);
+
+  // load feedback song song (không phụ thuộc learning-tree)
+  useEffect(() => {
+    if (!courseId) return;
+    fetchFeedbacks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseId]);
 
   // khi đổi chapterIndex trên URL → reset lesson đang mở
@@ -153,7 +270,6 @@ export default function LearningTreePage() {
 
     // Nếu là QUIZ content, navigate đến quiz page
     if (content.contentFormat === "QUIZ" && sectionId) {
-      // Navigate đến quiz overview trong LessonPlayerPage
       navigate(
         `/learn/${courseId}/${courseSlug}/lesson/${lessonId}/content/0`,
         {
@@ -167,7 +283,7 @@ export default function LearningTreePage() {
       return;
     }
 
-    // Content thường: navigate đến content page
+    // Content thường
     navigate(
       `/learn/${courseId}/${courseSlug}/lesson/${lessonId}/content/${content.contentId}`,
       {
@@ -177,6 +293,44 @@ export default function LearningTreePage() {
         },
       }
     );
+  };
+
+  const handleSubmitFeedback = async () => {
+    setPostMsg("");
+    setFbError("");
+
+    const rating = clamp(Number(myRating || 0), 0, 5);
+    const comment = (myComment || "").trim();
+
+    if (rating <= 0) {
+      setPostMsg("Bạn chưa chọn số sao.");
+      return;
+    }
+    if (comment.length === 0) {
+      setPostMsg("Bạn chưa nhập nhận xét.");
+      return;
+    }
+
+    try {
+      setPosting(true);
+      await api.post(`/courses/${courseId}/feedbacks`, {
+        rating,
+        comment,
+      });
+
+      setPostMsg("Đã gửi đánh giá!");
+      // refresh list + summary
+      await fetchFeedbacks();
+    } catch (err) {
+      console.error(err);
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.data?.message ||
+        "Gửi đánh giá thất bại.";
+      setPostMsg(msg);
+    } finally {
+      setPosting(false);
+    }
   };
 
   if (loading) return <div className={styles.loading}>Đang tải...</div>;
@@ -402,6 +556,119 @@ export default function LearningTreePage() {
               </div>
             )}
           </section>
+        </section>
+        {/* ===== FEEDBACK SECTION ===== */}
+        <section className={styles.feedbackSection}>
+          <div className={styles.feedbackHeader}>
+            <h2 className={styles.feedbackTitle}>Đánh giá khóa học</h2>
+
+            <button
+              type="button"
+              className={styles.refreshBtn}
+              onClick={fetchFeedbacks}
+              disabled={fbLoading}
+              title="Tải lại đánh giá"
+            >
+              {fbLoading ? "Đang tải..." : "Tải lại"}
+            </button>
+          </div>
+
+          {fbError && <div className={styles.feedbackError}>{fbError}</div>}
+
+          <div className={styles.feedbackSummary}>
+            <div className={styles.summaryLeft}>
+              <div className={styles.avgScore}>
+                {Number(summary.ratingAvg || 0).toFixed(1)}
+              </div>
+              <div className={styles.avgMeta}>
+                <StarRating
+                  value={Math.round(summary.ratingAvg || 0)}
+                  readOnly
+                  size="sm"
+                />
+                <div className={styles.countText}>
+                  {summary.ratingCount || 0} đánh giá
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.summaryRight}>
+              <div className={styles.myFeedbackBox}>
+                <div className={styles.myFeedbackTitle}>
+                  Viết đánh giá của bạn
+                </div>
+
+                <StarRating value={myRating} onChange={setMyRating} />
+
+                <textarea
+                  className={styles.commentBox}
+                  rows={3}
+                  value={myComment}
+                  onChange={(e) => setMyComment(e.target.value)}
+                  placeholder="Chia sẻ cảm nhận của bạn về khóa học..."
+                />
+
+                <div className={styles.feedbackActions}>
+                  <button
+                    type="button"
+                    className={styles.submitBtn}
+                    onClick={handleSubmitFeedback}
+                    disabled={posting}
+                  >
+                    {posting ? "Đang gửi..." : "Gửi đánh giá"}
+                  </button>
+
+                  {postMsg && (
+                    <div className={styles.postMsg} title={postMsg}>
+                      {postMsg}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.feedbackList}>
+            {fbLoading && feedbacks.length === 0 ? (
+              <div className={styles.feedbackEmpty}>Đang tải đánh giá...</div>
+            ) : feedbacks.length === 0 ? (
+              <div className={styles.feedbackEmpty}>
+                Chưa có đánh giá nào. Hãy là người đầu tiên!
+              </div>
+            ) : (
+              feedbacks.map((fb) => (
+                <div
+                  key={fb.id ?? `${fb.userId}-${fb.createdAt}`}
+                  className={styles.feedbackItem}
+                >
+                  <div className={styles.feedbackAvatar}>
+                    <Avatar url={fb.learnerAvatarUrl} name={fb.learnerName} />
+                  </div>
+
+                  <div className={styles.feedbackContent}>
+                    <div className={styles.feedbackTopRow}>
+                      <div className={styles.feedbackName}>
+                        {fb.learnerName || "Người học"}
+                      </div>
+                      <div className={styles.feedbackTime}>
+                        {formatDateTime(fb.createdAt)}
+                      </div>
+                    </div>
+
+                    <StarRating
+                      value={Number(fb.rating || 0)}
+                      readOnly
+                      size="sm"
+                    />
+
+                    {fb.comment && (
+                      <div className={styles.feedbackComment}>{fb.comment}</div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </section>
       </div>
     </main>

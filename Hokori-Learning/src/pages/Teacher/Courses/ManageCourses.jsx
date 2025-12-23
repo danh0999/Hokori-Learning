@@ -42,11 +42,14 @@ const statusTag = (s) => {
     Draft: "default",
     Review: "warning",
     Published: "success",
+    PENDING_APPROVED: "warning",
+    FLAGGED: "error",
     Rejected: "error",
   };
   return <Tag color={map[s] || "default"}>{s}</Tag>;
 };
 
+// helper: map enum BE → text status ở bảng
 // helper: map enum BE → text status ở bảng
 const mapStatusLabel = (status) => {
   if (!status) return "Draft";
@@ -54,13 +57,24 @@ const mapStatusLabel = (status) => {
   switch (status) {
     case "DRAFT":
       return "Draft";
+
     case "PUBLISHED":
       return "Published";
+
+    case "PENDING_APPROVAL":
+      return "PENDING_APPROVED";
+
+    // ✅ flagged
+    case "FLAGGED":
+      return "FLAGGED";
+
     case "REVIEWING":
     case "IN_REVIEW":
       return "Review";
+
     case "REJECTED":
       return "Rejected";
+
     default:
       return status;
   }
@@ -252,29 +266,23 @@ export default function ManageCourses() {
       key: "actions",
       width: 110,
       render: (_, row) => {
-        const isPublished = row.status === "Published";
+        const nonDeletableStatuses = new Set([
+          "Published",
+          "PENDING_APPROVED",
+          "FLAGGED",
+        ]);
+        const isNonDeletable = nonDeletableStatuses.has(row.status);
 
         const items = [
-          {
-            key: "manage",
-            label: "Quản lý",
-          },
+          { key: "manage", label: "Quản lý" },
+
           ...(row.status === "Draft"
-            ? [
-                {
-                  key: "submit",
-                  label: "Gửi duyệt",
-                },
-              ]
+            ? [{ key: "submit", label: "Gửi duyệt" }]
             : []),
-          ...(!isPublished
-            ? [
-                {
-                  key: "del",
-                  danger: true,
-                  label: "Xóa",
-                },
-              ]
+
+          // ✅ chỉ hiện Xóa khi KHÔNG thuộc 3 status trên
+          ...(!isNonDeletable
+            ? [{ key: "del", danger: true, label: "Xóa" }]
             : []),
         ];
 
@@ -284,21 +292,14 @@ export default function ManageCourses() {
             menu={{
               items,
               onClick: ({ key }) => {
-                console.log(
-                  "[ManageCourses] Dropdown clicked:",
-                  key,
-                  "courseId =",
-                  row.id
-                );
-
                 if (key === "manage") {
                   navigate(`/teacher/courseinfo/${row.id}`);
                 } else if (key === "submit") {
                   onSubmitForReview(row.id);
                 } else if (key === "del") {
                   // safety check thêm cho chắc
-                  if (row.status === "Published") {
-                    message.warning("Không thể xoá khoá học đã xuất bản.");
+                  if (isNonDeletable) {
+                    message.warning("Không thể xoá khoá học ở trạng thái này.");
                     return;
                   }
                   onDelete(row.id);

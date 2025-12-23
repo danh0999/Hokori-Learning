@@ -1,6 +1,26 @@
 import { useEffect, useState } from "react";
 import api from "../../../configs/axios.js";
 import "../CourseDetail.scss";
+// helper build file url
+const getFileUrl = (path) => {
+  if (!path) return "";
+  if (/^https?:\/\//i.test(path)) return path;
+
+  // axios baseURL: http://localhost:8080/api  => fileBase: http://localhost:8080
+  const base = (api?.defaults?.baseURL || "").replace(/\/api\/?$/, "");
+  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+};
+
+const Avatar = ({ url, name }) => {
+  const letter = (name || "?").trim().charAt(0).toUpperCase();
+  const src = getFileUrl(url);
+
+  return src ? (
+    <img className="avatar-img" src={src} alt={name || "avatar"} />
+  ) : (
+    <div className="avatar-fallback">{letter}</div>
+  );
+};
 
 const CourseFeedback = ({ courseId }) => {
   const [reviews, setReviews] = useState([]);
@@ -47,7 +67,8 @@ const CourseFeedback = ({ courseId }) => {
           ) : (
             reviews.map((fb) => (
               <div key={fb.id} className="review">
-                <img src={fb.learnerAvatarUrl} alt="" />
+                <Avatar url={fb.learnerAvatarUrl} name={fb.learnerName} />
+
                 <div>
                   <p>
                     <b>{fb.learnerName}</b>

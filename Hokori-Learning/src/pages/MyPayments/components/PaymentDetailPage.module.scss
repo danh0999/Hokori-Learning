@@ -1,0 +1,51 @@
+.wrapper {
+  max-width: 960px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+
+.card {
+  border-radius: 16px;
+}
+
+.headerTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.badgeRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.amount {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.meta {
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 13px;
+}
+
+.sectionTitle {
+  margin: 16px 0 8px;
+  font-weight: 700;
+}
+
+.descCard {
+  margin-top: 12px;
+  border-radius: 12px;
+}
+
+.linkBtn :global(a) {
+  font-weight: 600;
+}
+
+.grid :global(.ant-descriptions) {
+  border-radius: 12px;
+  overflow: hidden;
+}

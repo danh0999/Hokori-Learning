@@ -8,16 +8,25 @@ export const fetchCourses = createAsyncThunk(
   "courses/fetchAll",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await api.get("courses");
+      let page = 0;
+      const size = 20; // đúng với BE
+      let allCourses = [];
 
-      if (!res.data || !Array.isArray(res.data.content)) {
-        console.warn(" API /courses không trả về content hợp lệ:", res.data);
-        return [];
+      while (true) {
+        const res = await api.get(`courses?page=${page}&size=${size}`);
+        const data = res.data;
+
+        if (!data || !Array.isArray(data.content)) break;
+
+        allCourses = allCourses.concat(data.content);
+
+        if (page >= data.totalPages - 1) break;
+        page++;
       }
 
-      return res.data.content; // danh sách khóa học
+      return allCourses;
     } catch (err) {
-      console.error(" Error fetching courses:", err);
+      console.error("❌ Error fetching courses:", err);
       return rejectWithValue(
         err.response?.data?.message || "Không thể tải danh sách khóa học."
       );

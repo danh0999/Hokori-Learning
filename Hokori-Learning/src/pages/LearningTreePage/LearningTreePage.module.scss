@@ -402,3 +402,265 @@
     order: 1;
   }
 }
+
+/* ===== FEEDBACK ===== */
+.feedbackSection {
+  margin-top: 16px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.feedbackHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.feedbackTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.refreshBtn {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-weight: 500;
+}
+.refreshBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.feedbackError {
+  margin: 8px 0 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 0, 0, 0.06);
+  border: 1px solid rgba(255, 0, 0, 0.12);
+  color: #b42318;
+  font-weight: 500;
+}
+
+.feedbackSummary {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.summaryLeft {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.avgScore {
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.avgMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.countText {
+  color: rgba(0, 0, 0, 0.65);
+  font-weight: 500;
+}
+
+.summaryRight {
+  display: flex;
+}
+
+.myFeedbackBox {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #fff;
+}
+
+.myFeedbackTitle {
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.commentBox {
+  width: 100%;
+  margin-top: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 10px 12px;
+  outline: none;
+  resize: vertical;
+  font-size: 12px;
+}
+.commentBox:focus {
+  border-color: rgba(0, 0, 0, 0.28);
+}
+
+.feedbackActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.submitBtn {
+  border: none;
+  border-radius: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-weight: 500;
+  background: #111827;
+  color: #fff;
+}
+.submitBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.postMsg {
+  color: rgba(0, 0, 0, 0.7);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 520px;
+}
+
+.hintText {
+  margin-top: 8px;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.55);
+  font-weight: 500;
+}
+
+/* Stars */
+.starRow {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+.starRowSm {
+  gap: 4px;
+}
+
+.starBtn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  font-size: 20px;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.22);
+  transform: translateY(-1px);
+}
+.starRowSm .starBtn {
+  font-size: 18px;
+}
+.starActive {
+  color: #f59e0b;
+}
+.starReadOnly {
+  cursor: default;
+}
+
+/* List */
+.feedbackList {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.feedbackEmpty {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.03);
+  color: rgba(0, 0, 0, 0.65);
+  font-weight: 500;
+}
+
+.feedbackItem {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #fff;
+}
+
+.feedbackAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+.feedbackAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatarFallback {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font-weight: 500;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.feedbackContent {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.feedbackTopRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.feedbackName {
+  font-weight: 500;
+}
+
+.feedbackTime {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.55);
+  font-weight: 500;
+}
+
+.feedbackComment {
+  color: rgba(0, 0, 0, 0.78);
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .feedbackSummary {
+    grid-template-columns: 1fr;
+  }
+}

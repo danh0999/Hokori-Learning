@@ -20,7 +20,6 @@ import {
 } from "antd";
 import api from "../../../configs/axios.js";
 import { buildFileUrl } from "../../../utils/fileUrl.js";
-
 import styles from "./ModeratorDashboard.module.scss";
 
 const { Title, Text } = Typography;
@@ -29,12 +28,20 @@ const { Search } = Input;
 const PAGE_SIZE = 9;
 const COMMENT_PAGE_SIZE = 5;
 const FEEDBACK_PAGE_SIZE = 5;
+const getFileUrl = (path) => {
+  if (!path) return "";
+  if (/^https?:\/\//i.test(path)) return path;
+
+  // axios baseURL: http://localhost:8080/api  => fileBase: http://localhost:8080
+  const base = (api?.defaults?.baseURL || "").replace(/\/api\/?$/, "");
+  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+};
 
 const ModeratorDashboard = () => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const [page, setPage] = useState(0); // 0-based cho BE
+  const [page, setPage] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
   const [treeLoading, setTreeLoading] = useState(false);
@@ -47,22 +54,26 @@ const ModeratorDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedLevel, setSelectedLevel] = useState(undefined);
 
-  // preview node (chapter / lesson / section)
+  // preview node
   const [selectedNode, setSelectedNode] = useState(null);
 
-  // comments state (giữ nguyên logic cũ của bạn)
+  // comments
   const [comments, setComments] = useState([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [commentsPage, setCommentsPage] = useState(0);
   const [commentsTotal, setCommentsTotal] = useState(0);
 
-  // ===== Feedback state (NEW) =====
+  // ✅ NEW: trạng thái bật/tắt comments của course (mặc định bật)
+  const [courseCommentsEnabled, setCourseCommentsEnabled] = useState(true);
+  const [togglingCourseComments, setTogglingCourseComments] = useState(false);
+  const [togglingCommentId, setTogglingCommentId] = useState(null);
+
+  // feedback state
   const [feedbackSummary, setFeedbackSummary] = useState(null);
   const [feedbackSummaryLoading, setFeedbackSummaryLoading] = useState(false);
-
   const [feedbacks, setFeedbacks] = useState([]);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
-  const [feedbackPage, setFeedbackPage] = useState(0); // local pagination (client-side)
+  const [feedbackPage, setFeedbackPage] = useState(0);
   const [deletingFeedbackId, setDeletingFeedbackId] = useState(null);
 
   const totalPages = Math.max(1, Math.ceil(totalElements / PAGE_SIZE));
@@ -70,14 +81,12 @@ const ModeratorDashboard = () => {
     1,
     Math.ceil(commentsTotal / COMMENT_PAGE_SIZE)
   );
-
-  // Feedback total pages (client-side)
   const feedbackTotalPages = Math.max(
     1,
     Math.ceil((feedbacks?.length || 0) / FEEDBACK_PAGE_SIZE)
   );
 
-  /* ---------------- Fetch PUBLIC courses (pagination) ---------------- */
+  /* ---------------- Fetch courses ---------------- */
   const fetchCourses = async (pageIndex = 0) => {
     try {
       setLoading(true);
@@ -100,7 +109,7 @@ const ModeratorDashboard = () => {
     }
   };
 
-  /* ---------------- Fetch comments for a course ---------------- */
+  /* ---------------- Fetch comments ---------------- */
   const fetchCourseComments = async (courseId, pageIndex = 0) => {
     if (!courseId) return;
     try {
@@ -124,14 +133,109 @@ const ModeratorDashboard = () => {
     }
   };
 
-  // ===== Feedback APIs (NEW) =====
+  // ====== MODERATOR APIs: enable/disable comments ======
+  const disableCourseComments = async (courseId) => {
+    if (!courseId) return;
+    try {
+      setTogglingCourseComments(true);
+      await api.put(`/moderator/courses/${courseId}/disable-comments`);
+      setCourseCommentsEnabled(false);
+      message.success("Đã tắt chức năng bình luận cho khóa học.");
+    } catch (e) {
+      console.error("disableCourseComments failed", e);
+      message.error(e?.response?.data?.message || "Tắt bình luận thất bại.");
+    } finally {
+      setTogglingCourseComments(false);
+    }
+  };
+
+  const enableCourseComments = async (courseId) => {
+    if (!courseId) return;
+    try {
+      setTogglingCourseComments(true);
+      await api.put(`/moderator/courses/${courseId}/enable-comments`);
+      setCourseCommentsEnabled(true);
+      message.success("Đã bật chức năng bình luận cho khóa học.");
+    } catch (e) {
+      console.error("enableCourseComments failed", e);
+      message.error(e?.response?.data?.message || "Bật bình luận thất bại.");
+    } finally {
+      setTogglingCourseComments(false);
+    }
+  };
+
+  const disableOneComment = async (courseId, commentId) => {
+    if (!courseId || !commentId) return;
+    try {
+      setTogglingCommentId(commentId);
+      await api.put(
+        `/moderator/courses/${courseId}/comments/${commentId}/disable`
+      );
+      message.success("Đã ẩn bình luận.");
+
+      // ✅ FE-only: giữ comment trong list và set trạng thái disabled
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === commentId
+            ? {
+                ...c,
+                status: "DISABLED",
+                disabled: true,
+                enabled: false,
+                isDisabled: true,
+              }
+            : c
+        )
+      );
+    } catch (e) {
+      console.error("disableOneComment failed", e);
+      message.error(e?.response?.data?.message || "Ẩn bình luận thất bại.");
+    } finally {
+      setTogglingCommentId(null);
+    }
+  };
+
+  const restoreOneComment = async (courseId, commentId) => {
+    if (!courseId || !commentId) return;
+    try {
+      setTogglingCommentId(commentId);
+      await api.put(
+        `/moderator/courses/${courseId}/comments/${commentId}/restore`
+      );
+      message.success("Đã khôi phục bình luận.");
+
+      // ✅ FE-only: set lại trạng thái visible
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === commentId
+            ? {
+                ...c,
+                status: "VISIBLE",
+                disabled: false,
+                enabled: true,
+                isDisabled: false,
+              }
+            : c
+        )
+      );
+    } catch (e) {
+      console.error("restoreOneComment failed", e);
+      message.error(
+        e?.response?.data?.message || "Khôi phục bình luận thất bại."
+      );
+    } finally {
+      setTogglingCommentId(null);
+    }
+  };
+
+  // ===== Feedback APIs =====
   const fetchFeedbackSummary = async (courseId) => {
     if (!courseId) return;
     try {
       setFeedbackSummaryLoading(true);
       const res = await api.get(`/courses/${courseId}/feedbacks/summary`);
       const payload = res.data || {};
-      const data = payload.data ?? payload; // support both shapes
+      const data = payload.data ?? payload;
       setFeedbackSummary(data);
     } catch (e) {
       console.error("Failed to fetch feedback summary", e);
@@ -165,8 +269,6 @@ const ModeratorDashboard = () => {
       setDeletingFeedbackId(feedbackId);
       await api.delete(`/courses/${courseId}/feedbacks/${feedbackId}`);
       message.success("Đã xóa feedback.");
-
-      // refresh list + summary
       await Promise.all([
         fetchFeedbacks(courseId),
         fetchFeedbackSummary(courseId),
@@ -179,7 +281,7 @@ const ModeratorDashboard = () => {
     }
   };
 
-  /* ---------------- Fetch full tree of one course ---------------- */
+  /* ---------------- Fetch tree ---------------- */
   const fetchCourseTree = async (courseId, title) => {
     try {
       setTreeLoading(true);
@@ -191,7 +293,10 @@ const ModeratorDashboard = () => {
       setCourseTree(res.data);
       setOpenDrawer(true);
 
-      // load comments + feedback luôn
+      // ✅ reset trạng thái comments course mỗi lần mở drawer (mặc định bật)
+      setCourseCommentsEnabled(true);
+
+      // load comments + feedback
       fetchCourseComments(courseId, 0);
       fetchFeedbackSummary(courseId);
       fetchFeedbacks(courseId);
@@ -218,25 +323,21 @@ const ModeratorDashboard = () => {
   /* ---------------- Filter current page ---------------- */
   const filteredCourses = useMemo(() => {
     const list = Array.isArray(courses) ? courses : [];
-
     return list.filter((c) => {
       const title = (c.title || "").toLowerCase();
       const lvl = c.level;
 
-      if (searchTerm && !title.includes(searchTerm.trim().toLowerCase())) {
+      if (searchTerm && !title.includes(searchTerm.trim().toLowerCase()))
         return false;
-      }
       if (selectedLevel && lvl !== selectedLevel) return false;
       return true;
     });
   }, [courses, searchTerm, selectedLevel]);
 
-  /* ---------------- Tree: course → chapters → lessons → sections ---------------- */
+  /* ---------------- Tree build ---------------- */
   const buildTreeData = (course) => {
     if (!course) return [];
-
     const chapters = course.chapters || [];
-
     return [
       {
         title: course.title,
@@ -271,7 +372,7 @@ const ModeratorDashboard = () => {
     setSelectedNode({ nodeType, data: nodeData });
   };
 
-  /* ---------------- Preview panel ---------------- */
+  /* ---------------- Preview panel (giữ nguyên của bạn) ---------------- */
   const renderContentPreview = () => {
     if (!selectedNode) {
       return (
@@ -280,7 +381,6 @@ const ModeratorDashboard = () => {
         </div>
       );
     }
-
     const { nodeType, data } = selectedNode;
 
     if (nodeType === "course") {
@@ -338,10 +438,8 @@ const ModeratorDashboard = () => {
       );
     }
 
-    // Section: gom toàn bộ contents của 1 section thành 1 preview
     if (nodeType === "section") {
       const contents = data.contents || [];
-
       const mainAsset =
         contents.find((c) => c.contentFormat === "ASSET" && c.primaryContent) ||
         contents.find((c) => c.contentFormat === "ASSET");
@@ -446,10 +544,19 @@ const ModeratorDashboard = () => {
     );
   };
 
-  /* ---------------- Render comments ---------------- */
+  /* ---------------- Comments helpers ---------------- */
+  const isCommentDisabled = (cmt) => {
+    // hỗ trợ nhiều shape khác nhau từ BE
+    if (!cmt) return false;
+    if (typeof cmt.disabled === "boolean") return cmt.disabled;
+    if (typeof cmt.isDisabled === "boolean") return cmt.isDisabled;
+    if (typeof cmt.enabled === "boolean") return !cmt.enabled;
+    const s = String(cmt.status || "").toUpperCase();
+    return s === "DISABLED" || s === "HIDDEN";
+  };
+
   const renderReplies = (replies) => {
     if (!Array.isArray(replies) || replies.length === 0) return null;
-
     return (
       <div
         style={{
@@ -462,7 +569,6 @@ const ModeratorDashboard = () => {
           const content =
             typeof r === "string" ? r : r.content || JSON.stringify(r);
           const author = typeof r === "string" ? "" : r.authorName || "Reply";
-
           return (
             <div key={idx} style={{ marginBottom: 8 }}>
               <Text strong>{author}</Text>
@@ -474,6 +580,7 @@ const ModeratorDashboard = () => {
     );
   };
 
+  /* ---------------- Render comments card (✅ ĐÃ GẮN UI) ---------------- */
   const renderCommentsCard = () => {
     if (!selectedCourseId) {
       return (
@@ -484,7 +591,55 @@ const ModeratorDashboard = () => {
     }
 
     return (
-      <Card title="Comments" size="small">
+      <Card
+        title="Comments"
+        size="small"
+        extra={
+          <Space size={8} wrap>
+            <Tag color={courseCommentsEnabled ? "green" : "red"}>
+              {courseCommentsEnabled ? "Enabled" : "Disabled"}
+            </Tag>
+
+            <Button
+              size="small"
+              onClick={() =>
+                fetchCourseComments(selectedCourseId, commentsPage)
+              }
+              loading={commentsLoading}
+            >
+              Tải lại
+            </Button>
+
+            {!courseCommentsEnabled ? (
+              <Popconfirm
+                title="Bật lại bình luận cho khóa học này?"
+                okText="Bật"
+                cancelText="Hủy"
+                onConfirm={() => enableCourseComments(selectedCourseId)}
+              >
+                <Button
+                  size="small"
+                  type="primary"
+                  loading={togglingCourseComments}
+                >
+                  Bật bình luận
+                </Button>
+              </Popconfirm>
+            ) : (
+              <Popconfirm
+                title="Tắt bình luận cho khóa học này? Learner sẽ không comment được nữa."
+                okText="Tắt"
+                cancelText="Hủy"
+                onConfirm={() => disableCourseComments(selectedCourseId)}
+              >
+                <Button size="small" danger loading={togglingCourseComments}>
+                  Tắt bình luận
+                </Button>
+              </Popconfirm>
+            )}
+          </Space>
+        }
+      >
         {commentsLoading ? (
           <Spin size="small" />
         ) : comments.length === 0 ? (
@@ -497,33 +652,88 @@ const ModeratorDashboard = () => {
             <List
               itemLayout="vertical"
               dataSource={comments}
-              renderItem={(cmt) => (
-                <List.Item key={cmt.id}>
-                  <List.Item.Meta
-                    avatar={
-                      cmt.avatarUrl ? (
-                        <Avatar src={buildFileUrl(cmt.avatarUrl)} />
-                      ) : (
-                        <Avatar>{(cmt.authorName || "?")[0]}</Avatar>
-                      )
-                    }
-                    title={
-                      <Space direction="horizontal" size={8}>
-                        <Text strong>{cmt.authorName}</Text>
-                        <Text
-                          type="secondary"
-                          className={styles.commentMetaTime}
+              renderItem={(cmt) => {
+                const disabled = isCommentDisabled(cmt);
+
+                return (
+                  <List.Item
+                    key={cmt.id}
+                    actions={[
+                      disabled ? (
+                        <Popconfirm
+                          key="restore"
+                          title="Khôi phục bình luận này?"
+                          okText="Khôi phục"
+                          cancelText="Hủy"
+                          onConfirm={() =>
+                            restoreOneComment(selectedCourseId, cmt.id)
+                          }
                         >
-                          {cmt.createdAt &&
-                            new Date(cmt.createdAt).toLocaleString()}
-                        </Text>
-                      </Space>
-                    }
-                    description={cmt.content}
-                  />
-                  {renderReplies(cmt.replies)}
-                </List.Item>
-              )}
+                          <Button
+                            size="small"
+                            type="primary"
+                            loading={togglingCommentId === cmt.id}
+                          >
+                            Khôi phục
+                          </Button>
+                        </Popconfirm>
+                      ) : (
+                        <Popconfirm
+                          key="hide"
+                          title="Ẩn bình luận này?"
+                          okText="Ẩn"
+                          cancelText="Hủy"
+                          onConfirm={() =>
+                            disableOneComment(selectedCourseId, cmt.id)
+                          }
+                        >
+                          <Button
+                            size="small"
+                            danger
+                            loading={togglingCommentId === cmt.id}
+                          >
+                            Ẩn bình luận
+                          </Button>
+                        </Popconfirm>
+                      ),
+                    ]}
+                  >
+                    <List.Item.Meta
+                      avatar={
+                        cmt.avatarUrl ? (
+                          <Avatar src={getFileUrl(cmt.avatarUrl)} />
+                        ) : (
+                          <Avatar>{(cmt.authorName || "?")[0]}</Avatar>
+                        )
+                      }
+                      title={
+                        <Space size={8} wrap>
+                          <Text strong>{cmt.authorName}</Text>
+
+                          <Tag color={disabled ? "red" : "green"}>
+                            {disabled ? "Disabled" : "Visible"}
+                          </Tag>
+
+                          <Text
+                            type="secondary"
+                            className={styles.commentMetaTime}
+                          >
+                            {cmt.createdAt &&
+                              new Date(cmt.createdAt).toLocaleString()}
+                          </Text>
+                        </Space>
+                      }
+                      description={
+                        <div style={{ opacity: disabled ? 0.6 : 1 }}>
+                          {cmt.content}
+                        </div>
+                      }
+                    />
+
+                    {renderReplies(cmt.replies)}
+                  </List.Item>
+                );
+              }}
             />
 
             {commentTotalPages > 1 && (
@@ -536,7 +746,7 @@ const ModeratorDashboard = () => {
                     fetchCourseComments(selectedCourseId, commentsPage - 1)
                   }
                 >
-                  Prev
+                  Trước
                 </Button>
 
                 <span style={{ fontSize: 12 }}>
@@ -551,7 +761,7 @@ const ModeratorDashboard = () => {
                     fetchCourseComments(selectedCourseId, commentsPage + 1)
                   }
                 >
-                  Next
+                  Sau
                 </Button>
               </div>
             )}
@@ -561,7 +771,7 @@ const ModeratorDashboard = () => {
     );
   };
 
-  // ===== Render Feedback card (NEW) =====
+  /* ---------------- Render Feedback card (giữ nguyên của bạn) ---------------- */
   const renderFeedbackCard = () => {
     if (!selectedCourseId) {
       return (
@@ -591,12 +801,11 @@ const ModeratorDashboard = () => {
                 fetchFeedbacks(selectedCourseId);
               }}
             >
-              Reload
+              Tải lại
             </Button>
           </Space>
         }
       >
-        {/* Summary */}
         {feedbackSummaryLoading ? (
           <Spin size="small" />
         ) : (
@@ -612,7 +821,6 @@ const ModeratorDashboard = () => {
 
         <Divider style={{ margin: "10px 0" }} />
 
-        {/* List */}
         {feedbackLoading ? (
           <Spin size="small" />
         ) : feedbacks.length === 0 ? (
@@ -627,7 +835,7 @@ const ModeratorDashboard = () => {
               dataSource={pageItems}
               renderItem={(fb) => {
                 const avatarUrl = fb.learnerAvatarUrl
-                  ? buildFileUrl(fb.learnerAvatarUrl)
+                  ? getFileUrl(fb.learnerAvatarUrl)
                   : null;
 
                 const createdAt = fb.createdAt
@@ -741,11 +949,11 @@ const ModeratorDashboard = () => {
         </Tag>
       </div>
 
-      {/* FILTER BAR */}
       <div className={styles.filterBar}>
         <Search
           className={styles.search}
           placeholder="Search by course title"
+          allow_toggle="true"
           allowClear
           onChange={(e) => setSearchTerm(e.target.value)}
           onSearch={(value) => setSearchTerm(value)}
@@ -763,7 +971,6 @@ const ModeratorDashboard = () => {
         <Button onClick={() => fetchCourses(page)}>Reload</Button>
       </div>
 
-      {/* COURSE LIST + CUSTOM PAGINATION */}
       <div className={styles.content}>
         {loading ? (
           <Spin size="large" />
@@ -861,7 +1068,6 @@ const ModeratorDashboard = () => {
         )}
       </div>
 
-      {/* DRAWER: TREE + PREVIEW + FEEDBACK + COMMENTS */}
       <Drawer
         title={`Chi tiết khóa học: ${selectedCourseTitle || ""}`}
         open={openDrawer}
@@ -891,6 +1097,7 @@ const ModeratorDashboard = () => {
 
               {renderFeedbackCard()}
 
+              {/* ✅ Comments đã có nút Enable/Disable + Hide/Restore */}
               {renderCommentsCard()}
             </div>
           </div>
