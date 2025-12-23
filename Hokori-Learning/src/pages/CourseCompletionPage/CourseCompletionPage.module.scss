@@ -209,3 +209,23 @@
   border-color: #e5e7eb;
   color: #2760d9;
 }
+
+.starRating {
+  display: flex;
+  gap: 6px;
+  font-size: 28px;
+  cursor: pointer;
+}
+
+.star {
+  color: #ddd;
+  transition: color 0.15s ease, transform 0.1s ease;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+}
+
+.active {
+  color: #f5b301; // vàng chuẩn rating
+}

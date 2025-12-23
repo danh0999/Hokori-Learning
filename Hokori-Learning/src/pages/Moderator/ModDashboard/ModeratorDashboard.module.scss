@@ -188,3 +188,14 @@
   border-radius: 10px;
   overflow: auto;
 }
+.commentMetaTime {
+  font-size: 12px;
+}
+
+.paginationBar {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+}

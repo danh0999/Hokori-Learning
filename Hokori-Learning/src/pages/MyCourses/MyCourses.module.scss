@@ -42,28 +42,28 @@
 }
 .filtersRow {
   display: flex;
-  align-items: center;   
+  align-items: center;
   gap: 16px;
   margin-bottom: 20px;
 }
 
 .levelFilter {
   display: flex;
-  align-items: center;   
+  align-items: center;
   gap: 8px;
-  height: 40px;          
+  height: 40px;
   font-size: 0.95rem;
   color: #374151;
 
   label {
     font-weight: 500;
-    line-height: 40px;   
+    line-height: 40px;
     margin: 0;
   }
 
   select {
-    height: 40px;        
-    padding: 0 12px;     
+    height: 40px;
+    padding: 0 12px;
     border-radius: 8px;
     border: 1px solid #d1d5db;
     background: #fff;
@@ -82,5 +82,12 @@
 .searchWrapper {
   width: 360px;
   max-width: 100%;
-  height: 40px;          // đồng bộ chiều cao
+  height: 40px; // đồng bộ chiều cao
+}
+/* Alias: MyCourses.jsx đang dùng className={styles.grid} */
+.grid {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px; /* tăng khoảng cách giữa các course */
 }

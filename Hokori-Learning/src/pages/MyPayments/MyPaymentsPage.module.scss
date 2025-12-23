@@ -1,0 +1,40 @@
+.wrapper {
+  max-width: 1120px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+
+.card {
+  border-radius: 16px;
+}
+
+.cardTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.55);
+  margin-top: 2px;
+}
+
+.table :global(.ant-table) {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.money {
+  font-weight: 600;
+}
+
+.muted {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.actionLink :global(.ant-btn-link) {
+  padding: 0;
+  height: auto;
+}

@@ -34,6 +34,29 @@ import {
 } from "../../../redux/features/teacherprofileSlice.js";
 
 const { warning } = Modal;
+// ✅ map enum từ BE -> label giống ManageCourses
+const mapStatusLabel = (status) => {
+  if (!status) return "Draft";
+
+  switch (status) {
+    case "DRAFT":
+      return "Draft";
+    case "PUBLISHED":
+      return "Published";
+
+    case "PENDING_APPROVAL":
+      return "PENDING_APPROVED";
+
+    case "FLAGGED":
+      return "FLAGGED";
+
+    case "REJECTED":
+      return "Rejected";
+
+    default:
+      return status;
+  }
+};
 
 export default function TeacherDashboard() {
   const navigate = useNavigate();
@@ -61,14 +84,17 @@ export default function TeacherDashboard() {
     dispatch(fetchTeacherProfile());
   }, [dispatch]);
 
-  const statusTag = (s) => {
-    const map = {
-      DRAFT: "default",
-      PENDING_REVIEW: "warning",
-      PUBLISHED: "success",
-      REJECTED: "error",
+  const statusTag = (statusEnum) => {
+    const label = mapStatusLabel(statusEnum);
+    const mapColor = {
+      Draft: "default",
+      Published: "success",
+      PENDING_APPROVED: "warning",
+      FLAGGED: "error",
+      Rejected: "error",
     };
-    return <Tag color={map[s] || "default"}>{s}</Tag>;
+
+    return <Tag color={mapColor[label] || "default"}>{label}</Tag>;
   };
 
   const columns = [
@@ -106,16 +132,22 @@ export default function TeacherDashboard() {
       render: (_, row) => {
         const courseId = row.courseId || row.id;
 
+        // ✅ BE thường trả enum kiểu DRAFT/PUBLISHED/PENDING_APPROVED/FLAGGED...
+        const nonDeletableStatuses = new Set([
+          "PUBLISHED",
+          "PENDING_APPROVED",
+          "PENDING_APPROVAL",
+          "FLAGGED",
+        ]);
+        const isNonDeletable = nonDeletableStatuses.has(row.status);
+
         const items = [
-          {
-            key: "manage",
-            label: "Quản lý khóa học",
-          },
-          {
-            key: "delete",
-            danger: true,
-            label: "Xóa khóa học",
-          },
+          { key: "manage", label: "Quản lý khóa học" },
+
+          // ✅ chỉ hiện delete khi không bị chặn
+          ...(!isNonDeletable
+            ? [{ key: "delete", danger: true, label: "Xóa khóa học" }]
+            : []),
         ];
 
         return (
@@ -131,6 +163,11 @@ export default function TeacherDashboard() {
                 }
 
                 if (key === "delete") {
+                  if (isNonDeletable) {
+                    message.warning("Không thể xoá khoá học ở trạng thái này.");
+                    return;
+                  }
+
                   Modal.confirm({
                     title: "Bạn có chắc muốn xóa khóa học này?",
                     content: "Hành động này không thể hoàn tác.",
@@ -141,7 +178,7 @@ export default function TeacherDashboard() {
                       try {
                         await dispatch(deleteCourseThunk(courseId)).unwrap();
                         message.success("Xóa khóa học thành công!");
-                        dispatch(fetchDashboard()); // reload dashboard
+                        dispatch(fetchDashboard());
                       } catch (err) {
                         console.log(err);
                         message.error("Xóa thất bại! Vui lòng thử lại.");

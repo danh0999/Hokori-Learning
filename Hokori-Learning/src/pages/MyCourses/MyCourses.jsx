@@ -58,21 +58,43 @@ const MyCourses = () => {
                 totalLessons += ch.lessons?.length || 0;
               });
 
+              const chapters = tree?.chapters ?? [];
+              const nonTrialChapters = chapters.filter(
+                (c) => Number(c.orderIndex) > 0
+              );
+
+              // ✅ trial-only: chỉ có chapterIndex=0
+              const isTrialOnly =
+                chapters.length > 0 && nonTrialChapters.length === 0;
+
               const progress =
                 tree.progressPercent ?? enroll.progressPercent ?? 0;
 
               return {
                 courseId: enroll.courseId,
                 title: tree.courseTitle || "Khóa học",
+                teacherName: tree.teacherName,
                 level: enroll.level || tree.level || "N5",
                 coverUrl: tree.coverImagePath
                   ? buildFileUrl(tree.coverImagePath)
                   : null,
 
                 lessons: totalLessons,
-                status: enroll.status,
-                statusMessage: enroll.statusMessage,
 
+                // ✅ course status lấy từ learning-tree (BE đã thêm)
+                courseStatus: tree.courseStatus, // "FLAGGED" | ...
+                // nếu BE chưa có message thì FE tự set message cố định
+                courseStatusMessage:
+                  tree.courseStatus === "FLAGGED"
+                    ? "Khóa học đang được cập nhật nội dung do kiểm duyệt. Một số bài học có thể thay đổi tạm thời."
+                    : null,
+
+                // enrollment status nếu bạn còn cần ở chỗ khác
+                enrollmentStatus: enroll.status,
+                enrollmentStatusMessage: enroll.statusMessage,
+
+                // ✅ để UI quyết định có hiện progress hay không
+                isTrialOnly,
                 progress,
                 completed: progress >= 100,
                 lastStudy: tree.lastAccessAt

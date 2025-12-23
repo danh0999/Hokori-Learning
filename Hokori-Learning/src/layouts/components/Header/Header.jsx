@@ -164,6 +164,11 @@ export const Header = () => {
         onClick: () => navigate("/learner-dashboard"),
       },
       {
+        key: "my-payments",
+        label: "Lịch sử giao dịch",
+        onClick: () => navigate("/my-payments"),
+      },
+      {
         key: "logout",
         label: "Đăng xuất",
         onClick: handleLogout,

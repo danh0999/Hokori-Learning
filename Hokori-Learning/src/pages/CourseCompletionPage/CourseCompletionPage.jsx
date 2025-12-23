@@ -21,6 +21,7 @@ export default function CourseCompletionPage() {
   // feedback list + my feedback
   const [feedbacks, setFeedbacks] = useState([]);
   const [feedbackSummary, setFeedbackSummary] = useState(null);
+  const [hoverRating, setHoverRating] = useState(0);
 
   const myFeedback = useMemo(() => {
     if (!currentUserId) return null;
@@ -251,17 +252,25 @@ export default function CourseCompletionPage() {
 
               <div className={styles.formRow}>
                 <label className={styles.label}>Rating</label>
-                <select
-                  className={styles.select}
-                  value={rating}
-                  onChange={(e) => setRating(Number(e.target.value))}
-                >
-                  {[5, 4, 3, 2, 1].map((r) => (
-                    <option key={r} value={r}>
-                      {r} ⭐
-                    </option>
-                  ))}
-                </select>
+                <div className={styles.starRating}>
+                  {[1, 2, 3, 4, 5].map((star) => {
+                    const active = star <= (hoverRating || rating);
+
+                    return (
+                      <span
+                        key={star}
+                        className={`${styles.star} ${
+                          active ? styles.active : ""
+                        }`}
+                        onMouseEnter={() => setHoverRating(star)}
+                        onMouseLeave={() => setHoverRating(0)}
+                        onClick={() => setRating(star)}
+                      >
+                        ★
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className={styles.formRow}>

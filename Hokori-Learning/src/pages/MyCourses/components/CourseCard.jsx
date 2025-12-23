@@ -38,28 +38,42 @@ const CourseCard = ({ course, onContinue, onViewCertificate }) => {
               <span className={styles.levelBadge}>{course.level}</span>
             )}
             <h3 className={styles.title}>{course.title}</h3>
+            {course.teacherName && (
+              <div className={styles.teacherName}>
+                Giảng viên: {course.teacherName}
+              </div>
+            )}
           </div>
         </div>
 
-        {course.status === "FLAGGED" && course.statusMessage && (
-          <div className={styles.statusBanner}>{course.statusMessage}</div>
+        {course.courseStatus === "FLAGGED" && (
+          <div className={styles.statusBanner}>
+            {course.courseStatusMessage ||
+              "Khóa học đang được cập nhật nội dung do kiểm duyệt."}
+          </div>
         )}
 
         <div className={styles.middleRow}>
-          <div className={styles.progressBlock}>
-            <div className={styles.progressTop}>
-              <span className={styles.progressLabel}>Tiến độ</span>
-              <span className={styles.progressPercent}>
-                {Math.round(course.progress || 0)}%
-              </span>
+          {course.isTrialOnly ? (
+            <div className={styles.trialOnlyNote}>
+              Khóa học hiện chỉ có nội dung học thử.
             </div>
-            <div className={styles.progressBarOuter}>
-              <div
-                className={styles.progressBarInner}
-                style={{ width: `${course.progress || 0}%` }}
-              />
+          ) : (
+            <div className={styles.progressBlock}>
+              <div className={styles.progressTop}>
+                <span className={styles.progressLabel}>Tiến độ</span>
+                <span className={styles.progressPercent}>
+                  {Math.round(course.progress || 0)}%
+                </span>
+              </div>
+              <div className={styles.progressBarOuter}>
+                <div
+                  className={styles.progressBarInner}
+                  style={{ width: `${course.progress || 0}%` }}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <div className={styles.metaBlock}>
             <span>{course.lessons || 0} bài học</span>

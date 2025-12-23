@@ -208,6 +208,12 @@ export default function Revenue() {
   const [note, setNote] = useState("");
   const [target, setTarget] = useState(null);
 
+  // history modal
+  const [openHistory, setOpenHistory] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyRows, setHistoryRows] = useState([]);
+  const [payoutView, setPayoutView] = useState("PENDING"); // PENDING | HISTORY
+
   const fetchCommissionDetails = async (ym) => {
     const res = await api.get("admin/payments/admin-commission-details", {
       params: { yearMonth: ym },
@@ -233,6 +239,21 @@ export default function Revenue() {
       );
     } finally {
       setPayoutLoading(false);
+    }
+  };
+  const loadHistory = async (ym = yearMonth) => {
+    try {
+      setHistoryLoading(true);
+      const all = await fetchPayoutHistory(ym);
+      setHistoryRows(all);
+    } catch (e) {
+      console.error(e);
+      message.error(
+        e?.response?.data?.message || "Không tải được lịch sử payout."
+      );
+      setHistoryRows([]);
+    } finally {
+      setHistoryLoading(false);
     }
   };
 
@@ -291,6 +312,40 @@ export default function Revenue() {
     }
   };
 
+  const fetchPayoutHistory = async (ym) => {
+    const res = await api.get("admin/payments/payout-history", {
+      params: { yearMonth: ym },
+    });
+    return Array.isArray(res?.data?.data) ? res.data.data : [];
+  };
+
+  const openTeacherHistory = async (r) => {
+    try {
+      setHistoryTeacher({
+        teacherId: r.teacherId,
+        teacherName: r.teacherName,
+        teacherEmail: r.teacherEmail,
+      });
+      setOpenHistory(true);
+      setHistoryRows([]);
+      setHistoryLoading(true);
+
+      const all = await fetchPayoutHistory(yearMonth);
+      const filtered = all.filter(
+        (x) => Number(x.teacherId) === Number(r.teacherId)
+      );
+      setHistoryRows(filtered);
+    } catch (e) {
+      console.error(e);
+      message.error(
+        e?.response?.data?.message || "Không tải được lịch sử payout."
+      );
+      setHistoryRows([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
   const pendingTeachers = rows.length;
 
   const pendingAmount = useMemo(
@@ -313,14 +368,19 @@ export default function Revenue() {
   // Outer table (tab2) đúng field guide
   const payoutColumns = [
     {
-      title: "Giáo viên",
+      title: "Teacher",
       dataIndex: "teacherName",
       key: "teacherName",
       render: (t) => <b>{t}</b>,
       width: 180,
       fixed: "left",
     },
-
+    {
+      title: "Email",
+      dataIndex: "teacherEmail",
+      key: "teacherEmail",
+      width: 240,
+    },
     {
       title: "Tháng",
       dataIndex: "yearMonth",
@@ -387,7 +447,7 @@ export default function Revenue() {
 
     // ✅ NEW: Giá gốc 1 khóa (courseBasePriceCents)
     {
-      title: "Giá gốc",
+      title: "Giá gốc (1 khóa)",
       dataIndex: "courseBasePriceCents",
       key: "courseBasePriceCents",
       width: 160,
@@ -421,7 +481,7 @@ export default function Revenue() {
     },
 
     {
-      title: "Tiền hoa hồng (20%)",
+      title: "Tiền hoa hồng (Admin 20%)",
       dataIndex: "adminCommissionCents",
       key: "adminCommissionCents",
       width: 190,
@@ -430,10 +490,125 @@ export default function Revenue() {
     },
 
     {
-      title: "Số tiền đã chia hoa hồng (80%)",
+      title: "Số tiền đã chia hoa hồng (Teacher 80%)",
       dataIndex: "revenueCents",
       key: "revenueCents",
       width: 230,
+      align: "right",
+      render: (v) => money(v),
+    },
+  ];
+  const payoutHistoryCols = [
+    {
+      title: "Ngày chuyển",
+      dataIndex: "payoutDate",
+      key: "payoutDate",
+      width: 180,
+      render: (v) => (v ? dayjs(v).format("DD/MM/YYYY HH:mm") : "—"),
+    },
+    {
+      title: "Teacher",
+      dataIndex: "teacherName",
+      key: "teacherName",
+      width: 180,
+      render: (t) => <b>{t}</b>,
+    },
+    {
+      title: "Email",
+      dataIndex: "teacherEmail",
+      key: "teacherEmail",
+      width: 240,
+    },
+    {
+      title: "Số GD",
+      dataIndex: "totalSales",
+      key: "totalSales",
+      width: 90,
+      align: "center",
+    },
+    {
+      title: "Hoa hồng Admin (20%)",
+      dataIndex: "totalAdminCommissionCents",
+      key: "totalAdminCommissionCents",
+      width: 200,
+      align: "right",
+      render: (v) => money(v),
+    },
+    {
+      title: "Teacher nhận (80%)",
+      dataIndex: "totalPaidRevenueCents",
+      key: "totalPaidRevenueCents",
+      width: 180,
+      align: "right",
+      render: (v) => money(v),
+    },
+
+    {
+      title: "Người chuyển",
+      dataIndex: "payoutByUserName",
+      key: "payoutByUserName",
+      width: 160,
+      render: (t) => t || "—",
+    },
+    {
+      title: "Ghi chú",
+      dataIndex: "payoutNote",
+      key: "payoutNote",
+      ellipsis: true,
+      render: (t) =>
+        t ? (
+          <Tooltip title={t}>
+            <span>{t}</span>
+          </Tooltip>
+        ) : (
+          "—"
+        ),
+    },
+  ];
+
+  const payoutHistoryCourseCols = [
+    {
+      title: "Khóa học",
+      dataIndex: "courseTitle",
+      key: "courseTitle",
+      render: (t) => <b>{t}</b>,
+    },
+    {
+      title: "Giá gốc (1 khóa)",
+      dataIndex: "courseBasePriceCents",
+      key: "courseBasePriceCents",
+      width: 160,
+      align: "right",
+      render: (v) => (v == null ? "—" : money(v)),
+    },
+    {
+      title: "Số GD",
+      dataIndex: "salesCount",
+      key: "salesCount",
+      width: 90,
+      align: "center",
+    },
+    {
+      title: "Tổng tiền gốc",
+      dataIndex: "totalPaidAmountCents",
+      key: "totalPaidAmountCents",
+      width: 160,
+      align: "right",
+      render: (v) => money(v),
+    },
+    {
+      title: "Hoa hồng Admin (20%)",
+      dataIndex: "adminCommissionCents",
+      key: "adminCommissionCents",
+      width: 180,
+      align: "right",
+      render: (v) => money(v),
+    },
+    {
+      title: "Teacher nhận (80%)",
+      dataIndex: "revenueCents",
+      key: "revenueCents",
+      width: 160,
       align: "right",
       render: (v) => money(v),
     },
@@ -451,6 +626,8 @@ export default function Revenue() {
     setYearMonth(ym);
     reloadRevenueTab(ym);
     reloadPayoutTab(ym);
+
+    if (payoutView === "HISTORY") loadHistory(ym);
   };
 
   // ===================== RENDER =====================
@@ -580,19 +757,31 @@ export default function Revenue() {
                       value={fmtVnd(commission?.totalRevenueCents || 0)}
                       suffix="VNĐ"
                     />
-                    <div className={s.summaryHint}>
-                      Expected: {fmtVnd(commission?.expectedRevenueCents || 0)}{" "}
-                      • Paid: {fmtVnd(commission?.paidRevenueCents || 0)}
+
+                    <div className={s.commissionBreakdown}>
+                      <div className={s.commissionRow}>
+                        <span className={s.label}>Đã thu được:</span>
+                        <span className={s.valuePaid}>
+                          {fmtVnd(commission?.paidRevenueCents || 0)} VNĐ
+                        </span>
+                      </div>
+
+                      <div className={s.commissionRow}>
+                        <span className={s.label}>Dự kiến sẽ thu:</span>
+                        <span className={s.valueExpected}>
+                          {fmtVnd(commission?.expectedRevenueCents || 0)} VNĐ
+                        </span>
+                      </div>
                     </div>
                   </Card>
 
                   <Card className={s.summaryCard} loading={payoutLoading}>
                     <Statistic
-                      title={`Số giáo viên chờ thanh toán (${yearMonth})`}
+                      title={`Teacher cần payout (${yearMonth})`}
                       value={pendingTeachers}
                     />
                     <div className={s.summaryHint}>
-                      Danh sách giáo viên có doanh thu chưa trả.
+                      Danh sách teacher có doanh thu chưa trả.
                     </div>
                   </Card>
 
@@ -607,22 +796,82 @@ export default function Revenue() {
                     </div>
                   </Card>
                 </div>
+                <div className={s.payoutSubTabs}>
+                  <button
+                    className={`${s.payoutSubTab} ${
+                      payoutView === "PENDING" ? s.active : ""
+                    }`}
+                    onClick={() => setPayoutView("PENDING")}
+                    type="button"
+                  >
+                    Chờ chuyển
+                  </button>
 
-                <Card
-                  className={s.tableWrap}
-                  title="Danh sách teacher chưa được chuyển tiền"
-                  loading={payoutLoading}
-                >
-                  <div className={s.tableScroll}>
-                    <Table
-                      rowKey={(r) => `${r.teacherId}-${r.yearMonth}`}
-                      columns={payoutColumns}
-                      dataSource={rows}
-                      pagination={false}
-                      scroll={{ x: 1250 }}
-                    />
-                  </div>
-                </Card>
+                  <button
+                    className={`${s.payoutSubTab} ${
+                      payoutView === "HISTORY" ? s.active : ""
+                    }`}
+                    onClick={async () => {
+                      setPayoutView("HISTORY");
+                      if (historyRows.length === 0)
+                        await loadHistory(yearMonth);
+                    }}
+                    type="button"
+                  >
+                    Lịch sử đã chuyển
+                  </button>
+                </div>
+
+                {payoutView === "PENDING" ? (
+                  <Card
+                    className={s.tableWrap}
+                    title="Danh sách teacher chưa được chuyển tiền"
+                    loading={payoutLoading}
+                  >
+                    <div className={s.tableScroll}>
+                      <Table
+                        rowKey={(r) => `${r.teacherId}-${r.yearMonth}`}
+                        columns={payoutColumns}
+                        dataSource={rows}
+                        pagination={false}
+                        scroll={{ x: 1250 }}
+                      />
+                    </div>
+                  </Card>
+                ) : (
+                  <Card
+                    className={s.tableWrap}
+                    title="Lịch sử admin đã chuyển tiền"
+                    loading={historyLoading}
+                  >
+                    <div className={s.tableScroll}>
+                      <Table
+                        rowKey={(r) =>
+                          `${r.teacherId}-${r.payoutDate || r.yearMonth}`
+                        }
+                        columns={payoutHistoryCols}
+                        dataSource={historyRows}
+                        pagination={{ pageSize: 10 }}
+                        scroll={{ x: 1400 }}
+                        expandable={{
+                          expandedRowRender: (record) => (
+                            <Table
+                              rowKey={(x) => x.courseId}
+                              columns={payoutHistoryCourseCols}
+                              dataSource={record?.courses || []}
+                              pagination={false}
+                              size="small"
+                              scroll={{ x: 1200 }}
+                            />
+                          ),
+                          rowExpandable: (record) =>
+                            Array.isArray(record?.courses) &&
+                            record.courses.length > 0,
+                        }}
+                      />
+                    </div>
+                  </Card>
+                )}
 
                 {/* DETAIL MODAL */}
                 <Modal
