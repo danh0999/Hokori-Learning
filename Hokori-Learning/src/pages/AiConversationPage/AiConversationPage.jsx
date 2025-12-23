@@ -1,11 +1,12 @@
+// src/pages/AiConversationPage/AiConversationPage.jsx
 import React, { useCallback, useMemo, useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import styles from "./AiConversationPage.module.scss";
-
+import { FaLightbulb } from "react-icons/fa";
 import HeroSection from "./components/HeroSection";
 import ChatBubble from "./components/ChatBubble";
 import ResultPanel from "./components/ResultPanel";
-
+import { GiBrain } from "react-icons/gi";
 import AudioRecorder from "../../pages/AiKaiwa/components/AudioRecorder";
 import { convertBlobToBase64, getAudioFormat } from "../../utils/audioUtils";
 
@@ -17,6 +18,10 @@ const safeText = (v) => (typeof v === "string" ? v : "");
 
 const STORAGE_PREFIX = "ai_conversation_session_";
 const MAX_AUDIO_MB = 1.3;
+
+const SCENARIO_MIN = 5;
+const SCENARIO_MAX = 200;
+
 
 /* ===============================
    Helper: bỏ romaji trong ngoặc ()
@@ -37,15 +42,67 @@ const parseSuggestion = (s = "") => {
 };
 
 /* ===============================
-   FE TTS – chỉ đọc tiếng Nhật
+   Normalize role về "ai"/"user"
 ================================ */
-const speakJapanese = (jpText) => {
-  if (!jpText) return;
+const normalizeRole = (role) => {
+  const r = String(role || "").toLowerCase();
+  if (r === "ai") return "ai";
+  if (r === "user") return "user";
+  // fallback nếu BE trả "AI"/"USER"
+  if (r === "aI".toLowerCase()) return "ai";
+  return r.includes("user") ? "user" : "ai";
+};
+
+
+const normalizeHistory = (arr) =>
+  (Array.isArray(arr) ? arr : []).map((m) => ({
+    ...m,
+    role: normalizeRole(m.role),
+    text: safeText(m.text),
+    textVi: safeText(m.textVi),
+  }));
+
+/* ===============================
+   Play audio base64 (BE audioUrl)
+================================ */
+const playBase64Audio = (base64) => {
+  if (!base64) return false;
+  try {
+    // base64 có thể là raw base64 hoặc data:audio/...;base64,...
+    const src = String(base64).startsWith("data:")
+      ? String(base64)
+      : `data:audio/mp3;base64,${base64}`;
+
+    const audio = new Audio(src);
+    audio.play().catch(() => {});
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/* ===============================
+   FE TTS – chỉ đọc tiếng Nhật thuần
+   - Bỏ nội dung trong ()
+   - Bỏ tiếng Việt
+================================ */
+const speakJapanese = (text = "") => {
+  if (!text) return;
+
+  // 1. bỏ romaji trong ()
+  let jpOnly = text.replace(/\([^)]*\)/g, "").trim();
+
+  // 2. chỉ giữ ký tự Nhật (kana + kanji)
+  jpOnly = jpOnly.replace(/[^\u3040-\u30FF\u4E00-\u9FAF\s]/g, "").trim();
+
+  if (!jpOnly) return;
+
   try {
     window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(jpText);
+    const utter = new SpeechSynthesisUtterance(jpOnly);
     utter.lang = "ja-JP";
     utter.rate = 0.95;
+    utter.pitch = 1;
     window.speechSynthesis.speak(utter);
   } catch (e) {
     console.warn("TTS error:", e);
@@ -72,7 +129,7 @@ export default function AiConversationPage() {
   ================================ */
   const [conversationId, setConversationId] = useState(null);
   const [history, setHistory] = useState([]);
-  const [turnNumber, setTurnNumber] = useState(0); // chỉ tracking
+  const [turnNumber, setTurnNumber] = useState(0);
   const [originalScenario, setOriginalScenario] = useState("");
 
   // user speaks first
@@ -91,6 +148,13 @@ export default function AiConversationPage() {
   const [loading, setLoading] = useState(false);
   const [ending, setEnding] = useState(false);
   const [error, setError] = useState(null);
+  const [userTyping, setUserTyping] = useState(false);
+  const [aiTyping, setAiTyping] = useState(false);
+
+  /* ===============================
+     TURN FEEDBACK (NEW)
+  ================================ */
+  const [turnFeedback, setTurnFeedback] = useState(null);
 
   /* ===============================
      RESULT
@@ -121,6 +185,7 @@ export default function AiConversationPage() {
       setUserSpeaksFirst(!!saved.userSpeaksFirst);
       setStartingSuggestions(saved.startingSuggestions || []);
       setSelectedSuggestion(saved.selectedSuggestion || null);
+      setTurnFeedback(saved.turnFeedback || null);
     } catch {
       localStorage.removeItem(STORAGE_KEY);
     }
@@ -145,6 +210,7 @@ export default function AiConversationPage() {
         userSpeaksFirst,
         startingSuggestions,
         selectedSuggestion,
+        turnFeedback,
         savedAt: Date.now(),
       })
     );
@@ -160,6 +226,7 @@ export default function AiConversationPage() {
     userSpeaksFirst,
     startingSuggestions,
     selectedSuggestion,
+    turnFeedback,
   ]);
 
   /* ===============================
@@ -179,10 +246,21 @@ export default function AiConversationPage() {
   ================================ */
   const handleStart = async () => {
     const trimmedScenario = scenario.trim();
-    if (trimmedScenario.length < 5) {
-      setError("Vui lòng nhập tình huống rõ ràng hơn (ít nhất 5 ký tự).");
+
+    if (trimmedScenario.length < SCENARIO_MIN) {
+      setError(
+        `Vui lòng nhập tình huống rõ ràng hơn (ít nhất ${SCENARIO_MIN} ký tự).`
+      );
       return;
     }
+    if (trimmedScenario.length > SCENARIO_MAX) {
+      setError(`Tình huống quá dài. Tối đa ${SCENARIO_MAX} ký tự.`);
+      return;
+    }
+
+    // START: user chưa gửi gì, AI đang chuẩn bị hỏi
+    setUserTyping(false);
+    setAiTyping(true);
 
     setLoading(true);
     setError(null);
@@ -191,6 +269,9 @@ export default function AiConversationPage() {
     setHistory([]);
     setTurnNumber(0);
     setSelectedSuggestion(null);
+    setStartingSuggestions([]);
+    setUserSpeaksFirst(false);
+    setTurnFeedback(null);
 
     const res = await runService("CONVERSATION", () =>
       conversationService.startConversation({
@@ -200,32 +281,49 @@ export default function AiConversationPage() {
     );
 
     setLoading(false);
-    if (!res) return;
+    if (!res) {
+      setAiTyping(false);
+      return;
+    }
 
     const data = res?.data?.data;
     if (!data) {
       setError("Không thể bắt đầu hội thoại.");
+      setAiTyping(false);
       return;
     }
 
-    setConversationId(data.conversationId);
+    setConversationId(data.conversationId || `conv-${Date.now()}`);
     setTurnNumber(data.turnNumber || 1);
-    setOriginalScenario(data.originalScenario || trimmedScenario);
+    setOriginalScenario(
+      data.scenario || data.originalScenario || trimmedScenario
+    );
 
     const isUserFirst = !!data.userSpeaksFirst;
     setUserSpeaksFirst(isUserFirst);
 
     if (isUserFirst) {
+      // user nói trước => AI không typing
       setStartingSuggestions(data.startingSuggestions || []);
       setHistory([]);
+      setAiTyping(false);
       return;
     }
 
-    setStartingSuggestions([]);
-    setHistory(data.conversationHistory || []);
+    setUserTyping(false);
+    setAiTyping(true);
 
-    const firstAI = data.conversationHistory?.[0];
-    speakJapanese(stripRomaji(firstAI?.text));
+    // ⏱ delay để AI “suy nghĩ” trước khi nói
+    await new Promise((r) => setTimeout(r, 600));
+
+    const hist = normalizeHistory(data.conversationHistory || []);
+    setHistory(hist);
+
+    const firstAI = hist?.[0];
+    const played = playBase64Audio(data.audioUrl);
+    if (!played) speakJapanese(stripRomaji(firstAI?.text));
+
+    setAiTyping(false);
   };
 
   /* ===============================
@@ -244,9 +342,12 @@ export default function AiConversationPage() {
       setError(
         "Đoạn ghi âm quá dài. Vui lòng nói ngắn hơn (tối đa khoảng 60 giây)."
       );
-
       return;
     }
+
+    //  user đang gửi
+    setUserTyping(true);
+    setAiTyping(false);
 
     setLoading(true);
     setError(null);
@@ -263,29 +364,52 @@ export default function AiConversationPage() {
           audioData: base64,
           audioFormat,
           conversationHistory: isFirstTurnUserFirst ? [] : history,
+          language: "ja",
           level,
           scenario: originalScenario,
         })
       );
 
       setLoading(false);
-      if (!res) return;
+      if (!res) {
+        setUserTyping(false);
+        setAiTyping(false);
+        return;
+      }
 
       const data = res?.data?.data;
       if (!data) {
         setError("Không thể gửi câu trả lời.");
+        setUserTyping(false);
+        setAiTyping(false);
         return;
       }
 
-      setHistory(data.conversationHistory || []);
+      // USER gửi xong → AI bắt đầu typing
+      setUserTyping(false);
+      setAiTyping(true);
+
+      // ⏱ delay giả lập AI đang gõ (rất quan trọng cho UX)
+      await new Promise((r) => setTimeout(r, 700));
+
+      // cập nhật hội thoại
+      const hist = normalizeHistory(data.conversationHistory || []);
+      setHistory(hist);
       setTurnNumber(data.turnNumber || turnNumber + 1);
       setAudioBlob(null);
 
-      const lastAI = [...(data.conversationHistory || [])]
-        .reverse()
-        .find((m) => m.role === "AI");
+      // NEW: turnFeedback optional
+      setTurnFeedback(data.turnFeedback || null);
 
-      speakJapanese(stripRomaji(lastAI?.text));
+      // tìm câu AI mới nhất
+      const lastAI = [...hist].reverse().find((m) => m.role === "ai");
+
+      // play audio / TTS
+      const played = playBase64Audio(data.audioUrl);
+      if (!played) speakJapanese(stripRomaji(lastAI?.text));
+
+      // AI gõ xong
+      setAiTyping(false);
 
       if (data.isEnding) {
         await handleEnd(true);
@@ -294,6 +418,8 @@ export default function AiConversationPage() {
       console.error(e);
       setLoading(false);
       setError("Lỗi xử lý hội thoại. Vui lòng thử lại.");
+      setUserTyping(false);
+      setAiTyping(false);
     }
   };
 
@@ -310,6 +436,8 @@ export default function AiConversationPage() {
       conversationService.endConversation({
         conversationId,
         conversationHistory: history,
+        level,
+        scenario: originalScenario,
       })
     );
 
@@ -338,6 +466,11 @@ export default function AiConversationPage() {
     setUserSpeaksFirst(false);
     setStartingSuggestions([]);
     setSelectedSuggestion(null);
+    setTurnFeedback(null);
+
+    // ✅ reset typing
+    setUserTyping(false);
+    setAiTyping(false);
   };
 
   /* ===============================
@@ -385,9 +518,19 @@ export default function AiConversationPage() {
             <textarea
               className={styles.textarea}
               value={scenario}
-              onChange={(e) => setScenario(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value || "";
+                setScenario(val.slice(0, SCENARIO_MAX));
+              }}
               disabled={started || loading || ending}
             />
+            <div className={styles.note}>
+              <span className={styles.noteKey}>Độ dài:</span>{" "}
+              <span className={styles.noteVal}>
+                {scenario.trim().length}/{SCENARIO_MAX}
+              </span>
+            </div>
+
             {started && (
               <div className={styles.note}>
                 <span className={styles.noteKey}>Scenario:</span>{" "}
@@ -480,6 +623,25 @@ export default function AiConversationPage() {
             </button>
           </div>
 
+          {/* NEW: hiển thị feedback theo lượt */}
+          {turnFeedback && !endResult ? (
+            <div className={styles.turnFeedbackBox}>
+              <div className={styles.turnFeedbackTitle}>
+                {" "}
+                <GiBrain />
+                Phản hồi lượt này
+              </div>
+              <div className={styles.turnFeedbackText}>
+                {turnFeedback.feedbackVi || "—"}
+              </div>
+              {turnFeedback.suggestionVi ? (
+                <div className={styles.turnFeedbackHint}>
+                  <FaLightbulb /> {turnFeedback.suggestionVi}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
           {error && <div className={styles.errorBox}>❌ {error}</div>}
         </section>
 
@@ -488,15 +650,21 @@ export default function AiConversationPage() {
           {!endResult ? (
             <div className={styles.chatBox}>
               {history.length ? (
-                history.map((m, idx) => (
-                  <ChatBubble
-                    key={`${m.role}-${idx}`}
-                    role={m.role}
-                    jp={m.text}
-                    vi={m.textVi}
-                    ts={m.timestamp}
-                  />
-                ))
+                <>
+                  {history.map((m, idx) => (
+                    <ChatBubble
+                      key={`${m.role}-${idx}`}
+                      role={m.role}
+                      jp={m.text}
+                      vi={m.textVi}
+                      ts={m.timestamp}
+                    />
+                  ))}
+
+                  {/*  typing bubbles */}
+                  {userTyping && <ChatBubble role="user" isTyping />}
+                  {aiTyping && <ChatBubble role="ai" isTyping />}
+                </>
               ) : started && userSpeaksFirst ? (
                 <div className={styles.empty}>
                   <div className={styles.emptyIcon}>🎤</div>
