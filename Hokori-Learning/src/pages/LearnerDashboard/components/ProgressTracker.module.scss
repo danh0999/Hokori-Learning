@@ -1,84 +1,138 @@
-.title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin-bottom: 1.25rem;
-  color: #0f172a;
+// src/pages/LearnerDashboard/components/ProgressTracker.module.scss
+
+.trackerCard {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
 }
 
-.overall {
+.title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.summaryText {
+  font-size: 0.95rem;
+  color: #64748b;
   margin-bottom: 1.5rem;
 
-  .row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
-    color: #4b5563;
-    font-weight: 500;
+  .highlight {
+    color: #ef4444; // Màu đỏ hoặc cam để nhấn mạnh
+    font-weight: 700;
+    font-size: 1.1rem;
   }
 }
 
-/* danh sách các cấp JLPT */
 .list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f9fafb;
-  border-radius: 10px;
-  padding: 0.7rem 0.9rem;
-  transition: all 0.3s ease;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
   cursor: pointer;
-  border: 1px solid transparent;
+
+  &:hover {
+    background-color: #f1f5f9;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
 }
 
-.item:hover {
-  background: #f3f4f6;
-  border-color: #e5e7eb;
-  transform: translateY(-2px);
-}
-
-/* icon và tên cấp độ */
 .left {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  color: #111827;
-  font-weight: 500;
+  gap: 0.75rem;
+  flex: 1; /* Để phần info chiếm không gian */
+  overflow: hidden; /* Tránh vỡ layout nếu tên quá dài */
 
-  svg {
-    transition: transform 0.3s ease, color 0.3s ease;
-    color: #6b7280;
+  .iconBox {
+    width: 36px;
+    height: 36px;
+    background: #dbeafe;
+    color: #2563eb;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+
+    .courseTitle {
+      font-weight: 600;
+      color: #334155;
+      font-size: 0.95rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 180px; /* Giới hạn chiều rộng tên */
+    }
+
+    .levelBadge {
+      font-size: 0.75rem;
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 1px 6px;
+      border-radius: 4px;
+      width: fit-content;
+      font-weight: 600;
+    }
   }
 }
 
-.item:hover .left svg {
-  transform: scale(1.2) rotate(8deg);
-  color: #111827;
-}
-
-/* phần tiến độ bên phải */
 .right {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #6b7280;
-  min-width: 140px;
-  justify-content: flex-end;
-  font-size: 0.875rem;
+  width: 100px; /* Cố định chiều rộng progress bar */
+  flex-shrink: 0;
+  margin-left: 10px;
+}
 
-  .progressBar {
-    flex: 1;
+.footer {
+  text-align: center;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 1rem;
+}
+
+.viewAllBtn {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: gap 0.2s;
+
+  &:hover {
+    text-decoration: underline;
+    gap: 0.5rem;
   }
 }
 
-/* hiệu ứng hiển thị phần trăm */
-.item:hover .right span {
-  color: #111827;
-  font-weight: 600;
+.empty {
+  color: #94a3b8;
+  font-style: italic;
+  font-size: 0.9rem;
 }

@@ -1,36 +1,51 @@
+// src/pages/LearnerDashboard/components/CompletedLessons.jsx
 import React from "react";
-import { FaBook, FaGlobe } from "react-icons/fa";
 import styles from "./CompletedLessons.module.scss";
+import { FaAward, FaChevronRight, FaCheckCircle } from "react-icons/fa";
 
-const iconMap = {
-  book: <FaBook />,
-  language: <FaGlobe />,
-};
-
-const formatDate = (isoLike) =>
-  new Date(isoLike).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
-
-const CompletedLessons = ({ lessons = [], onViewAll }) => {
+const CompletedLessons = ({ courses = [], onViewCertificate, onViewAll }) => {
   return (
-    <section className="card">
+    <section className={styles.section}>
       <div className={styles.header}>
-        <h3>Bài học đã hoàn thành</h3>
-        <button className={styles.linkBtn} onClick={onViewAll}>Xem tất cả</button>
+        <h3 className={styles.title}>Bài học đã hoàn thành</h3>
+        <button className={styles.viewAll} onClick={onViewAll}>
+          Xem tất cả
+        </button>
       </div>
 
-      <div className={styles.list}>
-        {lessons.map((l) => (
-          <div key={l.id} className={styles.item}>
-            <div className={styles.iconWrap}>{iconMap[l.icon] || <FaBook />}</div>
-            <div className={styles.meta}>
-              <div className={styles.title}>{l.title}</div>
-              <div className={styles.date}>Hoàn thành: {formatDate(l.completedAt)}</div>
+      {courses.length === 0 ? (
+        <p className={styles.empty}>Chưa có bài học nào hoàn thành.</p>
+      ) : (
+        <div className={styles.list}>
+          {courses.map((course) => (
+            <div key={course.courseId} className={styles.card}>
+              <div className={styles.infoLeft}>
+                <div className={styles.iconBox}>
+                  <FaCheckCircle />
+                </div>
+                <div className={styles.textInfo}>
+                  <div className={styles.courseName}>{course.title}</div>
+                  <div className={styles.meta}>
+                    <span className={styles.level}>{course.level}</span>
+                    <span className={styles.completedText}>Hoàn thành 100%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.actionRight}>
+                <button
+                  className={styles.certBtn}
+                  onClick={() => onViewCertificate(course.courseId)}
+                  title="Xem chứng chỉ"
+                >
+                  <FaAward className={styles.btnIcon} />
+                  <span>Xem chi tiết chứng chỉ</span>
+                </button>
+              </div>
             </div>
-            <div className={styles.doneMark}>✓</div>
-          </div>
-        ))}
-        {lessons.length === 0 && <div className={styles.empty}>Chưa có bài học nào.</div>}
-      </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 };

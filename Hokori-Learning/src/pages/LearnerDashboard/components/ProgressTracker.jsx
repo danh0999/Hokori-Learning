@@ -1,61 +1,73 @@
+// src/pages/LearnerDashboard/components/ProgressTracker.jsx
 import React from "react";
-import { FaCheckCircle, FaPlayCircle, FaClock } from "react-icons/fa";
-import ProgressBar from "./ProgressBar";
+import { FaBookOpen, FaChevronRight } from "react-icons/fa";
+import ProgressBar from "./ProgressBar"; // Giả sử bạn tái sử dụng component này
 import styles from "./ProgressTracker.module.scss";
+import { useNavigate } from "react-router-dom";
 
-/**
- * ProgressTracker — thẻ tiến độ tổng thể cho Learner Dashboard
- *
- * Props:
- *  - overall: số % tổng thể (0–100)
- *  - jlptLevels: mảng các cấp JLPT [{ level: "N5", progress: 60, status: "Đang học" }]
- */
-const ProgressTracker = ({ overall = 0, jlptLevels = [] }) => {
-  const icon = (status = "") => {
-    const s = status.toLowerCase();
-    if (s.includes("hoàn")) return <FaCheckCircle color="#16a34a" />;
-    if (s.includes("đang")) return <FaPlayCircle color="#2563eb" />;
-    return <FaClock color="#6b7280" />;
-  };
+const ProgressTracker = ({ courses = [], incompleteCount = 0 }) => {
+  const navigate = useNavigate();
 
   return (
-    <section className={`${styles.trackerCard} card`}>
-      {/* Tiến độ tổng thể */}
-      <h3 className={styles.title}>Tiến độ học tập</h3>
-
-      <div className={styles.overall}>
-        <ProgressBar
-          value={overall}
-          label="Tổng thể"
-          size="lg"
-          striped
-          animated
-        />
+    <section className={styles.trackerCard}>
+      <div className={styles.headerRow}>
+        <h3 className={styles.title}>Tiến độ học tập</h3>
       </div>
 
-      {/* Danh sách cấp độ JLPT */}
-      <div className={styles.list}>
-        {jlptLevels.map((lv) => (
-          <div className={styles.item} key={lv.level}>
-            <div className={styles.left}>
-              {icon(lv.status)}
-              <span className={styles.level}>{lv.level}</span>
-            </div>
+      {/* Dòng thông báo số lượng chưa hoàn thành */}
+      <div className={styles.summaryText}>
+        {incompleteCount > 0 ? (
+          <>
+            Bạn có <span className={styles.highlight}>{incompleteCount}</span>{" "}
+            khóa học chưa hoàn thành
+          </>
+        ) : (
+          "Bạn đã hoàn thành tất cả các khóa học!"
+        )}
+      </div>
 
-            <div className={styles.right}>
-              {lv.progress > 0 ? (
+      {/* Danh sách 3 khóa học gần nhất */}
+      <div className={styles.list}>
+        {courses.length === 0 ? (
+          <p className={styles.empty}>Chưa có dữ liệu khóa học.</p>
+        ) : (
+          courses.map((course) => (
+            <div
+              key={course.courseId}
+              className={styles.item}
+              onClick={() => navigate("/my-courses")} // Hoặc navigate vào chi tiết
+            >
+              <div className={styles.left}>
+                <div className={styles.iconBox}>
+                  <FaBookOpen />
+                </div>
+                <div className={styles.info}>
+                  <div className={styles.courseTitle}>{course.title}</div>
+                  <span className={styles.levelBadge}>{course.level}</span>
+                </div>
+              </div>
+
+              <div className={styles.right}>
                 <ProgressBar
-                  value={lv.progress}
+                  value={course.progress}
                   size="sm"
-                  showPercent
+                  showPercent={true}
                   label={null}
                 />
-              ) : (
-                <span className={styles.status}>{lv.status}</span>
-              )}
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
+      </div>
+
+      {/* Nút xem tất cả */}
+      <div className={styles.footer}>
+        <button
+          className={styles.viewAllBtn}
+          onClick={() => navigate("/my-courses")}
+        >
+          Xem tất cả <FaChevronRight />
+        </button>
       </div>
     </section>
   );
