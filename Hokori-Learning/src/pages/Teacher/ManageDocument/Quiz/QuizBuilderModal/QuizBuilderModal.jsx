@@ -639,6 +639,7 @@ export default function QuizBuilderModal({
       <BulkImportModal
         open={openBulk}
         onCancel={() => setOpenBulk(false)}
+        mode="QUIZ"
         onDone={handleBulkDone}
       />
     </Modal>
