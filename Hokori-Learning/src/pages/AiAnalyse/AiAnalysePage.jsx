@@ -61,8 +61,8 @@ const AiAnalysePage = () => {
       return;
     }
 
-    if (trimmed.length > 50) {
-      setError("Câu không được quá 50 ký tự.");
+    if (trimmed.length > 200) {
+      setError("Câu không được quá 200 ký tự.");
       setResult(null);
       return;
     }

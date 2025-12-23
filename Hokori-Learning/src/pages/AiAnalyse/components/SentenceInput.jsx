@@ -13,7 +13,7 @@ const SentenceInput = ({
   onRandom,
 }) => {
   const len = sentence?.length || 0;
-  const overLimit = len > 50;
+  const overLimit = len > 200;
 
   return (
     <div className={styles.card}>
@@ -38,7 +38,7 @@ const SentenceInput = ({
           overLimit ? styles.charCountError : ""
         }`}
       >
-        {len}/50 ký tự
+        {len}/200 ký tự
       </div>
 
       <div className={styles.row}>
