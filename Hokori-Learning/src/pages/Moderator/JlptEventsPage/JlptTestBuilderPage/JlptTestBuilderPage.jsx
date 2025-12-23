@@ -1717,6 +1717,8 @@ export default function JlptTestBuilderPage() {
         <BulkImportModal
           open={bulkOpen}
           onCancel={() => setBulkOpen(false)}
+          mode="JLPT"
+          defaultQuestionType={activeTab}
           onDone={(parsedQuestions) =>
             handleBulkDone(parsedQuestions, activeTab, testAudio)
           }
