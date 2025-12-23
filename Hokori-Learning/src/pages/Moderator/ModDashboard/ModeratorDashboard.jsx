@@ -87,12 +87,24 @@ const ModeratorDashboard = () => {
   );
 
   /* ---------------- Fetch courses ---------------- */
-  const fetchCourses = async (pageIndex = 0) => {
+  const fetchCourses = async (
+    pageIndex = 0,
+    keyword = "",
+    level = undefined
+  ) => {
     try {
       setLoading(true);
-      const res = await api.get("/courses", {
-        params: { page: pageIndex, size: PAGE_SIZE },
-      });
+
+      const params = {
+        page: pageIndex,
+        size: PAGE_SIZE,
+      };
+
+      // tuỳ BE: keyword/search/q
+      if (keyword?.trim()) params.keyword = keyword.trim();
+      if (level) params.level = level;
+
+      const res = await api.get("/courses", { params });
 
       const data = res.data || {};
       const list = Array.isArray(data.content) ? data.content : [];
@@ -108,6 +120,10 @@ const ModeratorDashboard = () => {
       setLoading(false);
     }
   };
+  useEffect(() => {
+    fetchCourses(0, searchTerm, selectedLevel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, selectedLevel]);
 
   /* ---------------- Fetch comments ---------------- */
   const fetchCourseComments = async (courseId, pageIndex = 0) => {
@@ -968,7 +984,9 @@ const ModeratorDashboard = () => {
           onChange={setSelectedLevel}
         />
 
-        <Button onClick={() => fetchCourses(page)}>Reload</Button>
+        <Button onClick={() => fetchCourses(page, searchTerm, selectedLevel)}>
+          Tải lại
+        </Button>
       </div>
 
       <div className={styles.content}>
@@ -1044,11 +1062,13 @@ const ModeratorDashboard = () => {
                 <Button
                   size="small"
                   disabled={page === 0}
-                  onClick={() => page > 0 && fetchCourses(page - 1)}
+                  onClick={() =>
+                    page > 0 &&
+                    fetchCourses(page - 1, searchTerm, selectedLevel)
+                  }
                 >
                   Trước
                 </Button>
-
                 <span>
                   Trang <b>{page + 1}</b> / {totalPages}
                 </span>
@@ -1057,7 +1077,8 @@ const ModeratorDashboard = () => {
                   size="small"
                   disabled={page + 1 >= totalPages}
                   onClick={() =>
-                    page + 1 < totalPages && fetchCourses(page + 1)
+                    page + 1 < totalPages &&
+                    fetchCourses(page + 1, searchTerm, selectedLevel)
                   }
                 >
                   Tiếp
