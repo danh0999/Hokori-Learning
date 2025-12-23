@@ -1,14 +1,19 @@
+/* =========================================================
+   RESULT PANEL – PREMIUM AI COACH VERSION
+   Goal: đọc sướng – học nhanh – không ngợp chữ
+========================================================= */
+
 .wrapper {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
   animation: fadeIn 0.35s ease;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -24,50 +29,52 @@
 }
 
 .title {
-  font-size: 1.05rem;
-  font-weight: 500; // ❗ không bold
-  color: #1f2937;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #111827;
 }
 
 .btn {
-  padding: 6px 14px;
+  padding: 6px 16px;
   font-size: 0.85rem;
   border-radius: 999px;
   border: none;
-  background: #2563eb;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
   color: #fff;
   cursor: pointer;
-  transition: background 0.2s ease;
 }
 
 .btn:hover {
-  background: #1d4ed8;
+  opacity: 0.9;
 }
 
-/* ================= CARD ================= */
+/* ================= CARD BASE ================= */
 .card {
   background: #ffffff;
-  border-radius: 16px;
-  padding: 18px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
+  border-radius: 20px;
+  padding: 22px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.06);
 }
 
-/* ================= OVERALL ================= */
+.card > * + * {
+  margin-top: 20px;
+}
+
+/* ================= OVERALL SCORE ================= */
 .overall {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 18px;
+  gap: 16px;
 }
 
 .circle {
-  width: 52px;
-  height: 52px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
-  background: #eef2ff;
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
   color: #4338ca;
-  font-size: 1rem;
-  font-weight: 500;
+  font-size: 1.1rem;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -75,22 +82,44 @@
 
 .overallLabel {
   font-size: 0.85rem;
-  font-weight: 500;
+  font-weight: 600;
   color: #374151;
 }
 
 .overallDesc {
   font-size: 0.8rem;
   color: #6b7280;
-  margin-top: 2px;
+}
+
+/* ================= QUICK SUMMARY ================= */
+.summaryBox {
+  padding: 16px 18px;
+  background: #f8fafc;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+}
+
+.summaryTitle {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #4f46e5;
+  margin-bottom: 8px;
+}
+
+.summaryText {
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: #1f2937;
+  max-width: 64ch;
 }
 
 /* ================= SCORE GRID ================= */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 14px;
-  margin-bottom: 18px;
+  gap: 16px;
 }
 
 .scoreRow {
@@ -102,8 +131,8 @@
 .scoreHeader {
   display: flex;
   justify-content: space-between;
-  font-size: 0.8rem;
-  font-weight: 400;
+  font-size: 0.78rem;
+  font-weight: 500;
   color: #374151;
 }
 
@@ -117,80 +146,170 @@
 .fill {
   height: 100%;
   background: linear-gradient(90deg, #6366f1, #818cf8);
-  transition: width 0.4s ease;
 }
 
-/* ================= FEEDBACK TEXT ================= */
+/* ================= OVERALL FEEDBACK ================= */
+.overallFeedbackBox {
+  padding: 18px 20px;
+  background: linear-gradient(180deg, #ffffff, #f9fafb);
+  border-radius: 16px;
+  border-left: 4px solid #6366f1;
+}
+
+.overallFeedbackTitle {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #4338ca;
+  margin-bottom: 10px;
+}
+
+.overallFeedbackText {
+  font-size: 0.9rem;
+  line-height: 1.85;
+  color: #374151;
+  max-width: 66ch;
+}
+
+/* ================= FEEDBACK GRID ================= */
 .feedbackGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 14px;
-  margin-top: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
 }
 
 .fbBlock {
-  background: #f9fafb;
-  border-radius: 12px;
-  padding: 12px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
 }
 
 .fbTitle {
   font-size: 0.85rem;
-  font-weight: 500;
-  color: #374151;
-  margin-bottom: 6px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 10px;
 }
 
 .fbBlock ul {
-  padding-left: 16px;
+  list-style: none;
+  padding: 0;
   margin: 0;
 }
 
 .fbBlock li {
-  font-size: 0.8rem;
-  color: #4b5563;
-  margin-bottom: 4px;
-  line-height: 1.4;
+  padding-left: 20px;
+  margin-bottom: 10px;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #374151;
+  position: relative;
+}
+
+.fbBlock li::before {
+  content: "-";
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: #000000;
+  font-weight: 700;
+}
+
+/* ================= DETAIL ANALYSIS ================= */
+.detailCard {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.06);
+}
+
+.detailTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 12px;
+}
+
+.detailItem {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.detailHeader {
+  width: 100%;
+  padding: 12px 16px;
+  background: #f9fafb;
+  border: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.detailBody {
+  padding: 16px;
+}
+
+.detailRow {
+  margin-bottom: 16px;
+}
+
+.detailLabel {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+
+.detailValue {
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: #111827;
+  max-width: 68ch;
 }
 
 /* ================= FULL CONVERSATION ================= */
 .convCard {
   background: #ffffff;
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.06);
 }
 
 .convTitle {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #1f2937;
-  margin-bottom: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 12px;
 }
 
 .convList {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .convItem {
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
   background: #f9fafb;
-  transition: background 0.2s ease;
-}
-
-.convItem:hover {
-  background: #f3f4f6;
 }
 
 .user {
-  border-left: 3px solid #2563eb;
+  border-left: 4px solid #2563eb;
 }
 
 .ai {
-  border-left: 3px solid #9333ea;
+  border-left: 4px solid #9333ea;
 }
 
 .convRole {
@@ -200,13 +319,13 @@
 }
 
 .convJp {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 600;
   color: #111827;
-  line-height: 1.45;
 }
 
 .convVi {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   color: #6b7280;
-  margin-top: 2px;
+  margin-top: 4px;
 }

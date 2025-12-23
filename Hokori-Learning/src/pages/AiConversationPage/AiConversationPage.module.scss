@@ -115,12 +115,12 @@
 }
 
 .noteKey {
-  font-weight: 750;
+
   color: #111827;
 }
 
 .noteVal {
-  font-weight: 650;
+
   color: #334155;
 }
 
@@ -130,9 +130,11 @@
   gap: 12px;
   margin-top: 14px;
 }
-
+.secondaryBtn{
+  background: #f3f4f6;
+}
 .primaryBtn,
-.secondaryBtn,
+
 .ghostBtn {
   border-radius: 12px;
   padding: 12px 12px;
@@ -396,3 +398,57 @@
   font-size: 0.85rem;
   color: #6b7280;
 }
+/* ===============================
+   TURN FEEDBACK – CLEAN AI COACH
+================================ */
+
+.turnFeedbackBox {
+  margin-top: 14px;
+  padding: 14px 16px;
+
+  border-radius: 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+/* title */
+.turnFeedbackTitle {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #2563eb;
+  margin-bottom: 8px;
+  margin-left: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.turnFeedbackTitle::before {
+  
+  font-size: 0.95rem;
+}
+
+/* main feedback text */
+.turnFeedbackText {
+  font-size: 0.9rem;
+  line-height: 1.65;
+  color: #111827;
+
+  padding-left: 10px;
+  border-left: 3px solid #e5e7eb;
+}
+
+/* suggestion / hint */
+.turnFeedbackHint {
+  margin-top: 10px;
+  padding-left: 10px;
+
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #374151;
+
+  border-left: 3px solid #60a5fa;
+}
+
