@@ -13,6 +13,9 @@ const pick = (row, map, ...keys) => {
   }
   return undefined;
 };
+const uid = () =>
+  crypto?.randomUUID?.() ??
+  `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 export const parseCorrect = (v) => {
   const s = norm(v).toUpperCase();
@@ -94,18 +97,27 @@ function validateRowToQuestion(row, headerMap, idx, opts = {}) {
   }
 
   // options "liên tục" từ A..last
+  // correctIdx có thể lớn hơn last (correct trỏ option trống)
+  const correctIdxSafe = Number.isFinite(correctIdx) ? correctIdx : -1;
+
+  // 👉 giữ slot tới max(last, correctIdx)
+  const draftEnd = Math.max(last, correctIdxSafe);
+
+  // draft.options: để user sửa (có thể có option trống)
+  const draftSlots = draftEnd >= 0 ? slots.slice(0, draftEnd + 1) : [];
+
+  // finalSlots: chỉ dùng khi build question hợp lệ
   const finalSlots = last >= 0 ? slots.slice(0, last + 1) : [];
   const optionsRaw = finalSlots.map((x) => x.text);
 
-  // draft để NeedsFix sửa thủ công
+  // ===== draft =====
   const draft = {
     rowNo,
     questionType: questionType || defaultQuestionType || "",
     content,
     explanation,
-    // giữ y nguyên slot A..last, kể cả rỗng, để UI hiển thị đúng chỗ thiếu
-    options: finalSlots.map((x) => ({
-      id: crypto.randomUUID(),
+    options: draftSlots.map((x) => ({
+      id: uid(),
       key: x.key,
       text: x.text,
     })),
@@ -167,14 +179,14 @@ function validateRowToQuestion(row, headerMap, idx, opts = {}) {
 
   // --- BUILD QUESTION (đảm bảo lúc này không có gap, optionsRaw đều có text)
   const finalOptions = optionsRaw.map((t, i) => ({
-    id: crypto.randomUUID(),
+    id: uid(),
     text: t,
     correct: i === correctIdx,
     isCorrect: i === correctIdx,
   }));
 
   const q = {
-    id: crypto.randomUUID(),
+    id: uid(),
     text: content,
     explanation,
     audioPath,
@@ -287,38 +299,32 @@ export function validateDraftToQuestion(draft, opts = {}) {
 
   // ✅ GIỮ SLOT OPTIONS (không filter trước để giữ index A/B/C/D...)
   const optionsArr = Array.isArray(draft?.options) ? draft.options : [];
-  const slots = optionsArr.map((o) => ({
-    ...o,
-    text: norm(o?.text),
-  }));
+  // ✅ giữ nguyên slot, KHÔNG filter
+  const slots = optionsArr.map((o) => ({ ...o, text: norm(o?.text) }));
 
+  // đếm số option có text
   const filledCount = slots.filter((o) => o.text.length > 0).length;
 
-  // ✅ correctIndex luôn là index theo slot
-  const correctIndexNum =
-    draft?.correctIndex === null || draft?.correctIndex === undefined
-      ? null
-      : Number(draft.correctIndex);
-
-  const correctIdx = Number.isFinite(correctIndexNum)
-    ? correctIndexNum
+  // correctIndex là index theo slot
+  const correctIdx = Number.isFinite(draft?.correctIndex)
+    ? Number(draft.correctIndex)
     : parseCorrect(draft?.correct);
 
+  // validate cơ bản
   const issues = [];
   if (!content) issues.push("Thiếu nội dung câu hỏi.");
   if (filledCount < 2) issues.push("Cần ít nhất 2 đáp án.");
 
-  // ✅ bắt gap: không cho option trống xen kẽ (nếu bạn muốn rule này khi sửa UI)
-  // Nếu bạn muốn user được phép xóa option => bỏ đoạn này.
-  // Ở đây giữ đúng rule: phải liên tục từ A..last
+  // ✅ bắt gap theo rule liên tục A..last (nếu bạn muốn giữ rule này)
   let last = -1;
   for (let i = 0; i < slots.length; i++) {
     if (slots[i].text) last = i;
   }
   if (last >= 0) {
     for (let i = 0; i <= last; i++) {
-      if (!slots[i].text)
+      if (!slots[i].text) {
         issues.push(`Thiếu đáp án ở option ${String.fromCharCode(65 + i)}.`);
+      }
     }
   }
 
@@ -342,14 +348,14 @@ export function validateDraftToQuestion(draft, opts = {}) {
   const finalSlots = last >= 0 ? slots.slice(0, last + 1) : slots;
 
   const options = finalSlots.map((o, i) => ({
-    id: crypto.randomUUID(),
+    id: uid(),
     text: o.text,
     correct: i === correctIdx,
     isCorrect: i === correctIdx,
   }));
 
   const q = {
-    id: crypto.randomUUID(),
+    id: uid(),
     text: content,
     explanation,
     audioPath,
