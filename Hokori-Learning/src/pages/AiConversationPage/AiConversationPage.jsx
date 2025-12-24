@@ -22,7 +22,6 @@ const MAX_AUDIO_MB = 1.3;
 const SCENARIO_MIN = 5;
 const SCENARIO_MAX = 200;
 
-
 /* ===============================
    Helper: bỏ romaji trong ngoặc ()
 ================================ */
@@ -53,7 +52,6 @@ const normalizeRole = (role) => {
   return r.includes("user") ? "user" : "ai";
 };
 
-
 const normalizeHistory = (arr) =>
   (Array.isArray(arr) ? arr : []).map((m) => ({
     ...m,
@@ -80,33 +78,67 @@ const playBase64Audio = (base64) => {
     return false;
   }
 };
+let __ttsBusy = false;
+let __lastSpoken = "";
+let __lastTime = 0;
 
-/* ===============================
-   FE TTS – chỉ đọc tiếng Nhật thuần
-   - Bỏ nội dung trong ()
-   - Bỏ tiếng Việt
-================================ */
 const speakJapanese = (text = "") => {
-  if (!text) return;
+  if (!text || __ttsBusy) return;
 
-  // 1. bỏ romaji trong ()
-  let jpOnly = text.replace(/\([^)]*\)/g, "").trim();
+  // 1️⃣ trích xuất ký tự Nhật
+  const jpParts = String(text)
+    .replace(/\([^)]*\)/g, "")
+    .match(/[\u3040-\u30FF\u4E00-\u9FFF]+/g);
 
-  // 2. chỉ giữ ký tự Nhật (kana + kanji)
-  jpOnly = jpOnly.replace(/[^\u3040-\u30FF\u4E00-\u9FAF\s]/g, "").trim();
+  if (!jpParts || !jpParts.length) return;
 
-  if (!jpOnly) return;
+  const jpOnly = jpParts.join(" ");
 
-  try {
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(jpOnly);
-    utter.lang = "ja-JP";
-    utter.rate = 0.95;
-    utter.pitch = 1;
-    window.speechSynthesis.speak(utter);
-  } catch (e) {
-    console.warn("TTS error:", e);
+  const now = Date.now();
+  if (jpOnly === __lastSpoken && now - __lastTime < 1000) return;
+
+  __lastSpoken = jpOnly;
+  __lastTime = now;
+
+  const synth = window.speechSynthesis;
+  if (!synth) return;
+
+  const speakNow = () => {
+    __ttsBusy = true;
+    synth.cancel();
+
+    setTimeout(() => {
+      const utter = new SpeechSynthesisUtterance(jpOnly);
+      utter.lang = "ja-JP";
+      utter.rate = 0.95;
+      utter.pitch = 1;
+
+      utter.onend = () => {
+        __ttsBusy = false;
+      };
+      utter.onerror = () => {
+        __ttsBusy = false;
+      };
+
+      synth.speak(utter);
+    }, 120);
+  };
+
+  //  QUAN TRỌNG: đợi voice load
+  //  chỉ cho phép bind voiceschanged 1 lần duy nhất
+  if (!synth.__jpVoiceReady) {
+    const voices = synth.getVoices();
+    if (voices.length === 0) {
+      synth.__jpVoiceReady = true;
+      synth.onvoiceschanged = () => {
+        synth.onvoiceschanged = null;
+      };
+      return; //  chưa nói
+    }
   }
+
+  // nói NGAY – không đợi voiceschanged nữa
+  speakNow();
 };
 
 export default function AiConversationPage() {
@@ -320,8 +352,7 @@ export default function AiConversationPage() {
     setHistory(hist);
 
     const firstAI = hist?.[0];
-    const played = playBase64Audio(data.audioUrl);
-    if (!played) speakJapanese(stripRomaji(firstAI?.text));
+    speakJapanese(firstAI?.text);
 
     setAiTyping(false);
   };
@@ -405,8 +436,7 @@ export default function AiConversationPage() {
       const lastAI = [...hist].reverse().find((m) => m.role === "ai");
 
       // play audio / TTS
-      const played = playBase64Audio(data.audioUrl);
-      if (!played) speakJapanese(stripRomaji(lastAI?.text));
+      speakJapanese(lastAI?.text);
 
       // AI gõ xong
       setAiTyping(false);
@@ -446,6 +476,7 @@ export default function AiConversationPage() {
 
     setEndResult(res?.data?.data || null);
   };
+  
 
   /* ===============================
      RESET
