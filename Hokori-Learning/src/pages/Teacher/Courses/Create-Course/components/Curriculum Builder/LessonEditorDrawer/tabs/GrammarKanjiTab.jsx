@@ -49,6 +49,13 @@ const detectAssetKind = ({ file, url }) => {
 
   return { isVideo, isAudio, isImage, isPdf };
 };
+const VIDEO_ACCEPT = "video/*,.mp4,.mov,.webm,.mkv";
+
+const isFileAllowedByType = (tabType, file) => {
+  if (tabType !== "GRAMMAR") return true; // KANJI: cho tất cả
+  const kind = detectAssetKind({ file, url: file?.name });
+  return kind.isVideo; // GRAMMAR: chỉ video
+};
 
 const loadMediaDuration = (src) =>
   new Promise((resolve) => {
@@ -112,7 +119,14 @@ export default function GrammarKanjiTab({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lesson?.id, section?.id, type]);
 
-  const handleSelectMedia = ({ file, onSuccess }) => {
+  const handleSelectMedia = ({ file, onSuccess, onError }) => {
+    // ✅ GRAMMAR chỉ nhận video
+    if (!isFileAllowedByType(type, file)) {
+      toast.error("Phần Grammar chỉ cho phép upload video (mp4/mov/webm/mkv).");
+      onError?.(new Error("Only video allowed"));
+      return;
+    }
+
     const url = URL.createObjectURL(file);
     setMediaState((prev) => {
       if (prev.previewUrl && prev.previewUrl.startsWith("blob:")) {
@@ -356,8 +370,8 @@ export default function GrammarKanjiTab({
         <Form.Item
           label={
             type === "GRAMMAR"
-              ? "Nội dung chính (Video/Audio/Image/File)"
-              : "Nội dung chính (Video/Audio/Image/File)"
+              ? "Nội dung chính (chỉ Video)"
+              : "Nội dung chính (Video / Image / File)"
           }
         >
           {mediaState.previewUrl ? (
@@ -373,9 +387,11 @@ export default function GrammarKanjiTab({
                     multiple={false}
                     showUploadList={false}
                     customRequest={handleSelectMedia}
+                    accept={type === "GRAMMAR" ? VIDEO_ACCEPT : undefined}
                   >
                     <Button>Thay đổi file</Button>
                   </Upload>
+
                   <Button
                     danger
                     onClick={() =>
@@ -397,13 +413,17 @@ export default function GrammarKanjiTab({
               multiple={false}
               showUploadList={false}
               customRequest={handleSelectMedia}
+              accept={type === "GRAMMAR" ? VIDEO_ACCEPT : undefined}
             >
               <p className="ant-upload-drag-icon">
                 <InboxOutlined />
               </p>
               <p className="ant-upload-text">
-                Click hoặc kéo thả file (video / ảnh / audio / tài liệu) vào đây
+                {type === "GRAMMAR"
+                  ? "Click hoặc kéo thả video vào đây"
+                  : "Click hoặc kéo thả file (video / ảnh / audio / tài liệu) vào đây"}
               </p>
+
               <Text type="secondary">
                 Bạn có thể chỉ upload file, hoặc chỉ nhập tài liệu đọc (phía
                 dưới), hoặc dùng cả hai.
