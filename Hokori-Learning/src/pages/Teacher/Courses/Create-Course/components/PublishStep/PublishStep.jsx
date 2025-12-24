@@ -11,6 +11,29 @@ import {
 
 import styles from "./styles.module.scss";
 import { toast } from "react-toastify";
+const mapStatusVi = (status) => {
+  if (!status) return "Bản nháp";
+
+  switch (status) {
+    case "DRAFT":
+      return "Bản nháp";
+
+    case "PENDING_APPROVAL":
+      return "Chờ duyệt";
+
+    case "PUBLISHED":
+      return "Đã xuất bản";
+
+    case "FLAGGED":
+      return "Bị báo cáo";
+
+    case "REJECTED":
+      return "Bị từ chối";
+
+    default:
+      return status;
+  }
+};
 
 /**
  * Props:
@@ -40,10 +63,10 @@ export default function PublishStep({ courseId, statusFlags, onBack }) {
   const isPending = currentCourseMeta?.status === "PENDING_APPROVAL";
 
   const submitBtnText = isPending
-    ? "In review"
+    ? "Đang chờ duyệt"
     : isPublished
-    ? "Update course info"
-    : "Gửi kiểm duyệt";
+    ? "Cập nhật thông tin khóa học"
+    : "Gửi xét duyệt";
 
   const canSubmit = readyToPublish && !isPending;
 
@@ -167,7 +190,7 @@ export default function PublishStep({ courseId, statusFlags, onBack }) {
         <div className={styles.row}>
           <span className={styles.label}>Trạng thái</span>
           <span className={styles.value}>
-            {currentCourseMeta?.status || "DRAFT"}
+            {mapStatusVi(currentCourseMeta?.status)}
           </span>
         </div>
       </div>

@@ -150,30 +150,13 @@ export default function ManageQueues() {
       title: "Trạng thái",
       dataIndex: "status",
       width: 150,
-      render: (s) => {
-        const readable =
-          s === "PENDING_APPROVAL"
-            ? "Pending approval"
-            : s === "PUBLISHED"
-            ? "Published"
-            : s === "DRAFT"
-            ? "Draft"
-            : s || "Unknown";
-        const color =
-          s === "PENDING_APPROVAL"
-            ? "gold"
-            : s === "PUBLISHED"
-            ? "green"
-            : s === "DRAFT"
-            ? "default"
-            : "default";
-        return (
-          <Tag color={color} className={styles.statusTag}>
-            {readable}
-          </Tag>
-        );
-      },
+      render: () => (
+        <Tag color="gold" className={styles.statusTag}>
+          Chờ duyệt
+        </Tag>
+      ),
     },
+
     {
       title: "Hành động",
       key: "actions",
@@ -189,9 +172,7 @@ export default function ManageQueues() {
                 state: { course: row },
               })
             }
-          >
-            Review
-          </Button>
+          ></Button>
           <Button
             size="small"
             type="primary"

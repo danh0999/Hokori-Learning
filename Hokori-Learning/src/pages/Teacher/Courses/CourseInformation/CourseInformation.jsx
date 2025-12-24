@@ -1,7 +1,17 @@
 // src/pages/Teacher/Courses/CourseInformation/CourseInformation.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Card, Tabs, Button, Tag, Space } from "antd";
+import {
+  Card,
+  Tabs,
+  Button,
+  Tag,
+  Space,
+  Divider,
+  Collapse,
+  Empty,
+  Typography,
+} from "antd";
 import { useDispatch, useSelector } from "react-redux";
 
 import CourseOverview from "../Create-Course/components/CourseOverview/CourseOverview.jsx";
@@ -24,24 +34,22 @@ import {
 import styles from "./styles.module.scss";
 import { toast } from "react-toastify";
 
+const { Text } = Typography;
+
 const statusColor = {
   DRAFT: "default",
   PENDING_APPROVAL: "gold",
   PUBLISHED: "success",
   REJECTED: "error",
   FLAGGED: "warning",
-  ARCHIVED: "default",
-  REVIEW: "gold",
 };
 
 const statusLabel = {
-  DRAFT: "Draft",
-  PENDING_APPROVAL: "Pending approval",
-  PUBLISHED: "Published",
-  REJECTED: "Rejected",
-  FLAGGED: "Flagged",
-  ARCHIVED: "Archived",
-  REVIEW: "Pending approval",
+  DRAFT: "Bản nháp",
+  PENDING_APPROVAL: "Chờ duyệt",
+  PUBLISHED: "Đã xuất bản",
+  REJECTED: "Bị từ chối",
+  FLAGGED: "Bị báo cáo",
 };
 
 function formatDateTime(isoString) {
@@ -52,11 +60,74 @@ function formatDateTime(isoString) {
     return isoString;
   }
 }
+
 function getLatestFlagReason(flagInfo) {
   if (!flagInfo?.flags || flagInfo.flags.length === 0) return null;
-
   // Giả định BE đã sort newest → oldest
   return flagInfo.flags[0]?.reason || null;
+}
+
+/** =========================
+ *  Helpers for rejection detail mapping
+ *  ========================= */
+function buildIdTitleMaps(courseTree) {
+  const chapterMap = new Map(); // chapterId -> title
+  const lessonMap = new Map(); // lessonId -> title
+  const sectionMap = new Map(); // sectionId -> title
+
+  const chapters = courseTree?.chapters || [];
+  for (const ch of chapters) {
+    if (ch?.id != null) chapterMap.set(ch.id, ch.title || `Chapter #${ch.id}`);
+
+    for (const ls of ch?.lessons || []) {
+      if (ls?.id != null) lessonMap.set(ls.id, ls.title || `Lesson #${ls.id}`);
+
+      for (const sec of ls?.sections || []) {
+        if (sec?.id != null) {
+          const st = sec.title || sec.studyType || `Section #${sec.id}`;
+          sectionMap.set(sec.id, st);
+        }
+      }
+    }
+  }
+
+  return { chapterMap, lessonMap, sectionMap };
+}
+
+function hasAnyStructuredReason(detail) {
+  if (!detail || typeof detail !== "object") return false;
+
+  const top =
+    detail.general ||
+    detail.title ||
+    detail.subtitle ||
+    detail.description ||
+    detail.coverImage ||
+    detail.price;
+
+  const hasArr =
+    (Array.isArray(detail.chapters) && detail.chapters.length > 0) ||
+    (Array.isArray(detail.lessons) && detail.lessons.length > 0) ||
+    (Array.isArray(detail.sections) && detail.sections.length > 0);
+
+  return Boolean(top || hasArr);
+}
+
+function renderTopReasonRow(label, value, onJump) {
+  if (!value) return null;
+  return (
+    <div className={styles.rejectedRow}>
+      <div className={styles.rejectedRowLabel}>{label}</div>
+      <div className={styles.rejectedRowValue}>
+        {value}
+        {onJump ? (
+          <Button type="link" size="small" onClick={onJump}>
+            (Xem)
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  );
 }
 
 export default function CourseInformation() {
@@ -101,8 +172,8 @@ export default function CourseInformation() {
    * - rejected, draft: sửa toàn bộ
    */
   const lockAll = isPendingApproval || isPublished; // khóa toàn bộ UI edit
-  const lockMeta = lockAll || isFlagged; // khóa overview + pricing + header save (vì save header là meta)
-  const lockCurriculum = lockAll; // khóa curriculum chỉ khi pending/published; FLAGGED vẫn được sửa curriculum
+  const lockMeta = lockAll || isFlagged; // khóa overview + pricing + header save
+  const lockCurriculum = lockAll; // FLAGGED vẫn được sửa curriculum
 
   // ====== FETCH FLAG REASON ======
   useEffect(() => {
@@ -142,17 +213,12 @@ export default function CourseInformation() {
   };
 
   // ====== HEADER ACTIONS ======
-  /**
-   * Header "Lưu" = save lại meta đang có trong store (để chắc chắn sync BE).
-   * - FLAGGED: không cho dùng vì teacher chỉ được sửa nội dung (curriculum).
-   * - PUBLISHED/PENDING: khóa.
-   */
   const handleSaveDraft = async () => {
     if (lockMeta) {
       toast.warning(
         isFlagged
-          ? "Khóa học đang FLAGGED: chỉ được chỉnh sửa nội dung (Curriculum), không được lưu thay đổi thông tin khóa học."
-          : "Khóa học đang Published hoặc Pending approval, không thể lưu."
+          ? "Khóa học đang bị báo cáo: chỉ được chỉnh sửa nội dung, không được lưu thay đổi thông tin khóa học."
+          : "Khóa học đang được xuất bản hoặc đang chờ duyệt, không thể lưu."
       );
       return;
     }
@@ -172,12 +238,11 @@ export default function CourseInformation() {
   };
 
   const handleSubmitForReview = async () => {
-    // pending/published: khóa; flagged: dùng nút riêng resubmit
     if (lockAll || isFlagged) {
       toast.warning(
         isFlagged
-          ? "Khóa học đang FLAGGED: hãy sửa nội dung và bấm “Nộp lại sau khi sửa”."
-          : "Khóa học đang Published hoặc Pending approval, không thể nộp duyệt."
+          ? "Khóa học đang bị báo cáo: hãy sửa nội dung và bấm “Nộp lại sau khi sửa”."
+          : "Khóa học đang được xuất bản hoặc đang chờ duyệt, không thể nộp duyệt."
       );
       return;
     }
@@ -199,7 +264,6 @@ export default function CourseInformation() {
   };
 
   const handleUnpublish = async () => {
-    // bạn đang dùng disableEditing check, giữ logic: pending thì không cho
     if (isPendingApproval) {
       toast.warning("Khóa học đang Pending approval, không thể thao tác.");
       return;
@@ -268,6 +332,10 @@ export default function CourseInformation() {
   const disableSubmitButton =
     !canSubmit || saving || status === "PENDING_APPROVAL" || lockAll;
 
+  const { chapterMap, lessonMap, sectionMap } = useMemo(
+    () => buildIdTitleMaps(currentCourseTree),
+    [currentCourseTree]
+  );
   if (!courseId) {
     return (
       <div className={styles.wrap}>
@@ -278,8 +346,56 @@ export default function CourseInformation() {
       </div>
     );
   }
+  const rejectionDetail = currentCourseMeta?.rejectionReasonDetail || null;
+  const hasStructured = hasAnyStructuredReason(rejectionDetail);
+  const hasRejectionInfo =
+    !!currentCourseMeta?.rejectionReason || Boolean(hasStructured);
 
-  const hasRejectionInfo = !!currentCourseMeta?.rejectionReason;
+  // Helper render item reasons list
+  const renderItemReasons = (
+    title,
+    items,
+    idToTitleMap,
+    onJumpToCurriculum
+  ) => {
+    if (!Array.isArray(items) || items.length === 0) return null;
+
+    return (
+      <div className={styles.rejectedGroup}>
+        <div className={styles.rejectedGroupHeader}>
+          <div className={styles.rejectedGroupTitle}>{title}</div>
+          {onJumpToCurriculum ? (
+            <Button type="link" size="small" onClick={onJumpToCurriculum}>
+              Xem trong nội dung
+            </Button>
+          ) : null}
+        </div>
+
+        <div className={styles.rejectedGroupBody}>
+          {items.map((it, idx) => {
+            const name =
+              idToTitleMap?.get(it?.id) || (it?.id != null ? `#${it.id}` : "—");
+            const reason = it?.reason || "";
+            if (!reason) return null;
+
+            return (
+              <div key={`${it?.id ?? idx}`} className={styles.rejectedItemRow}>
+                <div className={styles.rejectedItemTitle}>
+                  <Text strong>{name}</Text>
+                  {it?.id != null ? (
+                    <Text type="secondary" style={{ marginLeft: 8 }}>
+                      (ID: {it.id})
+                    </Text>
+                  ) : null}
+                </div>
+                <div className={styles.rejectedItemReason}>{reason}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className={styles.wrap}>
@@ -303,7 +419,7 @@ export default function CourseInformation() {
             {statusLabel[status] || status}
           </Tag>
 
-          {/* Header save: chỉ dùng cho DRAFT/REJECTED (meta editable) */}
+          {/* Header save */}
           <Button
             onClick={handleSaveDraft}
             loading={saving || loadingMeta}
@@ -328,7 +444,11 @@ export default function CourseInformation() {
               Nộp lại sau khi sửa
             </Button>
           ) : status === "PUBLISHED" ? (
-            <></>
+            <>
+              <Button onClick={handleUnpublish} loading={saving}>
+                Hủy xuất bản
+              </Button>
+            </>
           ) : status === "PENDING_APPROVAL" ? null : (
             <Button
               type="primary"
@@ -342,22 +462,119 @@ export default function CourseInformation() {
         </Space>
       </div>
 
-      {/* REJECTION INFO BLOCK */}
+      {/* ✅ REJECTION INFO BLOCK (UPDATED: show detail per part) */}
       {isRejected && hasRejectionInfo && (
         <Card className={styles.rejectedCard}>
           <div className={styles.rejectedHeader}>
-            <Tag color="error">Rejected</Tag>
+            <Tag color="error">Bị từ chối</Tag>
             <span className={styles.rejectedTitle}>
               Khóa học này đã bị từ chối duyệt
             </span>
           </div>
 
           <div className={styles.rejectedBody}>
-            <div className={styles.rejectedReasonLabel}>Lý do:</div>
-            <div className={styles.rejectedReasonText}>
-              {currentCourseMeta.rejectionReason}
-            </div>
+            {/* Simple reason (backward compatible) */}
+            {currentCourseMeta?.rejectionReason && (
+              <>
+                <div className={styles.rejectedReasonLabel}>Tóm tắt:</div>
+                <div className={styles.rejectedReasonText}>
+                  {currentCourseMeta.rejectionReason}
+                </div>
+              </>
+            )}
 
+            {/* Structured reasons */}
+            <Divider style={{ margin: "12px 0" }} />
+
+            {!hasStructured ? (
+              <Empty
+                description="Không có lý do chi tiết (structured) từ moderator."
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+              />
+            ) : (
+              <Collapse
+                defaultActiveKey={["detail"]}
+                items={[
+                  {
+                    key: "detail",
+                    label: "Xem lý do chi tiết theo từng phần",
+                    children: (
+                      <div>
+                        {/* TOP-LEVEL reasons */}
+                        <div className={styles.rejectedSectionTitle}>
+                          Thông tin khóa học
+                        </div>
+
+                        {renderTopReasonRow("Chung", rejectionDetail?.general)}
+                        {renderTopReasonRow(
+                          "Tiêu đề",
+                          rejectionDetail?.title,
+                          () => setActiveKey("basic")
+                        )}
+                        {renderTopReasonRow(
+                          "Mô tả phụ",
+                          rejectionDetail?.subtitle,
+                          () => setActiveKey("basic")
+                        )}
+                        {renderTopReasonRow(
+                          "Mô tả chi tiết",
+                          rejectionDetail?.description,
+                          () => setActiveKey("basic")
+                        )}
+                        {renderTopReasonRow(
+                          "Ảnh bìa",
+                          rejectionDetail?.coverImage,
+                          () => setActiveKey("basic")
+                        )}
+                        {renderTopReasonRow("Giá", rejectionDetail?.price, () =>
+                          setActiveKey("settings")
+                        )}
+
+                        <Divider style={{ margin: "12px 0" }} />
+
+                        <div className={styles.rejectedSectionTitle}>
+                          Nội dung khóa học (Curriculum)
+                        </div>
+
+                        {renderItemReasons(
+                          "Chapters",
+                          rejectionDetail?.chapters,
+                          chapterMap,
+                          () => setActiveKey("curriculum")
+                        )}
+
+                        {renderItemReasons(
+                          "Lessons",
+                          rejectionDetail?.lessons,
+                          lessonMap,
+                          () => setActiveKey("curriculum")
+                        )}
+
+                        {renderItemReasons(
+                          "Sections",
+                          rejectionDetail?.sections,
+                          sectionMap,
+                          () => setActiveKey("curriculum")
+                        )}
+
+                        {/* If none of arrays have content */}
+                        {!(
+                          (rejectionDetail?.chapters?.length || 0) +
+                          (rejectionDetail?.lessons?.length || 0) +
+                          (rejectionDetail?.sections?.length || 0)
+                        ) && (
+                          <Text type="secondary">
+                            Không có lý do chi tiết theo Chapter/Lesson/Section.
+                          </Text>
+                        )}
+                      </div>
+                    ),
+                  },
+                ]}
+              />
+            )}
+
+            {/* meta */}
             <div className={styles.rejectedMeta}>
               {currentCourseMeta.rejectedByUserName && (
                 <span>
@@ -377,7 +594,13 @@ export default function CourseInformation() {
           </div>
 
           <div className={styles.rejectedActions}>
-            <Space>
+            <Space wrap>
+              <Button onClick={() => setActiveKey("basic")}>
+                Xem tổng quan
+              </Button>
+              <Button onClick={() => setActiveKey("curriculum")}>
+                Xem nội dung
+              </Button>
               <Button
                 type="primary"
                 onClick={handleSubmitForReview}
@@ -395,7 +618,7 @@ export default function CourseInformation() {
       {isFlagged && (
         <Card className={styles.flaggedCard}>
           <div className={styles.flaggedHeader}>
-            <Tag color="warning">Flagged</Tag>
+            <Tag color="warning">Bị báo cáo</Tag>
             <span className={styles.flaggedTitle}>
               Khóa học này đã bị báo cáo bởi người dùng
             </span>

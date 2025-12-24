@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Card,
   Collapse,
@@ -9,6 +9,10 @@ import {
   Spin,
   Empty,
   Button,
+  Modal,
+  Input,
+  Tooltip,
+  Popconfirm,
 } from "antd";
 import {
   PlayCircleOutlined,
@@ -20,10 +24,25 @@ import {
   RightOutlined,
   DownOutlined,
   FileTextOutlined,
+  PlusOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
+
+import { useDispatch } from "react-redux";
+import { toast } from "react-toastify";
 
 import styles from "./CourseCurriculumView.module.scss";
 import api from "../../../../configs/axios";
+
+import {
+  createChapterThunk,
+  updateChapterThunk,
+  deleteChapterThunk,
+  createLessonThunk,
+  updateLessonThunk,
+  deleteLessonThunk,
+  fetchCourseTree,
+} from "../../../../redux/features/teacherCourseSlice.js";
 
 const { Panel } = Collapse;
 const { Text } = Typography;
@@ -80,9 +99,13 @@ export default function CourseCurriculumView({
   loading,
   onEditLesson,
   disableEditing,
+  readOnly,
 }) {
+  const dispatch = useDispatch();
+
   const [selectedContent, setSelectedContent] = useState(null);
   const [openSectionIds, setOpenSectionIds] = useState([]);
+  const isReadOnly = Boolean(readOnly || disableEditing);
 
   const [quizPreview, setQuizPreview] = useState({
     quiz: null,
@@ -100,7 +123,34 @@ export default function CourseCurriculumView({
     error: null,
   });
 
+  // ===== NEW: modals for chapter/lesson =====
+  const [editChapterModal, setEditChapterModal] = useState({
+    open: false,
+    chapterId: null,
+    title: "",
+  });
+  const [addChapterModal, setAddChapterModal] = useState({
+    open: false,
+    title: "",
+    summary: "",
+    isTrial: false,
+  });
+
+  const [editLessonModal, setEditLessonModal] = useState({
+    open: false,
+    lessonId: null,
+    title: "",
+  });
+  const [addLessonModal, setAddLessonModal] = useState({
+    open: false,
+    chapterId: null,
+    title: "",
+  });
+
+  const [savingLocal, setSavingLocal] = useState(false);
+
   const chapters = courseTree?.chapters || [];
+  const courseId = courseMeta?.id ?? courseTree?.id ?? null;
 
   const thumbUrl =
     courseMeta?.thumbnailUrl ||
@@ -108,20 +158,21 @@ export default function CourseCurriculumView({
     courseMeta?.imageUrl ||
     null;
 
-  const totalLessons = chapters.reduce(
-    (sum, ch) => sum + (ch.lessons?.length || 0),
-    0
-  );
+  const totalLessons = useMemo(() => {
+    return chapters.reduce((sum, ch) => sum + (ch.lessons?.length || 0), 0);
+  }, [chapters]);
 
-  const totalDurationSec = chapters.reduce((sum, ch) => {
-    return (
-      sum +
-      (ch.lessons || []).reduce(
-        (lsSum, les) => lsSum + (les.totalDurationSec || 0),
-        0
-      )
-    );
-  }, 0);
+  const totalDurationSec = useMemo(() => {
+    return chapters.reduce((sum, ch) => {
+      return (
+        sum +
+        (ch.lessons || []).reduce(
+          (lsSum, les) => lsSum + (les.totalDurationSec || 0),
+          0
+        )
+      );
+    }, 0);
+  }, [chapters]);
 
   /* -----------------------------
      Icon cho từng loại content
@@ -153,7 +204,6 @@ export default function CourseCurriculumView({
      Chọn content (flashcard, asset,...)
   ----------------------------- */
   const handleSelectContent = async (content) => {
-    // click lại content đang chọn → đóng
     if (selectedContent?.id === content.id) {
       setSelectedContent(null);
       setFlashcardPreview({
@@ -241,7 +291,7 @@ export default function CourseCurriculumView({
   };
 
   /* -----------------------------
-     View quiz theo SECTION (NEW)
+     View quiz theo SECTION
   ----------------------------- */
   const handleViewQuizBySection = async (section) => {
     if (!section?.id) return;
@@ -518,6 +568,189 @@ export default function CourseCurriculumView({
     );
   };
 
+  /* =============================
+     ✅ NEW: Chapter/Lesson actions
+     ============================= */
+
+  const openEditChapter = (ch) => {
+    if (isReadOnly) return;
+    setEditChapterModal({
+      open: true,
+      chapterId: ch?.id ?? null,
+      title: ch?.title ?? "",
+    });
+  };
+
+  const openAddChapter = () => {
+    if (isReadOnly) return;
+    setAddChapterModal({
+      open: true,
+      title: "",
+      summary: "",
+      isTrial: false,
+    });
+  };
+
+  const openEditLesson = (lesson) => {
+    if (isReadOnly) return;
+    setEditLessonModal({
+      open: true,
+      lessonId: lesson?.id ?? null,
+      title: lesson?.title ?? "",
+    });
+  };
+
+  const openAddLesson = (chapterId) => {
+    if (isReadOnly) return;
+    setAddLessonModal({
+      open: true,
+      chapterId,
+      title: "",
+    });
+  };
+
+  const handleConfirmEditChapter = async () => {
+    const chapterId = editChapterModal.chapterId;
+    const title = (editChapterModal.title || "").trim();
+    if (!chapterId) return;
+    if (!title) {
+      toast.error("Tên chapter không được để trống.");
+      return;
+    }
+
+    setSavingLocal(true);
+    try {
+      await dispatch(
+        updateChapterThunk({ chapterId, data: { title } })
+      ).unwrap();
+      toast.success("Đã cập nhật tên chapter.");
+      setEditChapterModal({ open: false, chapterId: null, title: "" });
+
+      // Optional: reload tree để chắc chắn data đồng bộ
+      if (courseId) dispatch(fetchCourseTree(courseId));
+    } catch (e) {
+      toast.error(e || "Cập nhật chapter thất bại.");
+    } finally {
+      setSavingLocal(false);
+    }
+  };
+
+  const handleConfirmAddChapter = async () => {
+    if (!courseId) {
+      toast.error("Thiếu courseId.");
+      return;
+    }
+    const title = (addChapterModal.title || "").trim();
+    if (!title) {
+      toast.error("Tên chapter không được để trống.");
+      return;
+    }
+
+    setSavingLocal(true);
+    try {
+      // BE thường nhận: {title, summary, isTrial}
+      const data = {
+        title,
+        summary: (addChapterModal.summary || "").trim(),
+        isTrial: Boolean(addChapterModal.isTrial),
+      };
+
+      await dispatch(createChapterThunk({ courseId, data })).unwrap();
+      toast.success("Đã thêm chapter.");
+      setAddChapterModal({
+        open: false,
+        title: "",
+        summary: "",
+        isTrial: false,
+      });
+
+      if (courseId) dispatch(fetchCourseTree(courseId));
+    } catch (e) {
+      toast.error(e || "Thêm chapter thất bại.");
+    } finally {
+      setSavingLocal(false);
+    }
+  };
+
+  const handleConfirmEditLesson = async () => {
+    const lessonId = editLessonModal.lessonId;
+    const title = (editLessonModal.title || "").trim();
+    if (!lessonId) return;
+    if (!title) {
+      toast.error("Tên lesson không được để trống.");
+      return;
+    }
+
+    setSavingLocal(true);
+    try {
+      await dispatch(updateLessonThunk({ lessonId, data: { title } })).unwrap();
+      toast.success("Đã cập nhật tên lesson.");
+      setEditLessonModal({ open: false, lessonId: null, title: "" });
+
+      if (courseId) dispatch(fetchCourseTree(courseId));
+    } catch (e) {
+      toast.error(e || "Cập nhật lesson thất bại.");
+    } finally {
+      setSavingLocal(false);
+    }
+  };
+
+  const handleConfirmAddLesson = async () => {
+    const chapterId = addLessonModal.chapterId;
+    const title = (addLessonModal.title || "").trim();
+    if (!chapterId) return;
+    if (!title) {
+      toast.error("Tên lesson không được để trống.");
+      return;
+    }
+
+    setSavingLocal(true);
+    try {
+      const data = { title };
+      await dispatch(createLessonThunk({ chapterId, data })).unwrap();
+      toast.success("Đã thêm lesson.");
+      setAddLessonModal({ open: false, chapterId: null, title: "" });
+
+      if (courseId) dispatch(fetchCourseTree(courseId));
+    } catch (e) {
+      toast.error(e || "Thêm lesson thất bại.");
+    } finally {
+      setSavingLocal(false);
+    }
+  };
+
+  const confirmDeleteChapter = async (chapterId) => {
+    if (isReadOnly) return;
+    if (!chapterId) return;
+
+    setSavingLocal(true);
+    try {
+      await dispatch(deleteChapterThunk(chapterId)).unwrap();
+      toast.success("Đã xóa chapter.");
+      if (courseId) dispatch(fetchCourseTree(courseId));
+    } catch (e) {
+      toast.error(e || "Xóa chapter thất bại.");
+    } finally {
+      setSavingLocal(false);
+    }
+  };
+
+  const confirmDeleteLesson = async (chapterId, lessonId) => {
+    if (isReadOnly) return;
+    if (!chapterId || !lessonId) return;
+
+    setSavingLocal(true);
+    try {
+      await dispatch(deleteLessonThunk({ chapterId, lessonId })).unwrap();
+      toast.success("Đã xóa lesson.");
+      if (courseId) dispatch(fetchCourseTree(courseId));
+    } catch (e) {
+      toast.error(e || "Xóa lesson thất bại.");
+    } finally {
+      setSavingLocal(false);
+    }
+  };
+
   /* -----------------------------
      Loading / Empty
   ----------------------------- */
@@ -531,10 +764,23 @@ export default function CourseCurriculumView({
 
   if (!chapters.length) {
     return (
-      <Empty
-        description="Course này chưa có curriculum."
-        image={Empty.PRESENTED_IMAGE_SIMPLE}
-      />
+      <div>
+        {!isReadOnly && (
+          <div style={{ marginBottom: 12 }}>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={openAddChapter}
+            >
+              Thêm chapter
+            </Button>
+          </div>
+        )}
+        <Empty
+          description="Course này chưa có curriculum."
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+        />
+      </div>
     );
   }
 
@@ -545,26 +791,41 @@ export default function CourseCurriculumView({
     <div className={styles.layoutSingle}>
       {/* Summary course */}
       <Card className={styles.courseSummary} size="small">
-        <Space align="start">
-          {thumbUrl && (
-            <div className={styles.thumbBox}>
-              <img
-                src={thumbUrl}
-                alt="Thumbnail"
-                className={styles.thumbImage}
-              />
+        <Space
+          align="start"
+          style={{ width: "100%", justifyContent: "space-between" }}
+        >
+          <Space align="start">
+            {thumbUrl && (
+              <div className={styles.thumbBox}>
+                <img
+                  src={thumbUrl}
+                  alt="Thumbnail"
+                  className={styles.thumbImage}
+                />
+              </div>
+            )}
+            <div>
+              <Text strong>{courseMeta?.title}</Text>
+              <br />
+              <Text type="secondary">
+                {chapters.length} chapter(s) · {totalLessons} lesson(s)
+                {totalDurationSec > 0 && (
+                  <> · ~{formatDuration(totalDurationSec)}</>
+                )}
+              </Text>
             </div>
+          </Space>
+
+          {!isReadOnly && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={openAddChapter}
+            >
+              Thêm chương
+            </Button>
           )}
-          <div>
-            <Text strong>{courseMeta?.title}</Text>
-            <br />
-            <Text type="secondary">
-              {chapters.length} chapter(s) · {totalLessons} lesson(s)
-              {totalDurationSec > 0 && (
-                <> · ~{formatDuration(totalDurationSec)}</>
-              )}
-            </Text>
-          </div>
         </Space>
       </Card>
 
@@ -573,9 +834,59 @@ export default function CourseCurriculumView({
         {chapters.map((ch) => (
           <Panel
             header={
-              <Space>
-                <Text strong>{ch.title}</Text>
-                <Tag>{(ch.lessons || []).length} Bài</Tag>
+              <Space style={{ width: "100%", justifyContent: "space-between" }}>
+                <Space>
+                  <Text strong>{ch.title}</Text>
+                  <Tag>{(ch.lessons || []).length} Bài</Tag>
+                </Space>
+
+                <Space>
+                  {!isReadOnly && (
+                    <>
+                      <Tooltip title="Đổi tên chapter">
+                        <Button
+                          size="small"
+                          icon={<EditOutlined />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditChapter(ch);
+                          }}
+                        />
+                      </Tooltip>
+                      <Popconfirm
+                        title="Xóa chapter?"
+                        description="Chương này sẽ bị xóa. Tất cả bài học/phần/nội dung bên trong cũng sẽ mất."
+                        okText="Xóa"
+                        cancelText="Hủy"
+                        okButtonProps={{ danger: true, loading: savingLocal }}
+                        onConfirm={() => confirmDeleteChapter(ch.id)}
+                        onPopupClick={(e) => e.stopPropagation()} // ✅ tránh collapse toggle
+                      >
+                        <Tooltip title="Xóa chapter">
+                          <Button
+                            size="small"
+                            danger
+                            icon={<DeleteOutlined />}
+                            onClick={(e) => e.stopPropagation()} // ✅ cực quan trọng trong header collapse
+                          />
+                        </Tooltip>
+                      </Popconfirm>
+
+                      <Tooltip title="Thêm lesson vào chapter này">
+                        <Button
+                          size="small"
+                          icon={<PlusOutlined />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openAddLesson(ch.id);
+                          }}
+                        >
+                          Thêm bài
+                        </Button>
+                      </Tooltip>
+                    </>
+                  )}
+                </Space>
               </Space>
             }
             key={ch.id}
@@ -605,17 +916,54 @@ export default function CourseCurriculumView({
                         </div>
 
                         <Space className={styles.lessonHeaderActions}>
+                          {!isReadOnly && (
+                            <Tooltip title="Đổi tên lesson">
+                              <Button
+                                size="small"
+                                icon={<EditOutlined />}
+                                onClick={() => openEditLesson(lesson)}
+                              >
+                                Đổi tên
+                              </Button>
+                            </Tooltip>
+                          )}
+
                           {onEditLesson && (
                             <Button
                               size="small"
                               icon={<EditOutlined />}
                               onClick={() => onEditLesson(lesson)}
-                              disabled={disableEditing}
+                              disabled={isReadOnly}
                             >
-                              Edit
+                              Sửa
                             </Button>
                           )}
-                          {/* ✅ ĐÃ XÓA nút Quiz trên header lesson */}
+
+                          {!isReadOnly && (
+                            <Popconfirm
+                              title="Xóa lesson?"
+                              description="Bài học này sẽ bị xóa. Tất cả phần/nội dung bên trong cũng sẽ mất."
+                              okText="Xóa"
+                              cancelText="Hủy"
+                              okButtonProps={{
+                                danger: true,
+                                loading: savingLocal,
+                              }}
+                              onConfirm={() =>
+                                confirmDeleteLesson(ch.id, lesson.id)
+                              }
+                            >
+                              <Tooltip title="Xóa lesson">
+                                <Button
+                                  size="small"
+                                  danger
+                                  icon={<DeleteOutlined />}
+                                >
+                                  Xóa
+                                </Button>
+                              </Tooltip>
+                            </Popconfirm>
+                          )}
                         </Space>
                       </div>
 
@@ -692,7 +1040,7 @@ export default function CourseCurriculumView({
 
                         return (
                           <div key={sec.id} className={styles.sectionBlock}>
-                            {/* Section header → click để mở/đóng */}
+                            {/* Section header */}
                             <div
                               className={styles.sectionHeader}
                               onClick={() =>
@@ -711,10 +1059,8 @@ export default function CourseCurriculumView({
                               <Tag size="small">{sec.studyType}</Tag>
                             </div>
 
-                            {/* Chỉ render nội dung khi section mở */}
                             {isOpen && (
                               <>
-                                {/* ✅ Quiz inline theo section */}
                                 {renderQuizInline(sec.id)}
 
                                 {(assetContent || richTextContent) && (
@@ -739,7 +1085,6 @@ export default function CourseCurriculumView({
                                           onClick={(e) => {
                                             e.stopPropagation();
 
-                                            // ✅ Nếu là QUIZ content -> call theo sectionId
                                             if (isQuizContent(c)) {
                                               handleViewQuizBySection(sec);
                                               return;
@@ -761,7 +1106,6 @@ export default function CourseCurriculumView({
                                           </Space>
                                         </List.Item>
 
-                                        {/* inline preview cho content thường */}
                                         {selectedContent?.id === c.id &&
                                           !isQuizContent(c) && (
                                             <div
@@ -791,6 +1135,109 @@ export default function CourseCurriculumView({
           </Panel>
         ))}
       </Collapse>
+
+      {/* =========================
+          MODALS
+         ========================= */}
+
+      <Modal
+        open={editChapterModal.open}
+        title="Đổi tên chapter"
+        okText="Lưu"
+        cancelText="Hủy"
+        okButtonProps={{ disabled: isReadOnly, loading: savingLocal }}
+        onCancel={() =>
+          setEditChapterModal({ open: false, chapterId: null, title: "" })
+        }
+        onOk={handleConfirmEditChapter}
+        destroyOnClose
+      >
+        <Input
+          placeholder="Nhập tên chapter"
+          value={editChapterModal.title}
+          onChange={(e) =>
+            setEditChapterModal((p) => ({ ...p, title: e.target.value }))
+          }
+        />
+      </Modal>
+
+      <Modal
+        open={addChapterModal.open}
+        title="Thêm chapter"
+        okText="Tạo"
+        cancelText="Hủy"
+        okButtonProps={{ disabled: isReadOnly, loading: savingLocal }}
+        onCancel={() =>
+          setAddChapterModal({
+            open: false,
+            title: "",
+            summary: "",
+            isTrial: false,
+          })
+        }
+        onOk={handleConfirmAddChapter}
+        destroyOnClose
+      >
+        <Space direction="vertical" style={{ width: "100%" }}>
+          <Input
+            placeholder="Tên chapter"
+            value={addChapterModal.title}
+            onChange={(e) =>
+              setAddChapterModal((p) => ({ ...p, title: e.target.value }))
+            }
+          />
+          <Input.TextArea
+            rows={3}
+            placeholder="Tóm tắt (optional)"
+            value={addChapterModal.summary}
+            onChange={(e) =>
+              setAddChapterModal((p) => ({ ...p, summary: e.target.value }))
+            }
+          />
+        </Space>
+      </Modal>
+
+      <Modal
+        open={editLessonModal.open}
+        title="Đổi tên lesson"
+        okText="Lưu"
+        cancelText="Hủy"
+        okButtonProps={{ disabled: isReadOnly, loading: savingLocal }}
+        onCancel={() =>
+          setEditLessonModal({ open: false, lessonId: null, title: "" })
+        }
+        onOk={handleConfirmEditLesson}
+        destroyOnClose
+      >
+        <Input
+          placeholder="Nhập tên lesson"
+          value={editLessonModal.title}
+          onChange={(e) =>
+            setEditLessonModal((p) => ({ ...p, title: e.target.value }))
+          }
+        />
+      </Modal>
+
+      <Modal
+        open={addLessonModal.open}
+        title="Thêm lesson"
+        okText="Tạo"
+        cancelText="Hủy"
+        okButtonProps={{ disabled: isReadOnly, loading: savingLocal }}
+        onCancel={() =>
+          setAddLessonModal({ open: false, chapterId: null, title: "" })
+        }
+        onOk={handleConfirmAddLesson}
+        destroyOnClose
+      >
+        <Input
+          placeholder="Tên lesson"
+          value={addLessonModal.title}
+          onChange={(e) =>
+            setAddLessonModal((p) => ({ ...p, title: e.target.value }))
+          }
+        />
+      </Modal>
     </div>
   );
 }

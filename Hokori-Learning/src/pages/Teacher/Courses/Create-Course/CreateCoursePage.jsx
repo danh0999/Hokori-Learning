@@ -18,6 +18,30 @@ import {
 import styles from "./styles.module.scss";
 import ScrollToTopButton from "../../../../components/SrcollToTopButton/ScrollToTopButton.jsx";
 
+const mapStatusVi = (status) => {
+  if (!status) return "Bản nháp";
+
+  switch (status) {
+    case "DRAFT":
+      return "Bản nháp";
+
+    case "PENDING_APPROVAL":
+      return "Chờ duyệt";
+
+    case "PUBLISHED":
+      return "Đã xuất bản";
+
+    case "FLAGGED":
+      return "Bị báo cáo";
+
+    case "REJECTED":
+      return "Bị từ chối";
+
+    default:
+      return status;
+  }
+};
+
 export default function CreateCoursePage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -67,7 +91,7 @@ export default function CreateCoursePage() {
     }
   }, [step, courseId, stepLoaded]);
 
-  // Nếu course đã publish / archived thì xoá step cache
+  // Nếu course đã publish thì xoá step cache
   useEffect(() => {
     if (!courseId || !currentCourseMeta?.status) return;
     const doneStatuses = ["PUBLISHED"];
@@ -207,7 +231,11 @@ export default function CreateCoursePage() {
           </Button>
 
           <div className={styles.statusText}>
-            {currentCourseMeta?.status || "DRAFT"} · Chưa gửi xét duyệt
+            {mapStatusVi(currentCourseMeta?.status)}
+            {currentCourseMeta?.status === "DRAFT" && " · Chưa gửi xét duyệt"}
+            {currentCourseMeta?.status === "PENDING_APPROVAL" &&
+              " · Đang chờ admin duyệt"}
+            {currentCourseMeta?.status === "PUBLISHED" && " · Đã hoàn tất"}
           </div>
         </div>
       </div>

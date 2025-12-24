@@ -1,0 +1,187 @@
+.modalTitle {
+  font-weight: 700;
+  color: #b91c1c;
+}
+
+.modalIntro {
+  color: #4b5563;
+  margin-bottom: 12px;
+}
+
+.generalWrap {
+  padding: 2px 2px 0;
+}
+
+.sectionTitle {
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.hr {
+  margin: 6px 0;
+}
+
+.treeWrap {
+  padding: 2px 2px 0;
+}
+
+.treeHelp {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  padding: 10px 12px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  color: #334155;
+  font-size: 13px;
+}
+
+.noTree {
+  border: 1px dashed #e5e7eb;
+  border-radius: 12px;
+  padding: 14px;
+  background: #fff;
+}
+
+.noTreeTitle {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.noTreeSub {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.chapterCollapse :global(.ant-collapse-item) {
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.chapterHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.chapterHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.chapterTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.nodeName {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 520px;
+}
+
+.idTag {
+  margin-inline-start: 0 !important;
+  color: #64748b;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+}
+
+.typeTag {
+  margin-inline-start: 0 !important;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+}
+
+.bulkBtn {
+  border-radius: 10px;
+}
+
+.lessonList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lessonCard {
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fff;
+}
+
+.lessonHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sectionList {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionRow {
+  border: 1px solid #f1f5f9;
+  border-radius: 12px;
+  padding: 10px 10px;
+  background: #fbfdff;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nodeLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.reasonBox {
+  margin-top: 8px;
+  padding: 10px 10px;
+  border-radius: 12px;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+}
+
+.reasonHint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #9f1239;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footerNote {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #991b1b;
+  margin-top: 12px;
+}
+
+.footerActions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}

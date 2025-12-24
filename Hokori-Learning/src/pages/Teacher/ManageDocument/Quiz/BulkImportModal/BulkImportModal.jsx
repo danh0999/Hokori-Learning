@@ -20,13 +20,13 @@ import {
   InboxOutlined,
   DownloadOutlined,
   EditOutlined,
-  CheckOutlined,
 } from "@ant-design/icons";
 import { toast } from "react-toastify";
 import {
   parseQuestionsFromExcelArrayBuffer,
   downloadExcelTemplate,
   validateDraftToQuestion,
+  parseCorrect,
 } from "../../../../../utils/parseQuizExcel.js";
 
 const { Dragger } = Upload;
@@ -100,37 +100,67 @@ export default function BulkImportModal({
 
   const openFixModal = (item) => {
     setFixingItem(item);
+
+    const fallbackOptions = item.draft?.options?.length
+      ? item.draft.options
+      : [
+          { id: crypto.randomUUID(), text: "" },
+          { id: crypto.randomUUID(), text: "" },
+        ];
+
     fixForm.setFieldsValue({
       rowNo: item.rowNo,
       questionType: item.draft?.questionType || defaultQuestionType || "",
       content: item.draft?.content || "",
       explanation: item.draft?.explanation || "",
-      A: item.draft?.A || "",
-      B: item.draft?.B || "",
-      C: item.draft?.C || "",
-      D: item.draft?.D || "",
-      correct: item.draft?.correct || "",
+      options: fallbackOptions,
+      correctIndex: Number.isFinite(item.draft?.correctIndex)
+        ? Number(item.draft.correctIndex)
+        : null,
       audioPath: item.draft?.audioPath || "",
       imagePath: item.draft?.imagePath || "",
       imageAltText: item.draft?.imageAltText || "",
     });
+
     setFixOpen(true);
   };
 
   const handleConfirmFix = async () => {
     try {
       const v = await fixForm.validateFields();
+      const correctIndexFromForm = fixForm.getFieldValue("correctIndex");
+
+      // ✅ Convert correctIndex: nhận cả 0/1/2... hoặc "A"/"B"/"C"...
+      let correctIndexNum = null;
+      if (correctIndexFromForm !== null && correctIndexFromForm !== undefined) {
+        const n = Number(correctIndexFromForm);
+        if (Number.isFinite(n)) {
+          correctIndexNum = n;
+        } else {
+          // nếu là "A"/"B"/"D"...
+          const idxFromLetter = parseCorrect(correctIndexFromForm);
+          correctIndexNum = Number.isFinite(idxFromLetter)
+            ? idxFromLetter
+            : null;
+        }
+      }
+
+      if (
+        Number.isFinite(correctIndexNum) &&
+        correctIndexNum >= (v.options || []).length
+      ) {
+        toast.error("Đáp án đúng không hợp lệ. Vui lòng chọn lại.");
+        return;
+      }
 
       const draft = {
         rowNo: v.rowNo,
         questionType: v.questionType,
         content: v.content,
         explanation: v.explanation,
-        A: v.A,
-        B: v.B,
-        C: v.C,
-        D: v.D,
-        correct: v.correct,
+        options: v.options || [],
+        correctIndex: Number.isFinite(correctIndexNum) ? correctIndexNum : null,
+        correct: "", // dùng correctIndex là chính
         audioPath: v.audioPath,
         imagePath: v.imagePath,
         imageAltText: v.imageAltText,
@@ -140,7 +170,8 @@ export default function BulkImportModal({
 
       if (!res.ok) {
         toast.error(`Câu dòng ${draft.rowNo} vẫn lỗi: ${res.issues[0]}`);
-        // update issues UI
+
+        // cập nhật lại needsFix để show lỗi mới + draft mới
         setNeedsFix((prev) =>
           prev.map((x) =>
             x.rowNo === draft.rowNo ? { ...x, issues: res.issues, draft } : x
@@ -184,6 +215,21 @@ export default function BulkImportModal({
   );
   const fixSummary = useMemo(() => needsFix.length, [needsFix.length]);
 
+  const renderCorrectLine = (q) => {
+    const opts = q?.options || [];
+    const idx = opts.findIndex((o) => o?.isCorrect);
+    if (idx < 0) return <Text type="secondary">✅ Correct: -</Text>;
+
+    const label = String.fromCharCode(65 + idx);
+    const text = opts[idx]?.text || "";
+    return (
+      <Text strong>
+        ✅ Correct: {label}
+        {text ? ` – ${text}` : ""}
+      </Text>
+    );
+  };
+
   return (
     <>
       {/* Modal 1: REVIEW */}
@@ -210,7 +256,11 @@ export default function BulkImportModal({
               <div>
                 <div>
                   Cột tối thiểu: <b>question</b>, <b>A</b>, <b>B</b>,{" "}
-                  <b>correct</b>. Correct nhập <b>A-D</b> hoặc <b>1-4</b>.
+                  <b>correct</b>. Correct nhập <b>A-Z</b> hoặc <b>1-99</b>.
+                </div>
+                <div>
+                  Options có thể linh hoạt (A,B hoặc thêm E,F...). Cần ít nhất 2
+                  đáp án có nội dung.
                 </div>
                 {isJlpt && (
                   <div>
@@ -294,9 +344,11 @@ export default function BulkImportModal({
                             <Tag>{q.questionType}</Tag>
                           ) : null}
                         </div>
+
                         <div>
                           <Text>{q.text}</Text>
                         </div>
+
                         <div style={{ marginTop: 6 }}>
                           <Text type="secondary">
                             Options:{" "}
@@ -304,6 +356,10 @@ export default function BulkImportModal({
                               .map((o) => o.text || "")
                               .join(" | ")}
                           </Text>
+                        </div>
+
+                        <div style={{ marginTop: 6 }}>
+                          {renderCorrectLine(q)}
                         </div>
                       </div>
                     </List.Item>
@@ -347,13 +403,15 @@ export default function BulkImportModal({
                     >
                       <div style={{ width: "100%" }}>
                         <Text strong>Dòng {it.rowNo}</Text>
+
                         <div style={{ marginTop: 6 }}>
-                          {(it.issues || []).slice(0, 3).map((x, i) => (
+                          {(it.issues || []).slice(0, 4).map((x, i) => (
                             <div key={i}>
                               <Text type="danger">• {x}</Text>
                             </div>
                           ))}
                         </div>
+
                         {!!it.draft?.content && (
                           <div style={{ marginTop: 6 }}>
                             <Text type="secondary">{it.draft.content}</Text>
@@ -393,7 +451,7 @@ export default function BulkImportModal({
         onOk={handleConfirmFix}
         okText="Xác nhận"
         cancelText="Hủy"
-        width={820}
+        width={860}
         destroyOnClose
       >
         {fixingItem?.issues?.length ? (
@@ -446,43 +504,101 @@ export default function BulkImportModal({
             <Input.TextArea rows={2} />
           </Form.Item>
 
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item
-                name="A"
-                label="Đáp án A"
-                rules={[{ required: true, message: "Nhập đáp án A" }]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="B"
-                label="Đáp án B"
-                rules={[{ required: true, message: "Nhập đáp án B" }]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="C" label="Đáp án C (optional)">
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="D" label="Đáp án D (optional)">
-                <Input />
-              </Form.Item>
-            </Col>
-          </Row>
+          {/* ✅ Dynamic options list */}
+          <Form.List name="options">
+            {(fields, { add, remove }) => (
+              <>
+                <Divider style={{ margin: "12px 0" }} />
+                <Text strong>Đáp án</Text>
 
-          <Form.Item
-            name="correct"
-            label="Correct (A-D hoặc 1-4)"
-            rules={[{ required: true, message: "Nhập correct (A-D hoặc 1-4)" }]}
-          >
-            <Input placeholder="Ví dụ: B hoặc 2" />
+                {fields.map((field, idx) => (
+                  <Row
+                    key={field.key}
+                    gutter={8}
+                    align="middle"
+                    style={{ marginTop: 8 }}
+                  >
+                    <Col flex="auto">
+                      <Form.Item
+                        {...field}
+                        name={[field.name, "text"]}
+                        rules={[
+                          { required: true, message: "Nhập nội dung đáp án" },
+                        ]}
+                        style={{ marginBottom: 0 }}
+                      >
+                        <Input
+                          placeholder={`Option ${String.fromCharCode(
+                            65 + idx
+                          )}`}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col>
+                      <Button
+                        danger
+                        onClick={() => remove(field.name)}
+                        disabled={fields.length <= 2}
+                      >
+                        Xóa
+                      </Button>
+                    </Col>
+                  </Row>
+                ))}
+
+                <div style={{ marginTop: 10 }}>
+                  <Button
+                    onClick={() => add({ id: crypto.randomUUID(), text: "" })}
+                  >
+                    + Thêm option
+                  </Button>
+                </div>
+
+                <Divider style={{ margin: "12px 0" }} />
+
+                {/* Custom validation: tối thiểu 2 option có text */}
+                <Form.Item shouldUpdate noStyle>
+                  {() => {
+                    const opts = fixForm.getFieldValue("options") || [];
+                    const count = opts.filter((o) =>
+                      String(o?.text || "").trim()
+                    ).length;
+                    return count < 2 ? (
+                      <Alert
+                        type="warning"
+                        showIcon
+                        message="Cần ít nhất 2 đáp án có nội dung."
+                      />
+                    ) : null;
+                  }}
+                </Form.Item>
+              </>
+            )}
+          </Form.List>
+          <Form.Item shouldUpdate noStyle>
+            {() => {
+              const opts = fixForm.getFieldValue("options") || [];
+              const selectOptions = opts.map((_, idx) => ({
+                label: String.fromCharCode(65 + idx),
+                value: idx,
+              }));
+
+              return (
+                <Form.Item
+                  name="correctIndex"
+                  label="Chọn đáp án đúng"
+                  rules={[{ required: true, message: "Chọn đáp án đúng" }]}
+                  normalize={(val) =>
+                    val === null || val === undefined ? null : Number(val)
+                  }
+                >
+                  <Select
+                    placeholder="Chọn đáp án đúng (A/B/C/...)"
+                    options={selectOptions}
+                  />
+                </Form.Item>
+              );
+            }}
           </Form.Item>
 
           {/* JLPT có thể dùng audioPath, nhưng LISTENING vẫn sẽ bị page override theo audio đã upload */}
@@ -510,7 +626,7 @@ export default function BulkImportModal({
             description={
               isJlpt
                 ? "Nếu bạn đang import LISTENING, audioPath sẽ được Builder gán theo audio đã upload của test."
-                : "Quiz course chỉ cần question + options + correct."
+                : "Quiz course: options linh hoạt (A,B hoặc thêm E,F...), chọn đáp án đúng bằng radio."
             }
           />
         </Form>
