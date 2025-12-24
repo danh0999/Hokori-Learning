@@ -12,7 +12,6 @@ import {
 
 import QuizList from "../../../../../../ManageDocument/Quiz/QuizList/QuizList.jsx";
 import QuizBuilderModal from "../../../../../../ManageDocument/Quiz/QuizBuilderModal/QuizBuilderModal.jsx";
-import BulkImportModal from "../../../../../../ManageDocument/Quiz/BulkImportModal/BulkImportModal.jsx";
 
 import styles from "../styles.module.scss";
 
@@ -32,7 +31,7 @@ export default function QuizTab({
   const sectionId = section?.id;
 
   const [openBuilder, setOpenBuilder] = useState(false);
-  const [openBulk, setOpenBulk] = useState(false);
+
   const [draftQuiz, setDraftQuiz] = useState(null);
 
   useEffect(() => {
@@ -81,26 +80,6 @@ export default function QuizTab({
 
   const handleEdit = () => {
     setDraftQuiz(currentQuiz || null);
-    setOpenBuilder(true);
-  };
-
-  const handleBulkDone = (questions) => {
-    setOpenBulk(false);
-    if (!questions || !questions.length) return;
-
-    const base = draftQuiz ||
-      currentQuiz || {
-        title: lesson?.title || "Quiz",
-        description: "",
-        timeLimitSec: 30 * 60,
-        passScorePercent: 60,
-        questions: [],
-      };
-
-    setDraftQuiz({
-      ...base,
-      questions: [...(base.questions || []), ...questions],
-    });
     setOpenBuilder(true);
   };
 
@@ -161,9 +140,6 @@ export default function QuizTab({
           >
             Tạo quiz
           </Button>
-          <Button onClick={() => setOpenBulk(true)} disabled={!!currentQuiz}>
-            Nhập câu hỏi hàng loạt
-          </Button>
         </Space>
       </div>
 
@@ -174,12 +150,6 @@ export default function QuizTab({
           onRemove={handleRemove}
         />
       </Spin>
-
-      <BulkImportModal
-        open={openBulk}
-        onCancel={() => setOpenBulk(false)}
-        onDone={handleBulkDone}
-      />
 
       <QuizBuilderModal
         open={openBuilder}

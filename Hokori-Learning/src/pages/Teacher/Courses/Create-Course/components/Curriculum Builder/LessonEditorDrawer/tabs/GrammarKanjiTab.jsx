@@ -30,6 +30,41 @@ const buildFileUrl = (filePath) => {
 };
 
 const DESC_BASE_SEC = 60;
+const detectAssetKind = ({ file, url }) => {
+  const name = file?.name || "";
+  const type = file?.type || ""; // mime
+  const src = url || "";
+  const lower = (name || src).toLowerCase();
+
+  const isVideo =
+    type.startsWith("video/") || /\.(mp4|mov|webm|mkv)$/i.test(lower);
+
+  const isAudio =
+    type.startsWith("audio/") || /\.(mp3|wav|m4a|aac|ogg)$/i.test(lower);
+
+  const isImage =
+    type.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp)$/i.test(lower);
+
+  const isPdf = type === "application/pdf" || /\.pdf$/i.test(lower);
+
+  return { isVideo, isAudio, isImage, isPdf };
+};
+
+const loadMediaDuration = (src) =>
+  new Promise((resolve) => {
+    if (!src) return resolve(0);
+    const el = document.createElement("video"); // dùng video cho cả audio cũng được
+    el.preload = "metadata";
+    el.src = src;
+    el.onloadedmetadata = () => resolve(Math.round(el.duration || 0));
+    el.onerror = () => resolve(0);
+  });
+
+const estimateDocDuration = ({ isImage, isPdf }) => {
+  if (isImage) return 15; // 15s/ảnh
+  if (isPdf) return 60; // 60s/tài liệu
+  return 0;
+};
 
 export default function GrammarKanjiTab({
   type, // "GRAMMAR" | "KANJI"
@@ -239,9 +274,38 @@ export default function GrammarKanjiTab({
       }
 
       // 5) duration
+      // 5) duration (video/audio đo thật, image/pdf ước lượng)
       if (typeof onDurationComputed === "function") {
         const descSec = description.trim() ? DESC_BASE_SEC : 0;
-        onDurationComputed((mediaDurationSec || 0) + descSec);
+
+        // Chỉ tính media duration nếu có asset (file mới hoặc file cũ) và không remove
+        let dur = 0;
+
+        if (hasAsset) {
+          // previewUrl thường có sẵn để preview file mới / file cũ
+          const previewUrl = mediaState.previewUrl;
+
+          const kind = detectAssetKind({
+            file: mediaState.file,
+            url: previewUrl || filePath || info?.assetContent?.filePath || "",
+          });
+
+          // 1) video/audio: ưu tiên duration đã đo trong state, nếu 0 thì đo lại
+          if (kind.isVideo || kind.isAudio) {
+            dur = mediaDurationSec || 0;
+
+            if (dur === 0) {
+              const src = previewUrl || (filePath ? `/files/${filePath}` : "");
+              // Nếu previewUrl là blob: vẫn đo được
+              dur = await loadMediaDuration(src);
+            }
+          } else {
+            // 2) image/pdf/other: duration ước lượng
+            dur = estimateDocDuration(kind);
+          }
+        }
+
+        onDurationComputed((dur || 0) + descSec);
       }
 
       toast.success(

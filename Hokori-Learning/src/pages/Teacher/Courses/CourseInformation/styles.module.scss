@@ -386,3 +386,68 @@
     }
   }
 }
+/* styles.module.scss - add these */
+
+.rejectedSectionTitle {
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.rejectedRow {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px dashed #e5e7eb;
+}
+
+.rejectedRowLabel {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.rejectedRowValue {
+  color: #111827;
+  white-space: pre-wrap;
+}
+
+.rejectedGroup {
+  margin-top: 12px;
+  border: 1px solid #f3f4f6;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fff;
+}
+
+.rejectedGroupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.rejectedGroupTitle {
+  font-weight: 600;
+}
+
+.rejectedGroupBody {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rejectedItemRow {
+  padding: 10px 10px;
+  border-radius: 10px;
+  background: #fafafa;
+  border: 1px solid #f3f4f6;
+}
+
+.rejectedItemTitle {
+  margin-bottom: 6px;
+}
+
+.rejectedItemReason {
+  white-space: pre-wrap;
+  color: #111827;
+}

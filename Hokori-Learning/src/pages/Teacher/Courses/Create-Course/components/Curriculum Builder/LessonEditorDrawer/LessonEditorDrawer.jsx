@@ -147,6 +147,16 @@ export default function LessonEditorDrawer({ open, lesson, onClose, onSave }) {
         const next = { ...prev, [studyType]: nextVal };
         const total = Object.values(next).reduce((sum, v) => sum + (v || 0), 0);
 
+        // ✅ Guard: tránh overwrite về 0 khi lesson hiện tại đang có duration > 0
+        const prevTotalFromTree =
+          typeof lessonFromTree?.totalDurationSec === "number"
+            ? lessonFromTree.totalDurationSec
+            : 0;
+
+        if (total === 0 && prevTotalFromTree > 0) {
+          return next; // bỏ dispatch, giữ duration cũ
+        }
+
         dispatch(
           updateLessonThunk({
             lessonId: lessonFromTree.id,

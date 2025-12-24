@@ -36,22 +36,23 @@ import {
 const { warning } = Modal;
 // ✅ map enum từ BE -> label giống ManageCourses
 const mapStatusLabel = (status) => {
-  if (!status) return "Draft";
+  if (!status) return "Bản nháp";
 
   switch (status) {
     case "DRAFT":
-      return "Draft";
+      return "Bản nháp";
+
     case "PUBLISHED":
-      return "Published";
+      return "Đã xuất bản";
 
     case "PENDING_APPROVAL":
-      return "PENDING_APPROVED";
+      return "Chờ duyệt";
 
     case "FLAGGED":
-      return "FLAGGED";
+      return "Bị báo cáo";
 
     case "REJECTED":
-      return "Rejected";
+      return "Bị từ chối";
 
     default:
       return status;
@@ -86,12 +87,13 @@ export default function TeacherDashboard() {
 
   const statusTag = (statusEnum) => {
     const label = mapStatusLabel(statusEnum);
+
     const mapColor = {
-      Draft: "default",
-      Published: "success",
-      PENDING_APPROVED: "warning",
-      FLAGGED: "error",
-      Rejected: "error",
+      "Bản nháp": "default",
+      "Đã xuất bản": "success",
+      "Chờ duyệt": "warning",
+      "Bị báo cáo": "error",
+      "Bị từ chối": "error",
     };
 
     return <Tag color={mapColor[label] || "default"}>{label}</Tag>;
@@ -135,7 +137,6 @@ export default function TeacherDashboard() {
         // ✅ BE thường trả enum kiểu DRAFT/PUBLISHED/PENDING_APPROVED/FLAGGED...
         const nonDeletableStatuses = new Set([
           "PUBLISHED",
-          "PENDING_APPROVED",
           "PENDING_APPROVAL",
           "FLAGGED",
         ]);

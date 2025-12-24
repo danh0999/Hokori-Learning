@@ -39,41 +39,34 @@ const { warning } = Modal;
 // helper: render Tag status
 const statusTag = (s) => {
   const map = {
-    Draft: "default",
-    Review: "warning",
-    Published: "success",
-    PENDING_APPROVED: "warning",
-    FLAGGED: "error",
-    Rejected: "error",
+    "Bản nháp": "default",
+    "Chờ duyệt": "warning",
+    "Đã xuất bản": "success",
+    "Bị báo cáo": "error",
+    "Bị từ chối": "error",
   };
   return <Tag color={map[s] || "default"}>{s}</Tag>;
 };
 
 // helper: map enum BE → text status ở bảng
-// helper: map enum BE → text status ở bảng
 const mapStatusLabel = (status) => {
-  if (!status) return "Draft";
+  if (!status) return "Bản nháp";
 
   switch (status) {
     case "DRAFT":
-      return "Draft";
+      return "Bản nháp";
 
     case "PUBLISHED":
-      return "Published";
+      return "Đã xuất bản";
 
     case "PENDING_APPROVAL":
-      return "PENDING_APPROVED";
+      return "Chờ duyệt";
 
-    // ✅ flagged
     case "FLAGGED":
-      return "FLAGGED";
-
-    case "REVIEWING":
-    case "IN_REVIEW":
-      return "Review";
+      return "Bị báo cáo";
 
     case "REJECTED":
-      return "Rejected";
+      return "Bị từ chối";
 
     default:
       return status;
@@ -267,10 +260,11 @@ export default function ManageCourses() {
       width: 110,
       render: (_, row) => {
         const nonDeletableStatuses = new Set([
-          "Published",
-          "PENDING_APPROVED",
-          "FLAGGED",
+          "Đã xuất bản",
+          "Chờ duyệt",
+          "Bị báo cáo",
         ]);
+
         const isNonDeletable = nonDeletableStatuses.has(row.status);
 
         const items = [
@@ -348,12 +342,13 @@ export default function ManageCourses() {
             value={status}
             onChange={setStatus}
             options={[
-              "All",
-              "Draft",
-              "PENDING_APPROVAL",
-              "Published",
-              "Rejected",
-            ].map((v) => ({ label: v, value: v }))}
+              { label: "Tất cả", value: "All" },
+              { label: "Bản nháp", value: "Bản nháp" },
+              { label: "Chờ duyệt", value: "Chờ duyệt" },
+              { label: "Đã xuất bản", value: "Đã xuất bản" },
+              { label: "Bị từ chối", value: "Bị từ chối" },
+              { label: "Bị báo cáo", value: "Bị báo cáo" },
+            ]}
           />
         </Space>
       </Card>
