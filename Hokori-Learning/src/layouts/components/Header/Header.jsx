@@ -110,9 +110,14 @@ export const Header = () => {
       await logoutFirebase();
 
       if (userId) {
+        //  AI Kaiwa
         localStorage.removeItem(`ai_kaiwa_result_${userId}`);
+
+        //  AI Conversation (QUAN TRỌNG)
+        localStorage.removeItem(`ai_conversation_session_${userId}`);
       }
 
+      //  AI Sentence Analysis
       localStorage.removeItem("ai_sentence");
       localStorage.removeItem("ai_level");
       localStorage.removeItem("ai_result");
@@ -128,7 +133,7 @@ export const Header = () => {
   };
 
   /* ===============================
-     AI PERMISSION – NGUỒN SỰ THẬT DUY NHẤT
+     AI PERMISSION – 
   =============================== */
   const remainingRequests = Number(quota?.remainingRequests ?? 0);
 
@@ -197,7 +202,10 @@ export const Header = () => {
 
         {/* ====================== NAV ====================== */}
         <nav className={nav}>
-          <NavLink to="/" className={({ isActive }) => (isActive ? active : "")}>
+          <NavLink
+            to="/"
+            className={({ isActive }) => (isActive ? active : "")}
+          >
             Trang chủ
           </NavLink>
 
