@@ -7,17 +7,7 @@ import {
   EyeInvisibleOutlined,
   EyeTwoTone,
 } from "@ant-design/icons";
-import {
-  Button,
-  Checkbox,
-  Form,
-  Input,
-  Flex,
-  Divider,
-  Modal,
-  Steps,
-  Alert,
-} from "antd";
+import { Button, Form, Input, Flex, Divider, Modal, Steps, Alert } from "antd";
 import Title from "antd/es/typography/Title";
 import styles from "./styles.module.scss";
 import { useNavigate } from "react-router-dom";
@@ -395,12 +385,7 @@ const LoginForm = () => {
 
       <Divider plain>hoặc</Divider>
 
-      <Form
-        name="login"
-        className={styles.form}
-        initialValues={{ remember: false }}
-        onFinish={onFinish}
-      >
+      <Form name="login" className={styles.form} onFinish={onFinish}>
         <Form.Item
           className={styles.formItem}
           name="username"
@@ -430,10 +415,6 @@ const LoginForm = () => {
 
         <Form.Item className={styles.formItem}>
           <Flex justify="space-between" align="center">
-            <Form.Item name="remember" valuePropName="checked" noStyle>
-              <Checkbox className={styles.checkbox}>Nhớ tôi</Checkbox>
-            </Form.Item>
-
             <Button
               type="link"
               className={styles.forgotLink}
