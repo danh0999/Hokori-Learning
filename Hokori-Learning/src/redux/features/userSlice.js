@@ -9,12 +9,7 @@ export const userSlice = createSlice({
     login: (state, action) => action.payload,
 
     logout: () => {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
       localStorage.removeItem("token");
-
-      sessionStorage.removeItem("accessToken");
-      sessionStorage.removeItem("refreshToken");
       sessionStorage.removeItem("token"); // thêm cho chắc
       return null; // trả về null rõ ràng
     },

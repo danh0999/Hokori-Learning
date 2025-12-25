@@ -84,16 +84,7 @@ const LoginForm = () => {
       };
 
       dispatch(login(payload));
-      const storage = values.remember ? localStorage : sessionStorage;
-
-      // dùng key chuẩn hoá
-      storage.setItem("accessToken", accessToken);
-      storage.setItem("refreshToken", refreshToken);
-
-      // (nếu trước đây bạn có dùng "token" thì nên bỏ dần)
-      localStorage.removeItem("token");
-      sessionStorage.removeItem("token");
-
+      localStorage.setItem("token", accessToken);
       navigate("/");
       toast.success(`Xin chào, ${user.fullName || user.username}!`);
     } catch (err) {
@@ -136,12 +127,7 @@ const LoginForm = () => {
       };
 
       dispatch(login(payload));
-      sessionStorage.setItem("accessToken", accessToken);
-      sessionStorage.setItem("refreshToken", refreshToken);
-
-      // dọn key cũ
-      localStorage.removeItem("token");
-      sessionStorage.removeItem("token");
+      if (accessToken) localStorage.setItem("token", accessToken);
 
       const isTeacher = safeRoles
         .map((r) => (r || "").toUpperCase())
