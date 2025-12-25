@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchTeacherProfile,
@@ -68,6 +69,7 @@ const statusMap = {
 
 export default function TeacherProfilePage() {
   const dispatch = useDispatch();
+  const location = useLocation();
   const profile = useSelector(selectTeacherProfile);
   const status = useSelector(selectTeacherProfileStatus);
   const error = useSelector(selectTeacherProfileError);
@@ -85,6 +87,14 @@ export default function TeacherProfilePage() {
     dispatch(fetchTeacherProfile());
     dispatch(fetchTeacherCertificates());
   }, [dispatch]);
+  useEffect(() => {
+    if (location.hash === "#bank") {
+      const el = document.getElementById("bank");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  }, [location]);
 
   const user = profile?.user || {};
   const teacher = profile?.teacher || {};
@@ -319,61 +329,65 @@ export default function TeacherProfilePage() {
             </Card>
 
             {/* ✅ Bank section: chỉ hiển thị + nút mở modal, không edit inline */}
-            <Card
-              title="Tài khoản ngân hàng"
-              className={styles.sectionCard}
-              extra={
-                <Tooltip
-                  title={
-                    bankDisabled
-                      ? "Chỉ giáo viên đã được APPROVED mới có thể cập nhật ngân hàng."
-                      : ""
-                  }
-                >
-                  <Button
-                    icon={<BankOutlined />}
-                    onClick={() => setOpenBankModal(true)}
-                    disabled={bankDisabled}
+            <div id="bank">
+              <Card
+                title="Tài khoản ngân hàng"
+                className={styles.sectionCard}
+                extra={
+                  <Tooltip
+                    title={
+                      bankDisabled
+                        ? "Chỉ giáo viên đã được APPROVED mới có thể cập nhật ngân hàng."
+                        : ""
+                    }
                   >
-                    {isApproved ? "Sửa ngân hàng" : "Chưa thể cập nhật"}
-                  </Button>
-                </Tooltip>
-              }
-            >
-              {!isApproved && (
-                <Alert
-                  type="info"
-                  showIcon
-                  style={{ marginBottom: 12 }}
-                  message="Ngân hàng chỉ cập nhật sau khi APPROVED"
-                />
-              )}
+                    <Button
+                      icon={<BankOutlined />}
+                      onClick={() => setOpenBankModal(true)}
+                      disabled={bankDisabled}
+                    >
+                      {isApproved ? "Sửa ngân hàng" : "Chưa thể cập nhật"}
+                    </Button>
+                  </Tooltip>
+                }
+              >
+                {!isApproved && (
+                  <Alert
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 12 }}
+                    message="Ngân hàng chỉ cập nhật sau khi APPROVED"
+                  />
+                )}
 
-              <div className={styles.grid2}>
-                <div className={styles.infoBox}>
-                  <div className={styles.label}>Số tài khoản</div>
-                  <div className={styles.value}>
-                    {teacher.bankAccountNumber || "—"}
+                <div className={styles.grid2}>
+                  <div className={styles.infoBox}>
+                    <div className={styles.label}>Số tài khoản</div>
+                    <div className={styles.value}>
+                      {teacher.bankAccountNumber || "—"}
+                    </div>
+                  </div>
+                  <div className={styles.infoBox}>
+                    <div className={styles.label}>Tên chủ tài khoản</div>
+                    <div className={styles.value}>
+                      {teacher.bankAccountName || "—"}
+                    </div>
+                  </div>
+                  <div className={styles.infoBox}>
+                    <div className={styles.label}>Ngân hàng</div>
+                    <div className={styles.value}>
+                      {teacher.bankName || "—"}
+                    </div>
+                  </div>
+                  <div className={styles.infoBox}>
+                    <div className={styles.label}>Chi nhánh</div>
+                    <div className={styles.value}>
+                      {teacher.bankBranchName || "—"}
+                    </div>
                   </div>
                 </div>
-                <div className={styles.infoBox}>
-                  <div className={styles.label}>Tên chủ tài khoản</div>
-                  <div className={styles.value}>
-                    {teacher.bankAccountName || "—"}
-                  </div>
-                </div>
-                <div className={styles.infoBox}>
-                  <div className={styles.label}>Ngân hàng</div>
-                  <div className={styles.value}>{teacher.bankName || "—"}</div>
-                </div>
-                <div className={styles.infoBox}>
-                  <div className={styles.label}>Chi nhánh</div>
-                  <div className={styles.value}>
-                    {teacher.bankBranchName || "—"}
-                  </div>
-                </div>
-              </div>
-            </Card>
+              </Card>
+            </div>
 
             <Card
               title="Chứng chỉ"

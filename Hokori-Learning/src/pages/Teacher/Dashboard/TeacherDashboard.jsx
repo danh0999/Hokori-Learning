@@ -291,20 +291,6 @@ export default function TeacherDashboard() {
             <Statistic title="Tổng số học viên" value={data.activeStudents} />
           </Card>
         </Col>
-
-        {/* ✅ NEW: Doanh thu tháng hiện tại */}
-        <Col xs={24} sm={12} md={6}>
-          <Card className={styles.kpiCard}>
-            <div className={styles.kpiIcon}>
-              <DollarOutlined />
-            </div>
-            <Statistic
-              title="Doanh thu tháng này"
-              value={data.monthlyRevenue || 0}
-              suffix="VNĐ"
-            />
-          </Card>
-        </Col>
       </Row>
 
       {/* Recent Courses */}

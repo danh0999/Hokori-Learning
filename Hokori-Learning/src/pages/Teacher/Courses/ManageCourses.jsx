@@ -11,6 +11,7 @@ import {
   Dropdown,
   message,
   Modal,
+  Alert,
 } from "antd";
 import {
   SearchOutlined,
@@ -18,6 +19,7 @@ import {
   MoreOutlined,
   PlusOutlined,
   ExclamationCircleFilled,
+  BankOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -31,6 +33,7 @@ import {
   fetchTeacherProfile,
   selectTeacherApproved,
   selectTeacherProfileStatus,
+  selectTeacherProfile,
 } from "../../../redux/features/teacherprofileSlice.js";
 import styles from "./styles.module.scss";
 
@@ -80,15 +83,32 @@ export default function ManageCourses() {
   const { list, listLoading } = useSelector((state) => state.teacherCourse);
   const isApproved = useSelector(selectTeacherApproved);
   const profileStatus = useSelector(selectTeacherProfileStatus);
+  const profile = useSelector(selectTeacherProfile);
 
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("All");
   const [data, setData] = useState([]); // rows đang hiển thị (sau khi map từ list)
+  const teacher = profile?.teacher || {};
+
+  const normalizeEmpty = (v) => {
+    const s = String(v ?? "").trim();
+    if (!s) return "";
+    const bad = new Set(["null", "undefined", "n/a", "na", "-", "—"]);
+    return bad.has(s.toLowerCase()) ? "" : s;
+  };
+
+  const hasBank =
+    !!normalizeEmpty(teacher.bankAccountNumber) &&
+    !!normalizeEmpty(teacher.bankAccountName) &&
+    !!normalizeEmpty(teacher.bankName);
 
   // gọi API lấy danh sách course & profile 1 lần
   useEffect(() => {
     dispatch(fetchTeacherCourses());
     dispatch(fetchTeacherProfile());
+    console.log("approvalStatus:", profile?.teacher?.approvalStatus);
+    console.log("teacher bank:", teacher);
+    console.log("isApproved:", isApproved, "hasBank:", hasBank);
   }, [dispatch]);
 
   // chuẩn hoá dữ liệu từ Redux → rows cho Table
@@ -326,6 +346,24 @@ export default function ManageCourses() {
           Tạo khoá học
         </Button>
       </div>
+      {isApproved && !hasBank && (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message="Bạn chưa khai báo tài khoản ngân hàng"
+          description="Hãy điền thông tin ngân hàng để admin định kỳ thanh toán cho giáo viên thuận lợi, tránh chậm trễ hoặc thiếu thông tin."
+          action={
+            <Button
+              size="small"
+              icon={<BankOutlined />}
+              onClick={() => navigate("/teacher/profile#bank")}
+            >
+              Điền thông tin ngân hàng
+            </Button>
+          }
+        />
+      )}
 
       <Card className={styles.filterBar}>
         <Space wrap size={[8, 8]}>

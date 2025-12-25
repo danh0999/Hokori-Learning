@@ -47,6 +47,7 @@ export default function BulkImportModal({
   const [fixOpen, setFixOpen] = useState(false);
   const [fixingItem, setFixingItem] = useState(null); // { rowNo, issues, draft }
   const [fixForm] = Form.useForm();
+  const [importing, setImporting] = useState(false);
 
   const isJlpt = mode === "JLPT";
 
@@ -95,31 +96,32 @@ export default function BulkImportModal({
       ]);
       toast.error("Không đọc được file. Hãy thử .xlsx/.xls/.csv hợp lệ.");
     }
-    return false; // chặn upload
+    return false; // block upload
   };
 
   const openFixModal = (item) => {
     setFixingItem(item);
 
-    const fallbackOptions = item.draft?.options?.length
-      ? item.draft.options
-      : [
-          { id: crypto.randomUUID(), text: "" },
-          { id: crypto.randomUUID(), text: "" },
-        ];
+    const fallbackOptions =
+      item.draft?.options?.length >= 2
+        ? item.draft.options
+        : [
+            { id: crypto.randomUUID(), key: "A", text: "" },
+            { id: crypto.randomUUID(), key: "B", text: "" },
+          ];
 
     fixForm.setFieldsValue({
       rowNo: item.rowNo,
-      questionType: item.draft?.questionType || defaultQuestionType || "",
       content: item.draft?.content || "",
       explanation: item.draft?.explanation || "",
-      options: fallbackOptions,
+      options: fallbackOptions.map((o, idx) => ({
+        id: o.id || crypto.randomUUID(),
+        key: o.key || String.fromCharCode(65 + idx),
+        text: o.text || "",
+      })),
       correctIndex: Number.isFinite(item.draft?.correctIndex)
         ? Number(item.draft.correctIndex)
         : null,
-      audioPath: item.draft?.audioPath || "",
-      imagePath: item.draft?.imagePath || "",
-      imageAltText: item.draft?.imageAltText || "",
     });
 
     setFixOpen(true);
@@ -130,14 +132,12 @@ export default function BulkImportModal({
       const v = await fixForm.validateFields();
       const correctIndexFromForm = fixForm.getFieldValue("correctIndex");
 
-      // ✅ Convert correctIndex: nhận cả 0/1/2... hoặc "A"/"B"/"C"...
+      // allow number or letter
       let correctIndexNum = null;
       if (correctIndexFromForm !== null && correctIndexFromForm !== undefined) {
         const n = Number(correctIndexFromForm);
-        if (Number.isFinite(n)) {
-          correctIndexNum = n;
-        } else {
-          // nếu là "A"/"B"/"D"...
+        if (Number.isFinite(n)) correctIndexNum = n;
+        else {
           const idxFromLetter = parseCorrect(correctIndexFromForm);
           correctIndexNum = Number.isFinite(idxFromLetter)
             ? idxFromLetter
@@ -155,23 +155,21 @@ export default function BulkImportModal({
 
       const draft = {
         rowNo: v.rowNo,
-        questionType: v.questionType,
         content: v.content,
         explanation: v.explanation,
-        options: v.options || [],
+        options: (v.options || []).map((o, idx) => ({
+          id: o.id || crypto.randomUUID(),
+          key: o.key || String.fromCharCode(65 + idx),
+          text: o.text,
+        })),
         correctIndex: Number.isFinite(correctIndexNum) ? correctIndexNum : null,
-        correct: "", // dùng correctIndex là chính
-        audioPath: v.audioPath,
-        imagePath: v.imagePath,
-        imageAltText: v.imageAltText,
+        correct: "", // rely on correctIndex
       };
 
       const res = validateDraftToQuestion(draft, { mode, defaultQuestionType });
 
       if (!res.ok) {
         toast.error(`Câu dòng ${draft.rowNo} vẫn lỗi: ${res.issues[0]}`);
-
-        // cập nhật lại needsFix để show lỗi mới + draft mới
         setNeedsFix((prev) =>
           prev.map((x) =>
             x.rowNo === draft.rowNo ? { ...x, issues: res.issues, draft } : x
@@ -180,10 +178,7 @@ export default function BulkImportModal({
         return;
       }
 
-      // Move to READY
       setReadyQuestions((prev) => [...prev, res.question]);
-
-      // Remove from NEEDS FIX
       setNeedsFix((prev) => prev.filter((x) => x.rowNo !== draft.rowNo));
 
       toast.success(
@@ -193,20 +188,35 @@ export default function BulkImportModal({
       setFixingItem(null);
       fixForm.resetFields();
     } catch (e) {
+      // antd validateFields throws object; ignore
       console.log(e);
-
-      // validateFields errors
     }
   };
 
-  const handleFinalizeImport = () => {
+  const handleFinalizeImport = async () => {
     if (!readyQuestions.length) {
       toast.warning("Chưa có câu hợp lệ để import.");
       return;
     }
-    onDone?.(readyQuestions);
-    toast.success(`Import ${readyQuestions.length} câu thành công.`);
-    resetAll();
+
+    try {
+      setImporting(true);
+
+      // ✅ QUAN TRỌNG: await để đảm bảo parent build xong question/options rồi mới đóng
+      await Promise.resolve(onDone?.(readyQuestions));
+
+      toast.success(`Import ${readyQuestions.length} câu thành công.`);
+      resetAll();
+
+      // Nếu parent điều khiển open bằng state, onDone xong parent nên setOpen(false).
+      // Nhưng để chắc chắn UX, mình gọi luôn onCancel nếu có.
+      onCancel?.();
+    } catch (e) {
+      console.error(e);
+      toast.error("Import thất bại. Vui lòng thử lại.");
+    } finally {
+      setImporting(false);
+    }
   };
 
   const readySummary = useMemo(
@@ -218,13 +228,13 @@ export default function BulkImportModal({
   const renderCorrectLine = (q) => {
     const opts = q?.options || [];
     const idx = opts.findIndex((o) => o?.isCorrect);
-    if (idx < 0) return <Text type="secondary">✅ Correct: -</Text>;
+    if (idx < 0) return <Text type="secondary">✅ Đáp án đúng: -</Text>;
 
     const label = String.fromCharCode(65 + idx);
     const text = opts[idx]?.text || "";
     return (
       <Text strong>
-        ✅ Correct: {label}
+        ✅ Đáp án đúng: {label}
         {text ? ` – ${text}` : ""}
       </Text>
     );
@@ -235,17 +245,25 @@ export default function BulkImportModal({
       {/* Modal 1: REVIEW */}
       <Modal
         open={open}
-        title="Bulk Import (Excel) – Xác minh trước khi thêm"
+        title="Nhập từ Excel – Xác minh trước khi thêm"
         onCancel={() => {
+          if (importing) return; // ✅ chặn
           resetAll();
           onCancel?.();
         }}
         okText="Thêm vào bài"
         onOk={handleFinalizeImport}
-        okButtonProps={{ disabled: readyQuestions.length === 0 }}
+        okButtonProps={{
+          disabled: readyQuestions.length === 0,
+          loading: importing, // ✅ spinner trên nút
+        }}
+        cancelButtonProps={{ disabled: importing }} // ✅ khóa nút Đóng
         cancelText="Đóng"
         width={1100}
         destroyOnClose
+        maskClosable={!importing} // ✅ không click ra ngoài để đóng
+        keyboard={!importing} // ✅ không ESC để đóng
+        closable={!importing} // ✅ khóa nút X
       >
         <Space direction="vertical" style={{ width: "100%" }} size={12}>
           <Alert
@@ -259,13 +277,17 @@ export default function BulkImportModal({
                   <b>correct</b>. Correct nhập <b>A-Z</b> hoặc <b>1-99</b>.
                 </div>
                 <div>
-                  Options có thể linh hoạt (A,B hoặc thêm E,F...). Cần ít nhất 2
-                  đáp án có nội dung.
+                  Options có thể linh hoạt (A,B,C,D... hoặc thêm E,F...). Cần ít
+                  nhất 2 đáp án có nội dung.
+                </div>
+                <div>
+                  ✅ File Excel <b>KHÔNG dùng</b> các cột: questionType,
+                  audioPath, imagePath, imageAltText.
                 </div>
                 {isJlpt && (
                   <div>
-                    JLPT: có thể có <b>questionType</b>, nếu không có sẽ dùng
-                    tab hiện tại: <b>{defaultQuestionType || "(chưa set)"}</b>.
+                    JLPT: <b>questionType luôn lấy theo tab đang mở</b>:{" "}
+                    <b>{defaultQuestionType || "(chưa set)"}</b>.
                   </div>
                 )}
               </div>
@@ -275,13 +297,13 @@ export default function BulkImportModal({
           <Space>
             <Button
               icon={<DownloadOutlined />}
-              onClick={() => downloadExcelTemplate("bulk-import-template.xlsx")}
+              onClick={() => downloadExcelTemplate("mau-nhap-cau-hoi.xlsx")}
             >
-              Tải template
+              Tải mẫu Excel
             </Button>
             <Text type="secondary">
               Mode: <b>{mode}</b>{" "}
-              {isJlpt ? `(defaultType: ${defaultQuestionType})` : ""}
+              {isJlpt ? `(Tab: ${defaultQuestionType || "?"})` : ""}
             </Text>
           </Space>
 
@@ -308,7 +330,6 @@ export default function BulkImportModal({
 
           <Divider />
 
-          {/* Two columns: READY vs NEEDS FIX */}
           <Row gutter={16}>
             <Col span={12}>
               <Space
@@ -316,7 +337,7 @@ export default function BulkImportModal({
                 style={{ width: "100%", justifyContent: "space-between" }}
               >
                 <Text strong>
-                  ✅ Câu hợp lệ (Ready) <Tag color="green">{readySummary}</Tag>
+                  ✅ Câu hợp lệ <Tag color="green">{readySummary}</Tag>
                 </Text>
                 <Text type="secondary">
                   Nhấn “Thêm vào bài” để đưa vào builder
@@ -351,7 +372,7 @@ export default function BulkImportModal({
 
                         <div style={{ marginTop: 6 }}>
                           <Text type="secondary">
-                            Options:{" "}
+                            Đáp án:{" "}
                             {(q.options || [])
                               .map((o) => o.text || "")
                               .join(" | ")}
@@ -374,10 +395,10 @@ export default function BulkImportModal({
                 style={{ width: "100%", justifyContent: "space-between" }}
               >
                 <Text strong>
-                  ⚠️ Câu cần sửa (Needs fix) <Tag color="red">{fixSummary}</Tag>
+                  ⚠️ Câu cần sửa <Tag color="red">{fixSummary}</Tag>
                 </Text>
                 <Text type="secondary">
-                  Bấm “Sửa” → “Xác nhận” để chuyển sang Ready
+                  Bấm “Sửa” → “Xác nhận” để chuyển sang hợp lệ
                 </Text>
               </Space>
 
@@ -431,7 +452,7 @@ export default function BulkImportModal({
               type="warning"
               showIcon
               message="Bạn vẫn có thể import các câu hợp lệ"
-              description="Các câu lỗi có thể sửa dần và chuyển sang Ready trước khi bấm Thêm vào bài."
+              description="Các câu lỗi có thể sửa dần và chuyển sang danh sách hợp lệ trước khi bấm Thêm vào bài."
             />
           )}
         </Space>
@@ -471,40 +492,22 @@ export default function BulkImportModal({
         ) : null}
 
         <Form form={fixForm} layout="vertical">
-          <Form.Item name="rowNo" label="Row" hidden>
+          <Form.Item name="rowNo" hidden>
             <Input />
           </Form.Item>
 
-          {isJlpt && (
-            <Form.Item
-              name="questionType"
-              label="Question Type (JLPT)"
-              rules={[{ required: true, message: "Chọn questionType" }]}
-            >
-              <Select
-                options={["VOCAB", "GRAMMAR", "READING", "LISTENING"].map(
-                  (x) => ({
-                    label: x,
-                    value: x,
-                  })
-                )}
-              />
-            </Form.Item>
-          )}
-
           <Form.Item
             name="content"
-            label="Nội dung câu hỏi"
+            label="Câu hỏi"
             rules={[{ required: true, message: "Nhập nội dung câu hỏi" }]}
           >
             <Input.TextArea rows={3} />
           </Form.Item>
 
-          <Form.Item name="explanation" label="Giải thích (optional)">
+          <Form.Item name="explanation" label="Giải thích">
             <Input.TextArea rows={2} />
           </Form.Item>
 
-          {/* ✅ Dynamic options list */}
           <Form.List name="options">
             {(fields, { add, remove }) => (
               <>
@@ -528,12 +531,13 @@ export default function BulkImportModal({
                         style={{ marginBottom: 0 }}
                       >
                         <Input
-                          placeholder={`Option ${String.fromCharCode(
+                          placeholder={`Đáp án ${String.fromCharCode(
                             65 + idx
                           )}`}
                         />
                       </Form.Item>
                     </Col>
+
                     <Col>
                       <Button
                         danger
@@ -548,33 +552,19 @@ export default function BulkImportModal({
 
                 <div style={{ marginTop: 10 }}>
                   <Button
-                    onClick={() => add({ id: crypto.randomUUID(), text: "" })}
+                    onClick={() =>
+                      add({ id: crypto.randomUUID(), key: "", text: "" })
+                    }
                   >
-                    + Thêm option
+                    + Thêm đáp án
                   </Button>
                 </div>
 
                 <Divider style={{ margin: "12px 0" }} />
-
-                {/* Custom validation: tối thiểu 2 option có text */}
-                <Form.Item shouldUpdate noStyle>
-                  {() => {
-                    const opts = fixForm.getFieldValue("options") || [];
-                    const count = opts.filter((o) =>
-                      String(o?.text || "").trim()
-                    ).length;
-                    return count < 2 ? (
-                      <Alert
-                        type="warning"
-                        showIcon
-                        message="Cần ít nhất 2 đáp án có nội dung."
-                      />
-                    ) : null;
-                  }}
-                </Form.Item>
               </>
             )}
           </Form.List>
+
           <Form.Item shouldUpdate noStyle>
             {() => {
               const opts = fixForm.getFieldValue("options") || [];
@@ -586,7 +576,7 @@ export default function BulkImportModal({
               return (
                 <Form.Item
                   name="correctIndex"
-                  label="Chọn đáp án đúng"
+                  label="Đáp án đúng"
                   rules={[{ required: true, message: "Chọn đáp án đúng" }]}
                   normalize={(val) =>
                     val === null || val === undefined ? null : Number(val)
@@ -601,32 +591,16 @@ export default function BulkImportModal({
             }}
           </Form.Item>
 
-          {/* JLPT có thể dùng audioPath, nhưng LISTENING vẫn sẽ bị page override theo audio đã upload */}
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item name="audioPath" label="Audio path (optional)">
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="imagePath" label="Image path (optional)">
-                <Input />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item name="imageAltText" label="Image alt text (optional)">
-            <Input />
-          </Form.Item>
-
           <Alert
             type="info"
             showIcon
             message="Lưu ý"
             description={
               isJlpt
-                ? "Nếu bạn đang import LISTENING, audioPath sẽ được Builder gán theo audio đã upload của test."
-                : "Quiz course: options linh hoạt (A,B hoặc thêm E,F...), chọn đáp án đúng bằng radio."
+                ? `JLPT: questionType luôn lấy theo tab hiện tại: ${
+                    defaultQuestionType || "?"
+                  }.`
+                : "Options linh hoạt (A,B,C,D... hoặc thêm E,F...), chọn đáp án đúng bằng dropdown."
             }
           />
         </Form>
