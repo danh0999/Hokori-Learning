@@ -84,7 +84,16 @@ const LoginForm = () => {
       };
 
       dispatch(login(payload));
-      localStorage.setItem("token", accessToken);
+      const storage = values.remember ? localStorage : sessionStorage;
+
+      // dùng key chuẩn hoá
+      storage.setItem("accessToken", accessToken);
+      storage.setItem("refreshToken", refreshToken);
+
+      // (nếu trước đây bạn có dùng "token" thì nên bỏ dần)
+      localStorage.removeItem("token");
+      sessionStorage.removeItem("token");
+
       navigate("/");
       toast.success(`Xin chào, ${user.fullName || user.username}!`);
     } catch (err) {
@@ -127,7 +136,12 @@ const LoginForm = () => {
       };
 
       dispatch(login(payload));
-      if (accessToken) localStorage.setItem("token", accessToken);
+      sessionStorage.setItem("accessToken", accessToken);
+      sessionStorage.setItem("refreshToken", refreshToken);
+
+      // dọn key cũ
+      localStorage.removeItem("token");
+      sessionStorage.removeItem("token");
 
       const isTeacher = safeRoles
         .map((r) => (r || "").toUpperCase())
@@ -398,7 +412,7 @@ const LoginForm = () => {
       <Form
         name="login"
         className={styles.form}
-        initialValues={{ remember: true }}
+        initialValues={{ remember: false }}
         onFinish={onFinish}
       >
         <Form.Item
@@ -431,7 +445,7 @@ const LoginForm = () => {
         <Form.Item className={styles.formItem}>
           <Flex justify="space-between" align="center">
             <Form.Item name="remember" valuePropName="checked" noStyle>
-              <Checkbox className={styles.checkbox}>Remember me</Checkbox>
+              <Checkbox className={styles.checkbox}>Nhớ tôi</Checkbox>
             </Form.Item>
 
             <Button

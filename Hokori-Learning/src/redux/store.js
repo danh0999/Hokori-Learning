@@ -15,6 +15,7 @@ import {
 const persistConfig = {
   key: "root",
   storage,
+  blacklist: ["user"],
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -25,7 +26,7 @@ export const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
-      },  
+      },
       immutableCheck: false,
     }),
 });

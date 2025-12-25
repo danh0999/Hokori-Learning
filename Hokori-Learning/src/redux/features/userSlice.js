@@ -6,11 +6,15 @@ export const userSlice = createSlice({
   name: "user",
   initialState,
   reducers: {
-    
     login: (state, action) => action.payload,
 
     logout: () => {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
       localStorage.removeItem("token");
+
+      sessionStorage.removeItem("accessToken");
+      sessionStorage.removeItem("refreshToken");
       sessionStorage.removeItem("token"); // thêm cho chắc
       return null; // trả về null rõ ràng
     },

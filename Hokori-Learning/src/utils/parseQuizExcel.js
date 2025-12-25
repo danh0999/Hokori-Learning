@@ -13,6 +13,7 @@ const pick = (row, map, ...keys) => {
   }
   return undefined;
 };
+
 const uid = () =>
   crypto?.randomUUID?.() ??
   `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -50,7 +51,7 @@ function getOptionSlotsFromRow(row, headerMap) {
     const letter = String.fromCharCode(65 + i); // A..Z
     const lower = letter.toLowerCase();
 
-    // Hỗ trợ header: A, a, OptionA, optionA
+    // Support: A, a, OptionA, optionA...
     const val = pick(
       row,
       headerMap,
@@ -59,61 +60,70 @@ function getOptionSlotsFromRow(row, headerMap) {
       `option${letter}`,
       `option${lower}`
     );
-    slots.push({ key: letter, text: norm(val) }); // text có thể rỗng
+    slots.push({ key: letter, text: norm(val) }); // text may be empty
   }
-  return slots; // [{key:"A", text:"..."}, {key:"B", text:""}, ...]
+  return slots;
 }
 
 function validateRowToQuestion(row, headerMap, idx, opts = {}) {
   const { defaultQuestionType = "", mode = "QUIZ" } = opts;
-
   const rowNo = idx + 2;
 
+  // ✅ Only read these columns
   const content = norm(
-    pick(row, headerMap, "question", "content", "text", "noidung", "cauhoi")
+    pick(
+      row,
+      headerMap,
+      "question",
+      "content",
+      "text",
+      "noidung",
+      "cauhoi",
+      "câuhỏi"
+    )
   );
   const explanation = norm(
-    pick(row, headerMap, "explanation", "giaithich", "hint")
+    pick(row, headerMap, "explanation", "giaithich", "giảithích", "hint")
   );
 
-  const audioPath = norm(pick(row, headerMap, "audiopath", "audio"));
-  const imagePath = norm(pick(row, headerMap, "imagepath", "image"));
-  const imageAltText = norm(pick(row, headerMap, "imagealttext", "alt"));
-
-  const questionType = norm(
-    pick(row, headerMap, "questiontype", "type", "skill")
+  const correctVal = pick(
+    row,
+    headerMap,
+    "correct",
+    "answer",
+    "dapandung",
+    "đápánđúng"
   );
+  const correctIdx = parseCorrect(correctVal); // 0-based
 
-  const correctVal = pick(row, headerMap, "correct", "answer", "dapandung");
-  const correctIdx = parseCorrect(correctVal); // 0-based index, A->0, B->1,...
-
-  // --- OPTIONS: lấy slot A..Z, giữ vị trí để bắt GAP
+  // --- OPTIONS A..Z
   const slots = getOptionSlotsFromRow(row, headerMap);
 
-  // tìm option cuối cùng (last non-empty)
+  // last non-empty option
   let last = -1;
   for (let i = 0; i < slots.length; i++) {
     if (slots[i].text) last = i;
   }
 
-  // options "liên tục" từ A..last
-  // correctIdx có thể lớn hơn last (correct trỏ option trống)
   const correctIdxSafe = Number.isFinite(correctIdx) ? correctIdx : -1;
-
-  // 👉 giữ slot tới max(last, correctIdx)
   const draftEnd = Math.max(last, correctIdxSafe);
 
-  // draft.options: để user sửa (có thể có option trống)
+  // draft options: keep slots up to max(last, correct)
   const draftSlots = draftEnd >= 0 ? slots.slice(0, draftEnd + 1) : [];
 
-  // finalSlots: chỉ dùng khi build question hợp lệ
+  // final options: only A..last
   const finalSlots = last >= 0 ? slots.slice(0, last + 1) : [];
   const optionsRaw = finalSlots.map((x) => x.text);
 
-  // ===== draft =====
+  // ✅ IMPORTANT: questionType always from tab when JLPT
+  const finalType = mode === "JLPT" ? norm(defaultQuestionType) : "";
+
+  // ===== draft for "needs fix" =====
   const draft = {
     rowNo,
-    questionType: questionType || defaultQuestionType || "",
+    // keep field for UI consistency if your old code expects it,
+    // but do NOT take from Excel. In JLPT it comes from active tab.
+    questionType: finalType,
     content,
     explanation,
     options: draftSlots.map((x) => ({
@@ -123,33 +133,25 @@ function validateRowToQuestion(row, headerMap, idx, opts = {}) {
     })),
     correctIndex: Number.isFinite(correctIdx) ? correctIdx : null,
     correct: norm(correctVal),
-    audioPath,
-    imagePath,
-    imageAltText,
   };
 
   const issues = [];
 
   // --- VALIDATE
-  if (!content) issues.push("Thiếu nội dung câu hỏi (question/content).");
+  if (!content) issues.push("Thiếu nội dung câu hỏi (question).");
 
-  // không có đáp án
   if (last < 0) {
     issues.push("Cần ít nhất 2 đáp án (A/B/...).");
   } else {
-    // bắt GAP: từ A..last không được rỗng
+    // No gaps A..last
     for (let i = 0; i <= last; i++) {
-      if (!slots[i].text) {
-        issues.push(`Thiếu đáp án ở cột ${slots[i].key}.`);
-      }
+      if (!slots[i].text) issues.push(`Thiếu đáp án ở cột ${slots[i].key}.`);
     }
 
-    // yêu cầu tối thiểu 2 đáp án (trong đoạn liên tục)
     const filledCount = finalSlots.filter((x) => x.text).length;
     if (filledCount < 2) issues.push("Cần ít nhất 2 đáp án (A/B/...).");
   }
 
-  // correct
   if (correctIdx === null) {
     issues.push("Thiếu/không hợp lệ cột correct (nhập A-Z hoặc 1-99).");
   } else if (last >= 0 && (correctIdx < 0 || correctIdx > last)) {
@@ -159,7 +161,6 @@ function validateRowToQuestion(row, headerMap, idx, opts = {}) {
       )}).`
     );
   } else if (last >= 0 && slots[correctIdx] && !slots[correctIdx].text) {
-    // correct trỏ đúng index nhưng option tại đó đang rỗng
     issues.push(
       `Correct đang trỏ vào đáp án trống ở cột ${String.fromCharCode(
         65 + correctIdx
@@ -167,17 +168,16 @@ function validateRowToQuestion(row, headerMap, idx, opts = {}) {
     );
   }
 
-  // JLPT: questionType có thể lấy từ default (tab), nên chỉ lỗi nếu mode=JLPT mà vẫn trống
-  if (mode === "JLPT") {
-    const finalType = questionType || defaultQuestionType;
-    if (!finalType) {
-      issues.push("Thiếu questionType (VOCAB/GRAMMAR/READING/LISTENING).");
-    }
+  // JLPT: must have active tab type
+  if (mode === "JLPT" && !finalType) {
+    issues.push(
+      "Thiếu loại câu hỏi (tab hiện tại chưa set: VOCAB/GRAMMAR/READING/LISTENING)."
+    );
   }
 
   if (issues.length) return { rowNo, issues, draft };
 
-  // --- BUILD QUESTION (đảm bảo lúc này không có gap, optionsRaw đều có text)
+  // --- BUILD QUESTION
   const finalOptions = optionsRaw.map((t, i) => ({
     id: uid(),
     text: t,
@@ -189,14 +189,14 @@ function validateRowToQuestion(row, headerMap, idx, opts = {}) {
     id: uid(),
     text: content,
     explanation,
-    audioPath,
-    imagePath,
-    imageAltText,
+    // ✅ keep these fields empty so old builder code won’t crash if it expects them
+    audioPath: "",
+    imagePath: "",
+    imageAltText: "",
     options: finalOptions,
   };
 
-  const finalType = questionType || defaultQuestionType;
-  if (mode === "JLPT" && finalType) q.questionType = finalType;
+  if (mode === "JLPT") q.questionType = finalType;
 
   return { rowNo, issues: [], draft, question: q };
 }
@@ -242,35 +242,19 @@ export function parseQuestionsFromExcelArrayBuffer(arrayBuffer, opts = {}) {
   return { readyQuestions, needsFix };
 }
 
-// Template download (giữ nguyên, bạn có thể thêm mode nếu muốn)
+// ✅ Template download: Vietnamese headers + only required columns
 export function downloadExcelTemplate(filename = "bulk-import-template.xlsx") {
-  const headers = [
-    "questionType",
-    "question",
-    "explanation",
-    "A",
-    "B",
-    "C",
-    "D",
-    "correct",
-    "audioPath",
-    "imagePath",
-    "imageAltText",
-  ];
+  const headers = ["Câu hỏi", "Giải thích", "A", "B", "C", "D", "Đáp án đúng"];
 
   const example = [
     {
-      questionType: "VOCAB",
-      question: "Từ 'いぬ' có nghĩa là gì?",
-      explanation: "犬 = dog",
+      "Câu hỏi": "Từ 'いぬ' có nghĩa là gì?",
+      "Giải thích": "犬 = dog",
       A: "Mèo",
       B: "Chó",
       C: "Cá",
       D: "Chim",
-      correct: "B",
-      audioPath: "",
-      imagePath: "",
-      imageAltText: "",
+      "Đáp án đúng": "B", // or 2
     },
   ];
 
@@ -283,7 +267,7 @@ export function downloadExcelTemplate(filename = "bulk-import-template.xlsx") {
 }
 
 /**
- * Dùng khi user sửa draft trong UI rồi muốn "re-validate" 1 dòng.
+ * Re-validate draft after user fixes in UI
  */
 export function validateDraftToQuestion(draft, opts = {}) {
   const { mode = "QUIZ", defaultQuestionType = "" } = opts;
@@ -291,40 +275,33 @@ export function validateDraftToQuestion(draft, opts = {}) {
   const content = norm(draft?.content);
   const explanation = norm(draft?.explanation);
 
-  const audioPath = norm(draft?.audioPath);
-  const imagePath = norm(draft?.imagePath);
-  const imageAltText = norm(draft?.imageAltText);
-
-  const questionType = norm(draft?.questionType) || defaultQuestionType;
-
-  // ✅ GIỮ SLOT OPTIONS (không filter trước để giữ index A/B/C/D...)
+  // ✅ Keep slots order (A/B/C/D...), don’t filter first
   const optionsArr = Array.isArray(draft?.options) ? draft.options : [];
-  // ✅ giữ nguyên slot, KHÔNG filter
-  const slots = optionsArr.map((o) => ({ ...o, text: norm(o?.text) }));
+  const slots = optionsArr.map((o) => ({
+    ...o,
+    text: norm(o?.text),
+  }));
 
-  // đếm số option có text
   const filledCount = slots.filter((o) => o.text.length > 0).length;
 
-  // correctIndex là index theo slot
+  // correctIndex is slot index
   const correctIdx = Number.isFinite(draft?.correctIndex)
     ? Number(draft.correctIndex)
     : parseCorrect(draft?.correct);
 
-  // validate cơ bản
   const issues = [];
   if (!content) issues.push("Thiếu nội dung câu hỏi.");
   if (filledCount < 2) issues.push("Cần ít nhất 2 đáp án.");
 
-  // ✅ bắt gap theo rule liên tục A..last (nếu bạn muốn giữ rule này)
+  // gap rule A..last
   let last = -1;
   for (let i = 0; i < slots.length; i++) {
     if (slots[i].text) last = i;
   }
   if (last >= 0) {
     for (let i = 0; i <= last; i++) {
-      if (!slots[i].text) {
+      if (!slots[i].text)
         issues.push(`Thiếu đáp án ở option ${String.fromCharCode(65 + i)}.`);
-      }
     }
   }
 
@@ -340,11 +317,13 @@ export function validateDraftToQuestion(draft, opts = {}) {
     );
   }
 
-  if (mode === "JLPT" && !questionType) issues.push("Thiếu questionType.");
+  const finalType = mode === "JLPT" ? norm(defaultQuestionType) : "";
+  if (mode === "JLPT" && !finalType)
+    issues.push("Thiếu loại câu hỏi (tab JLPT).");
 
   if (issues.length) return { ok: false, issues };
 
-  // ✅ Build options: chỉ lấy từ A..last (liên tục)
+  // ✅ Build options only A..last
   const finalSlots = last >= 0 ? slots.slice(0, last + 1) : slots;
 
   const options = finalSlots.map((o, i) => ({
@@ -358,13 +337,13 @@ export function validateDraftToQuestion(draft, opts = {}) {
     id: uid(),
     text: content,
     explanation,
-    audioPath,
-    imagePath,
-    imageAltText,
+    audioPath: "",
+    imagePath: "",
+    imageAltText: "",
     options,
   };
 
-  if (mode === "JLPT" && questionType) q.questionType = questionType;
+  if (mode === "JLPT") q.questionType = finalType;
 
   return { ok: true, question: q };
 }

@@ -441,8 +441,17 @@ export default function Revenue() {
       title: "Khóa học",
       dataIndex: "courseTitle",
       key: "courseTitle",
-      render: (t) => <b>{t}</b>,
-      ellipsis: true,
+      width: 340,
+      fixed: "left",
+      ellipsis: { showTitle: false },
+      className: s.courseCol,
+      render: (t) => (
+        <Tooltip title={t} placement="topLeft">
+          <div className={s.courseTitleCell}>
+            <b className={s.courseTitleText}>{t || "—"}</b>
+          </div>
+        </Tooltip>
+      ),
     },
 
     // ✅ NEW: Giá gốc 1 khóa (courseBasePriceCents)
@@ -754,15 +763,15 @@ export default function Revenue() {
                   <Card className={s.summaryCard} loading={payoutLoading}>
                     <Statistic
                       title={`Hoa hồng Admin (${yearMonth})`}
-                      value={fmtVnd(commission?.totalRevenueCents || 0)}
+                      value={fmtVnd(commission?.paidRevenueCents || 0)}
                       suffix="VNĐ"
                     />
 
                     <div className={s.commissionBreakdown}>
                       <div className={s.commissionRow}>
-                        <span className={s.label}>Đã thu được:</span>
+                        <span className={s.label}>Tổng sau khi thu được:</span>
                         <span className={s.valuePaid}>
-                          {fmtVnd(commission?.paidRevenueCents || 0)} VNĐ
+                          {fmtVnd(commission?.totalRevenueCents || 0)} VNĐ
                         </span>
                       </div>
 
@@ -878,7 +887,7 @@ export default function Revenue() {
                   open={openDetail}
                   onCancel={() => setOpenDetail(false)}
                   footer={null}
-                  width={1040}
+                  width={1120}
                   title={
                     detail?.teacherName
                       ? `Chi tiết payout - ${detail.teacherName}`
@@ -887,32 +896,37 @@ export default function Revenue() {
                   destroyOnClose
                 >
                   <div className={s.modalBody}>
-                    <Descriptions bordered column={2} size="middle">
-                      <Descriptions.Item label="Teacher">
-                        {detail?.teacherName || "—"}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Email">
-                        {detail?.teacherEmail || "—"}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Tháng">
-                        {detail?.yearMonth || yearMonth}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Tổng chưa trả">
-                        {money(detail?.totalPendingRevenueCents || 0)}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Ngân hàng">
-                        {detail?.bankName || "—"}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Số TK">
-                        {detail?.bankAccountNumber || "—"}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Chủ TK">
-                        {detail?.bankAccountName || "—"}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Chi nhánh">
-                        {detail?.bankBranchName || "—"}
-                      </Descriptions.Item>
-                    </Descriptions>
+                    <div className={s.payoutDetailHeader}>
+                      <div className={s.payoutDetailInfo}>
+                        <Descriptions bordered column={2} size="middle">
+                          <Descriptions.Item label="Teacher">
+                            {detail?.teacherName || "—"}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Email">
+                            {detail?.teacherEmail || "—"}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Tháng">
+                            {detail?.yearMonth || yearMonth}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Trạng thái">
+                            {renderPayoutStatus(detail?.payoutStatus)}
+                          </Descriptions.Item>
+
+                          <Descriptions.Item label="Ngân hàng">
+                            {detail?.bankName || "—"}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Số TK">
+                            {detail?.bankAccountNumber || "—"}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Chủ TK">
+                            {detail?.bankAccountName || "—"}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Chi nhánh">
+                            {detail?.bankBranchName || "—"}
+                          </Descriptions.Item>
+                        </Descriptions>
+                      </div>
+                    </div>
 
                     <div className={s.modalSectionTitle}>Theo khóa học</div>
 
@@ -923,7 +937,9 @@ export default function Revenue() {
                         dataSource={detailCourses}
                         loading={detailLoading}
                         pagination={false}
-                        scroll={{ x: 980 }}
+                        tableLayout="fixed"
+                        size="middle"
+                        scroll={{ x: 1180 }}
                       />
                     </div>
                   </div>

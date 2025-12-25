@@ -189,12 +189,6 @@ export default function TeacherRevenue() {
       align: "center",
     },
     {
-      title: "Đã được admin chuyển",
-      dataIndex: "paidSalesCount",
-      width: 170,
-      align: "center",
-    },
-    {
       title: "Tổng tiền đã chia hoa hồng",
       dataIndex: "revenueCents",
       width: 220,
@@ -235,16 +229,11 @@ export default function TeacherRevenue() {
   // ====== DETAIL MODAL TABLE (đổi tên cột) ======
   const detailColumns = [
     {
-      title: "Mã thanh toán",
-      dataIndex: "paymentId",
-      key: "paymentId",
-      width: 130,
-    },
-    {
-      title: "Mã đăng ký",
-      dataIndex: "enrollmentId",
-      key: "enrollmentId",
-      width: 120,
+      title: "STT",
+      key: "index",
+      width: 70,
+      align: "center",
+      render: (_v, _r, index) => index + 1,
     },
     {
       title: "Tổng tiền (khách trả)",
@@ -344,14 +333,11 @@ export default function TeacherRevenue() {
         <Col xs={24} sm={12} md={8}>
           <Card loading={loading} className={styles.summaryCard}>
             <Statistic
-              title={`Tổng doanh thu tháng ${yearMonth}`}
+              title={`Tổng doanh thu dự kiến ${yearMonth}`}
               value={fmtVnd(payout?.totalRevenueCents || 0)}
               prefix={<DollarOutlined />}
               suffix="VNĐ"
             />
-            <div className={styles.summaryHint}>
-              Giao dịch: <b>{payout?.transactionCount ?? 0}</b>
-            </div>
           </Card>
         </Col>
 
@@ -363,9 +349,6 @@ export default function TeacherRevenue() {
               prefix={<DollarOutlined />}
               suffix="VNĐ"
             />
-            <div className={styles.summaryHint}>
-              Giao dịch đã trả: <b>{payout?.paidTransactionCount ?? 0}</b>
-            </div>
           </Card>
         </Col>
 
@@ -377,9 +360,6 @@ export default function TeacherRevenue() {
               prefix={<DollarOutlined />}
               suffix="VNĐ"
             />
-            <div className={styles.summaryHint}>
-              Giao dịch chưa trả: <b>{payout?.unpaidTransactionCount ?? 0}</b>
-            </div>
           </Card>
         </Col>
       </Row>
