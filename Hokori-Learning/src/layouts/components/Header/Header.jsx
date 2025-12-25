@@ -151,7 +151,7 @@ export const Header = () => {
       return;
     }
 
-    // ❗ NGHIỆP VỤ CHUẨN:
+    // NGHIỆP VỤ CHUẨN:
     // Không có gói HOẶC hết lượt → mở modal
     if (!canUseAI) {
       dispatch(openModal());
@@ -278,6 +278,16 @@ export const Header = () => {
 
             {openDropdown === "ai" && (
               <div className={dropdownMenu}>
+                <div
+                  className={dropdownItem}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    setOpenDropdown(null);
+                    navigate("/ai-introduction");
+                  }}
+                >
+                Giới thiệu các tính năng AI
+                </div>
                 <div
                   className={dropdownItem}
                   onMouseDown={(e) => e.preventDefault()}
