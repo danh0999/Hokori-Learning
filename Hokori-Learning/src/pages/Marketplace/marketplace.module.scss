@@ -1,8 +1,9 @@
-﻿.marketplace {
+﻿// src/pages/Marketplace/marketplace.module.scss
+
+.marketplace {
   background: #fafafa;
   min-height: 100vh;
   padding: 40px 60px;
-
   display: flex;
   flex-direction: column;
 }
@@ -12,17 +13,20 @@
   color: #6b7280;
   font-size: 14px;
   margin-bottom: 8px;
+  
+  span {
+    color: #111827;
+    font-weight: 500;
+  }
 }
-.breadcrumb span {
-  color: #111827;
-  font-weight: 500;
-}
+
 .heading {
   font-size: 28px;
   font-weight: 700;
   color: #111827;
   margin-bottom: 4px;
 }
+
 .subheading {
   font-size: 15px;
   color: #6b7280;
@@ -32,10 +36,11 @@
 /* Grid layout */
 .container {
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 280px 1fr; /* Sidebar cố định, content co giãn */
   gap: 32px;
   flex: 1;
 }
+
 .sidebar {
   position: sticky;
   top: 20px;
@@ -48,23 +53,13 @@
   flex-direction: column;
   gap: 20px;
 }
+
 .topbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-}
-.count {
-  font-size: 15px;
-  color: #374151;
-  font-weight: 500;
-}
-.sort {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 8px 12px;
-  min-width: 160px;
-  background: #fff;
+  /* SortBar sẽ nằm trong này và chiếm width 100% */
 }
 
 /* Results */
@@ -73,6 +68,7 @@
   display: flex;
   flex-direction: column;
 }
+
 .empty {
   flex: 1;
   display: grid;
@@ -82,9 +78,16 @@
   border-radius: 12px;
   color: #9ca3af;
   font-size: 15px;
+  min-height: 200px;
 }
 
-/* Pagination cố định dưới */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+}
+
+/* Pagination */
 .paginationContainer {
   margin-top: auto;
   padding-top: 32px;
@@ -93,18 +96,29 @@
   justify-content: center;
 }
 
+/* Responsive */
 @media (max-width: 992px) {
+  .marketplace {
+    padding: 20px;
+  }
+  
   .container {
     grid-template-columns: 1fr;
   }
-}
-.link {
-  color: #2563eb; /* xanh dương Hokori */
-  cursor: pointer;
-  transition: color 0.2s;
+  
+  .sidebar {
+    position: static; /* Mobile thì sidebar không sticky */
+    margin-bottom: 20px;
+  }
 }
 
-.link:hover {
-  color: #1d4ed8; /* xanh đậm hơn khi hover */
-  text-decoration: underline;
+.link {
+  color: #2563eb; 
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+  }
 }

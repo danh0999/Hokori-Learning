@@ -1,8 +1,10 @@
-﻿import React, { useMemo, useState, useEffect } from "react";
+﻿// src/pages/Marketplace/Marketplace.jsx
+import React, { useMemo, useState, useEffect } from "react";
 import styles from "./marketplace.module.scss";
 import Filters from "./components/Filters/Filters";
 import CourseGrid from "./components/CourseGrid/CourseGrid";
 import Pagination from "./components/Pagination/Pagination";
+import SortBar from "./components/SortBar/SortBar"; // Component SortBar mới
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCourses } from "../../redux/features/courseSlice";
@@ -16,18 +18,17 @@ export default function Marketplace() {
     (state) => state.courses
   );
 
-  // ================================
-  // ⭐ FILTERS STATE — MIN/MAX version
-  // ================================
+  // Filters State
   const [filters, setFilters] = useState({
     levels: [],
     priceMin: 0,
-    priceMax: 2000000,
+    priceMax: 999999999, 
     ratings: [],
     keyword: "",
   });
 
-  const [sort, setSort] = useState("Phổ biến");
+  // Sort State (Mặc định: Mới nhất)
+  const [sort, setSort] = useState("Mới nhất");
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 9;
 
@@ -41,92 +42,111 @@ export default function Marketplace() {
     setFilters({
       levels: [],
       priceMin: 0,
-      priceMax: 2000000,
+      priceMax: 999999999,
       ratings: [],
       keyword: "",
     });
 
   // ============================
-  // ⭐ FILTER + SORT — FINAL VERSION
+  // ⭐ FILTER + SORT — LOGIC
   // ============================
   const filtered = useMemo(() => {
     let items = [...(courses ?? [])];
 
-    // LEVEL FILTER
+    // 1. Filter by Level
     if (filters.levels.length > 0) {
       items = items.filter((c) =>
         c.level ? filters.levels.includes(c.level) : true
       );
     }
 
-    // RATING FILTER
+    // 2. Filter by Rating
     if (filters.ratings.length > 0) {
       const ratingMin = Math.min(...filters.ratings);
       items = items.filter((c) => (c.rating ?? 0) >= ratingMin);
     }
 
-    // ⭐ PRICE FILTER — USE REAL PRICE FIELDS
+    // 3. Filter by Price Range (Sidebar)
     const priceMin = Number(filters.priceMin) || 0;
     const priceMax = Number(filters.priceMax) || 999999999;
 
     items = items.filter((c) => {
-      // Lấy đúng giá như CourseCard
       const effectivePrice =
         c.discountedPriceCents && c.discountedPriceCents > 0
           ? c.discountedPriceCents
           : c.priceCents ?? 0;
-
+      
       return effectivePrice >= priceMin && effectivePrice <= priceMax;
     });
 
-    // 🔍 KEYWORD SEARCH (title + teacher)
+    // 4. ⭐ Search keyword (Title, Teacher OR Exact Price)
     if (filters.keyword.trim()) {
       const q = filters.keyword.toLowerCase();
+      const searchNumber = Number(q); // Ép kiểu để tìm giá
 
       items = items.filter((c) => {
         const title = (c.title ?? "").toLowerCase();
         const teacher = (c.teacherName ?? c.teacher ?? "").toLowerCase();
-        return title.includes(q) || teacher.includes(q);
+        
+        // Giá thực tế
+        const effectivePrice =
+          c.discountedPriceCents && c.discountedPriceCents > 0
+            ? c.discountedPriceCents
+            : c.priceCents ?? 0;
+
+        // Logic: Tìm chữ trong Tên/GV HOẶC Tìm đúng giá
+        const matchText = title.includes(q) || teacher.includes(q);
+        const matchPrice = !isNaN(searchNumber) && effectivePrice === searchNumber;
+
+        return matchText || matchPrice;
       });
     }
 
-    // SORT
+    // 5. ⭐ Xử lý Sort Dropdown
     switch (sort) {
+      case "Miễn phí":
+        // Lọc lấy khóa có giá = 0
+        items = items.filter((c) => {
+           const price = c.discountedPriceCents > 0 ? c.discountedPriceCents : (c.priceCents ?? 0);
+           return price === 0;
+        });
+        break;
+
       case "Giá tăng":
         items.sort(
           (a, b) =>
-            ((a.discountedPriceCents && a.discountedPriceCents > 0
-              ? a.discountedPriceCents
-              : a.priceCents) ?? 0) -
-            ((b.discountedPriceCents && b.discountedPriceCents > 0
-              ? b.discountedPriceCents
-              : b.priceCents) ?? 0)
+            ((a.discountedPriceCents > 0 ? a.discountedPriceCents : a.priceCents) ?? 0) -
+            ((b.discountedPriceCents > 0 ? b.discountedPriceCents : b.priceCents) ?? 0)
         );
         break;
 
       case "Giá giảm":
         items.sort(
           (a, b) =>
-            ((b.discountedPriceCents && b.discountedPriceCents > 0
-              ? b.discountedPriceCents
-              : b.priceCents) ?? 0) -
-            ((a.discountedPriceCents && a.discountedPriceCents > 0
-              ? a.discountedPriceCents
-              : a.priceCents) ?? 0)
+            ((b.discountedPriceCents > 0 ? b.discountedPriceCents : b.priceCents) ?? 0) -
+            ((a.discountedPriceCents > 0 ? a.discountedPriceCents : a.priceCents) ?? 0)
         );
         break;
 
       case "Đánh giá cao":
         items.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
         break;
+
+      case "Mới nhất":
+        // Sắp xếp theo ngày tạo (giả sử có trường createdAt)
+        items.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        break;
+      
+      case "Phổ biến":
+      default:
+        // Giữ nguyên hoặc sort theo logic khác nếu có
+        break;
     }
 
     return items;
   }, [courses, filters, sort]);
 
-  // ============================
-  // Pagination
-  // ============================
+  // Pagination Logic
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const startIndex = (page - 1) * PAGE_SIZE;
   const pagedCourses = filtered.slice(startIndex, startIndex + PAGE_SIZE);
@@ -135,9 +155,7 @@ export default function Marketplace() {
     setPage(1);
   }, [filters, sort]);
 
-  // ============================
-  // URL Pre-select
-  // ============================
+  // URL Params Logic
   const [searchParams] = useSearchParams();
   const preselectedLevel = searchParams.get("level");
 
@@ -152,7 +170,6 @@ export default function Marketplace() {
 
   return (
     <div className={styles.marketplace}>
-      {/* Breadcrumb */}
       <nav className={styles.breadcrumb}>
         <span className={styles.link} onClick={() => navigate("/")}>
           Trang chủ
@@ -167,24 +184,24 @@ export default function Marketplace() {
       </p>
 
       <div className={styles.container}>
-        {/* Filters */}
+        {/* Filters Sidebar */}
         <aside className={styles.sidebar}>
           <Filters
             filters={filters}
             setFilters={setFilters}
             onClear={clearAll}
-            onApply={() => {}}
           />
         </aside>
 
-        {/* Content */}
+        {/* Content Area */}
         <section className={styles.content}>
           <div className={styles.topbar}>
-            <p className={styles.count}>
-              {filtered.length > 0
-                ? `${filtered.length} khóa học được tìm thấy`
-                : ""}
-            </p>
+            {/* SortBar mới với đầy đủ tính năng */}
+            <SortBar 
+              total={filtered.length} 
+              sort={sort} 
+              onSort={setSort} 
+            />
           </div>
 
           <div className={styles.resultsArea}>

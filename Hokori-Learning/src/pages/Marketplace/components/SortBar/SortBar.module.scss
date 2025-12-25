@@ -1,31 +1,53 @@
-﻿.sortBar {
+﻿// src/pages/Marketplace/components/SortBar.module.scss
+
+.sortBar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
+  width: 100%; /* Đảm bảo thanh này chiếm hết chiều ngang */
+  margin-bottom: 16px;
 }
 
 .summary {
   color: #374151;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.label {
+  font-size: 0.9rem;
+  color: #6b7280;
+  white-space: nowrap;
 }
 
 .select {
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 10px 12px;
-  min-width: 160px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-width: 180px; /* Đủ rộng cho text dài */
   outline: none;
-  transition: box-shadow 160ms ease, transform 120ms ease;
+  background-color: white;
+  cursor: pointer;
+  color: #374151;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  font-family: inherit;
 }
 
 .select:focus {
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .select:hover {
-  transform: translateY(-1px);
+  border-color: #9ca3af;
 }
-
