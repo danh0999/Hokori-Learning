@@ -79,11 +79,9 @@ export default function ManageQueues() {
   };
 
   /** CALL API REJECT */
-  const rejectCourseApi = async (courseId, reason) => {
+  const rejectCourseApi = async (courseId, payload) => {
     try {
-      await api.put(`/moderator/courses/${courseId}/reject`, null, {
-        params: { reason },
-      });
+      await api.put(`/moderator/courses/${courseId}/reject`, payload);
       setData((prev) => prev.filter((c) => c.id !== courseId));
       toast.success("Khoá học đã bị từ chối.");
       return true;
@@ -107,9 +105,9 @@ export default function ManageQueues() {
   };
 
   /** REJECT confirm trong modal */
-  const handleSubmitReject = async (reasonText) => {
+  const handleSubmitReject = async (payload) => {
     if (!rejectTargetCourse) return;
-    const ok = await rejectCourseApi(rejectTargetCourse.id, reasonText);
+    const ok = await rejectCourseApi(rejectTargetCourse.id, payload);
     if (ok) {
       setOpenReject(false);
       setRejectTargetCourse(null);
@@ -280,6 +278,7 @@ export default function ManageQueues() {
           }}
           onSubmit={handleSubmitReject}
           courseTitle={rejectTargetCourse?.title}
+          simple
         />
       )}
     </div>

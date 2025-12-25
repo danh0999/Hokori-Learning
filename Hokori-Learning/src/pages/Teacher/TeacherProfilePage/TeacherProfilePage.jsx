@@ -61,7 +61,7 @@ const buildFileUrl = (fileUrl) => {
 };
 
 const statusMap = {
-  DRAFT: { color: "default", text: "Draft" },
+  NONE: { color: "default", text: "None" },
   PENDING: { color: "processing", text: "Pending" },
   REJECTED: { color: "error", text: "Rejected" },
   APPROVED: { color: "success", text: "Approved" },
@@ -99,7 +99,8 @@ export default function TeacherProfilePage() {
   const user = profile?.user || {};
   const teacher = profile?.teacher || {};
 
-  const approvalStatus = teacher?.approvalStatus || "DRAFT";
+  const approvalStatus = teacher?.approvalStatus ?? "NONE";
+
   const isPendingApproval = approvalStatus === "PENDING";
 
   const hasCertificate = (certificates?.length || 0) > 0;
@@ -107,7 +108,7 @@ export default function TeacherProfilePage() {
   // ✅ Submit chỉ cần certificate + không phải pending
   const canSubmit = !isPendingApproval && hasCertificate;
 
-  const statusInfo = statusMap[approvalStatus] || statusMap.DRAFT;
+  const statusInfo = statusMap[approvalStatus] || statusMap.NONE;
 
   const handleUploadAvatar = async ({ file }) => {
     const res = await dispatch(uploadTeacherAvatar(file));

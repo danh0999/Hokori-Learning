@@ -3,6 +3,18 @@ import styles from "./CourseCard.module.scss";
 import { FaCertificate } from "react-icons/fa";
 
 const CourseCard = ({ course, onContinue, onViewCertificate }) => {
+  const showStatusBanner = ["FLAGGED", "REJECTED", "PENDING_UPDATE"].includes(
+    course.courseStatus
+  );
+  const fallbackStatusMsg =
+    course.courseStatus === "FLAGGED"
+      ? "Khóa học đang được cập nhật nội dung do kiểm duyệt."
+      : course.courseStatus === "REJECTED"
+      ? "Bản cập nhật gần nhất đã bị từ chối. Khóa học đang chờ giáo viên chỉnh sửa và gửi lại."
+      : course.courseStatus === "PENDING_UPDATE"
+      ? "Khóa học đang chờ duyệt bản cập nhật. Bạn vẫn có thể học nội dung hiện tại."
+      : "";
+
   const isCompleted = course.completed === true;
 
   // KHÔNG dùng ảnh default nữa
@@ -46,10 +58,9 @@ const CourseCard = ({ course, onContinue, onViewCertificate }) => {
           </div>
         </div>
 
-        {course.courseStatus === "FLAGGED" && (
+        {showStatusBanner && (
           <div className={styles.statusBanner}>
-            {course.courseStatusMessage ||
-              "Khóa học đang được cập nhật nội dung do kiểm duyệt."}
+            {course.courseStatusMessage || fallbackStatusMsg}
           </div>
         )}
 
