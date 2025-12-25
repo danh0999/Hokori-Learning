@@ -38,7 +38,7 @@ import PaymentResultPage from "../pages/PaymentResultPage/PaymentResultPage";
 import CertificateDetail from "../pages/Certificate/CertificateDetail";
 import JLPTHistory from "../pages/JLPTTest/JLPTHistory";
 import AiConversationPage from "../pages/AiConversationPage/AiConversationPage";
-
+import AiIntroductionPage from "../pages/AiIntroductionPage/AiIntroductionPage";
 // ===== Teacher =====
 import TeacherDashboard from "../pages/Teacher/Dashboard/TeacherDashboard";
 import ManageCourses from "../pages/Teacher/Courses/ManageCourses";
@@ -110,7 +110,7 @@ const routes = [
       { path: "payment/result", element: <PaymentResultPage /> },
       { path: "payment/success", element: <PaymentResultPage /> },
       { path: "payment/cancel", element: <PaymentResultPage /> },
-
+      { path: "ai-introduction", element: <AiIntroductionPage /> },
       // Protected Routes (Learner/Teacher/Admin/Moderator)
       {
         element: <ProtectedRoute allow={["LEARNER"]} />,

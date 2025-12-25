@@ -13,7 +13,7 @@ const AiQuotaOverview = () => {
   const quota = useSelector((state) => state.aiPackage.quota);
   const quotaStatus = useSelector((state) => state.aiPackage.quotaStatus);
 
-  // NGUỒN SỰ THẬT DUY NHẤT
+  
   const hasActivePackage = quota?.hasQuota === true && quota?.totalRequests > 0;
 
   useEffect(() => {

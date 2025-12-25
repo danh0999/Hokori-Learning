@@ -15,7 +15,7 @@ export const kaiwaService = {
     const res = await api.post(KAIWA_ENDPOINTS.PRACTICE, payload);
     // Tuỳ backend trả {success, data, message} hay trả thẳng data
     if (res.data?.success === false) {
-      throw new Error(res.data.message || "Kaiwa practice failed");
+      throw new Error(res.data.message || "Luyện nói thất bại");
     }
     return res.data?.data || res.data;
   },
