@@ -1,6 +1,9 @@
 // src/pages/LearningTreePage/LearningTreePage.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { Modal, Input, message } from "antd";
+import { toast } from "react-toastify";
+
 import api from "../../configs/axios";
 import styles from "./LearningTreePage.module.scss";
 import { buildFileUrl } from "../../utils/fileUrl";
@@ -114,6 +117,40 @@ export default function LearningTreePage() {
   const [myComment, setMyComment] = useState("");
   const [posting, setPosting] = useState(false);
   const [postMsg, setPostMsg] = useState("");
+
+  // ===== REPORT / FLAG COURSE =====
+  const [flagModalOpen, setFlagModalOpen] = useState(false);
+  const [flagReason, setFlagReason] = useState("");
+  const [flagSubmitting, setFlagSubmitting] = useState(false);
+  const [alreadyFlagged, setAlreadyFlagged] = useState(false);
+  const [flagType, setFlagType] = useState("INAPPROPRIATE_CONTENT");
+
+  // ✅ ĐÚNG field từ BE
+  const courseStatus = data?.courseStatus;
+
+  // nếu BE có canFlag thì dùng, không có thì fallback true
+  const canFlag = data?.canFlag ?? true;
+
+  // các trạng thái KHÔNG nên cho learner báo cáo thêm
+  const disallowFlagStatuses = new Set([
+    "FLAGGED",
+    "REJECTED",
+    "PENDING_APPROVAL",
+  ]);
+
+  const isFlagDisabledByStatus = disallowFlagStatuses.has(courseStatus);
+
+  const canShowFlagButton =
+    !!canFlag && !alreadyFlagged && !isFlagDisabledByStatus;
+
+  // token check giống CourseHero
+  const token =
+    localStorage.getItem("accessToken") ||
+    sessionStorage.getItem("accessToken") ||
+    localStorage.getItem("token") ||
+    sessionStorage.getItem("token");
+
+  const isGuest = !token;
 
   const fetchFeedbacks = async () => {
     try {
@@ -333,6 +370,45 @@ export default function LearningTreePage() {
     }
   };
 
+  const openFlagModal = () => {
+    if (isGuest) {
+      toast.error("Vui lòng đăng nhập để báo cáo khóa học.");
+      navigate("/login");
+      return;
+    }
+    setFlagReason("");
+    setFlagType("INAPPROPRIATE_CONTENT");
+    setFlagModalOpen(true);
+  };
+
+  const handleSubmitFlag = async () => {
+    const reason = flagReason.trim();
+    if (!reason) {
+      message.warning("Vui lòng nhập lý do báo cáo khóa học.");
+      return;
+    }
+
+    setFlagSubmitting(true);
+    try {
+      await api.post(`/courses/${courseId}/flag`, {
+        flagType,
+        reason,
+      });
+
+      toast.success("Đã gửi báo cáo đến bộ phận kiểm duyệt. Cảm ơn bạn!");
+      setFlagModalOpen(false);
+      setAlreadyFlagged(true);
+    } catch (err) {
+      console.error(err);
+      toast.error(
+        err?.response?.data?.message ||
+          "Không thể gửi báo cáo. Vui lòng thử lại sau."
+      );
+    } finally {
+      setFlagSubmitting(false);
+    }
+  };
+
   if (loading) return <div className={styles.loading}>Đang tải...</div>;
   if (error || !data) return <div className={styles.error}>{error}</div>;
 
@@ -348,8 +424,21 @@ export default function LearningTreePage() {
           />
 
           <div className={styles.headerInfo}>
-            <h1>{data.courseTitle}</h1>
+            <h1
+              className={styles.courseTitleLink}
+              onClick={() => navigate(`/course/${courseId}`)}
+              onKeyDown={(e) =>
+                e.key === "Enter" && navigate(`/course/${courseId}`)
+              }
+              role="link"
+              tabIndex={0}
+              title="Xem chi tiết khóa học"
+            >
+              {data.courseTitle}
+            </h1>
+
             <p>{data.courseSubtitle}</p>
+            <p>{data.teacherName}</p>
 
             <div className={styles.progressWrapper}>
               <div className={styles.progressBar}>
@@ -359,6 +448,34 @@ export default function LearningTreePage() {
                 />
               </div>
               <span>{data.progressPercent}% hoàn thành</span>
+            </div>
+            <div className={styles.headerActions}>
+              {courseStatus === "FLAGGED" && (
+                <div className={styles.flaggedNotice}>
+                  <b>Khóa học đang được rà soát và cập nhật nội dung</b>.
+                  <br />
+                  Cảm ơn bạn đã thông cảm trong thời gian này.
+                </div>
+              )}
+
+              {courseStatus === "REJECTED" && (
+                <div className={styles.flaggedNotice}>
+                  <b>Bản cập nhật gần nhất đã bị từ chối</b>.
+                  <br />
+                  Khóa học đang chờ giáo viên chỉnh sửa và gửi lại.
+                </div>
+              )}
+
+              {canShowFlagButton && (
+                <button
+                  type="button"
+                  className={styles.flagBtn}
+                  onClick={openFlagModal}
+                  title="Báo cáo khóa học"
+                >
+                  🚩 Báo cáo
+                </button>
+              )}
             </div>
           </div>
         </section>
@@ -671,6 +788,44 @@ export default function LearningTreePage() {
           </div>
         </section>
       </div>
+      <Modal
+        title="Báo cáo khóa học"
+        open={flagModalOpen}
+        onOk={handleSubmitFlag}
+        onCancel={() => setFlagModalOpen(false)}
+        okText="Gửi báo cáo"
+        cancelText="Hủy"
+        confirmLoading={flagSubmitting}
+      >
+        <p>Hãy chọn loại báo cáo:</p>
+
+        <select
+          value={flagType}
+          onChange={(e) => setFlagType(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: "6px",
+            marginBottom: "12px",
+            border: "1px solid #d1d5db",
+          }}
+        >
+          <option value="INAPPROPRIATE_CONTENT">Nội dung không phù hợp</option>
+          <option value="COPYRIGHT_VIOLATION">Vi phạm bản quyền</option>
+          <option value="MISLEADING_INFO">Thông tin sai lệch</option>
+          <option value="SPAM">Spam</option>
+          <option value="HARASSMENT">Quấy rối</option>
+          <option value="OTHER">Khác</option>
+        </select>
+
+        <p>Lý do báo cáo:</p>
+        <Input.TextArea
+          rows={4}
+          value={flagReason}
+          onChange={(e) => setFlagReason(e.target.value)}
+          placeholder="Nhập lý do..."
+        />
+      </Modal>
     </main>
   );
 }

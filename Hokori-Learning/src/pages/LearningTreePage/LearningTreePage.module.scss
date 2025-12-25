@@ -664,3 +664,49 @@
     grid-template-columns: 1fr;
   }
 }
+.courseTitleLink {
+  cursor: pointer;
+  display: inline-block;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.headerActions {
+  margin-top: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.flagBtn {
+  border: 1px solid #ddd;
+  background: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+
+  &:hover {
+    background: #fafafa;
+  }
+}
+
+.flaggedNotice {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fff7e6;
+  border: 1px solid #ffd591;
+  color: #ad6800;
+  font-size: 14px;
+}
+
+.flaggedAlready {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+  color: #389e0d;
+  font-size: 14px;
+}

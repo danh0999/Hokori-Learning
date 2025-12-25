@@ -75,7 +75,7 @@ const CreateEventModal = ({ open, onClose, onSubmit }) => {
         <form className={s.formGrid} onSubmit={submit}>
           <div className={s.col}>
             <label className={s.label}>
-              Tiêu đề (title)
+              Tiêu đề
               <input
                 className={s.input}
                 value={form.title}
@@ -84,7 +84,7 @@ const CreateEventModal = ({ open, onClose, onSubmit }) => {
             </label>
 
             <label className={s.label}>
-              Cấp độ (level)
+              Cấp độ
               <select
                 className={s.select}
                 value={form.level}
@@ -97,7 +97,7 @@ const CreateEventModal = ({ open, onClose, onSubmit }) => {
             </label>
 
             <label className={s.label}>
-              Bắt đầu (startAt)
+              Bắt đầu
               <input
                 type="datetime-local"
                 className={s.input}
@@ -110,7 +110,7 @@ const CreateEventModal = ({ open, onClose, onSubmit }) => {
 
           <div className={s.col}>
             <label className={s.label}>
-              Kết thúc (endAt)
+              Kết thúc
               <input
                 type="datetime-local"
                 className={s.input}
@@ -121,7 +121,7 @@ const CreateEventModal = ({ open, onClose, onSubmit }) => {
             </label>
 
             <label className={s.label}>
-              Mô tả (description)
+              Mô tả
               <textarea
                 className={s.textarea}
                 rows={3}

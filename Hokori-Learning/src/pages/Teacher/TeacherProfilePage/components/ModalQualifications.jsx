@@ -241,6 +241,9 @@ export default function ModalCertificates({ open, onClose, locked = false }) {
             style={{ width: "100%" }}
             format="YYYY-MM-DD"
             disabled={locked}
+            disabledDate={(current) => {
+              return current && current > dayjs().endOf("day");
+            }}
           />
         </Form.Item>
         <Form.Item name="expiryDate" label="Ngày hết hạn">
@@ -248,6 +251,10 @@ export default function ModalCertificates({ open, onClose, locked = false }) {
             style={{ width: "100%" }}
             format="YYYY-MM-DD"
             disabled={locked}
+            disabledDate={(current) => {
+              // ❌ không cho chọn ngày trước hôm nay
+              return current && current < dayjs().startOf("day");
+            }}
           />
         </Form.Item>
         <Form.Item name="note" label="Ghi chú">

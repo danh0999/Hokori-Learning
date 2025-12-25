@@ -263,22 +263,6 @@ export default function CourseInformation() {
     }
   };
 
-  const handleUnpublish = async () => {
-    if (isPendingApproval) {
-      toast.warning("Khóa học đang Pending approval, không thể thao tác.");
-      return;
-    }
-    if (!courseId) return;
-
-    const action = await dispatch(unpublishCourseThunk(courseId));
-    if (unpublishCourseThunk.fulfilled.match(action)) {
-      toast.success("Đã hủy xuất bản.");
-      dispatch(fetchCourseTree(courseId));
-    } else {
-      toast.error("Hủy xuất bản thất bại, vui lòng thử lại.");
-    }
-  };
-
   const handleResubmitFlagged = async () => {
     if (!courseId) return;
 
@@ -327,6 +311,8 @@ export default function CourseInformation() {
       ? "Đang chờ duyệt"
       : status === "REJECTED"
       ? "Nộp lại để duyệt"
+      : status === "DRAFT"
+      ? "Gửi duyệt"
       : "Nộp để duyệt";
 
   const disableSubmitButton =
@@ -443,12 +429,6 @@ export default function CourseInformation() {
             >
               Nộp lại sau khi sửa
             </Button>
-          ) : status === "PUBLISHED" ? (
-            <>
-              <Button onClick={handleUnpublish} loading={saving}>
-                Hủy xuất bản
-              </Button>
-            </>
           ) : status === "PENDING_APPROVAL" ? null : (
             <Button
               type="primary"

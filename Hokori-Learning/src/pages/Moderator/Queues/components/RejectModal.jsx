@@ -83,6 +83,7 @@ export default function RejectModal({
   courseTitle,
   courseTree,
   confirmLoading,
+  simple = false,
 }) {
   // ===== top-level reasons =====
   const [general, setGeneral] = useState("");
@@ -100,7 +101,7 @@ export default function RejectModal({
 
   // collapse state
   const [openChapterKeys, setOpenChapterKeys] = useState([]);
-  const [activeTab, setActiveTab] = useState("tree");
+  const [activeTab, setActiveTab] = useState("general");
 
   const tree = useMemo(() => buildTree(courseTree), [courseTree]);
 
@@ -108,7 +109,8 @@ export default function RejectModal({
 
   useEffect(() => {
     if (!open) return;
-    // When open: keep state (UX)
+    // When open: set tab by mode
+    setActiveTab(simple ? "general" : "tree");
   }, [open]);
 
   const clearAll = () => {
@@ -254,16 +256,15 @@ export default function RejectModal({
             Không có dữ liệu curriculum để hiển thị dạng tree.
           </div>
           <div className={styles.noTreeSub}>
-            Bạn vẫn có thể nhập lý do theo phần “Thông tin khóa học”
-            (General/Title/...) hoặc quay lại và đảm bảo API detail trả
-            chapters/lessons/sections.
+            Bạn vẫn có thể nhập lý do theo phần “Thông tin khóa học” (Chung/Tiêu
+            đề/...) hoặc quay lại và đảm bảo API detail trả Chương/Bài học/Phần.
           </div>
         </div>
       ) : (
         <>
           <div className={styles.treeHelp}>
-            Tick vào chapter/lesson/section cần yêu cầu giáo viên sửa, rồi nhập
-            lý do ngay bên dưới.
+            Tick vào Chương/Bài học/Phần cần yêu cầu giáo viên sửa, rồi nhập lý
+            do ngay bên dưới.
           </div>
 
           <Collapse
@@ -379,12 +380,18 @@ export default function RejectModal({
 
   const GeneralTab = (
     <div className={styles.generalWrap}>
-      <div className={styles.sectionTitle}>Chung & thông tin khóa học</div>
+      <div className={styles.sectionTitle}>
+        {simple ? "Lý do từ chối" : "Chung & thông tin khóa học"}
+      </div>
 
       <Space direction="vertical" size={10} style={{ width: "100%" }}>
         <Input.TextArea
           rows={3}
-          placeholder="General: Lý do chung cho toàn bộ khóa học (optional)"
+          placeholder={
+            simple
+              ? "Nhập lý do từ chối (bắt buộc)"
+              : "Lý do chung cho toàn bộ khóa học (optional)"
+          }
           value={general}
           onChange={(e) => setGeneral(e.target.value)}
         />
@@ -392,28 +399,28 @@ export default function RejectModal({
         <Divider className={styles.hr} />
 
         <Input
-          placeholder="Title: Lý do cho tiêu đề (optional)"
+          placeholder="Tiêu đề: Lý do cho tiêu đề (optional)"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
         <Input
-          placeholder="Subtitle: Lý do cho mô tả phụ (optional)"
+          placeholder="Phụ đề: Lý do cho mô tả phụ (optional)"
           value={subtitle}
           onChange={(e) => setSubtitle(e.target.value)}
         />
         <Input.TextArea
           rows={3}
-          placeholder="Description: Lý do cho mô tả chi tiết (optional)"
+          placeholder="Mô tả: Lý do cho mô tả chi tiết (optional)"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
         <Input
-          placeholder="Cover Image: Lý do cho ảnh bìa (optional)"
+          placeholder="Ảnh bìa: Lý do cho ảnh bìa (optional)"
           value={coverImage}
           onChange={(e) => setCoverImage(e.target.value)}
         />
         <Input
-          placeholder="Price: Lý do cho giá (optional)"
+          placeholder="Giá: Lý do cho giá (optional)"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
         />
@@ -438,22 +445,30 @@ export default function RejectModal({
       title={<div className={styles.modalTitle}>Từ chối “{courseTitle}”</div>}
     >
       <div className={styles.modalIntro}>
-        Chọn các phần cần sửa và nhập lý do cụ thể. Giáo viên sẽ thấy lý do theo
-        từng phần khi gọi API detail.
+        {simple
+          ? "Nhập lý do từ chối để gửi cho giáo viên."
+          : "Chọn các phần cần sửa và nhập lý do cụ thể. Giáo viên sẽ thấy lý do theo từng phần khi gọi API detail."}
       </div>
 
       <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
-        items={[
-          { key: "tree", label: "Curriculum tree", children: TreeTab },
-          { key: "general", label: "Thông tin khóa học", children: GeneralTab },
-        ]}
+        items={
+          simple
+            ? [{ key: "general", label: "Lý do từ chối", children: GeneralTab }]
+            : [
+                { key: "tree", label: "Khung khóa học", children: TreeTab },
+                {
+                  key: "general",
+                  label: "Thông tin khóa học",
+                  children: GeneralTab,
+                },
+              ]
+        }
       />
 
       <div className={styles.footerNote}>
-        Lưu ý: Bạn cần nhập <b>ít nhất 1 lý do</b>. Nếu bỏ trống hết, BE sẽ trả
-        400.
+        Lưu ý: Bạn cần nhập <b>ít nhất 1 lý do</b>. Không được bỏ trống hết.
       </div>
 
       <div className={styles.footerActions}>

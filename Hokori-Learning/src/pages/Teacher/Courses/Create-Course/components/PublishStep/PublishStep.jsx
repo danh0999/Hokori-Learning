@@ -106,7 +106,7 @@ export default function PublishStep({ courseId, statusFlags, onBack }) {
           console.warn("Cannot clear draft after submit", e);
         }
 
-        toast.success("Khoá học đã được gửi cho admin xét duyệt.");
+        toast.success("Khoá học đã được gửi cho moderator xét duyệt.");
         navigate("/teacher/manage-courses");
       } else {
         toast.error(

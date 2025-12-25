@@ -87,6 +87,10 @@ const MyCourses = () => {
                 courseStatusMessage:
                   tree.courseStatus === "FLAGGED"
                     ? "Khóa học đang được cập nhật nội dung do kiểm duyệt. Một số bài học có thể thay đổi tạm thời."
+                    : tree.courseStatus === "REJECTED"
+                    ? "Bản cập nhật gần nhất đã bị từ chối. Khóa học đang chờ giáo viên chỉnh sửa và gửi lại."
+                    : tree.courseStatus === "PENDING_UPDATE"
+                    ? "Khóa học đang chờ duyệt bản cập nhật. Bạn vẫn có thể học nội dung hiện tại."
                     : null,
 
                 // enrollment status nếu bạn còn cần ở chỗ khác
