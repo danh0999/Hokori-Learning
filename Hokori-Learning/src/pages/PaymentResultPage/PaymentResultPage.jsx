@@ -152,9 +152,6 @@ const PaymentResultPage = () => {
         <div className={styles.actions}>
           {isSuccess ? (
             <>
-              <button onClick={() => navigate("/my-courses")}>
-                Hoàn tất & tới khóa học của tôi
-              </button>
               <button onClick={() => navigate("/")}>Về trang chủ</button>
             </>
           ) : (
