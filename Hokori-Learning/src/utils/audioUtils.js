@@ -11,7 +11,7 @@ export const convertBlobToBase64 = (blob) =>
     if (!blob) {
       reject(new Error("Audio blob is empty"));
       return;
-    }
+  }
 
     const reader = new FileReader();
     reader.onloadend = () => {

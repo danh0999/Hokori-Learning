@@ -85,7 +85,7 @@ let __lastTime = 0;
 const speakJapanese = (text = "") => {
   if (!text || __ttsBusy) return;
 
-  // 1️⃣ trích xuất ký tự Nhật
+  // 1️⃣ Chỉ lấy tiếng Nhật
   const jpParts = String(text)
     .replace(/\([^)]*\)/g, "")
     .match(/[\u3040-\u30FF\u4E00-\u9FFF]+/g);
@@ -94,8 +94,9 @@ const speakJapanese = (text = "") => {
 
   const jpOnly = jpParts.join(" ");
 
+  // 2️⃣ Chống đọc trùng liên tiếp
   const now = Date.now();
-  if (jpOnly === __lastSpoken && now - __lastTime < 1000) return;
+  if (jpOnly === __lastSpoken && now - __lastTime < 800) return;
 
   __lastSpoken = jpOnly;
   __lastTime = now;
@@ -107,37 +108,35 @@ const speakJapanese = (text = "") => {
     __ttsBusy = true;
     synth.cancel();
 
-    setTimeout(() => {
-      const utter = new SpeechSynthesisUtterance(jpOnly);
-      utter.lang = "ja-JP";
-      utter.rate = 0.95;
-      utter.pitch = 1;
+    const utter = new SpeechSynthesisUtterance(jpOnly);
+    utter.lang = "ja-JP";
+    utter.rate = 0.95;
+    utter.pitch = 1;
 
-      utter.onend = () => {
-        __ttsBusy = false;
-      };
-      utter.onerror = () => {
-        __ttsBusy = false;
-      };
+    utter.onend = utter.onerror = () => {
+      __ttsBusy = false;
+    };
 
-      synth.speak(utter);
-    }, 120);
+    synth.speak(utter);
   };
 
-  //  QUAN TRỌNG: đợi voice load
-  //  chỉ cho phép bind voiceschanged 1 lần duy nhất
-  if (!synth.__jpVoiceReady) {
-    const voices = synth.getVoices();
-    if (voices.length === 0) {
-      synth.__jpVoiceReady = true;
+  // 3️⃣ FIX CỐT LÕI: đợi voice load
+  const voices = synth.getVoices();
+  if (!voices || voices.length === 0) {
+    // chỉ bind 1 lần
+    if (!synth.__waitingForVoices) {
+      synth.__waitingForVoices = true;
+
       synth.onvoiceschanged = () => {
         synth.onvoiceschanged = null;
+        synth.__waitingForVoices = false;
+        speakNow(); //  NÓI NGAY LẦN ĐẦU
       };
-      return; //  chưa nói
     }
+    return;
   }
 
-  // nói NGAY – không đợi voiceschanged nữa
+  // 4️⃣ Nếu voices đã sẵn sàng → nói ngay
   speakNow();
 };
 
@@ -476,7 +475,6 @@ export default function AiConversationPage() {
 
     setEndResult(res?.data?.data || null);
   };
-  
 
   /* ===============================
      RESET
