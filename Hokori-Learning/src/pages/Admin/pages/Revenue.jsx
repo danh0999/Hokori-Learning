@@ -426,7 +426,7 @@ export default function Revenue() {
         <Space>
           <Button onClick={() => openTeacherDetail(r)}>Xem chi tiết</Button>
           <Button type="primary" onClick={() => openMarkPaid(r)}>
-            Đã chuyển tiền
+            Chuyển tiền
           </Button>
         </Space>
       ),

@@ -247,7 +247,7 @@ export default function BulkImportModal({
         open={open}
         title="Nhập từ Excel – Xác minh trước khi thêm"
         onCancel={() => {
-          if (importing) return; // ✅ chặn
+          if (importing) return; //  chặn
           resetAll();
           onCancel?.();
         }}
@@ -255,15 +255,15 @@ export default function BulkImportModal({
         onOk={handleFinalizeImport}
         okButtonProps={{
           disabled: readyQuestions.length === 0,
-          loading: importing, // ✅ spinner trên nút
+          loading: importing, // spinner trên nút
         }}
-        cancelButtonProps={{ disabled: importing }} // ✅ khóa nút Đóng
+        cancelButtonProps={{ disabled: importing }} //  khóa nút Đóng
         cancelText="Đóng"
         width={1100}
         destroyOnClose
-        maskClosable={!importing} // ✅ không click ra ngoài để đóng
-        keyboard={!importing} // ✅ không ESC để đóng
-        closable={!importing} // ✅ khóa nút X
+        maskClosable={!importing} //  không click ra ngoài để đóng
+        keyboard={!importing} //  không ESC để đóng
+        closable={!importing} //  khóa nút X
       >
         <Space direction="vertical" style={{ width: "100%" }} size={12}>
           <Alert
@@ -281,8 +281,8 @@ export default function BulkImportModal({
                   nhất 2 đáp án có nội dung.
                 </div>
                 <div>
-                  ✅ File Excel <b>KHÔNG dùng</b> các cột: questionType,
-                  audioPath, imagePath, imageAltText.
+                  File Excel <b>KHÔNG dùng</b> các cột: questionType, audioPath,
+                  imagePath, imageAltText.
                 </div>
                 {isJlpt && (
                   <div>
@@ -337,7 +337,7 @@ export default function BulkImportModal({
                 style={{ width: "100%", justifyContent: "space-between" }}
               >
                 <Text strong>
-                  ✅ Câu hợp lệ <Tag color="green">{readySummary}</Tag>
+                  Câu hợp lệ <Tag color="green">{readySummary}</Tag>
                 </Text>
                 <Text type="secondary">
                   Nhấn “Thêm vào bài” để đưa vào builder
@@ -395,7 +395,7 @@ export default function BulkImportModal({
                 style={{ width: "100%", justifyContent: "space-between" }}
               >
                 <Text strong>
-                  ⚠️ Câu cần sửa <Tag color="red">{fixSummary}</Tag>
+                  Câu cần sửa <Tag color="red">{fixSummary}</Tag>
                 </Text>
                 <Text type="secondary">
                   Bấm “Sửa” → “Xác nhận” để chuyển sang hợp lệ
