@@ -425,8 +425,7 @@ export default function GrammarKanjiTab({
               </p>
 
               <Text type="secondary">
-                Bạn có thể chỉ upload file, hoặc chỉ nhập tài liệu đọc (phía
-                dưới), hoặc dùng cả hai.
+                Bạn có thể chỉ upload file, lưu ý file upload tối đa 1GB
               </Text>
             </Upload.Dragger>
           )}
