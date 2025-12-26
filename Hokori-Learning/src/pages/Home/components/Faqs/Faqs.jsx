@@ -4,7 +4,7 @@ import FaqItem from "./FaqsItem.jsx";
 import { Button } from "../../../../components/Button/Button.jsx";
 
 export const Faqs = () => {
-  const { faqsContainer, faqsTitle, faqItemContainer, div, p,btn } = styles;
+  const { faqsContainer, faqsTitle, faqItemContainer, div, p, btn } = styles;
 
   return (
     <div className={faqsContainer}>
@@ -39,15 +39,6 @@ export const Faqs = () => {
           <ul>
             <li>Hiện tại Hokori tập trung vào hình thức học online.</li>
             <li>Một số buổi workshop offline được tổ chức định kỳ.</li>
-          </ul>
-        </FaqItem>
-      </div>
-
-      <div className={faqItemContainer}>
-        <FaqItem question="Có chính sách hoàn tiền không?">
-          <ul>
-            <li>Hokori có chính sách hoàn tiền trong vòng 7 ngày đầu tiên.</li>
-            <li>Điều kiện: học viên không hài lòng và có lý do hợp lý.</li>
           </ul>
         </FaqItem>
       </div>
